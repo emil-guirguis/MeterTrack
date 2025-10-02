@@ -256,9 +256,7 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
       <div className="equipment-list__header">
         <div className="equipment-list__title-section">
           <h2 className="equipment-list__title">Equipment</h2>
-          <p className="equipment-list__subtitle">
-            Manage equipment inventory and maintenance schedules
-          </p>
+
         </div>
         
         <div className="equipment-list__actions">

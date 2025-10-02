@@ -1,16 +1,17 @@
 /* Sidebar Styles */
 .sidebar {
-  /* make the sidebar an in-flow flex child so the content to the right
-     automatically takes the remaining width */
-  position: relative;
+  /* Fixed main navigation on the left/top */
+  position: fixed;
+  top: 0;
+  left: 0;
   width: var(--sidebar-width, 280px);
-  min-height: 100vh;
+  height: 100vh;
   background-color: var(--color-surface, #ffffff);
   border-right: 1px solid var(--color-border, #e0e0e0);
   display: flex;
   flex-direction: column;
-  z-index: 999;
-  transition: width 0.3s ease, transform 0.3s ease;
+  z-index: 1100;
+  transition: width 0.25s ease, transform 0.25s ease;
   overflow: hidden;
 }
 
@@ -20,6 +21,7 @@
 
 /* Mobile: overlay the sidebar (fixed) */
 .sidebar.mobile {
+  /* Mobile overlay keeps fixed positioning but uses transform for show/hide */
   position: fixed;
   top: 0;
   left: 0;
@@ -40,6 +42,8 @@
   padding: 1rem;
   border-bottom: 1px solid var(--color-border, #e0e0e0);
   min-height: 64px;
+  background-color:  #3b82f6;
+  max-height: 64px;
 }
 
 .sidebar__brand {
@@ -88,9 +92,19 @@
   font-size: 0.875rem;
   color: var(--color-text-secondary, #666);
   transition: transform 0.3s ease;
+  display: inline-block; /* allow transform to affect layout */
+  transform-origin: 50% 50%;
 }
 
 .toggle-icon.collapsed {
+  -webkit-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+
+/* Also rotate the icon when the sidebar container has the collapsed class
+   This ensures the icon rotates even if only the parent sidebar class changes */
+.sidebar.collapsed .toggle-icon {
+  -webkit-transform: rotate(180deg);
   transform: rotate(180deg);
 }
 
@@ -278,6 +292,11 @@
   padding: 1rem;
   border-top: 1px solid var(--color-border, #e0e0e0);
   margin-top: auto;
+  /* match header sizing and alignment */
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-footer-content {
@@ -327,7 +346,9 @@
 }
 
 .sidebar.collapsed .sidebar__footer {
-  padding: 0.5rem;
+  /* when collapsed, match header's collapsed padding and centering */
+  padding: 1rem 0.5rem;
+  justify-content: center;
 }
 
 /* Mobile Specific Styles */

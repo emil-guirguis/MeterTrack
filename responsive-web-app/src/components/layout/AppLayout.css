@@ -23,14 +23,30 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin-left: 0;
-  transition: none;
+  /* When a fixed sidebar is present, offset the content by its width so
+     the content sits to the right of the sidebar. Default (desktop)
+     uses the full sidebar width; collapsed state is handled below. */
+  margin-left: var(--sidebar-width, 280px);
+  transition: margin-left 0.25s ease;
 }
 
 /* When the layout root has the collapsed class, let the sidebar
    width collapse and the content will naturally fill the rest. */
 .app-layout.sidebar-collapsed .sidebar {
   width: var(--sidebar-collapsed-width);
+}
+
+/* When the layout root has the collapsed class, shift the content left
+   to match the collapsed sidebar width so the content expands correctly. */
+.app-layout.sidebar-collapsed .app-layout__content {
+  margin-left: var(--sidebar-collapsed-width, 64px);
+}
+
+/* If the content element itself is also given the collapsed class, honor it
+   so the layout works regardless of whether the class is applied to the
+   root or directly to the content element. */
+.app-layout__content.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width, 64px);
 }
 
 .app-layout__content.mobile {

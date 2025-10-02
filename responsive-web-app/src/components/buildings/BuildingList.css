@@ -29,11 +29,7 @@
   color: var(--color-text-primary);
 }
 
-.building-list__subtitle {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
+
 
 .building-list__actions {
   display: flex;

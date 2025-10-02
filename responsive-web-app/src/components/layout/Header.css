@@ -5,7 +5,7 @@
   align-items: center;
   height: 64px;
   padding: 0 1.5rem;
-  background-color: var(--color-surface, #ffffff);
+  background-color:  #3b82f6;
   border-bottom: 1px solid var(--color-border, #e0e0e0);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -13,16 +13,12 @@
   position: relative;
 }
 
-.app-header__left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
 
 .app-header__right {
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-left: auto; /* push the right group to the far right */
 }
 
 /* Menu Toggle Button */
@@ -63,6 +59,7 @@
 .app-header__brand {
   display: flex;
   align-items: center;
+  flex: 1; /* allow brand area to take remaining space so right side aligns to the edge */
 }
 
 .app-header__title {
@@ -455,10 +452,7 @@
     padding: 0 0.75rem;
   }
 
-  .app-header__left {
-    gap: 0.5rem;
-  }
-
+  
   .app-header__right {
     gap: 0.5rem;
   }

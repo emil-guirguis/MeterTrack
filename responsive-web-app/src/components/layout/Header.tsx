@@ -34,26 +34,6 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="app-header">
-      <div className="app-header__left">
-        {/* Menu Toggle Button */}
-        <button
-          className="app-header__menu-toggle"
-          onClick={onToggleSidebar}
-          aria-label="Toggle navigation menu"
-          type="button"
-        >
-          <span className="hamburger-line"></span>
-          <span className="hamburger-line"></span>
-          <span className="hamburger-line"></span>
-        </button>
-
-        {/* App Title/Logo */}
-        <div className="app-header__brand">
-          <h1 className="app-header__title">
-            {title || 'Business Management'}
-          </h1>
-        </div>
-      </div>
 
       <div className="app-header__right">
         {/* Notifications */}

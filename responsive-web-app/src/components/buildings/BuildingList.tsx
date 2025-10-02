@@ -279,9 +279,7 @@ export const BuildingList: React.FC<BuildingListProps> = ({
       <div className="building-list__header">
         <div className="building-list__title-section">
           <h2 className="building-list__title">Buildings</h2>
-          <p className="building-list__subtitle">
-            Manage building properties and their associated equipment
-          </p>
+
         </div>
         
         <div className="building-list__actions">

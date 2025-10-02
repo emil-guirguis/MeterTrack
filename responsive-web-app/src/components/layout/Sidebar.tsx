@@ -15,7 +15,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const handleItemClick = (item: any) => {
-    if (item.children && item.children.length > 0) {
+    const hasChildren = item.children && item.children.length > 0;
+
+    // When the sidebar is collapsed on desktop, clicking a parent menu
+    // should not auto-expand its submenu. Return early in that case.
+    if (hasChildren && isCollapsed && !isMobile) {
+      return;
+    }
+
+    if (hasChildren) {
       // Toggle submenu
       setExpandedItems(prev => 
         prev.includes(item.id) 
@@ -118,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {(!isCollapsed || isMobile) && (
             <div className="sidebar__brand">
               <span className="brand-icon">🏢</span>
-              <span className="brand-text">Business App</span>
+              <span className="brand-text">MeterTrack</span>
             </div>
           )}
           
@@ -129,8 +137,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               type="button"
             >
+              {/* Use a single glyph and rotate it via CSS for a smooth animation */}
               <span className={`toggle-icon ${isCollapsed ? 'collapsed' : ''}`}>
-                {isCollapsed ? '▶' : '◀'}
+                ◀
               </span>
             </button>
           )}

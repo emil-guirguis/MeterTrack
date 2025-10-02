@@ -218,9 +218,6 @@ export const UserList: React.FC<UserListProps> = ({
       <div className="user-list__header">
         <div className="user-list__title-section">
           <h2 className="user-list__title">Users</h2>
-          <p className="user-list__subtitle">
-            Manage user accounts and permissions
-          </p>
         </div>
         
         <div className="user-list__actions">
