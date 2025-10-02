@@ -1,0 +1,244 @@
+/* AppLayout Styles */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--color-background, #f5f5f5);
+}
+
+.app-layout__body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.app-layout__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-left: 280px; /* Default sidebar width */
+  transition: margin-left 0.3s ease;
+}
+
+.app-layout__content.sidebar-collapsed {
+  margin-left: 64px; /* Collapsed sidebar width */
+}
+
+.app-layout__content.mobile {
+  margin-left: 0; /* No sidebar margin on mobile */
+}
+
+/* Breadcrumbs */
+.app-layout__breadcrumbs {
+  padding: 1rem 1.5rem 0;
+  background-color: var(--color-surface, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-link {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary, #666);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+  color: var(--color-primary, #007bff);
+  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.1));
+}
+
+.breadcrumb-current {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-primary, #333);
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+}
+
+.breadcrumb-separator {
+  margin: 0 0.5rem;
+  color: var(--color-text-disabled, #999);
+}
+
+.breadcrumb-link .icon,
+.breadcrumb-current .icon {
+  margin-right: 0.5rem;
+  font-size: 1rem;
+}
+
+/* Page Header */
+.app-layout__page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: var(--color-surface, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #333);
+}
+
+.page-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Page Content */
+.app-layout__page-content {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+  background-color: var(--color-background, #f5f5f5);
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--color-text-secondary, #666);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border, #e0e0e0);
+  border-top: 3px solid var(--color-primary, #007bff);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Overlay */
+.app-layout__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-layout__content {
+    margin-left: 0;
+  }
+
+  .app-layout__content.sidebar-collapsed {
+    margin-left: 0;
+  }
+
+  .app-layout__page-header {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .app-layout__page-content {
+    padding: 1rem;
+  }
+
+  .app-layout__breadcrumbs {
+    padding: 0.75rem 1rem 0;
+  }
+
+  .breadcrumb-list {
+    font-size: 0.8rem;
+  }
+
+  .breadcrumb-link,
+  .breadcrumb-current {
+    padding: 0.125rem 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-layout__page-header {
+    padding: 0.75rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .app-layout__page-content {
+    padding: 0.75rem;
+  }
+
+  .breadcrumb-list {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .breadcrumb-separator {
+    margin: 0 0.25rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .app-layout__breadcrumbs,
+  .app-layout__page-header {
+    border-bottom-width: 2px;
+  }
+
+  .breadcrumb-link:hover {
+    outline: 2px solid var(--color-primary, #007bff);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .app-layout__content,
+  .loading-spinner,
+  .breadcrumb-link {
+    transition: none;
+    animation: none;
+  }
+}

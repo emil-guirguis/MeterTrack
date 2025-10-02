@@ -1,0 +1,86 @@
+.building-management-page {
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+.building-management-page__content {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.building-management-page__no-access {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 2rem;
+  background: var(--color-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.building-management-page__no-access h2 {
+  color: var(--color-text-primary);
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.building-management-page__no-access p {
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .building-management-page__content {
+    padding: 1rem;
+  }
+
+  .building-management-page__no-access {
+    padding: 1.5rem;
+    min-height: 300px;
+  }
+
+  .building-management-page__no-access h2 {
+    font-size: 1.25rem;
+  }
+
+  .building-management-page__no-access p {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .building-management-page__content {
+    padding: 0.75rem;
+  }
+
+  .building-management-page__no-access {
+    padding: 1rem;
+    border-radius: var(--border-radius);
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .building-management-page {
+    background: var(--color-background-dark);
+  }
+
+  .building-management-page__no-access {
+    background: var(--color-surface-dark);
+  }
+
+  .building-management-page__no-access h2 {
+    color: var(--color-text-primary-dark);
+  }
+
+  .building-management-page__no-access p {
+    color: var(--color-text-secondary-dark);
+  }
+}

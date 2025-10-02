@@ -1,0 +1,1 @@
+export { BuildingManagementPage } from './BuildingManagementPage';

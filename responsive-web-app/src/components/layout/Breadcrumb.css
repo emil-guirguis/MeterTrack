@@ -1,0 +1,226 @@
+/* Breadcrumb Styles */
+.breadcrumb {
+  padding: 0.75rem 0;
+  background-color: transparent;
+}
+
+.breadcrumb__list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.breadcrumb__item {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.breadcrumb__link {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary, #666);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  min-width: 0;
+  max-width: 200px;
+}
+
+.breadcrumb__link:hover {
+  color: var(--color-primary, #007bff);
+  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.1));
+  text-decoration: none;
+}
+
+.breadcrumb__link:focus {
+  outline: 2px solid var(--color-primary, #007bff);
+  outline-offset: 2px;
+  color: var(--color-primary, #007bff);
+}
+
+.breadcrumb__current {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-primary, #333);
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  min-width: 0;
+  max-width: 200px;
+}
+
+.breadcrumb__ellipsis {
+  color: var(--color-text-disabled, #999);
+  font-weight: normal;
+  cursor: default;
+  user-select: none;
+}
+
+.breadcrumb__icon {
+  margin-right: 0.5rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.breadcrumb__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.breadcrumb__separator {
+  margin: 0 0.5rem;
+  color: var(--color-text-disabled, #999);
+  font-weight: normal;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Hover effects for interactive elements */
+.breadcrumb__item:hover .breadcrumb__separator {
+  color: var(--color-text-secondary, #666);
+}
+
+/* Focus management for keyboard navigation */
+.breadcrumb__link:focus + .breadcrumb__separator {
+  color: var(--color-primary, #007bff);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .breadcrumb {
+    padding: 0.5rem 0;
+  }
+
+  .breadcrumb__list {
+    font-size: 0.8125rem;
+  }
+
+  .breadcrumb__link,
+  .breadcrumb__current {
+    padding: 0.125rem 0.25rem;
+    max-width: 120px;
+  }
+
+  .breadcrumb__separator {
+    margin: 0 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .breadcrumb__icon {
+    margin-right: 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  /* Stack breadcrumbs on very small screens if needed */
+  .breadcrumb__list {
+    gap: 0.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .breadcrumb__list {
+    font-size: 0.75rem;
+  }
+
+  .breadcrumb__link,
+  .breadcrumb__current {
+    max-width: 100px;
+    padding: 0.125rem;
+  }
+
+  .breadcrumb__separator {
+    margin: 0 0.125rem;
+  }
+
+  .breadcrumb__icon {
+    margin-right: 0.125rem;
+    font-size: 0.8125rem;
+  }
+
+  /* Hide icons on very small screens to save space */
+  .breadcrumb__icon:not(:first-child) {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .breadcrumb__link:hover {
+    outline: 2px solid var(--color-primary, #007bff);
+    background-color: transparent;
+  }
+
+  .breadcrumb__link:focus {
+    outline-width: 3px;
+  }
+
+  .breadcrumb__separator {
+    font-weight: bold;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .breadcrumb__link {
+    transition: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .breadcrumb {
+    display: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .breadcrumb__link {
+    color: var(--color-text-secondary-dark, #aaa);
+  }
+
+  .breadcrumb__link:hover {
+    color: var(--color-primary-dark, #4dabf7);
+    background-color: var(--color-primary-light-dark, rgba(77, 171, 247, 0.1));
+  }
+
+  .breadcrumb__current {
+    color: var(--color-text-primary-dark, #fff);
+  }
+
+  .breadcrumb__separator,
+  .breadcrumb__ellipsis {
+    color: var(--color-text-disabled-dark, #666);
+  }
+}
+
+/* RTL support */
+[dir="rtl"] .breadcrumb__icon {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+[dir="rtl"] .breadcrumb__separator {
+  transform: scaleX(-1);
+}
+
+@media (max-width: 768px) {
+  [dir="rtl"] .breadcrumb__icon {
+    margin-left: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  [dir="rtl"] .breadcrumb__icon {
+    margin-left: 0.125rem;
+  }
+}
