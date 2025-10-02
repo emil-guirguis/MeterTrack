@@ -1,6 +1,7 @@
 .equipment-list {
   background: var(--color-background);
   min-height: 100vh;
+  padding: 1rem;
 }
 
 .equipment-list__header {
@@ -140,76 +141,6 @@
   background: var(--color-primary-alpha);
 }
 
-.equipment-list__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.equipment-list__stat {
-  background: var(--color-surface);
-  padding: 1.5rem;
-  border-radius: var(--border-radius-lg);
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-}
-
-.equipment-list__stat-value {
-  display: block;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 0.5rem;
-}
-
-.equipment-list__stat-label {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-
-.equipment-list__name-cell {
-  display: flex;
-  flex-direction: column;
-}
-
-.equipment-list__name {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: 0.25rem;
-}
-
-.equipment-list__type {
-  font-size: 0.8125rem;
-  color: var(--color-text-secondary);
-}
-
-.equipment-list__status {
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--border-radius-full);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.equipment-list__status--operational {
-  background: var(--color-success-light);
-  color: var(--color-success-dark);
-}
-
-.equipment-list__status--maintenance {
-  background: var(--color-warning-light);
-  color: var(--color-warning-dark);
-}
-
-.equipment-list__status--offline {
-  background: var(--color-error-light);
-  color: var(--color-error-dark);
-}
-
 .equipment-list__export-content {
   padding: 1rem 0;
 }
@@ -261,19 +192,6 @@
   .equipment-list__filter-select {
     min-width: auto;
   }
-
-  .equipment-list__stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  .equipment-list__stat {
-    padding: 1rem;
-  }
-
-  .equipment-list__stat-value {
-    font-size: 1.5rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -286,14 +204,6 @@
   }
 
   .equipment-list__filters {
-    padding: 0.75rem;
-  }
-
-  .equipment-list__stats {
-    grid-template-columns: 1fr;
-  }
-
-  .equipment-list__stat {
     padding: 0.75rem;
   }
 }

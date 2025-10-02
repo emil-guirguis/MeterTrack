@@ -7,6 +7,8 @@ import type { Building } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
 import './BuildingList.css';
+import '../common/ListStats.css';
+import '../common/TableCellStyles.css';
 
 interface BuildingListProps {
   onBuildingSelect?: (building: Building) => void;
@@ -58,9 +60,9 @@ export const BuildingList: React.FC<BuildingListProps> = ({
       label: 'Building Name',
       sortable: true,
       render: (value, building) => (
-        <div className="building-list__name-cell">
-          <div className="building-list__name">{value}</div>
-          <div className="building-list__address">
+        <div className="table-cell--two-line">
+          <div className="table-cell__primary">{value}</div>
+          <div className="table-cell__secondary">
             {building.address.street}, {building.address.city}, {building.address.state}
           </div>
         </div>
@@ -70,11 +72,23 @@ export const BuildingList: React.FC<BuildingListProps> = ({
       key: 'type',
       label: 'Type',
       sortable: true,
-      render: (value) => (
-        <span className={`building-list__type building-list__type--${value}`}>
-          {value.charAt(0).toUpperCase() + value.slice(1)}
-        </span>
-      ),
+      render: (value) => {
+        const getTypeVariant = (type: string) => {
+          switch (type) {
+            case 'office': return 'info';
+            case 'warehouse': return 'warning';
+            case 'retail': return 'success';
+            case 'residential': return 'primary';
+            case 'industrial': return 'secondary';
+            default: return 'neutral';
+          }
+        };
+        return (
+          <span className={`badge badge--${getTypeVariant(value)}`}>
+            {value.charAt(0).toUpperCase() + value.slice(1)}
+          </span>
+        );
+      },
       responsive: 'hide-mobile',
     },
     {
@@ -82,10 +96,11 @@ export const BuildingList: React.FC<BuildingListProps> = ({
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`building-list__status building-list__status--${value}`}>
-          {value === 'active' ? '✅ Active' : 
-           value === 'inactive' ? '❌ Inactive' : 
-           '🔧 Maintenance'}
+        <span className={`status-indicator status-indicator--${value}`}>
+          <span className={`status-dot status-dot--${value}`}></span>
+          {value === 'active' ? 'Active' : 
+           value === 'inactive' ? 'Inactive' : 
+           'Maintenance'}
         </span>
       ),
     },
@@ -291,8 +306,8 @@ export const BuildingList: React.FC<BuildingListProps> = ({
       </div>
 
       {/* Main Content with Stats Sidebar */}
-      <div className="building-list__main-content">
-        <div className="building-list__content">
+      <div className="list__main-content">
+        <div className="list__content">
           {/* Filters */}
           <div className="building-list__filters">
             <div className="building-list__search">
@@ -392,23 +407,23 @@ export const BuildingList: React.FC<BuildingListProps> = ({
         </div>
 
         {/* Stats Sidebar */}
-        <div className="building-list__sidebar">
-          <div className="building-list__stats">
-            <div className="building-list__stat">
-              <span className="building-list__stat-value">{buildings.activeBuildings.length}</span>
-              <span className="building-list__stat-label">Active Buildings</span>
+        <div className="list__sidebar">
+          <div className="list__stats">
+            <div className="list__stat">
+              <span className="list__stat-value">{buildings.activeBuildings.length}</span>
+              <span className="list__stat-label">Active Buildings</span>
             </div>
-            <div className="building-list__stat">
-              <span className="building-list__stat-value">{buildings.officeBuildings.length}</span>
-              <span className="building-list__stat-label">Office Buildings</span>
+            <div className="list__stat">
+              <span className="list__stat-value">{buildings.officeBuildings.length}</span>
+              <span className="list__stat-label">Office Buildings</span>
             </div>
-            <div className="building-list__stat">
-              <span className="building-list__stat-value">{buildings.warehouseBuildings.length}</span>
-              <span className="building-list__stat-label">Warehouses</span>
+            <div className="list__stat">
+              <span className="list__stat-value">{buildings.warehouseBuildings.length}</span>
+              <span className="list__stat-label">Warehouses</span>
             </div>
-            <div className="building-list__stat">
-              <span className="building-list__stat-value">{buildings.totalSquareFootage.toLocaleString()}</span>
-              <span className="building-list__stat-label">Total Sq Ft</span>
+            <div className="list__stat">
+              <span className="list__stat-value">{buildings.totalSquareFootage.toLocaleString()}</span>
+              <span className="list__stat-label">Total Sq Ft</span>
             </div>
           </div>
         </div>

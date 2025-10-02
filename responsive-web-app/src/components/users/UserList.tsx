@@ -7,6 +7,8 @@ import type { User } from '../../types/auth';
 import { UserRole, Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
 import './UserList.css';
+import '../common/ListStats.css';
+import '../common/TableCellStyles.css';
 
 interface UserListProps {
   onUserSelect?: (user: User) => void;
@@ -56,9 +58,9 @@ export const UserList: React.FC<UserListProps> = ({
       label: 'Name',
       sortable: true,
       render: (value, user) => (
-        <div className="user-list__name-cell">
-          <div className="user-list__name">{value}</div>
-          <div className="user-list__email">{user.email}</div>
+        <div className="table-cell--two-line">
+          <div className="table-cell__primary">{value}</div>
+          <div className="table-cell__secondary">{user.email}</div>
         </div>
       ),
     },
@@ -66,11 +68,22 @@ export const UserList: React.FC<UserListProps> = ({
       key: 'role',
       label: 'Role',
       sortable: true,
-      render: (value) => (
-        <span className={`user-list__role user-list__role--${value}`}>
-          {value.charAt(0).toUpperCase() + value.slice(1)}
-        </span>
-      ),
+      render: (value) => {
+        const getRoleVariant = (role: string) => {
+          switch (role) {
+            case 'admin': return 'error';
+            case 'manager': return 'warning';
+            case 'technician': return 'info';
+            case 'viewer': return 'success';
+            default: return 'neutral';
+          }
+        };
+        return (
+          <span className={`badge badge--${getRoleVariant(value)} badge--uppercase`}>
+            {value.charAt(0).toUpperCase() + value.slice(1)}
+          </span>
+        );
+      },
       responsive: 'hide-mobile',
     },
     {
@@ -78,8 +91,9 @@ export const UserList: React.FC<UserListProps> = ({
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`user-list__status user-list__status--${value}`}>
-          {value === 'active' ? '✅ Active' : '❌ Inactive'}
+        <span className={`status-indicator status-indicator--${value}`}>
+          <span className={`status-dot status-dot--${value}`}></span>
+          {value === 'active' ? 'Active' : 'Inactive'}
         </span>
       ),
     },
@@ -283,27 +297,10 @@ export const UserList: React.FC<UserListProps> = ({
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="user-list__stats">
-        <div className="user-list__stat">
-          <span className="user-list__stat-value">{users.activeUsers.length}</span>
-          <span className="user-list__stat-label">Active Users</span>
-        </div>
-        <div className="user-list__stat">
-          <span className="user-list__stat-value">{users.inactiveUsers.length}</span>
-          <span className="user-list__stat-label">Inactive Users</span>
-        </div>
-        <div className="user-list__stat">
-          <span className="user-list__stat-value">{users.adminUsers.length}</span>
-          <span className="user-list__stat-label">Administrators</span>
-        </div>
-        <div className="user-list__stat">
-          <span className="user-list__stat-value">{users.items.length}</span>
-          <span className="user-list__stat-label">Total Users</span>
-        </div>
-      </div>
-
-      {/* Data Table */}
+      {/* Main Content with Stats Sidebar */}
+      <div className="list__main-content">
+        <div className="list__content">
+          {/* Data Table */}
       <DataTable
         data={users.items}
         columns={columns}
@@ -331,6 +328,30 @@ export const UserList: React.FC<UserListProps> = ({
           pageSizeOptions: [10, 25, 50, 100],
         }}
       />
+        </div>
+
+        {/* Stats Sidebar */}
+        <div className="list__sidebar">
+          <div className="list__stats">
+            <div className="list__stat">
+              <span className="list__stat-value">{users.activeUsers.length}</span>
+              <span className="list__stat-label">Active Users</span>
+            </div>
+            <div className="list__stat">
+              <span className="list__stat-value">{users.inactiveUsers.length}</span>
+              <span className="list__stat-label">Inactive Users</span>
+            </div>
+            <div className="list__stat">
+              <span className="list__stat-value">{users.adminUsers.length}</span>
+              <span className="list__stat-label">Administrators</span>
+            </div>
+            <div className="list__stat">
+              <span className="list__stat-value">{users.items.length}</span>
+              <span className="list__stat-label">Total Users</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Export Modal */}
       <FormModal

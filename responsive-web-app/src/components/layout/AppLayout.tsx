@@ -126,7 +126,7 @@ const AppLayout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${!isMobile && sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Header */}
       <Header
         title={pageTitle}

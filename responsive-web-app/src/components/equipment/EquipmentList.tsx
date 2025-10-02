@@ -7,6 +7,8 @@ import type { Equipment } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
 import './EquipmentList.css';
+import '../common/ListStats.css';
+import '../common/TableCellStyles.css';
 
 interface EquipmentListProps {
   onEquipmentSelect?: (equipment: Equipment) => void;
@@ -58,9 +60,9 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
       label: 'Equipment Name',
       sortable: true,
       render: (value, item) => (
-        <div className="equipment-list__name-cell">
-          <div className="equipment-list__name">{value}</div>
-          <div className="equipment-list__type">{item.type}</div>
+        <div className="table-cell--two-line">
+          <div className="table-cell__primary">{value}</div>
+          <div className="table-cell__secondary">{item.type}</div>
         </div>
       ),
     },
@@ -69,10 +71,10 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`equipment-list__status equipment-list__status--${value}`}>
-          {value === 'operational' ? '✅ Operational' : 
-           value === 'maintenance' ? '🔧 Maintenance' : 
-           '❌ Offline'}
+        <span className={`badge badge--rounded badge--${value === 'operational' ? 'success' : value === 'maintenance' ? 'warning' : 'error'}`}>
+          {value === 'operational' ? 'Operational' : 
+           value === 'maintenance' ? 'Maintenance' : 
+           'Offline'}
         </span>
       ),
     },
@@ -346,27 +348,10 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="equipment-list__stats">
-        <div className="equipment-list__stat">
-          <span className="equipment-list__stat-value">{equipment.operationalEquipment.length}</span>
-          <span className="equipment-list__stat-label">Operational</span>
-        </div>
-        <div className="equipment-list__stat">
-          <span className="equipment-list__stat-value">{equipment.maintenanceEquipment.length}</span>
-          <span className="equipment-list__stat-label">In Maintenance</span>
-        </div>
-        <div className="equipment-list__stat">
-          <span className="equipment-list__stat-value">{equipment.offlineEquipment.length}</span>
-          <span className="equipment-list__stat-label">Offline</span>
-        </div>
-        <div className="equipment-list__stat">
-          <span className="equipment-list__stat-value">{equipment.items.length}</span>
-          <span className="equipment-list__stat-label">Total Equipment</span>
-        </div>
-      </div>
-
-      {/* Data Table */}
+      {/* Main Content with Stats Sidebar */}
+      <div className="list__main-content">
+        <div className="list__content">
+          {/* Data Table */}
       <DataTable
         data={equipment.items}
         columns={columns}
@@ -394,6 +379,30 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
           pageSizeOptions: [10, 25, 50, 100],
         }}
       />
+        </div>
+
+        {/* Stats Sidebar */}
+        <div className="list__sidebar">
+          <div className="list__stats">
+            <div className="list__stat">
+              <span className="list__stat-value">{equipment.operationalEquipment.length}</span>
+              <span className="list__stat-label">Operational</span>
+            </div>
+            <div className="list__stat">
+              <span className="list__stat-value">{equipment.maintenanceEquipment.length}</span>
+              <span className="list__stat-label">In Maintenance</span>
+            </div>
+            <div className="list__stat">
+              <span className="list__stat-value">{equipment.offlineEquipment.length}</span>
+              <span className="list__stat-label">Offline</span>
+            </div>
+            <div className="list__stat">
+              <span className="list__stat-value">{equipment.items.length}</span>
+              <span className="list__stat-label">Total Equipment</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Export Modal */}
       <FormModal

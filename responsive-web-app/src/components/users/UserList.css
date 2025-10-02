@@ -149,102 +149,6 @@
   color: var(--color-text-primary);
 }
 
-/* Stats */
-.user-list__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-}
-
-.user-list__stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-  background-color: var(--color-background-secondary);
-  border-radius: 0.5rem;
-  border: 1px solid var(--color-border);
-  text-align: center;
-}
-
-.user-list__stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  margin-bottom: 0.25rem;
-}
-
-.user-list__stat-label {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Table Cell Customizations */
-.user-list__name-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.user-list__name {
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.user-list__email {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
-.user-list__role {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.user-list__role--admin {
-  background-color: var(--color-error-light);
-  color: var(--color-error-dark);
-}
-
-.user-list__role--manager {
-  background-color: var(--color-warning-light);
-  color: var(--color-warning-dark);
-}
-
-.user-list__role--technician {
-  background-color: var(--color-info-light);
-  color: var(--color-info-dark);
-}
-
-.user-list__role--viewer {
-  background-color: var(--color-success-light);
-  color: var(--color-success-dark);
-}
-
-.user-list__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.user-list__status--active {
-  color: var(--color-success);
-}
-
-.user-list__status--inactive {
-  color: var(--color-error);
-}
-
 /* Export Modal Content */
 .user-list__export-content {
   display: flex;
@@ -301,26 +205,9 @@
   .user-list__filter-select {
     min-width: unset;
   }
-
-  .user-list__stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  .user-list__stat {
-    padding: 0.75rem;
-  }
-
-  .user-list__stat-value {
-    font-size: 1.25rem;
-  }
 }
 
 @media (max-width: 480px) {
-  .user-list__stats {
-    grid-template-columns: 1fr;
-  }
-
   .user-list__actions {
     flex-direction: column;
   }

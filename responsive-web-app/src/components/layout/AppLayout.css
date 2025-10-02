@@ -1,10 +1,15 @@
 /* AppLayout Styles */
 .app-layout {
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 64px;
+
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
   background-color: var(--color-background, #f5f5f5);
+  /* layout places content to the right of the sidebar */
+  padding-top: 0;
 }
 
 .app-layout__body {
@@ -18,12 +23,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin-left: 280px; /* Default sidebar width */
-  transition: margin-left 0.3s ease;
+  margin-left: 0;
+  transition: none;
 }
 
-.app-layout__content.sidebar-collapsed {
-  margin-left: 64px; /* Collapsed sidebar width */
+/* When the layout root has the collapsed class, let the sidebar
+   width collapse and the content will naturally fill the rest. */
+.app-layout.sidebar-collapsed .sidebar {
+  width: var(--sidebar-collapsed-width);
 }
 
 .app-layout__content.mobile {
