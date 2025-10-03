@@ -135,6 +135,12 @@ export const ROUTE_INFO: Record<string, RouteInfo> = {
     icon: '✏️',
     parent: '/meters/:id'
   },
+  '/meter-readings': {
+    path: '/meter-readings',
+    label: 'Meter Readings',
+    icon: '📊',
+    parent: '/dashboard'
+  },
   '/templates': {
     path: '/templates',
     label: 'Email Templates',

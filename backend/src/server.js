@@ -12,11 +12,16 @@ const buildingRoutes = require('./routes/buildings');
 const equipmentRoutes = require('./routes/equipment');
 const contactRoutes = require('./routes/contacts');
 const meterRoutes = require('./routes/meters');
+const meterReadingRoutes = require('./routes/meterReadings-test');
 const templateRoutes = require('./routes/templates');
 const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Mongo connection configuration
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb';
+const MONGODB_DBNAME = process.env.MONGODB_DBNAME; // optional override
 
 // Security middleware
 app.use(helmet());
@@ -44,17 +49,30 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ Connected to MongoDB (meterdb)');
-})
-.catch((error) => {
-  console.error('❌ MongoDB connection error:', error);
-  process.exit(1);
-});
+(async () => {
+  try {
+    const connectOptions = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      // Only set dbName if provided; connection string may already include it
+      ...(MONGODB_DBNAME ? { dbName: MONGODB_DBNAME } : {}),
+    };
+
+    await mongoose.connect(MONGODB_URI, connectOptions);
+
+    const db = mongoose.connection;
+    const activeDbName = db.name;
+    const hosts = db.hosts?.map(h => `${h.host}:${h.port}`).join(', ') || db.host;
+
+    console.log(`✅ Connected to MongoDB -> db: ${activeDbName} host(s): ${hosts}`);
+  } catch (error) {
+    // Avoid leaking credentials in logs
+    const safeUri = MONGODB_URI.replace(/:\\?[^@/]+@/, '://***@');
+    console.error('❌ MongoDB connection error. URI:', safeUri);
+    console.error(error);
+    process.exit(1);
+  }
+})();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -63,6 +81,7 @@ app.use('/api/buildings', buildingRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/meters', meterRoutes);
+app.use('/api/meter-readings', meterReadingRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/settings', settingsRoutes);
 
@@ -73,6 +92,89 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
+});
+
+// Test endpoint to check database contents
+app.get('/api/test/db-status', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const MeterReading = require('./models/MeterReading');
+    
+    const userCount = await User.countDocuments();
+    const meterReadingCount = await MeterReading.countDocuments();
+    const sampleUser = await User.findOne({}, { email: 1, name: 1, role: 1 });
+    const sampleReading = await MeterReading.findOne({}, { meterId: 1, kWh: 1, timestamp: 1 });
+    
+    res.json({
+      success: true,
+      database: mongoose.connection.db.databaseName,
+      collections: {
+        users: userCount,
+        meterReadings: meterReadingCount
+      },
+      samples: {
+        user: sampleUser,
+        meterReading: sampleReading
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Test endpoint to create a test user
+app.post('/api/test/create-user', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: 'admin@example.com' });
+    if (existingUser) {
+      return res.json({
+        success: true,
+        message: 'User already exists',
+        user: { email: existingUser.email, name: existingUser.name, role: existingUser.role }
+      });
+    }
+    
+    // Create test user
+    const user = new User({
+      email: 'admin@example.com',
+      name: 'Test Administrator',
+      password: 'admin123', // Will be hashed by the model
+      role: 'admin',
+      permissions: [
+        'user:create', 'user:read', 'user:update', 'user:delete',
+        'building:create', 'building:read', 'building:update', 'building:delete',
+        'equipment:create', 'equipment:read', 'equipment:update', 'equipment:delete',
+        'contact:create', 'contact:read', 'contact:update', 'contact:delete',
+        'meter:create', 'meter:read', 'meter:update', 'meter:delete',
+        'settings:read', 'settings:update',
+        'template:create', 'template:read', 'template:update', 'template:delete'
+      ],
+      status: 'active'
+    });
+    
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Test user created successfully',
+      user: { email: user.email, name: user.name, role: user.role },
+      credentials: {
+        email: 'admin@example.com',
+        password: 'admin123'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Error handling middleware

@@ -4,17 +4,16 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { ProtectedRoute, AuthGuard } from '../components/auth';
 import { AppLayout } from '../components/layout';
 import LoginPage from '../pages/LoginPage';
+import { Dashboard } from '../pages/Dashboard';
+import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../pages/users';
 import { BuildingManagementPage } from '../pages/buildings';
 import { Permission, UserRole } from '../types/auth';
 
-// Placeholder components - these would be replaced with actual page components
+// Dashboard Page with Layout
 const DashboardPage = () => (
   <AppLayout title="Dashboard">
-    <div style={{ padding: '2rem' }}>
-      <h2>Welcome to the Dashboard</h2>
-      <p>This is the main dashboard page where you can see an overview of your business operations.</p>
-    </div>
+    <Dashboard />
   </AppLayout>
 );
 
@@ -95,6 +94,16 @@ const AppRoutes: React.FC = () => {
             <AuthGuard requiredPermissions={[Permission.EQUIPMENT_READ]}>
               <EquipmentPage />
             </AuthGuard>
+          }
+        />
+
+        {/* Meter Readings Route */}
+        <Route
+          path="/meter-readings"
+          element={
+            <ProtectedRoute>
+              <MeterReadingsPage />
+            </ProtectedRoute>
           }
         />
 

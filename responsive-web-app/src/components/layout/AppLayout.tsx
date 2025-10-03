@@ -57,6 +57,12 @@ const menuItems: MenuItem[] = [
     requiredPermission: Permission.METER_READ
   },
   {
+    id: 'meter-readings',
+    label: 'Meter Readings',
+    icon: 'analytics',
+    path: '/meter-readings'
+  },
+  {
     id: 'templates',
     label: 'Email Templates',
     icon: 'template',

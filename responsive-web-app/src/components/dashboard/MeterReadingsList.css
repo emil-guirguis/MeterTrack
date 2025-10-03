@@ -1,0 +1,243 @@
+/* Meter Readings List Component Styles */
+
+.meter-readings-list {
+  background: var(--color-surface, #ffffff);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.meter-readings-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-background-alt, #f9fafb);
+}
+
+.meter-readings-list__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.meter-readings-list__refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.meter-readings-list__refresh-btn:hover {
+  background: var(--color-background-hover, #f3f4f6);
+  transform: rotate(90deg);
+}
+
+/* Loading State */
+.meter-readings-list__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.meter-readings-list__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border, #e5e7eb);
+  border-top: 3px solid var(--color-primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.meter-readings-list__error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-error, #ef4444);
+}
+
+.meter-readings-list__retry-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-error, #ef4444);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-error, #ef4444);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.meter-readings-list__retry-btn:hover {
+  background: var(--color-error, #ef4444);
+  color: white;
+}
+
+/* Table Cell Styles */
+.meter-readings__meter-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meter-readings__meter-id {
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.meter-readings__meter-ip {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-family: 'Courier New', monospace;
+}
+
+.meter-readings__energy {
+  font-weight: 600;
+  color: var(--color-success, #10b981);
+}
+
+.meter-readings__power-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.meter-readings__current-power {
+  font-weight: 600;
+  color: var(--color-warning, #f59e0b);
+}
+
+.meter-readings__peak-power {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.meter-readings__voltage {
+  font-weight: 500;
+  color: var(--color-info, #3b82f6);
+}
+
+.meter-readings__current {
+  font-weight: 500;
+  color: var(--color-purple, #8b5cf6);
+}
+
+.meter-readings__pf-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.meter-readings__pf-value {
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.meter-readings__pf-channel {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.meter-readings__quality-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.meter-readings__quality-indicator {
+  font-size: 1.25rem;
+}
+
+.meter-readings__quality-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.meter-readings__timestamp-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meter-readings__date {
+  font-weight: 500;
+  color: var(--color-text-primary, #111827);
+}
+
+.meter-readings__time {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+  font-family: 'Courier New', monospace;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .meter-readings-list__header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .meter-readings-list__title {
+    font-size: 1.125rem;
+  }
+  
+  .meter-readings__meter-cell,
+  .meter-readings__power-cell,
+  .meter-readings__pf-cell,
+  .meter-readings__quality-cell,
+  .meter-readings__timestamp-cell {
+    align-items: flex-start;
+  }
+  
+  .meter-readings__power-cell,
+  .meter-readings__pf-cell {
+    align-items: flex-end;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .meter-readings-list {
+    background: var(--color-surface-dark, #1f2937);
+  }
+  
+  .meter-readings-list__header {
+    background: var(--color-background-alt-dark, #374151);
+    border-bottom-color: var(--color-border-dark, #4b5563);
+  }
+  
+  .meter-readings-list__title {
+    color: var(--color-text-primary-dark, #f9fafb);
+  }
+}
+
+/* Print styles */
+@media print {
+  .meter-readings-list__refresh-btn {
+    display: none;
+  }
+  
+  .meter-readings-list {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}

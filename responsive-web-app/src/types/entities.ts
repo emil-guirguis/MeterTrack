@@ -150,11 +150,46 @@ export interface MeterConfig {
   port?: number;
 }
 
+// Simple meter reading for basic display
 export interface MeterReading {
   value: number;
   timestamp: Date;
   unit: string;
   quality: 'good' | 'estimated' | 'questionable';
+}
+
+// Detailed meter reading with all electrical parameters
+export interface DetailedMeterReading {
+  id: string;
+  meterId: string;
+  ip: string;
+  port: number;
+  kVARh: number;      // kVAR Hour Net
+  kVAh: number;       // kVA Hour Net
+  A: number;          // Current (Amperes)
+  kWh: number;        // Watt-Hour Meter
+  dPF: number;        // Displacement Power Factor
+  dPFchannel: number; // Displacement Power Factor Channel
+  V: number;          // Volts
+  kW: number;         // Watt Demand
+  kWpeak: number;     // Demand kW Peak
+  timestamp: Date;
+  quality: 'good' | 'estimated' | 'questionable';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Meter Reading Statistics
+export interface MeterReadingStats {
+  totalReadings: number;
+  totalKWh: number;
+  totalKVAh: number;
+  totalKVARh: number;
+  avgPowerFactor: number;
+  avgVoltage: number;
+  avgCurrent: number;
+  maxKWpeak: number;
+  uniqueMeters: number;
 }
 
 export interface Meter {
