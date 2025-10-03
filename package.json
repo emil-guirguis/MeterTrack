@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "Full-stack facility management application",
   "scripts": {
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+  "predev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./prepare-dev.ps1",
+  "dev": "concurrently -k -t -p \"[{name}]\" -n backend,frontend -c \"yellowBright,cyanBright\" \"npm run backend\" \"npm run frontend\"",
     "backend": "cd backend && npm start",
     "frontend": "cd responsive-web-app && npm run dev",
     "install-all": "npm install && cd backend && npm install && cd ../responsive-web-app && npm install",
     "build": "cd responsive-web-app && npm run build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./stop-dev.ps1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
