@@ -148,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {(!isCollapsed || isMobile) && (
             <div className="sidebar__brand">
               <span className="brand-icon">🏢</span>
-              <span className="brand-text">MeterTrack</span>
+              <span className="brand-text">MeterIt</span>
             </div>
           )}
           
