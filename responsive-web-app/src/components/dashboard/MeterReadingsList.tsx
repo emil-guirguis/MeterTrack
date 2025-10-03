@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DataTable } from '../common/DataTable';
+import { DataList } from '../common/DataList';
 import { meterReadingService } from '../../services';
 import type { DetailedMeterReading } from '../../types/entities';
 import './MeterReadingsList.css';
@@ -63,7 +63,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       key: 'meterId',
       label: 'Meter ID',
       sortable: true,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__meter-cell">
           <div className="meter-readings__meter-id">{reading.meterId}</div>
           <div className="meter-readings__meter-ip">{reading.ip}:{reading.port}</div>
@@ -75,7 +75,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       label: 'Energy (kWh)',
       sortable: true,
       align: 'right' as const,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <span className="meter-readings__energy">
           {formatValue(reading.kWh, 'kWh', 1)}
         </span>
@@ -86,7 +86,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       label: 'Power (kW)',
       sortable: true,
       align: 'right' as const,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__power-cell">
           <div className="meter-readings__current-power">{formatValue(reading.kW, 'kW', 1)}</div>
           <div className="meter-readings__peak-power">Peak: {formatValue(reading.kWpeak, 'kW', 1)}</div>
@@ -98,7 +98,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       label: 'Voltage',
       sortable: true,
       align: 'right' as const,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <span className="meter-readings__voltage">
           {formatValue(reading.V, 'V', 1)}
         </span>
@@ -109,7 +109,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       label: 'Current',
       sortable: true,
       align: 'right' as const,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <span className="meter-readings__current">
           {formatValue(reading.A, 'A', 1)}
         </span>
@@ -120,7 +120,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       label: 'Power Factor',
       sortable: true,
       align: 'right' as const,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__pf-cell">
           <div className="meter-readings__pf-value">{formatPowerFactor(reading.dPF)}</div>
           <div className="meter-readings__pf-channel">Ch: {reading.dPFchannel}</div>
@@ -132,7 +132,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       label: 'Quality',
       sortable: true,
       align: 'center' as const,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__quality-cell">
           <span className="meter-readings__quality-indicator">
             {getQualityIndicator(reading.quality)}
@@ -147,7 +147,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       key: 'timestamp',
       label: 'Last Updated',
       sortable: true,
-      render: (reading: DetailedMeterReading) => (
+      render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__timestamp-cell">
           <div className="meter-readings__date">
             {new Date(reading.timestamp).toLocaleDateString()}
@@ -191,9 +191,16 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
 
   return (
     <div className={`meter-readings-list ${className}`}>
-      {showTitle && (
-        <div className="meter-readings-list__header">
-          <h3 className="meter-readings-list__title">Latest Meter Readings</h3>
+      <DataList
+        title={showTitle ? "Latest Meter Readings" : undefined}
+        data={readings}
+        columns={columns}
+        loading={loading}
+        error={error || undefined}
+        striped
+        hoverable
+        emptyMessage="No meter readings available"
+        headerActions={
           <button 
             className="meter-readings-list__refresh-btn"
             onClick={fetchReadings}
@@ -201,16 +208,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
           >
             🔄
           </button>
-        </div>
-      )}
-      
-      <DataTable
-        data={readings}
-        columns={columns}
-        loading={loading}
-        striped
-        hoverable
-        emptyMessage="No meter readings available"
+        }
       />
     </div>
   );
