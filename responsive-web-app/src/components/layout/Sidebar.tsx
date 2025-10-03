@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../../types/ui';
 import './Sidebar.css';
@@ -13,6 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const asideRef = useRef<HTMLElement | null>(null);
 
   const handleItemClick = (item: any) => {
     const hasChildren = item.children && item.children.length > 0;
@@ -20,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     // When the sidebar is collapsed on desktop, clicking a parent menu
     // should not auto-expand its submenu. Return early in that case.
     if (hasChildren && isCollapsed && !isMobile) {
+      console.debug('[Sidebar] click on parent item while collapsed (desktop) - ignoring expand for', item.id);
       return;
     }
 
@@ -68,12 +70,31 @@ const Sidebar: React.FC<SidebarProps> = ({
       <li key={item.id} className={`sidebar-item ${level > 0 ? 'sidebar-item--child' : ''}`}>
         <div
           className={`sidebar-link ${isActive ? 'active' : ''} ${hasChildren ? 'has-children' : ''}`}
-          onClick={() => handleItemClick(item)}
+          onClick={(e) => {
+            // Prevent clicks from bubbling to ancestor handlers which might
+            // toggle or expand the sidebar. Keep the sidebar collapsed state
+            // controlled only by the explicit toggle button.
+            e.preventDefault();
+            e.stopPropagation();
+            // Use error-level logging so it's visible even if debug is filtered
+            console.error('[Sidebar] menu item clicked:', item.id, 'isCollapsed=', isCollapsed, 'isMobile=', isMobile);
+            // Brief visual flash on the sidebar to confirm the handler ran
+            try {
+              if (asideRef.current) {
+                asideRef.current.classList.add('sidebar-debug-active');
+                window.setTimeout(() => asideRef.current && asideRef.current.classList.remove('sidebar-debug-active'), 300);
+              }
+            } catch (e) {
+              // ignore
+            }
+            handleItemClick(item);
+          }}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
+              e.stopPropagation();
               handleItemClick(item);
             }
           }}
@@ -119,6 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       <aside 
+        ref={asideRef}
         className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}
         aria-label="Main navigation"
       >

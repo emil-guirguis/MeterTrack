@@ -3,8 +3,6 @@
 .user-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem;
 }
 
 /* Header */
@@ -16,10 +14,7 @@
   flex-wrap: wrap;
 }
 
-.user-list__title-section {
-  flex: 1;
-  min-width: 200px;
-}
+
 
 .user-list__title {
   margin: 0 0 0.5rem 0;
@@ -29,12 +24,7 @@
 }
 
 
-.user-list__actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
+/* .user-list__actions removed: actions are now rendered within the DataTable header */
 
 .user-list__btn {
   padding: 0.5rem 1rem;
@@ -179,10 +169,6 @@
     align-items: stretch;
   }
 
-  .user-list__actions {
-    justify-content: stretch;
-  }
-
   .user-list__btn {
     flex: 1;
     justify-content: center;
@@ -203,9 +189,7 @@
 }
 
 @media (max-width: 480px) {
-  .user-list__actions {
-    flex-direction: column;
-  }
+  /* action buttons are now rendered inside the table header; DataTable.css handles responsive stacking */
 }
 
 /* Dark mode support */

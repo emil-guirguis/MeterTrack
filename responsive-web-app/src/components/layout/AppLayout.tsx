@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useUI } from '../../store/slices/uiSlice';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type { LayoutProps, MenuItem } from '../../types/ui';
 import { Permission } from '../../types/auth';
@@ -75,14 +76,13 @@ const AppLayout: React.FC<LayoutProps> = ({
   children, 
   title, 
   breadcrumbs, 
-  actions, 
   loading = false 
 }) => {
   const { user, logout, checkPermission } = useAuth();
   const location = useLocation();
   const { isMobile } = useResponsive();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Use persisted UI store for sidebar state so preference is remembered
+  const { sidebarCollapsed, setSidebarCollapsed, mobileNavOpen, setMobileNavOpen } = useUI();
 
   // Generate page title and breadcrumbs from route if not provided
   const pageTitle = title || getPageTitle(location.pathname);
@@ -96,7 +96,10 @@ const AppLayout: React.FC<LayoutProps> = ({
     if (isMobile) {
       setSidebarCollapsed(true);
     }
-  }, [isMobile]);
+  }, [isMobile, setSidebarCollapsed]);
+
+  // Note: sidebarCollapsed is persisted in UI store; we intentionally
+  // do not override it on login so the app remembers the user's last state.
 
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter(item => {
@@ -105,6 +108,7 @@ const AppLayout: React.FC<LayoutProps> = ({
   });
 
   const handleToggleSidebar = () => {
+    console.debug('[AppLayout] handleToggleSidebar called, isMobile=', isMobile, 'sidebarCollapsed=', sidebarCollapsed);
     if (isMobile) {
       // On mobile, toggle mobile nav instead of sidebar
       setMobileNavOpen(!mobileNavOpen);
@@ -120,6 +124,11 @@ const AppLayout: React.FC<LayoutProps> = ({
       setMobileNavOpen(false);
     }
   };
+
+  // Debug: log when sidebarCollapsed changes so we can trace unexpected toggles
+  useEffect(() => {
+    console.debug('[AppLayout] sidebarCollapsed changed ->', sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
   const handleCloseMobileNav = () => {
     setMobileNavOpen(false);
@@ -170,13 +179,6 @@ const AppLayout: React.FC<LayoutProps> = ({
             </div>
           )}
 
-          {/* Page Header */}
-          {(pageTitle || actions) && (
-            <div className="app-layout__page-header">
-              {pageTitle && <h1 className="page-title">{pageTitle}</h1>}
-              {actions && <div className="page-actions">{actions}</div>}
-            </div>
-          )}
 
           {/* Page Content */}
           <div className="app-layout__page-content">

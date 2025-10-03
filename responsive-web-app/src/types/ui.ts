@@ -121,6 +121,8 @@ export interface DataTableProps<T> {
   pagination?: PaginationConfig;
   filters?: FilterConfig[];
   bulkActions?: BulkAction<T>[];
+  /** Optional custom actions to render in the top-right of the table header */
+  headerActions?: React.ReactNode;
   responsive?: boolean;
   striped?: boolean;
   hoverable?: boolean;

@@ -18,6 +18,36 @@
   border-bottom: 1px solid var(--color-border, #e5e7eb);
 }
 
+/* NOTE: previous full-width thead actions have been removed; header actions
+   are now rendered inline inside the header row via
+   .data-table__header-actions-inline */
+
+/* Inline header actions placed inside the header row */
+.data-table__header-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.data-table__header-actions-inline {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .data-table__header-actions-inline {
+    width: 100%;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .data-table__header-actions-inline .user-list__btn {
+    width: 100%;
+  }
+}
+
 .data-table__selected-count {
   font-weight: 500;
   color: var(--color-text-primary, #111827);

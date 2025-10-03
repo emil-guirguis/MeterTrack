@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DataTable } from '../common/DataTable';
+import DataList from '../common/DataList';
 import { FormModal } from '../common/FormModal';
 import { useEquipmentEnhanced } from '../../store/entities/equipmentStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -250,107 +250,125 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
     return uniqueBuildings.sort((a, b) => a.name.localeCompare(b.name));
   }, [equipment.items]);
 
-  return (
-    <div className="equipment-list">
-      {/* Header */}
-      <div className="equipment-list__header">
-        <div className="equipment-list__title-section">
-          <h2 className="equipment-list__title">Equipment</h2>
+  const filters = (
+    <>
+      <div className="equipment-list__search">
+        <input
+          type="text"
+          placeholder="Search equipment by name, type, or manufacturer..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="equipment-list__search-input"
+        />
+      </div>
 
-        </div>
-        
-        <div className="equipment-list__actions">
+      <div className="equipment-list__filter-group">
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="equipment-list__filter-select"
+          aria-label="Filter by type"
+        >
+          <option value="">All Types</option>
+          {uniqueTypes.map(type => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="equipment-list__filter-select"
+          aria-label="Filter by status"
+        >
+          <option value="">All Status</option>
+          <option value="operational">Operational</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="offline">Offline</option>
+        </select>
+
+        <select
+          value={buildingFilter}
+          onChange={(e) => setBuildingFilter(e.target.value)}
+          className="equipment-list__filter-select"
+          aria-label="Filter by building"
+        >
+          <option value="">All Buildings</option>
+          {uniqueBuildings.map(building => (
+            <option key={building.id} value={building.id}>{building.name}</option>
+          ))}
+        </select>
+
+        {(typeFilter || statusFilter || buildingFilter || searchQuery) && (
           <button
             type="button"
-            className="equipment-list__btn equipment-list__btn--secondary"
-            onClick={() => setShowExportModal(true)}
+            className="equipment-list__clear-filters"
+            onClick={() => {
+              setTypeFilter('');
+              setStatusFilter('');
+              setBuildingFilter('');
+              setSearchQuery('');
+            }}
           >
-            📄 Export CSV
+            Clear Filters
           </button>
-          
-          {canCreate && (
-            <button
-              type="button"
-              className="equipment-list__btn equipment-list__btn--primary"
-              onClick={onEquipmentCreate}
-            >
-              ➕ Add Equipment
-            </button>
-          )}
-        </div>
+        )}
       </div>
+    </>
+  );
 
-      {/* Filters */}
-      <div className="equipment-list__filters">
-        <div className="equipment-list__search">
-          <input
-            type="text"
-            placeholder="Search equipment by name, type, or manufacturer..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="equipment-list__search-input"
-          />
-        </div>
-        
-        <div className="equipment-list__filter-group">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="equipment-list__filter-select"
-            aria-label="Filter by type"
-          >
-            <option value="">All Types</option>
-            {uniqueTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="equipment-list__filter-select"
-            aria-label="Filter by status"
-          >
-            <option value="">All Status</option>
-            <option value="operational">Operational</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="offline">Offline</option>
-          </select>
-          
-          <select
-            value={buildingFilter}
-            onChange={(e) => setBuildingFilter(e.target.value)}
-            className="equipment-list__filter-select"
-            aria-label="Filter by building"
-          >
-            <option value="">All Buildings</option>
-            {uniqueBuildings.map(building => (
-              <option key={building.id} value={building.id}>{building.name}</option>
-            ))}
-          </select>
-          
-          {(typeFilter || statusFilter || buildingFilter || searchQuery) && (
-            <button
-              type="button"
-              className="equipment-list__clear-filters"
-              onClick={() => {
-                setTypeFilter('');
-                setStatusFilter('');
-                setBuildingFilter('');
-                setSearchQuery('');
-              }}
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
+  const headerActions = (
+    <div className="data-table__header-actions-inline">
+      <button
+        type="button"
+        className="equipment-list__btn equipment-list__btn--secondary"
+        onClick={() => setShowExportModal(true)}
+        aria-label="Export equipment to CSV"
+      >
+        📄 Export CSV
+      </button>
+
+      {canCreate && (
+        <button
+          type="button"
+          className="equipment-list__btn equipment-list__btn--primary"
+          onClick={onEquipmentCreate}
+          aria-label="Add equipment"
+        >
+          ➕ Add Equipment
+        </button>
+      )}
+    </div>
+  );
+
+  const stats = (
+    <div className="list__stats">
+      <div className="list__stat">
+        <span className="list__stat-value">{equipment.operationalEquipment.length}</span>
+        <span className="list__stat-label">Operational</span>
       </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{equipment.maintenanceEquipment.length}</span>
+        <span className="list__stat-label">In Maintenance</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{equipment.offlineEquipment.length}</span>
+        <span className="list__stat-label">Offline</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{equipment.items.length}</span>
+        <span className="list__stat-label">Total Equipment</span>
+      </div>
+    </div>
+  );
 
-      {/* Main Content with Stats Sidebar */}
-      <div className="list__main-content">
-        <div className="list__content">
-          {/* Data Table */}
-      <DataTable
+  return (
+    <div className="equipment-list">
+      <DataList
+        title="Equipment"
+        filters={filters}
+        headerActions={headerActions}
+        stats={stats}
         data={equipment.items}
         columns={columns}
         loading={equipment.list.loading}
@@ -377,30 +395,6 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
           pageSizeOptions: [10, 25, 50, 100],
         }}
       />
-        </div>
-
-        {/* Stats Sidebar */}
-        <div className="list__sidebar">
-          <div className="list__stats">
-            <div className="list__stat">
-              <span className="list__stat-value">{equipment.operationalEquipment.length}</span>
-              <span className="list__stat-label">Operational</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{equipment.maintenanceEquipment.length}</span>
-              <span className="list__stat-label">In Maintenance</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{equipment.offlineEquipment.length}</span>
-              <span className="list__stat-label">Offline</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{equipment.items.length}</span>
-              <span className="list__stat-label">Total Equipment</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Export Modal */}
       <FormModal

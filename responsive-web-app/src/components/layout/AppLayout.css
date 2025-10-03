@@ -108,15 +108,6 @@
   font-size: 1rem;
 }
 
-/* Page Header */
-.app-layout__page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background-color: var(--color-surface, #ffffff);
-  border-bottom: 1px solid var(--color-border, #e0e0e0);
-}
 
 .page-title {
   margin: 0;
@@ -187,12 +178,7 @@
     margin-left: 0;
   }
 
-  .app-layout__page-header {
-    padding: 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
+
 
   .page-title {
     font-size: 1.5rem;
@@ -222,9 +208,6 @@
 }
 
 @media (max-width: 480px) {
-  .app-layout__page-header {
-    padding: 0.75rem;
-  }
 
   .page-title {
     font-size: 1.25rem;
@@ -247,9 +230,6 @@
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .app-layout__breadcrumbs,
-  .app-layout__page-header {
-    border-bottom-width: 2px;
-  }
 
   .breadcrumb-link:hover {
     outline: 2px solid var(--color-primary, #007bff);

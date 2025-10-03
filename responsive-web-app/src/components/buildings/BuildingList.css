@@ -17,10 +17,6 @@
   flex-wrap: wrap;
 }
 
-.building-list__title-section {
-  flex: 1;
-  min-width: 200px;
-}
 
 .building-list__title {
   margin: 0 0 0.5rem 0;

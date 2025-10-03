@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DataTable } from '../common/DataTable';
+import DataList from '../common/DataList';
 import { FormModal } from '../common/FormModal';
 import { useUsersEnhanced } from '../../store/entities/usersStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -212,93 +212,112 @@ export const UserList: React.FC<UserListProps> = ({
     setShowExportModal(false);
   }, [users.items, exportUsersToCSV]);
 
-  return (
-    <div className="user-list">
-      {/* Header */}
-      <div className="user-list__header">
-        <div className="user-list__title-section">
-          <h2 className="user-list__title">Users</h2>
-        </div>
-        
-        <div className="user-list__actions">
+  const filters = (
+    <>
+      <div className="user-list__search">
+        <input
+          type="text"
+          placeholder="Search users by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="user-list__search-input"
+        />
+      </div>
+
+      <div className="user-list__filter-group">
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="user-list__filter-select"
+          aria-label="Filter by role"
+        >
+          <option value="">All Roles</option>
+          <option value={UserRole.ADMIN}>Admin</option>
+          <option value={UserRole.MANAGER}>Manager</option>
+          <option value={UserRole.TECHNICIAN}>Technician</option>
+          <option value={UserRole.VIEWER}>Viewer</option>
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="user-list__filter-select"
+          aria-label="Filter by status"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        {(roleFilter || statusFilter || searchQuery) && (
           <button
             type="button"
-            className="user-list__btn user-list__btn--secondary"
-            onClick={() => setShowExportModal(true)}
+            className="user-list__clear-filters"
+            onClick={() => {
+              setRoleFilter('');
+              setStatusFilter('');
+              setSearchQuery('');
+            }}
           >
-            📄 Export CSV
+            Clear Filters
           </button>
-          
-          {canCreate && (
-            <button
-              type="button"
-              className="user-list__btn user-list__btn--primary"
-              onClick={onUserCreate}
-            >
-              ➕ Add User
-            </button>
-          )}
-        </div>
+        )}
       </div>
+    </>
+  );
 
-      {/* Filters */}
-      <div className="user-list__filters">
-        <div className="user-list__search">
-          <input
-            type="text"
-            placeholder="Search users by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="user-list__search-input"
-          />
-        </div>
-        
-        <div className="user-list__filter-group">
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="user-list__filter-select"
-            aria-label="Filter by role"
-          >
-            <option value="">All Roles</option>
-            <option value={UserRole.ADMIN}>Admin</option>
-            <option value={UserRole.MANAGER}>Manager</option>
-            <option value={UserRole.TECHNICIAN}>Technician</option>
-            <option value={UserRole.VIEWER}>Viewer</option>
-          </select>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="user-list__filter-select"
-            aria-label="Filter by status"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          
-          {(roleFilter || statusFilter || searchQuery) && (
-            <button
-              type="button"
-              className="user-list__clear-filters"
-              onClick={() => {
-                setRoleFilter('');
-                setStatusFilter('');
-                setSearchQuery('');
-              }}
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
+  const headerActions = (
+    <div className="data-table__header-actions-inline">
+      <button
+        type="button"
+        className="user-list__btn user-list__btn--secondary"
+        onClick={() => setShowExportModal(true)}
+        aria-label="Export users to CSV"
+      >
+        📄 Export CSV
+      </button>
+
+      {canCreate && (
+        <button
+          type="button"
+          className="user-list__btn user-list__btn--primary"
+          onClick={onUserCreate}
+          aria-label="Add a new user"
+        >
+          ➕ Add User
+        </button>
+      )}
+    </div>
+  );
+
+  const stats = (
+    <div className="list__stats">
+      <div className="list__stat">
+        <span className="list__stat-value">{users.activeUsers.length}</span>
+        <span className="list__stat-label">Active Users</span>
       </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{users.inactiveUsers.length}</span>
+        <span className="list__stat-label">Inactive Users</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{users.adminUsers.length}</span>
+        <span className="list__stat-label">Administrators</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{users.items.length}</span>
+        <span className="list__stat-label">Total Users</span>
+      </div>
+    </div>
+  );
 
-      {/* Main Content with Stats Sidebar */}
-      <div className="list__main-content">
-        <div className="list__content">
-          {/* Data Table */}
-      <DataTable
+  return (
+    <div className="user-list">
+      <DataList
+        title="Users"
+        filters={filters}
+        headerActions={headerActions}
+        stats={stats}
         data={users.items}
         columns={columns}
         loading={users.list.loading}
@@ -325,30 +344,6 @@ export const UserList: React.FC<UserListProps> = ({
           pageSizeOptions: [10, 25, 50, 100],
         }}
       />
-        </div>
-
-        {/* Stats Sidebar */}
-        <div className="list__sidebar">
-          <div className="list__stats">
-            <div className="list__stat">
-              <span className="list__stat-value">{users.activeUsers.length}</span>
-              <span className="list__stat-label">Active Users</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{users.inactiveUsers.length}</span>
-              <span className="list__stat-label">Inactive Users</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{users.adminUsers.length}</span>
-              <span className="list__stat-label">Administrators</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{users.items.length}</span>
-              <span className="list__stat-label">Total Users</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Export Modal */}
       <FormModal

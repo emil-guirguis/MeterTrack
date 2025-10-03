@@ -35,12 +35,25 @@ export const useUIStore = create<UIStoreSlice>()(
       toggleSidebar: () => {
         set((state) => {
           state.sidebarCollapsed = !state.sidebarCollapsed;
+          try {
+            // Use error-level logging to bypass common console filtering
+            console.error('[uiSlice] toggleSidebar ->', state.sidebarCollapsed);
+            console.trace();
+          } catch (e) {
+            // ignore in non-browser envs
+          }
         });
       },
 
       setSidebarCollapsed: (collapsed) => {
         set((state) => {
           state.sidebarCollapsed = collapsed;
+          try {
+            console.error('[uiSlice] setSidebarCollapsed ->', collapsed);
+            console.trace();
+          } catch (e) {
+            // ignore
+          }
         });
       },
 

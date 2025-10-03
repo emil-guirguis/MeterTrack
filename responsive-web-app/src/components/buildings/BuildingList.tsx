@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DataTable } from '../common/DataTable';
+import DataList from '../common/DataList';
 import { FormModal } from '../common/FormModal';
 import { useBuildingsEnhanced } from '../../store/entities/buildingsStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -273,109 +273,127 @@ export const BuildingList: React.FC<BuildingListProps> = ({
     return [...new Set(cities)].sort();
   }, [buildings.items]);
 
-  return (
-    <div className="building-list">
-      {/* Header */}
-      <div className="building-list__header">
-        <div className="building-list__title-section">
-          <h2 className="building-list__title">Buildings</h2>
-
-        </div>
-        
-        <div className="building-list__actions">
-          <button
-            type="button"
-            className="building-list__btn building-list__btn--secondary"
-            onClick={() => setShowExportModal(true)}
-          >
-            📄 Export CSV
-          </button>
-          
-          {canCreate && (
-            <button
-              type="button"
-              className="building-list__btn building-list__btn--primary"
-              onClick={onBuildingCreate}
-            >
-              ➕ Add Building
-            </button>
-          )}
-        </div>
+  const filters = (
+    <>
+      <div className="building-list__search">
+        <input
+          type="text"
+          placeholder="Search buildings by name, address, or city..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="building-list__search-input"
+        />
       </div>
 
-      {/* Main Content with Stats Sidebar */}
-      <div className="list__main-content">
-        <div className="list__content">
-          {/* Filters */}
-          <div className="building-list__filters">
-            <div className="building-list__search">
-              <input
-                type="text"
-                placeholder="Search buildings by name, address, or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="building-list__search-input"
-              />
-            </div>
-            
-            <div className="building-list__filter-group">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="building-list__filter-select"
-                aria-label="Filter by type"
-              >
-                <option value="">All Types</option>
-                <option value="office">Office</option>
-                <option value="warehouse">Warehouse</option>
-                <option value="retail">Retail</option>
-                <option value="residential">Residential</option>
-                <option value="industrial">Industrial</option>
-              </select>
-              
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="building-list__filter-select"
-                aria-label="Filter by status"
-              >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-              
-              <select
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
-                className="building-list__filter-select"
-                aria-label="Filter by city"
-              >
-                <option value="">All Cities</option>
-                {uniqueCities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-              
-              {(typeFilter || statusFilter || cityFilter || searchQuery) && (
-                <button
-                  type="button"
-                  className="building-list__clear-filters"
-                  onClick={() => {
-                    setTypeFilter('');
-                    setStatusFilter('');
-                    setCityFilter('');
-                    setSearchQuery('');
-                  }}
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          </div>
+      <div className="building-list__filter-group">
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="building-list__filter-select"
+          aria-label="Filter by type"
+        >
+          <option value="">All Types</option>
+          <option value="office">Office</option>
+          <option value="warehouse">Warehouse</option>
+          <option value="retail">Retail</option>
+          <option value="residential">Residential</option>
+          <option value="industrial">Industrial</option>
+        </select>
 
-          {/* Data Table */}
-      <DataTable
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="building-list__filter-select"
+          aria-label="Filter by status"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="maintenance">Maintenance</option>
+        </select>
+
+        <select
+          value={cityFilter}
+          onChange={(e) => setCityFilter(e.target.value)}
+          className="building-list__filter-select"
+          aria-label="Filter by city"
+        >
+          <option value="">All Cities</option>
+          {uniqueCities.map(city => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
+
+        {(typeFilter || statusFilter || cityFilter || searchQuery) && (
+          <button
+            type="button"
+            className="building-list__clear-filters"
+            onClick={() => {
+              setTypeFilter('');
+              setStatusFilter('');
+              setCityFilter('');
+              setSearchQuery('');
+            }}
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+    </>
+  );
+
+  const headerActions = (
+    <div className="data-table__header-actions-inline">
+      <button
+        type="button"
+        className="building-list__btn building-list__btn--secondary"
+        onClick={() => setShowExportModal(true)}
+        aria-label="Export buildings to CSV"
+      >
+        📄 Export CSV
+      </button>
+
+      {canCreate && (
+        <button
+          type="button"
+          className="building-list__btn building-list__btn--primary"
+          onClick={onBuildingCreate}
+          aria-label="Add a building"
+        >
+          ➕ Add Building
+        </button>
+      )}
+    </div>
+  );
+
+  const stats = (
+    <div className="list__stats">
+      <div className="list__stat">
+        <span className="list__stat-value">{buildings.activeBuildings.length}</span>
+        <span className="list__stat-label">Active Buildings</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{buildings.officeBuildings.length}</span>
+        <span className="list__stat-label">Office Buildings</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{buildings.warehouseBuildings.length}</span>
+        <span className="list__stat-label">Warehouses</span>
+      </div>
+      <div className="list__stat">
+        <span className="list__stat-value">{buildings.totalSquareFootage.toLocaleString()}</span>
+        <span className="list__stat-label">Total Sq Ft</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="building-list">
+      <DataList
+        title="Buildings"
+        filters={filters}
+        headerActions={headerActions}
+        stats={stats}
         data={buildings.items}
         columns={columns}
         loading={buildings.list.loading}
@@ -402,30 +420,6 @@ export const BuildingList: React.FC<BuildingListProps> = ({
           pageSizeOptions: [10, 25, 50, 100],
         }}
       />
-        </div>
-
-        {/* Stats Sidebar */}
-        <div className="list__sidebar">
-          <div className="list__stats">
-            <div className="list__stat">
-              <span className="list__stat-value">{buildings.activeBuildings.length}</span>
-              <span className="list__stat-label">Active Buildings</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{buildings.officeBuildings.length}</span>
-              <span className="list__stat-label">Office Buildings</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{buildings.warehouseBuildings.length}</span>
-              <span className="list__stat-label">Warehouses</span>
-            </div>
-            <div className="list__stat">
-              <span className="list__stat-value">{buildings.totalSquareFootage.toLocaleString()}</span>
-              <span className="list__stat-label">Total Sq Ft</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Export Modal */}
       <FormModal

@@ -15,9 +15,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-.equipment-list__title-section {
-  flex: 1;
-}
 
 .equipment-list__title {
   font-size: 1.75rem;
