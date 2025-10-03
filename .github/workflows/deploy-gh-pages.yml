@@ -1,0 +1,67 @@
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies (frontend)
+        run: npm ci
+        working-directory: ./responsive-web-app
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./responsive-web-app
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: responsive-web-app/dist
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
+
+      - name: Smoke test GitHub Pages
+        if: always()
+        run: |
+          # Compute Pages URL from repository context
+          owner=${GITHUB_REPOSITORY%%/*}
+          repo=${GITHUB_REPOSITORY##*/}
+          url="https://${owner}.github.io/${repo}/"
+
+          echo "Checking Pages URL: $url"
+
+          # Retry loop: try for up to 2 minutes (24 attempts * 5s)
+          success=0
+          for i in {1..24}; do
+            echo "Attempt $i: curling $url"
+            if curl -fsSL --max-time 10 "$url" -o /dev/null; then
+              echo "Site responded successfully"
+              success=1
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$success" -ne 1 ]; then
+            echo "ERROR: GitHub Pages site did not become available at $url within the timeout"
+            exit 1
+          fi
