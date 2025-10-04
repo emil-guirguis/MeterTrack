@@ -1,0 +1,18 @@
+.settings-tabs .MuiTab-root {
+  color: #222 !important;
+  font-weight: 500;
+  background: transparent;
+}
+.settings-tabs .Mui-selected {
+  color: #2563eb !important;
+}
+
+body[data-theme='dark'] .settings-tabs .MuiTab-root,
+.dark .settings-tabs .MuiTab-root {
+  color: #e0e0e0 !important;
+  background: #222 !important;
+}
+body[data-theme='dark'] .settings-tabs .Mui-selected,
+.dark .settings-tabs .Mui-selected {
+  color: #90caf9 !important;
+}

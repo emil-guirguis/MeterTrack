@@ -8,7 +8,28 @@ import { Dashboard } from '../pages/Dashboard';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../pages/users';
 import { BuildingManagementPage } from '../pages/buildings';
+import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
 import { Permission, UserRole } from '../types/auth';
+import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
+        {/* Meters Module Placeholder */}
+        <Route
+          path="/meters"
+          element={
+            <AppLayout title="Meters">
+              <MetersPage />
+            </AppLayout>
+          }
+        />
+
+        {/* Email Templates Module Placeholder */}
+        <Route
+          path="/templates"
+          element={
+            <AppLayout title="Email Templates">
+              <TemplatesPage />
+            </AppLayout>
+          }
+        />
 
 // Dashboard Page with Layout
 const DashboardPage = () => (
@@ -16,8 +37,6 @@ const DashboardPage = () => (
     <Dashboard />
   </AppLayout>
 );
-
-
 
 const EquipmentPage = () => (
   <AppLayout title="Equipment">
@@ -28,14 +47,7 @@ const EquipmentPage = () => (
   </AppLayout>
 );
 
-const SettingsPage = () => (
-  <AppLayout title="Settings">
-    <div style={{ padding: '2rem' }}>
-      <h2>System Settings</h2>
-      <p>Configure your application settings and preferences.</p>
-    </div>
-  </AppLayout>
-);
+
 
 const UnauthorizedPage = () => (
   <AppLayout title="Unauthorized">
@@ -113,9 +125,21 @@ const AppRoutes: React.FC = () => {
           element={
             <AuthGuard
               requiredPermissions={[Permission.SETTINGS_READ, Permission.SETTINGS_UPDATE]}
-              requireAll={false} // User needs ANY of these permissions
+              requireAll={false}
             >
-              <SettingsPage />
+              <AppLayout title="Settings">
+                <SettingsPage />
+              </AppLayout>
+            </AuthGuard>
+          }
+        />
+
+        {/* Contact Management Route */}
+        <Route
+          path="/contacts"
+          element={
+            <AuthGuard requiredPermissions={[Permission.CONTACT_READ]}>
+              <ContactManagementPage />
             </AuthGuard>
           }
         />

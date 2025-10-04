@@ -1,0 +1,107 @@
+import React from 'react';
+import './SettingsForm.css';
+
+export interface CompanyInfoFormProps {
+  values: any;
+  onChange: (field: string, value: any) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  loading?: boolean;
+  error?: string | null;
+}
+
+const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onSubmit, onCancel, loading, error }) => {
+  return (
+    <form className="settings-form" onSubmit={e => { e.preventDefault(); onSubmit(); }}>
+      {error && <div className="settings-form__error">{error}</div>}
+      <div className="settings-form__section">
+        <h3 className="settings-form__section-title">Company Information</h3>
+        <div className="settings-form__row">
+          <div className="settings-form__field">
+            <label className="settings-form__label">Company Name</label>
+            <input
+              type="text"
+              value={values.name || ''}
+              onChange={e => onChange('name', e.target.value)}
+              className="settings-form__input"
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="settings-form__field">
+            <label className="settings-form__label">Logo URL</label>
+            <input
+              type="text"
+              value={values.logo || ''}
+              onChange={e => onChange('logo', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+            />
+          </div>
+        </div>
+        <div className="settings-form__row">
+          <div className="settings-form__field">
+            <label className="settings-form__label">Street</label>
+            <input
+              type="text"
+              value={values.address?.street || ''}
+              onChange={e => onChange('address.street', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+            />
+          </div>
+          <div className="settings-form__field">
+            <label className="settings-form__label">City</label>
+            <input
+              type="text"
+              value={values.address?.city || ''}
+              onChange={e => onChange('address.city', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+            />
+          </div>
+        </div>
+        <div className="settings-form__row">
+          <div className="settings-form__field">
+            <label className="settings-form__label">State</label>
+            <input
+              type="text"
+              value={values.address?.state || ''}
+              onChange={e => onChange('address.state', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+            />
+          </div>
+          <div className="settings-form__field">
+            <label className="settings-form__label">Zip Code</label>
+            <input
+              type="text"
+              value={values.address?.zipCode || ''}
+              onChange={e => onChange('address.zipCode', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+            />
+          </div>
+        </div>
+        <div className="settings-form__row">
+          <div className="settings-form__field">
+            <label className="settings-form__label">Country</label>
+            <input
+              type="text"
+              value={values.address?.country || ''}
+              onChange={e => onChange('address.country', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="settings-form__actions">
+        <button type="button" className="settings-form__btn settings-form__btn--secondary" onClick={onCancel} disabled={loading}>Cancel</button>
+        <button type="submit" className="settings-form__btn settings-form__btn--primary" disabled={loading}>Save</button>
+      </div>
+    </form>
+  );
+};
+
+export default CompanyInfoForm;
