@@ -48,6 +48,7 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({ values, onChange, o
               onChange={e => onChange('timeFormat', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              title="Time Format"
             >
               <option value="12h">12-hour</option>
               <option value="24h">24-hour</option>
@@ -87,6 +88,8 @@ const SystemConfigForm: React.FC<SystemConfigFormProps> = ({ values, onChange, o
               disabled={loading}
               min={1}
               max={100}
+              placeholder="20"
+              title="Default Page Size"
             />
           </div>
         </div>

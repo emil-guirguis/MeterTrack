@@ -7,6 +7,32 @@ const meterReadingSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
+  deviceIP: {
+    type: String,
+    trim: true,
+    match: [/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/, 'Please enter a valid IP address']
+  },
+  slaveId: {
+    type: Number,
+    min: [1, 'Slave ID must be at least 1']
+  },
+  source: {
+    type: String,
+    trim: true
+  },
+  // Additional optional fields captured by the agent
+  voltage: { type: Number, min: [0, 'Voltage cannot be negative'] },
+  current: { type: Number, min: [0, 'Current cannot be negative'] },
+  power: { type: Number, min: [0, 'Power cannot be negative'] },
+  energy: { type: Number, min: [0, 'Energy cannot be negative'] },
+  frequency: { type: Number, min: [0, 'Frequency cannot be negative'] },
+  powerFactor: { type: Number, min: [0, 'Power factor cannot be negative'], max: [1, 'Power factor cannot exceed 1'] },
+    phaseAVoltage: { type: Number },
+    phaseBVoltage: { type: Number },
+    phaseCVoltage: { type: Number },
+    totalActiveEnergyWh: { type: Number },
+    frequencyHz: { type: Number },
+    temperatureC: { type: Number },
   ip: {
     type: String,
     required: [true, 'IP address is required'],
@@ -96,6 +122,7 @@ meterReadingSchema.methods.toJSON = function () {
 // Indexes for better query performance
 meterReadingSchema.index({ meterId: 1, timestamp: -1 });
 meterReadingSchema.index({ ip: 1 });
+meterReadingSchema.index({ deviceIP: 1 });
 meterReadingSchema.index({ quality: 1 });
 
 module.exports = mongoose.model('MeterReading', meterReadingSchema);

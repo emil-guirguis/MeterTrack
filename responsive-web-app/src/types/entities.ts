@@ -177,6 +177,21 @@ export interface DetailedMeterReading {
   quality: 'good' | 'estimated' | 'questionable';
   createdAt: Date;
   updatedAt: Date;
+  deviceIP?: string;
+  slaveId?: number;
+  source?: string;
+  voltage?: number;
+  current?: number;
+  power?: number;
+  energy?: number;
+  frequency?: number;
+  powerFactor?: number;
+  phaseAVoltage?: number;
+  phaseBVoltage?: number;
+  phaseCVoltage?: number;
+  totalActiveEnergyWh?: number;
+  frequencyHz?: number;
+  temperatureC?: number;
 }
 
 // Meter Reading Statistics

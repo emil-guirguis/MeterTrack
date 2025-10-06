@@ -2,8 +2,12 @@
 
 .dashboard {
   padding: 1.5rem;
-  max-width: 1400px;
+  /* Remove max-width constraint to allow horizontal scrolling */
+  /* max-width: 1400px; */
   margin: 0 auto;
+  /* Ensure the dashboard can expand horizontally */
+  min-width: 0;
+  width: 100%;
 }
 
 .dashboard__header {
@@ -152,10 +156,15 @@
 .dashboard__content {
   display: grid;
   gap: 2rem;
+  /* Ensure content can expand horizontally */
+  min-width: 0;
 }
 
 .dashboard__meter-readings {
   grid-column: 1 / -1;
+  /* Ensure the meter readings container can scroll horizontally */
+  min-width: 0;
+  overflow: visible;
 }
 
 /* Responsive Design */
@@ -216,32 +225,7 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .dashboard__title {
-    color: var(--color-text-primary-dark, #f9fafb);
-  }
-  
-  .dashboard__subtitle {
-    color: var(--color-text-secondary-dark, #d1d5db);
-  }
-  
-  .dashboard__stat-card {
-    background: var(--color-surface-dark, #1f2937);
-  }
-  
-  .dashboard__stat-title {
-    color: var(--color-text-secondary-dark, #d1d5db);
-  }
-  
-  .dashboard__stat-value {
-    color: var(--color-text-primary-dark, #f9fafb);
-  }
-  
-  .dashboard__stat-subtitle {
-    color: var(--color-text-secondary-dark, #d1d5db);
-  }
-}
+/* Dark mode support removed */
 
 /* Print styles */
 @media print {

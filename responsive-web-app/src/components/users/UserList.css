@@ -192,11 +192,7 @@
   /* action buttons are now rendered inside the table header; DataTable.css handles responsive stacking */
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .user-list__search-input {
-    background-color: var(--color-background-secondary);
-  }
+/* Dark mode support removed */
   
   .user-list__filter-select {
     background-color: var(--color-background-secondary);

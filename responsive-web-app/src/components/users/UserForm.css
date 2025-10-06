@@ -372,22 +372,7 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .user-form__input,
-  .user-form__select {
-    background-color: var(--color-background-secondary);
-  }
-  
-  .user-form__generated-password {
-    background-color: var(--color-success-dark);
-    border-color: var(--color-success);
-  }
-  
-  .user-form__generated-password code {
-    color: var(--color-success-light);
-  }
-}
+/* Dark mode support removed */
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {

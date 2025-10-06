@@ -214,21 +214,84 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .meter-readings-list {
-    background: var(--color-surface-dark, #1f2937);
-  }
-  
-  .meter-readings-list__header {
-    background: var(--color-background-alt-dark, #374151);
-    border-bottom-color: var(--color-border-dark, #4b5563);
-  }
-  
-  .meter-readings-list__title {
-    color: var(--color-text-primary-dark, #f9fafb);
+/* Table Scrolling Enhancement */
+.meter-readings-list .data-table__wrapper {
+  /* Ensure horizontal scrolling works properly */
+  overflow-x: auto !important;
+  overflow-y: visible;
+  /* Add some padding to prevent content from being cut off */
+  padding-bottom: 8px;
+  /* Add a subtle border to indicate scrollable area */
+  border: 2px solid var(--color-primary, #3b82f6);
+  border-radius: 6px;
+  /* Add a subtle shadow to indicate depth */
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* Force the wrapper to have a specific width to trigger scrolling */
+  max-width: 100%;
+  /* Ensure scrollbar is always visible for debugging */
+  scrollbar-width: auto;
+}
+
+.meter-readings-list .data-table__table {
+  /* Force minimum width for many columns */
+  min-width: 2000px; /* Increased to ensure scrolling is needed */
+  /* Ensure table doesn't shrink */
+  width: max-content;
+}
+
+.meter-readings-list .data-table__header,
+.meter-readings-list .data-table__cell {
+  /* Prevent text wrapping in cells */
+  white-space: nowrap;
+  /* Set minimum width for readability - increased to force scrolling */
+  min-width: 150px;
+  /* Set a fixed width to ensure consistent layout */
+  width: 150px;
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+/* Specific column widths for better layout */
+.meter-readings-list .data-table__header:first-child,
+.meter-readings-list .data-table__cell:first-child {
+  min-width: 150px; /* Device IP column */
+}
+
+/* Add relative positioning to contain the scroll hint */
+.meter-readings-list .data-table {
+  position: relative;
+}
+
+/* Force table to be wider than container for testing */
+.meter-readings-list .data-table__table {
+  /* Override previous styles with more specific width */
+  min-width: 2500px !important;
+  width: 2500px !important;
+}
+
+/* Scroll hint - temporarily disabled for debugging */
+/*
+.meter-readings-list .data-table::after {
+  content: "← Scroll horizontally to see more columns →";
+  display: block;
+  text-align: center;
+  padding: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6b7280);
+  background: var(--color-background-alt, #f9fafb);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  opacity: 0.8;
+}
+*/
+
+/* Hide scroll hint on mobile */
+@media (max-width: 768px) {
+  .meter-readings-list .data-table::after {
+    display: none;
   }
 }
+
+/* Dark mode support removed */
 
 /* Print styles */
 @media print {

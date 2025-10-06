@@ -240,44 +240,4 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .building-form {
-    background: var(--color-surface-dark);
-  }
-
-  .building-form__section-title {
-    color: var(--color-text-primary-dark);
-    border-bottom-color: var(--color-border-dark);
-  }
-
-  .building-form__input,
-  .building-form__select,
-  .building-form__textarea {
-    background: var(--color-background-dark);
-    color: var(--color-text-primary-dark);
-    border-color: var(--color-border-dark);
-  }
-
-  .building-form__input:focus,
-  .building-form__select:focus,
-  .building-form__textarea:focus {
-    border-color: var(--color-primary-light);
-    box-shadow: 0 0 0 3px var(--color-primary-alpha-dark);
-  }
-
-  .building-form__actions {
-    border-top-color: var(--color-border-dark);
-  }
-
-  .building-form__btn--secondary {
-    background: var(--color-background-dark);
-    color: var(--color-text-secondary-dark);
-    border-color: var(--color-border-dark);
-  }
-
-  .building-form__btn--secondary:hover:not(:disabled) {
-    background: var(--color-background-hover-dark);
-    border-color: var(--color-border-hover-dark);
-  }
-}
+/* Dark mode support removed */

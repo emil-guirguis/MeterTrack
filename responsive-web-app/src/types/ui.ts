@@ -2,9 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-// Theme and Responsive Design
-export interface Theme {
-  mode: 'light' | 'dark';
+// Responsive Design
+export interface ResponsiveConfig {
   colors: {
     primary: string;
     secondary: string;
@@ -53,7 +52,7 @@ export interface Theme {
   };
 }
 
-export interface ResponsiveConfig {
+export interface BreakpointConfig {
   mobile?: any;
   tablet?: any;
   desktop?: any;
@@ -386,7 +385,6 @@ export interface ActionButtonProps extends ButtonProps {
 
 // Global UI State
 export interface UIState {
-  theme: Theme;
   sidebarCollapsed: boolean;
   notifications: Notification[];
   modals: ModalState;

@@ -40,7 +40,7 @@ const DashboardPage = () => (
 
 const EquipmentPage = () => (
   <AppLayout title="Equipment">
-    <div style={{ padding: '2rem' }}>
+    <div className="placeholder-page">
       <h2>Equipment Management</h2>
       <p>Track and manage equipment across all your buildings.</p>
     </div>
@@ -51,7 +51,7 @@ const EquipmentPage = () => (
 
 const UnauthorizedPage = () => (
   <AppLayout title="Unauthorized">
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
+    <div className="unauthorized-page">
       <h2>Access Denied</h2>
       <p>You don't have permission to access this page.</p>
     </div>

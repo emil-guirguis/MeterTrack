@@ -28,7 +28,10 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   // Format large numbers
-  const formatNumber = (value: number): string => {
+  const formatNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '--';
+    }
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(1)}M`;
     }
@@ -55,7 +58,7 @@ export const Dashboard: React.FC = () => {
         ) : error ? (
           <div className="dashboard__stats-error">
             <p>Error loading statistics: {error}</p>
-            <button onClick={fetchStats} className="dashboard__retry-btn">
+            <button type="button" onClick={fetchStats} className="dashboard__retry-btn">
               Retry
             </button>
           </div>
@@ -83,7 +86,7 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">📊</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Avg Voltage</h3>
-                <p className="dashboard__stat-value">{stats.avgVoltage.toFixed(1)} V</p>
+                <p className="dashboard__stat-value">{stats.avgVoltage ? stats.avgVoltage.toFixed(1) : '--'} V</p>
                 <p className="dashboard__stat-subtitle">System average</p>
               </div>
             </div>
@@ -101,7 +104,7 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">⚖️</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Power Factor</h3>
-                <p className="dashboard__stat-value">{(stats.avgPowerFactor * 100).toFixed(1)}%</p>
+                <p className="dashboard__stat-value">{stats.avgPowerFactor ? (stats.avgPowerFactor * 100).toFixed(1) : '--'}%</p>
                 <p className="dashboard__stat-subtitle">System efficiency</p>
               </div>
             </div>
@@ -110,7 +113,7 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">🔄</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Avg Current</h3>
-                <p className="dashboard__stat-value">{stats.avgCurrent.toFixed(1)} A</p>
+                <p className="dashboard__stat-value">{stats.avgCurrent ? stats.avgCurrent.toFixed(1) : '--'} A</p>
                 <p className="dashboard__stat-subtitle">System load</p>
               </div>
             </div>

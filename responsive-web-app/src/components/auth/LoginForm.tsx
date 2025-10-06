@@ -14,9 +14,7 @@ import {
   CircularProgress,
   Container,
 } from '@mui/material';
-// Using text instead of icons for now - can be replaced with proper icons later
-const VisibilityIcon = () => <span>👁️</span>;
-const VisibilityOffIcon = () => <span>🙈</span>;
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import type { LoginCredentials, ValidationError } from '../../types/auth';
 import { validateLoginCredentials } from '../../types/auth';
 import { useAuth } from '../../hooks/useAuth';
@@ -189,7 +187,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                         edge="end"
                         disabled={isSubmitting || isLoading}
                       >
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),

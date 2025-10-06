@@ -465,19 +465,4 @@
   }
 }
 
-/* Dark mode support (if implemented) */
-@media (prefers-color-scheme: dark) {
-  .sidebar {
-    background-color: var(--color-surface-dark, #1a1a1a);
-    border-right-color: var(--color-border-dark, #333);
-  }
-
-  .sidebar-tooltip {
-    background-color: var(--color-text-primary-dark, #fff);
-    color: var(--color-text-primary, #333);
-  }
-
-  .sidebar-tooltip::before {
-    border-right-color: var(--color-text-primary-dark, #fff);
-  }
-}
+/* Dark mode support removed */

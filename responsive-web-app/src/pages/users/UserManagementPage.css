@@ -211,33 +211,7 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .user-details__role--admin {
-    background-color: var(--color-error-dark);
-    color: var(--color-error-light);
-  }
-
-  .user-details__role--manager {
-    background-color: var(--color-warning-dark);
-    color: var(--color-warning-light);
-  }
-
-  .user-details__role--technician {
-    background-color: var(--color-info-dark);
-    color: var(--color-info-light);
-  }
-
-  .user-details__role--viewer {
-    background-color: var(--color-success-dark);
-    color: var(--color-success-light);
-  }
-
-  .user-details__permission {
-    background-color: var(--color-primary-dark);
-    color: var(--color-primary-light);
-  }
-}
+/* Dark mode support removed */
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {

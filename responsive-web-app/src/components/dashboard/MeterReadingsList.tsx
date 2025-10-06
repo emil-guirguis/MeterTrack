@@ -37,13 +37,18 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
     fetchReadings();
   }, [fetchReadings]);
 
-  // Format power factor as percentage
-  const formatPowerFactor = (value: number): string => {
+  // Safe number check
+  const isNum = (v: any): v is number => typeof v === 'number' && isFinite(v);
+
+  // Format power factor as percentage (safe)
+  const formatPowerFactor = (value: any): string => {
+    if (!isNum(value)) return '—';
     return `${(value * 100).toFixed(1)}%`;
   };
 
-  // Format number with units
-  const formatValue = (value: number, unit: string, decimals: number = 1): string => {
+  // Format number with units (safe)
+  const formatValue = (value: any, unit: string, decimals: number = 1): string => {
+    if (!isNum(value)) return '—';
     return `${value.toFixed(decimals)} ${unit}`;
   };
 
@@ -59,6 +64,96 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
 
   // Define table columns
   const columns = [
+      {
+        key: 'deviceIP',
+        label: 'Device IP',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.deviceIP || reading.ip || ''
+      },
+      {
+        key: 'slaveId',
+        label: 'Slave ID',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.slaveId ?? ''
+      },
+      {
+        key: 'source',
+        label: 'Source',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.source ?? ''
+      },
+      {
+        key: 'voltage',
+        label: 'Voltage (modbus)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.voltage ?? ''
+      },
+      {
+        key: 'current',
+        label: 'Current (modbus)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.current ?? ''
+      },
+      {
+        key: 'power',
+        label: 'Power (modbus)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.power ?? ''
+      },
+      {
+        key: 'energy',
+        label: 'Energy (modbus)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.energy ?? ''
+      },
+      {
+        key: 'frequency',
+        label: 'Frequency (modbus)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.frequency ?? ''
+      },
+      {
+        key: 'powerFactor',
+        label: 'Power Factor (modbus)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.powerFactor ?? ''
+      },
+      {
+        key: 'phaseAVoltage',
+        label: 'Phase A Voltage',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.phaseAVoltage ?? ''
+      },
+      {
+        key: 'phaseBVoltage',
+        label: 'Phase B Voltage',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.phaseBVoltage ?? ''
+      },
+      {
+        key: 'phaseCVoltage',
+        label: 'Phase C Voltage',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.phaseCVoltage ?? ''
+      },
+      {
+        key: 'totalActiveEnergyWh',
+        label: 'Total Active Energy (Wh)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.totalActiveEnergyWh ?? ''
+      },
+      {
+        key: 'frequencyHz',
+        label: 'Frequency (Hz)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.frequencyHz ?? ''
+      },
+      {
+        key: 'temperatureC',
+        label: 'Temperature (°C)',
+        sortable: true,
+        render: (_value: any, reading: DetailedMeterReading) => reading.temperatureC ?? ''
+      },
     {
       key: 'meterId',
       label: 'Meter ID',
@@ -135,10 +230,10 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__quality-cell">
           <span className="meter-readings__quality-indicator">
-            {getQualityIndicator(reading.quality)}
+            {getQualityIndicator(reading.quality || 'good')}
           </span>
           <span className="meter-readings__quality-text">
-            {reading.quality.charAt(0).toUpperCase() + reading.quality.slice(1)}
+            {(reading.quality || 'good').charAt(0).toUpperCase() + (reading.quality || 'good').slice(1)}
           </span>
         </div>
       )

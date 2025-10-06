@@ -53,7 +53,6 @@ export interface AuthStoreState {
 
 // UI Store State
 export interface UIStoreState {
-  theme: 'light' | 'dark' | 'system';
   sidebarCollapsed: boolean;
   mobileNavOpen: boolean;
   notifications: Notification[];
@@ -165,7 +164,6 @@ export interface AuthStoreSlice extends AuthStoreState {
 }
 
 export interface UIStoreSlice extends UIStoreState {
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setMobileNavOpen: (open: boolean) => void;

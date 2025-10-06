@@ -66,21 +66,4 @@
   }
 }
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .building-management-page {
-    background: var(--color-background-dark);
-  }
-
-  .building-management-page__no-access {
-    background: var(--color-surface-dark);
-  }
-
-  .building-management-page__no-access h2 {
-    color: var(--color-text-primary-dark);
-  }
-
-  .building-management-page__no-access p {
-    color: var(--color-text-secondary-dark);
-  }
-}
+/* Dark mode support removed */

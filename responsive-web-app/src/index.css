@@ -102,23 +102,7 @@ p {
   color: var(--color-text-secondary);
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #1a1a1a;
-    --color-surface: #2d2d2d;
-    --color-border: #404040;
-    --color-border-light: #333333;
-    --color-hover: rgba(255, 255, 255, 0.05);
-    
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #cccccc;
-    --color-text-disabled: #888888;
-    
-    --color-primary: #4dabf7;
-    --color-primary-light: rgba(77, 171, 247, 0.1);
-  }
-}
+/* Dark mode support removed */
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
@@ -143,6 +127,38 @@ p {
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* MUI Input/OutlinedInput background overrides (ensure light background) */
+.MuiInputBase-root.MuiOutlinedInput-root,
+.MuiInputBase-root {
+  background-color: var(--color-surface) !important;
+}
+
+.MuiInputBase-root .MuiInputBase-input,
+.MuiOutlinedInput-root .MuiOutlinedInput-input {
+  background-color: transparent !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Outline colors */
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border) !important;
+}
+
+.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-primary) !important;
+}
+
+/* Disabled state */
+.MuiInputBase-root.Mui-disabled {
+  background-color: var(--color-border-light) !important;
+}
+
+/* Force same behavior in any dark theme hook */
+body[data-theme='dark'] .MuiInputBase-root,
+body[data-theme='dark'] .MuiOutlinedInput-root {
+  background-color: var(--color-surface) !important;
 }
 
 /* Reduced motion support */

@@ -3,3 +3,4 @@ export { default as authService } from './authService';
 export { default as buildingService } from './buildingService';
 export { meterReadingService } from './meterReadingService';
 export { contactService } from './contactService';
+export { modbusService } from './modbusService';

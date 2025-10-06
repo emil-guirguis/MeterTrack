@@ -376,7 +376,6 @@ interface EntityState<T> {
 
 interface UIState {
   sidebarCollapsed: boolean;
-  theme: 'light' | 'dark';
   notifications: Notification[];
   modals: ModalState;
 }

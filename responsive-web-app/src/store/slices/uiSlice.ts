@@ -8,7 +8,6 @@ import { generateId } from '../utils';
 
 // Initial state
 const initialState = {
-  theme: 'system' as const,
   sidebarCollapsed: false,
   mobileNavOpen: false,
   notifications: [],
@@ -24,12 +23,7 @@ export const useUIStore = create<UIStoreSlice>()(
     immer((set, get) => ({
       ...initialState,
 
-      // Theme actions
-      setTheme: (theme) => {
-        set((state) => {
-          state.theme = theme;
-        });
-      },
+
 
       // Sidebar actions
       toggleSidebar: () => {
@@ -182,7 +176,6 @@ export const useUIStore = create<UIStoreSlice>()(
       name: 'ui-store',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,
       }),
       version: 1,
@@ -192,7 +185,6 @@ export const useUIStore = create<UIStoreSlice>()(
 
 // Selectors
 export const uiSelectors = {
-  theme: (state: UIStoreSlice) => state.theme,
   sidebarCollapsed: (state: UIStoreSlice) => state.sidebarCollapsed,
   mobileNavOpen: (state: UIStoreSlice) => state.mobileNavOpen,
   notifications: (state: UIStoreSlice) => state.notifications,
@@ -267,14 +259,12 @@ export const useUI = () => {
   
   return {
     // State
-    theme: store.theme,
     sidebarCollapsed: store.sidebarCollapsed,
     mobileNavOpen: store.mobileNavOpen,
     notifications: store.notifications,
     screenSize: uiSelectors.screenSize(store),
     
     // Actions
-    setTheme: store.setTheme,
     toggleSidebar: store.toggleSidebar,
     setSidebarCollapsed: store.setSidebarCollapsed,
     setMobileNavOpen: store.setMobileNavOpen,

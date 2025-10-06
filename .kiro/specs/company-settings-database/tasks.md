@@ -9,9 +9,13 @@
   - Include proper field validation, defaults, and constraints
   - _Requirements: 1.1, 1.4, 5.1, 5.2_
 
+
+
 - [ ] 2. Implement backend API routes for company settings
 - [ ] 2.1 Create GET endpoint for retrieving company settings
   - Implement GET /api/settings/company route with authentication and authorization
+
+
   - Handle case where no settings exist by creating and returning defaults
   - Add proper error handling and response formatting
   - _Requirements: 3.2, 4.1, 4.3_
@@ -22,7 +26,10 @@
   - Add comprehensive server-side validation
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 4.2, 4.3_
 
-- [ ]* 2.3 Write unit tests for API endpoints
+- [x]* 2.3 Write unit tests for API endpoints
+
+
+
   - Create tests for GET and PUT endpoints with various scenarios
   - Test authentication, authorization, and validation
   - Test error handling and edge cases

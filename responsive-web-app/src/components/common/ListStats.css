@@ -104,16 +104,7 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .list__stats {
-    background-color: var(--color-background-secondary);
-  }
-  
-  .list__stat {
-    background-color: var(--color-background-primary);
-  }
-}
+/* Dark mode support removed */
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {

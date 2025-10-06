@@ -28,188 +28,67 @@ interface SettingsStoreActions {
 // Combined store interface
 interface SettingsStore extends SettingsStoreState, SettingsStoreActions {}
 
-// Mock service for now - will be replaced with actual API service
+// Import auth service for token management
+import { authService } from '../../services/authService';
+
+// Real API service for company settings
 const settingsService = {
   async getSettings() {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 400));
+      const token = authService.getStoredToken();
+      console.log('Fetching settings with token:', token ? 'Present' : 'Missing');
       
-      const mockSettings: CompanySettings = {
-        id: '1',
-        name: 'Acme Facility Management',
-        logo: '/assets/logo.png',
-        address: {
-          street: '123 Business Center Dr',
-          city: 'Business City',
-          state: 'BC',
-          zipCode: '12345',
-          country: 'USA',
-        },
-        contactInfo: {
-          phone: '555-0100',
-          email: 'info@acme-fm.com',
-          website: 'https://acme-fm.com',
-        },
-        branding: {
-          primaryColor: '#2563eb',
-          secondaryColor: '#64748b',
-          accentColor: '#f59e0b',
-          logoUrl: '/assets/logo.png',
-          faviconUrl: '/assets/favicon.ico',
-          customCSS: '',
-          emailSignature: `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-              <p><strong>Acme Facility Management</strong></p>
-              <p>123 Business Center Dr<br>Business City, BC 12345</p>
-              <p>Phone: 555-0100 | Email: info@acme-fm.com</p>
-              <p><a href="https://acme-fm.com">www.acme-fm.com</a></p>
-            </div>
-          `,
-        },
-        systemConfig: {
-          timezone: 'America/New_York',
-          dateFormat: 'MM/DD/YYYY',
-          timeFormat: '12h',
-          currency: 'USD',
-          language: 'en',
-          defaultPageSize: 20,
-          sessionTimeout: 30, // minutes
-          enableNotifications: true,
-          enableEmailAlerts: true,
-          enableSMSAlerts: false,
-          maintenanceMode: false,
-          allowUserRegistration: false,
-          requireEmailVerification: true,
-          passwordPolicy: {
-            minLength: 8,
-            requireUppercase: true,
-            requireLowercase: true,
-            requireNumbers: true,
-            requireSpecialChars: true,
-            maxAge: 90, // days
-          },
-          backupSettings: {
-            enabled: true,
-            frequency: 'daily',
-            retentionDays: 30,
-            includeFiles: true,
-          },
-        },
-        features: {
-          userManagement: true,
-          buildingManagement: true,
-          equipmentManagement: true,
-          meterManagement: true,
-          contactManagement: true,
-          emailTemplates: true,
-          reporting: true,
-          analytics: true,
-          mobileApp: false,
-          apiAccess: true,
-        },
-        integrations: {
-          emailProvider: 'smtp',
-          smsProvider: null,
-          paymentProcessor: null,
-          calendarSync: false,
-          weatherAPI: false,
-          mapProvider: 'google',
-        },
-        updatedAt: new Date('2024-01-01'),
-      };
-
-      return mockSettings;
+      const response = await fetch('/api/settings/company', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Settings response status:', response.status);
+      const result = await response.json();
+      console.log('Settings response:', result);
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch settings');
+      }
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch settings');
+      }
+      
+      return result.data;
     });
   },
 
   async updateSettings(updates: Partial<CompanySettings>) {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const token = authService.getStoredToken();
+      const response = await fetch('/api/settings/company', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updates)
+      });
       
-      // In real implementation, this would make PUT request
-      const updatedSettings: CompanySettings = {
-        id: '1',
-        name: updates.name || 'Acme Facility Management',
-        logo: updates.logo || '/assets/logo.png',
-        address: updates.address || {
-          street: '123 Business Center Dr',
-          city: 'Business City',
-          state: 'BC',
-          zipCode: '12345',
-          country: 'USA',
-        },
-        contactInfo: updates.contactInfo || {
-          phone: '555-0100',
-          email: 'info@acme-fm.com',
-          website: 'https://acme-fm.com',
-        },
-        branding: updates.branding || {
-          primaryColor: '#2563eb',
-          secondaryColor: '#64748b',
-          accentColor: '#f59e0b',
-          logoUrl: '/assets/logo.png',
-          faviconUrl: '/assets/favicon.ico',
-          customCSS: '',
-          emailSignature: '',
-        },
-        systemConfig: updates.systemConfig || {
-          timezone: 'America/New_York',
-          dateFormat: 'MM/DD/YYYY',
-          timeFormat: '12h',
-          currency: 'USD',
-          language: 'en',
-          defaultPageSize: 20,
-          sessionTimeout: 30,
-          enableNotifications: true,
-          enableEmailAlerts: true,
-          enableSMSAlerts: false,
-          maintenanceMode: false,
-          allowUserRegistration: false,
-          requireEmailVerification: true,
-          passwordPolicy: {
-            minLength: 8,
-            requireUppercase: true,
-            requireLowercase: true,
-            requireNumbers: true,
-            requireSpecialChars: true,
-            maxAge: 90,
-          },
-          backupSettings: {
-            enabled: true,
-            frequency: 'daily',
-            retentionDays: 30,
-            includeFiles: true,
-          },
-        },
-        features: updates.features || {
-          userManagement: true,
-          buildingManagement: true,
-          equipmentManagement: true,
-          meterManagement: true,
-          contactManagement: true,
-          emailTemplates: true,
-          reporting: true,
-          analytics: true,
-          mobileApp: false,
-          apiAccess: true,
-        },
-        integrations: updates.integrations || {
-          emailProvider: 'smtp',
-          smsProvider: null,
-          paymentProcessor: null,
-          calendarSync: false,
-          weatherAPI: false,
-          mapProvider: 'google',
-        },
-        updatedAt: new Date(),
-      };
-
-      return updatedSettings;
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to update settings');
+      }
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to update settings');
+      }
+      
+      return result.data;
     });
-  },
+  }
 };
+
+
 
 // Initial state
 const initialState: SettingsStoreState = {
@@ -514,8 +393,8 @@ export const useSettingsEnhanced = () => {
       };
     },
     
-    // Theme helpers
-    applyTheme: () => {
+    // Branding helpers
+    applyBranding: () => {
       if (!settings.settings?.branding) return;
       
       const root = document.documentElement;

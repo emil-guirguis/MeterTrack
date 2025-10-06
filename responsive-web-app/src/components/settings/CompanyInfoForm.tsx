@@ -1,4 +1,5 @@
 import React from 'react';
+import { CountrySelect } from '../common';
 import './SettingsForm.css';
 
 export interface CompanyInfoFormProps {
@@ -26,6 +27,8 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               className="settings-form__input"
               required
               disabled={loading}
+              placeholder="Enter company name"
+              title="Company Name"
             />
           </div>
           <div className="settings-form__field">
@@ -36,6 +39,8 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               onChange={e => onChange('logo', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              placeholder="Enter logo URL"
+              title="Logo URL"
             />
           </div>
         </div>
@@ -48,6 +53,8 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               onChange={e => onChange('address.street', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              placeholder="Enter street address"
+              title="Street Address"
             />
           </div>
           <div className="settings-form__field">
@@ -58,6 +65,8 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               onChange={e => onChange('address.city', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              placeholder="Enter city"
+              title="City"
             />
           </div>
         </div>
@@ -70,6 +79,8 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               onChange={e => onChange('address.state', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              placeholder="Enter state"
+              title="State"
             />
           </div>
           <div className="settings-form__field">
@@ -80,18 +91,20 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               onChange={e => onChange('address.zipCode', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              placeholder="Enter zip code"
+              title="Zip Code"
             />
           </div>
         </div>
         <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">Country</label>
-            <input
-              type="text"
+            <CountrySelect
               value={values.address?.country || ''}
-              onChange={e => onChange('address.country', e.target.value)}
-              className="settings-form__input"
+              onChange={value => onChange('address.country', value)}
               disabled={loading}
+              required
+              className="settings-form__input"
             />
           </div>
         </div>

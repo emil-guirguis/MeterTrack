@@ -119,6 +119,30 @@
 .data-table__wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  /* Ensure the wrapper has a defined width */
+  width: 100%;
+  /* Add scrollbar styling for better visibility */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary, #3b82f6) var(--color-background-alt, #f9fafb);
+}
+
+/* Webkit scrollbar styling */
+.data-table__wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.data-table__wrapper::-webkit-scrollbar-track {
+  background: var(--color-background-alt, #f9fafb);
+  border-radius: 4px;
+}
+
+.data-table__wrapper::-webkit-scrollbar-thumb {
+  background: var(--color-primary, #3b82f6);
+  border-radius: 4px;
+}
+
+.data-table__wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark, #2563eb);
 }
 
 /* Table */
@@ -126,6 +150,8 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+  /* Set minimum width to ensure horizontal scrolling when needed */
+  min-width: max-content;
 }
 
 .data-table__table--striped tbody tr:nth-child(even) {
@@ -581,43 +607,4 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .data-table__container {
-    background: var(--color-surface);
-    border-color: var(--color-border);
-  }
-  
-  .data-table__table--striped tbody tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.02);
-  }
-  
-  .data-table__table--hoverable tbody tr:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: var(--color-text-primary) !important;
-  }
-  
-  .data-table__table--hoverable tbody tr:hover .data-table__cell {
-    color: var(--color-text-primary) !important;
-  }
-  
-  .data-table__row--clickable:hover {
-    background: rgba(77, 171, 247, 0.1) !important;
-    color: var(--color-text-primary) !important;
-  }
-  
-  .data-table__row--clickable:hover .data-table__cell {
-    color: var(--color-text-primary) !important;
-  }
-  
-  .data-table__table--hoverable.data-table__table--striped tbody tr:nth-child(even):hover,
-  .data-table__table--hoverable.data-table__table--striped tbody tr:nth-child(odd):hover {
-    background: rgba(77, 171, 247, 0.1) !important;
-    color: var(--color-text-primary) !important;
-  }
-  
-  .data-table__table--hoverable.data-table__table--striped tbody tr:nth-child(even):hover .data-table__cell,
-  .data-table__table--hoverable.data-table__table--striped tbody tr:nth-child(odd):hover .data-table__cell {
-    color: var(--color-text-primary) !important;
-  }
-}
+/* Dark mode support removed */

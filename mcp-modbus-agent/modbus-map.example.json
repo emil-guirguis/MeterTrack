@@ -1,0 +1,11 @@
+{
+  "description": "Example Modbus field map for extending meter parameters",
+  "fields": [
+    { "name": "phaseAVoltage", "source": "holding", "type": "u16", "address": 12, "scale": 10 },
+    { "name": "phaseBVoltage", "source": "holding", "type": "u16", "address": 14, "scale": 10 },
+    { "name": "phaseCVoltage", "source": "holding", "type": "u16", "address": 16, "scale": 10 },
+    { "name": "totalActiveEnergyWh", "source": "holding", "type": "u32", "address": 22, "wordOrder": "HI_LO" },
+    { "name": "frequencyHz", "source": "input", "type": "u16", "address": 8, "scale": 10 },
+    { "name": "temperatureC", "source": "input", "type": "float32", "address": 40, "wordOrder": "HI_LO", "floatEndian": "BE", "scale": 10 }
+  ]
+}

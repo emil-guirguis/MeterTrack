@@ -139,6 +139,102 @@ print("- Meter Readings: " + db.meterReadings.countDocuments());
 print("- Email Templates: " + db.emailTemplates.countDocuments());
 print("- Company Settings: " + db.companySettings.countDocuments());
 
+// ============================================================================
+// 6. SETUP COMPANY SETTINGS (if not exists)
+// ============================================================================
+
+if (db.companySettings.countDocuments() === 0) {
+  print("Creating default company settings...");
+  
+  db.companySettings.insertOne({
+    name: 'Facility Management Company',
+    logo: '/assets/logo.png',
+    address: {
+      street: '123 Business Center Dr',
+      city: 'Business City',
+      state: 'BC',
+      zipCode: '12345',
+      country: 'USA'
+    },
+    contactInfo: {
+      phone: '555-0100',
+      email: 'info@company.com',
+      website: 'https://company.com'
+    },
+    branding: {
+      primaryColor: '#2563eb',
+      secondaryColor: '#64748b',
+      accentColor: '#f59e0b',
+      logoUrl: '/assets/logo.png',
+      faviconUrl: '/assets/favicon.ico',
+      customCSS: '',
+      emailSignature: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <p><strong>Facility Management Company</strong></p>
+          <p>123 Business Center Dr<br>Business City, BC 12345</p>
+          <p>Phone: 555-0100 | Email: info@company.com</p>
+          <p><a href="https://company.com">www.company.com</a></p>
+        </div>
+      `.trim()
+    },
+    systemConfig: {
+      timezone: 'America/New_York',
+      dateFormat: 'MM/DD/YYYY',
+      timeFormat: '12h',
+      currency: 'USD',
+      language: 'en',
+      defaultPageSize: 20,
+      sessionTimeout: 30,
+      enableNotifications: true,
+      enableEmailAlerts: true,
+      enableSMSAlerts: false,
+      maintenanceMode: false,
+      allowUserRegistration: false,
+      requireEmailVerification: true,
+      passwordPolicy: {
+        minLength: 8,
+        requireUppercase: true,
+        requireLowercase: true,
+        requireNumbers: true,
+        requireSpecialChars: true,
+        maxAge: 90
+      },
+      backupSettings: {
+        enabled: true,
+        frequency: 'daily',
+        retentionDays: 30,
+        includeFiles: true
+      }
+    },
+    features: {
+      userManagement: true,
+      buildingManagement: true,
+      equipmentManagement: true,
+      meterManagement: true,
+      contactManagement: true,
+      emailTemplates: true,
+      reporting: true,
+      analytics: true,
+      mobileApp: false,
+      apiAccess: true
+    },
+    integrations: {
+      emailProvider: 'smtp',
+      smsProvider: null,
+      paymentProcessor: null,
+      calendarSync: false,
+      weatherAPI: false,
+      mapProvider: 'google'
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+  
+  print("✅ Default company settings created");
+} else {
+  print("✅ Company settings already exist");
+}
+
 print("");
 print("Sample login credentials:");
 print("- Admin: admin@example.com / admin123");

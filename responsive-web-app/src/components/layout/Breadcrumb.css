@@ -182,26 +182,7 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .breadcrumb__link {
-    color: var(--color-text-secondary-dark, #aaa);
-  }
-
-  .breadcrumb__link:hover {
-    color: var(--color-primary-dark, #4dabf7);
-    background-color: var(--color-primary-light-dark, rgba(77, 171, 247, 0.1));
-  }
-
-  .breadcrumb__current {
-    color: var(--color-text-primary-dark, #fff);
-  }
-
-  .breadcrumb__separator,
-  .breadcrumb__ellipsis {
-    color: var(--color-text-disabled-dark, #666);
-  }
-}
+/* Dark mode support removed */
 
 /* RTL support */
 [dir="rtl"] .breadcrumb__icon {

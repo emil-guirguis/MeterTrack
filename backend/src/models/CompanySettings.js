@@ -365,9 +365,10 @@ const companySettingsSchema = new mongoose.Schema({
     validate: {
       validator: function(v) {
         if (!v) return true; // Optional field
-        return /^https?:\/\/.+/.test(v) || /^\//.test(v);
+        // Allow URLs, paths, and base64 data URLs
+        return /^https?:\/\/.+/.test(v) || /^\//.test(v) || /^data:image\//.test(v);
       },
-      message: 'Please enter a valid URL or path'
+      message: 'Please enter a valid URL, path, or base64 image data'
     }
   },
   address: {

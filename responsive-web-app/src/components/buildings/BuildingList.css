@@ -302,13 +302,4 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .building-list__search-input {
-    background-color: var(--color-background-secondary);
-  }
-  
-  .building-list__filter-select {
-    background-color: var(--color-background-secondary);
-  }
-}
+/* Dark mode support removed */

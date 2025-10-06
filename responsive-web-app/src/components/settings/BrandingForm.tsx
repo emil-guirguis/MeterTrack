@@ -25,6 +25,7 @@ const BrandingForm: React.FC<BrandingFormProps> = ({ values, onChange, onSubmit,
               onChange={e => onChange('primaryColor', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              title="Primary Color"
             />
           </div>
           <div className="settings-form__field">
@@ -35,6 +36,7 @@ const BrandingForm: React.FC<BrandingFormProps> = ({ values, onChange, onSubmit,
               onChange={e => onChange('secondaryColor', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              title="Secondary Color"
             />
           </div>
         </div>
@@ -47,6 +49,7 @@ const BrandingForm: React.FC<BrandingFormProps> = ({ values, onChange, onSubmit,
               onChange={e => onChange('accentColor', e.target.value)}
               className="settings-form__input"
               disabled={loading}
+              title="Accent Color"
             />
           </div>
           <div className="settings-form__field">

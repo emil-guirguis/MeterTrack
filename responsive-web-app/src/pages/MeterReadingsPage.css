@@ -302,40 +302,4 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .meter-readings-page__title {
-    color: var(--color-text-primary-dark, #f9fafb);
-  }
-  
-  .meter-readings-page__subtitle {
-    color: var(--color-text-secondary-dark, #d1d5db);
-  }
-  
-  .meter-readings-page__filters,
-  .meter-readings-page__content {
-    background: var(--color-surface-dark, #1f2937);
-  }
-  
-  .meter-readings-page__filter-label {
-    color: var(--color-text-primary-dark, #f9fafb);
-  }
-  
-  .meter-readings-page__filter-input,
-  .meter-readings-page__filter-select {
-    background: var(--color-background-dark, #374151);
-    border-color: var(--color-border-dark, #4b5563);
-    color: var(--color-text-primary-dark, #f9fafb);
-  }
-  
-  .meter-readings-page__pagination {
-    background: var(--color-background-alt-dark, #374151);
-    border-top-color: var(--color-border-dark, #4b5563);
-  }
-  
-  .meter-readings-page__pagination-btn {
-    background: var(--color-background-dark, #374151);
-    border-color: var(--color-border-dark, #4b5563);
-    color: var(--color-text-primary-dark, #f9fafb);
-  }
-}
+/* Dark mode support removed */

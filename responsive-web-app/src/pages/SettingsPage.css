@@ -16,3 +16,21 @@ body[data-theme='dark'] .settings-tabs .Mui-selected,
 .dark .settings-tabs .Mui-selected {
   color: #90caf9 !important;
 }
+
+.settings-content {
+  margin-top: 1.5rem;
+}
+
+.placeholder-page {
+  padding: 2rem;
+}
+
+.unauthorized-page {
+  padding: 2rem;
+  text-align: center;
+}
+
+.coming-soon-page {
+  padding: 3rem;
+  text-align: center;
+}

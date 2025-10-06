@@ -31,7 +31,6 @@ export type {
 } from './entities';
 
 export type {
-  Theme,
   DataTableProps,
   ColumnDefinition,
   FormModalProps,

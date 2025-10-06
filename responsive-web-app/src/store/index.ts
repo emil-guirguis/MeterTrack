@@ -94,7 +94,7 @@ export const clearAllStores = () => {
   // Clear auth store
   useAuthStore.getState().logout();
   
-  // Reset UI store (except theme preference)
+  // Reset UI store
 
   useUIStore.setState({
     ...useUIStore.getState(),

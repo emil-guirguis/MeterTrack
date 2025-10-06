@@ -175,13 +175,7 @@ tbody tr:hover .table-cell__secondary {
   color: var(--color-text-secondary, #6b7280) !important;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .badge--neutral {
-    background-color: var(--color-background-tertiary);
-    color: var(--color-text-primary);
-  }
-}
+/* Dark mode support removed */
 
 /* High contrast support */
 @media (prefers-contrast: high) {
