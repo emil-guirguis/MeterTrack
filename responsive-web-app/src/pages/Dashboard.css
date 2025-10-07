@@ -5,20 +5,25 @@
   flex-direction: column;
   height: 100%;
   padding: 0;
-  /* Remove max-width constraint to allow horizontal scrolling */
-  /* max-width: 1400px; */
-  margin: 0 auto;
-  /* Ensure the dashboard can expand horizontally */
+  /* Remove centering - left-justify content right after sidebar */
+  margin: 0;
+  /* Ensure the dashboard can expand horizontally to full width */
   min-width: 0;
   width: 100%;
+  max-width: none;
   box-sizing: border-box;
+  /* Smooth transition when sidebar collapses/expands */
+  transition: width 0.25s ease, margin 0.25s ease;
+  /* Left-align all content and ensure full width */
+  align-items: stretch;
 }
 
 .dashboard__header {
   flex-shrink: 0;
-  margin-bottom: 2rem;
-  padding: 1.5rem 1.5rem 0;
-  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0 0;
+  text-align: left;
+  width: 100%;
 }
 
 .dashboard__title {
@@ -37,11 +42,13 @@
 /* Statistics Section */
 .dashboard__stats-section {
   flex-shrink: 0;
-  margin: 0 1.5rem 2rem;
+  margin: 0 0 1rem;
   background: var(--color-surface, #ffffff);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  width: 100%;
+  align-self: stretch;
 }
 
 .dashboard__stats-header {
@@ -259,19 +266,31 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0 1.5rem 1.5rem;
-  /* Ensure content can expand horizontally */
+  padding: 0;
+  /* Ensure content can expand horizontally to full width */
   min-width: 0;
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  /* Force full width expansion */
+  flex-grow: 1;
+  flex-shrink: 0;
 }
 
 .dashboard__meter-readings {
   flex: 1;
-  /* Ensure the meter readings container can scroll horizontally */
+  /* Ensure the meter readings container uses full available width */
+  width: 100%;
+  max-width: none;
   min-width: 0;
   min-height: 0;
   overflow: visible;
   display: flex;
   flex-direction: column;
+  /* Force container to expand to full width */
+  box-sizing: border-box;
+  flex-grow: 1;
+  flex-shrink: 0;
 }
 
 /* Ensure DataList components fill height */
@@ -302,7 +321,8 @@
 
 @media (max-width: 768px) {
   .dashboard__header {
-    padding: 1rem 1rem 0;
+    padding: 0.5rem 0.25rem 0;
+    text-align: left;
   }
   
   .dashboard__title {
@@ -314,15 +334,23 @@
   }
   
   .dashboard__stats-section {
-    margin: 0 1rem 1.5rem;
+    margin: 0 0.25rem 1rem;
   }
   
+  /* Ensure touch targets are accessible */
   .dashboard__stats-header {
     padding: 1rem;
+    min-height: 60px;
   }
   
   .dashboard__stats-title {
     font-size: 1.25rem;
+  }
+  
+  /* Ensure collapse button has proper touch target */
+  .dashboard__collapse-btn {
+    width: 44px;
+    height: 44px;
   }
   
   .dashboard__stats {
@@ -332,11 +360,15 @@
   }
   
   .dashboard__content {
-    padding: 0 1rem 1rem;
+    padding: 0 0.25rem;
+    width: 100%;
+    max-width: none;
   }
   
   .dashboard__stat-card {
     padding: 1rem;
+    /* Ensure stat cards have adequate touch area */
+    min-height: 80px;
   }
   
   .dashboard__stat-icon {
@@ -350,8 +382,9 @@
 
 @media (max-width: 480px) {
   .dashboard__header {
-    margin-bottom: 1rem;
-    padding: 0.75rem 0.75rem 0;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.25rem 0;
+    text-align: left;
   }
   
   .dashboard__title {
@@ -359,11 +392,13 @@
   }
   
   .dashboard__stats-section {
-    margin: 0 0.75rem 1rem;
+    margin: 0 0.25rem 0.75rem;
   }
   
+  /* Maintain adequate touch targets on very small screens */
   .dashboard__stats-header {
     padding: 0.75rem;
+    min-height: 60px;
   }
   
   .dashboard__stats-title {
@@ -371,18 +406,29 @@
     gap: 0.5rem;
   }
   
+  /* Ensure collapse button remains accessible */
+  .dashboard__collapse-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
   .dashboard__stats {
     padding: 0.75rem;
   }
   
   .dashboard__content {
-    padding: 0 0.75rem 0.75rem;
+    padding: 0 0.25rem;
+    width: 100%;
+    max-width: none;
   }
   
   .dashboard__stat-card {
     flex-direction: column;
     text-align: center;
     gap: 0.75rem;
+    /* Maintain adequate touch area for stat cards */
+    min-height: 100px;
+    padding: 1rem;
   }
   
   .dashboard__stat-icon {
@@ -391,6 +437,36 @@
 }
 
 /* Dark mode support removed */
+
+/* Sidebar collapse behavior - ensure dashboard expands properly */
+.app-layout.sidebar-collapsed .dashboard {
+  /* Dashboard should utilize the additional space when sidebar is collapsed */
+  width: 100%;
+  max-width: none;
+}
+
+.app-layout.sidebar-collapsed .dashboard__content {
+  /* Content should expand to full width when sidebar is collapsed */
+  width: 100%;
+  max-width: none;
+}
+
+.app-layout.sidebar-collapsed .dashboard__stats {
+  /* Allow more columns when sidebar is collapsed and more space is available */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.app-layout.sidebar-collapsed .dashboard__meter-readings {
+  /* Ensure meter readings table gets the full expanded width */
+  width: 100%;
+  max-width: none;
+}
+
+/* Ensure smooth transitions for sidebar collapse */
+.dashboard__stats,
+.dashboard__meter-readings {
+  transition: width 0.25s ease;
+}
 
 /* Print styles */
 @media print {

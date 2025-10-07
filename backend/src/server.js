@@ -17,9 +17,13 @@ const templateRoutes = require('./routes/templates');
 const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const modbusRoutes = require('./routes/modbus');
+const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Threading service (will be initialized after MongoDB connection)
+let threadingService = null;
 
 // Mongo connection configuration
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb';
@@ -77,7 +81,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Connect to MongoDB
+// Connect to MongoDB and initialize threading service
 (async () => {
   try {
     const connectOptions = {
@@ -94,6 +98,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     const hosts = db.hosts?.map(h => `${h.host}:${h.port}`).join(', ') || db.host;
 
     console.log(`✅ Connected to MongoDB -> db: ${activeDbName} host(s): ${hosts}`);
+
+    // Initialize threading service after successful database connection
+    await initializeThreadingSystem();
   } catch (error) {
     // Avoid leaking credentials in logs
     const safeUri = MONGODB_URI.replace(/:\\?[^@/]+@/, '://***@');
@@ -102,6 +109,103 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     process.exit(1);
   }
 })();
+
+/**
+ * Initialize the threading system
+ */
+async function initializeThreadingSystem() {
+  try {
+    console.log('🧵 Initializing MCP threading system...');
+    
+    // Import ThreadingService
+    const { ThreadingService } = require('./services/threading/ThreadingService.js');
+    
+    // Create threading service with default configuration
+    const threadingConfig = {
+      worker: {
+        maxMemoryMB: parseInt(process.env.WORKER_MAX_MEMORY_MB) || 512,
+        logLevel: process.env.WORKER_LOG_LEVEL || 'info',
+        moduleConfig: {
+          modbus: {
+            host: process.env.MODBUS_HOST || 'localhost',
+            port: parseInt(process.env.MODBUS_PORT) || 502,
+            timeout: parseInt(process.env.MODBUS_TIMEOUT) || 5000,
+            retryAttempts: parseInt(process.env.MODBUS_RETRY_ATTEMPTS) || 3,
+            retryDelay: parseInt(process.env.MODBUS_RETRY_DELAY) || 1000,
+            unitId: parseInt(process.env.MODBUS_UNIT_ID) || 1,
+            registers: {
+              start: parseInt(process.env.MODBUS_REGISTER_START) || 0,
+              count: parseInt(process.env.MODBUS_REGISTER_COUNT) || 10,
+              interval: parseInt(process.env.MODBUS_COLLECTION_INTERVAL) || 5000
+            }
+          },
+          database: {
+            connectionString: MONGODB_URI,
+            poolSize: parseInt(process.env.DB_POOL_SIZE) || 10,
+            timeout: parseInt(process.env.DB_TIMEOUT) || 10000,
+            retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS) || 3,
+            batchSize: parseInt(process.env.DB_BATCH_SIZE) || 100,
+            flushInterval: parseInt(process.env.DB_FLUSH_INTERVAL) || 5000
+          }
+        }
+      }
+    };
+    
+    threadingService = new ThreadingService(threadingConfig);
+    
+    // Initialize the threading routes with the service
+    initializeThreadingService(threadingService);
+    
+    // Setup threading service event handlers
+    setupThreadingEventHandlers();
+    
+    // Start the threading service if auto-start is enabled
+    if (process.env.THREADING_AUTO_START !== 'false') {
+      const result = await threadingService.start();
+      if (result.success) {
+        console.log(`✅ MCP threading system started -> Thread ID: ${result.threadId}`);
+      } else {
+        console.warn(`⚠️ MCP threading system failed to start: ${result.error}`);
+      }
+    } else {
+      console.log('🧵 MCP threading system initialized (auto-start disabled)');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize threading system:', error);
+    // Don't exit the process - the server can still run without threading
+  }
+}
+
+/**
+ * Setup event handlers for the threading service
+ */
+function setupThreadingEventHandlers() {
+  if (!threadingService) return;
+  
+  threadingService.on('workerStarted', (data) => {
+    console.log(`🧵 Worker thread started: ${data.threadId}`);
+  });
+  
+  threadingService.on('workerStopped', () => {
+    console.log('🧵 Worker thread stopped');
+  });
+  
+  threadingService.on('workerError', (data) => {
+    console.error('🧵 Worker thread error:', data.error.message);
+  });
+  
+  threadingService.on('workerUnhealthy', (data) => {
+    console.warn('🧵 Worker thread unhealthy:', data.reason);
+  });
+  
+  threadingService.on('restartSuccess', (data) => {
+    console.log(`🧵 Worker thread restarted successfully (attempt ${data.attemptNumber})`);
+  });
+  
+  threadingService.on('restartFailed', (data) => {
+    console.error(`🧵 Worker thread restart failed (attempt ${data.attemptNumber}): ${data.error}`);
+  });
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -115,14 +219,58 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/modbus', modbusRoutes);
+app.use('/api/threading', threadingRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const healthData = {
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+      threading: null
+    };
+
+    // Add threading system health if available
+    if (threadingService) {
+      try {
+        const threadingHealth = await threadingService.getHealthStatus();
+        healthData.threading = {
+          status: threadingHealth.isHealthy ? 'Healthy' : 'Unhealthy',
+          worker: {
+            running: threadingHealth.worker.isRunning,
+            threadId: threadingHealth.worker.threadId
+          },
+          lastHealthCheck: threadingHealth.lastCheck,
+          uptime: threadingHealth.uptime,
+          memoryUsage: threadingHealth.memory
+        };
+      } catch (error) {
+        healthData.threading = {
+          status: 'Error',
+          error: error.message
+        };
+      }
+    } else {
+      healthData.threading = {
+        status: 'Not Initialized'
+      };
+    }
+
+    // Determine overall status
+    const isHealthy = healthData.database === 'Connected' && 
+                     (!threadingService || healthData.threading.status === 'Healthy');
+    
+    healthData.status = isHealthy ? 'OK' : 'Degraded';
+
+    res.json(healthData);
+  } catch (error) {
+    res.status(500).json({
+      status: 'Error',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // Test endpoint to check database contents
@@ -251,9 +399,60 @@ app.use('*', (req, res) => {
   });
 });
 
+/**
+ * Graceful shutdown handler
+ */
+async function gracefulShutdown(signal) {
+  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  
+  try {
+    // Stop threading service first
+    if (threadingService) {
+      console.log('🧵 Stopping threading service...');
+      await threadingService.stop(true);
+      console.log('✅ Threading service stopped');
+    }
+    
+    // Close database connection
+    if (mongoose.connection.readyState === 1) {
+      console.log('📊 Closing database connection...');
+      await mongoose.connection.close();
+      console.log('✅ Database connection closed');
+    }
+    
+    console.log('✅ Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+}
+
+// Setup graceful shutdown handlers
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
+});
+
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+  console.log(`🧵 Threading auto-start: ${process.env.THREADING_AUTO_START !== 'false' ? 'enabled' : 'disabled'}`);
+});
+
+// Handle server shutdown
+server.on('close', () => {
+  console.log('🚀 HTTP server closed');
 });

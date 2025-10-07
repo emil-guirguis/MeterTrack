@@ -4,10 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
   background: var(--color-surface, #ffffff);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: visible; /* Allow content to overflow for horizontal scrolling */
+  /* Ensure full width utilization */
+  box-sizing: border-box;
 }
 
 .meter-readings-list__header {
@@ -57,9 +60,17 @@
     margin-bottom: 8px;
   }
   
+  /* Ensure buttons have adequate touch targets */
   .meter-readings-list__refresh-btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+  
+  .meter-readings-list__toggle-btn {
+    min-height: 44px;
+    padding: 12px 16px;
   }
 }
 
@@ -290,10 +301,23 @@
 @media (max-width: 768px) {
   .meter-readings-list__header {
     padding: 0.75rem 1rem;
+    min-height: 60px;
   }
   
   .meter-readings-list__title {
     font-size: 1.125rem;
+  }
+  
+  /* Add minimal padding to table wrapper for touch scrolling */
+  .meter-readings-list .data-table__wrapper {
+    padding: 4px;
+  }
+  
+  /* Ensure table cells have adequate touch-friendly spacing */
+  .meter-readings-list .data-table__cell {
+    padding: 12px 8px;
+    min-height: 44px;
+    min-width: 100px; /* Smaller minimum on mobile */
   }
   
   .meter-readings__meter-cell,
@@ -302,6 +326,8 @@
   .meter-readings__quality-cell,
   .meter-readings__timestamp-cell {
     align-items: flex-start;
+    min-height: 44px;
+    justify-content: center;
   }
   
   .meter-readings__power-cell,
@@ -310,11 +336,15 @@
   }
 }
 
-/* Make DataList fill remaining height */
+/* Make DataList fill remaining height and full width */
 .meter-readings-list .data-list {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .meter-readings-list .list__main-content {
@@ -322,17 +352,26 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  width: 100%;
+  max-width: none;
+  overflow: visible;
 }
 
 .meter-readings-list .list__content {
   flex: 1;
   min-height: 0;
+  width: 100%;
+  max-width: none;
+  overflow: visible;
 }
 
 .meter-readings-list .data-table {
   height: 100%;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: none;
+  overflow: visible;
 }
 
 /* Table Scrolling Enhancement */
@@ -343,19 +382,21 @@
   /* Fill remaining height instead of fixed max-height */
   flex: 1;
   min-height: 0;
+  /* Ensure full width utilization without constraining table */
+  width: 100%;
   /* Add some padding to prevent content from being cut off */
-  padding-bottom: 4px;
-  padding-right: 4px;
+  padding-bottom: 2px;
+  padding-right: 2px;
   /* Add a subtle border to indicate scrollable area */
   border: 2px solid var(--color-primary, #3b82f6);
   border-radius: 6px;
   /* Add a subtle shadow to indicate depth */
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  /* Force the wrapper to have a specific width to trigger horizontal scrolling */
-  max-width: 100%;
   /* Enhanced scrollbar styling */
   scrollbar-width: thin;
   scrollbar-color: var(--color-primary, #3b82f6) var(--color-background-alt, #f9fafb);
+  /* Ensure proper box sizing */
+  box-sizing: border-box;
 }
 
 /* Enhanced webkit scrollbar for better visibility - both horizontal and vertical */
@@ -404,30 +445,30 @@
 }
 
 .meter-readings-list .data-table__table {
-  /* Force minimum width for many columns - increased for all new fields */
-  min-width: 4500px !important;
-  /* Ensure table doesn't shrink */
+  /* Allow table to size based on content */
   width: max-content;
-  /* Ensure table layout is fixed for consistent column widths */
-  table-layout: fixed;
+  /* Use auto layout to show all columns properly */
+  table-layout: auto;
+  /* Ensure minimum width for horizontal scrolling */
+  min-width: 100%;
 }
 
 .meter-readings-list .data-table__header,
 .meter-readings-list .data-table__cell {
   /* Prevent text wrapping in cells */
   white-space: nowrap;
-  /* Set minimum width for readability - increased to force scrolling */
-  min-width: 150px;
-  /* Set a fixed width to ensure consistent layout */
-  width: 150px;
-  /* Prevent shrinking */
-  flex-shrink: 0;
+  /* Set minimum width for readability but allow expansion */
+  min-width: 120px;
+  /* Allow cells to size based on content */
+  width: auto;
+  /* Add padding for better readability */
+  padding: 8px 12px;
 }
 
 /* Specific column widths for better layout */
 .meter-readings-list .data-table__header:first-child,
 .meter-readings-list .data-table__cell:first-child {
-  min-width: 150px; /* Device IP column */
+  min-width: 140px; /* Device IP column */
 }
 
 /* Add relative positioning to contain the scroll hint */
@@ -435,26 +476,12 @@
   position: relative;
 }
 
-/* Add scroll indicator */
-.meter-readings-list .data-table::before {
-  content: "← Scroll horizontally for more columns | ↕ Scroll vertically for more rows →";
-  display: block;
-  text-align: center;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-primary, #3b82f6);
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
-  border: 1px solid var(--color-primary-light, #93c5fd);
-  border-radius: 6px 6px 0 0;
-  margin-bottom: -1px;
-}
-
-/* Force table to be wider than container for testing */
+/* Ensure table shows all columns without being constrained */
 .meter-readings-list .data-table__table {
-  /* Override previous styles with more specific width - increased for all new columns */
-  min-width: 4000px !important;
-  width: 4000px !important;
+  /* Allow table to expand to show all columns */
+  width: max-content;
+  /* Ensure table is at least as wide as container */
+  min-width: 100%;
 }
 
 /* Scroll hint - temporarily disabled for debugging */
@@ -472,6 +499,38 @@
 }
 */
 
+/* Additional mobile optimizations for very small screens */
+@media (max-width: 480px) {
+  .meter-readings-list__header {
+    padding: 0.75rem;
+  }
+  
+  /* Ensure buttons stack properly on very small screens */
+  .meter-readings-list__header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+  
+  .meter-readings-list__refresh-btn,
+  .meter-readings-list__toggle-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+  
+  /* Add more padding to table wrapper for easier touch scrolling */
+  .meter-readings-list .data-table__wrapper {
+    padding: 6px;
+  }
+  
+  /* Increase cell padding for better touch targets */
+  .meter-readings-list .data-table__cell {
+    padding: 16px 12px;
+    min-height: 48px;
+    min-width: 90px; /* Even smaller minimum on very small screens */
+  }
+}
+
 /* Hide scroll hint on mobile */
 @media (max-width: 768px) {
   .meter-readings-list .data-table::after {
@@ -479,7 +538,28 @@
   }
 }
 
-/* Dark mode support removed */
+/* Sidebar collapse behavior - ensure table utilizes additional space */
+.app-layout.sidebar-collapsed .meter-readings-list {
+  /* Ensure full width utilization when sidebar is collapsed */
+  width: 100%;
+}
+
+.app-layout.sidebar-collapsed .meter-readings-list .data-table__wrapper {
+  /* Table wrapper should expand to use additional space */
+  width: 100%;
+}
+
+.app-layout.sidebar-collapsed .meter-readings-list .data-table__table {
+  /* Allow table to expand naturally to show all columns */
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Smooth transitions for sidebar collapse */
+.meter-readings-list,
+.meter-readings-list .data-table__wrapper {
+  transition: width 0.25s ease, max-width 0.25s ease;
+}
 
 /* Print styles */
 @media print {

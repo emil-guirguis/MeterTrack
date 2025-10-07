@@ -216,7 +216,10 @@ const meterReadingSchema = new mongoose.Schema({
     default: 'good'
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  // Allow unknown Modbus fields to pass through without being stripped
+  // This ensures any new fields the agent writes will be stored and returned
+  strict: false
 });
 
 // Transform _id to id for frontend compatibility
@@ -239,4 +242,5 @@ meterReadingSchema.index({ ip: 1 });
 meterReadingSchema.index({ deviceIP: 1 });
 meterReadingSchema.index({ quality: 1 });
 
-module.exports = mongoose.model('MeterReading', meterReadingSchema);
+// Explicitly set collection name to ensure consistency (lowercase plural)
+module.exports = mongoose.model('MeterReading', meterReadingSchema, 'meterreadings');

@@ -77,7 +77,30 @@ router.get('/', [
   }
 });
 
-// Get latest readings for dashboard
+// Get recent readings for dashboard (chronological order)
+router.get('/recent', requirePermission('meter:read'), async (req, res) => {
+  try {
+    const { limit = 20 } = req.query;
+    
+    // Get the most recent readings (not grouped by meter)
+    const recentReadings = await MeterReading.find({})
+      .sort({ timestamp: -1 })
+      .limit(parseInt(limit));
+
+    res.json({
+      success: true,
+      data: recentReadings
+    });
+  } catch (error) {
+    console.error('Get recent readings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch recent readings'
+    });
+  }
+});
+
+// Get latest readings for dashboard (per meter)
 router.get('/latest', requirePermission('meter:read'), async (req, res) => {
   try {
     // Get the latest reading for each meter

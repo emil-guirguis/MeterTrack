@@ -54,15 +54,15 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
   // Handle refresh button click
   const handleRefreshClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    fetchReadings(true);
+    fetchReadings(true); // Always fetch all data on manual refresh
   }, [fetchReadings]);
 
   useEffect(() => {
-    fetchReadings(false); // Initial load - just latest readings
+    fetchReadings(true); // Initial load - fetch all data
 
     // Set up auto-refresh every 30 seconds to show new data
     const refreshInterval = setInterval(() => {
-      fetchReadings(false); // Auto-refresh - just latest readings
+      fetchReadings(true); // Auto-refresh - fetch all data
     }, 30000); // 30 seconds
 
     // Cleanup interval on unmount
@@ -84,6 +84,12 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
   const formatValue = (value: any, unit: string, decimals: number = 1): string => {
     if (!isNum(value)) return '—';
     return `${value.toFixed(decimals)} ${unit}`;
+  };
+
+  // Format number with commas and units (safe)
+  const formatValueWithCommas = (value: any, unit: string, decimals: number = 1): string => {
+    if (!isNum(value)) return '—';
+    return `${value.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} ${unit}`;
   };
 
   // Get quality indicator
@@ -129,6 +135,18 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
           <div className="meter-readings__meter-ip">{reading.ip}:{reading.port}</div>
         </div>
       )
+    },
+        {
+      key: 'energy',
+      label: 'Energy (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.energy ? formatValueWithCommas(reading.energy, 'Wh') : ''
+    },
+        {
+      key: 'voltage',
+      label: 'Voltage (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.voltage ? formatValue(reading.voltage, 'V') : ''
     },
     {
       key: 'kWh',
@@ -219,12 +237,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       sortable: true,
       render: (_value: any, reading: DetailedMeterReading) => reading.source ?? ''
     },
-    {
-      key: 'voltage',
-      label: 'Voltage (modbus)',
-      sortable: true,
-      render: (_value: any, reading: DetailedMeterReading) => reading.voltage ? formatValue(reading.voltage, 'V') : ''
-    },
+
     {
       key: 'current',
       label: 'Current (modbus)',
@@ -237,12 +250,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       sortable: true,
       render: (_value: any, reading: DetailedMeterReading) => reading.power ? formatValue(reading.power, 'W') : ''
     },
-    {
-      key: 'energy',
-      label: 'Energy (modbus)',
-      sortable: true,
-      render: (_value: any, reading: DetailedMeterReading) => reading.energy ? formatValue(reading.energy, 'Wh') : ''
-    },
+
     {
       key: 'frequency',
       label: 'Frequency (modbus)',

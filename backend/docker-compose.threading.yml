@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:7.0
+    container_name: mcp-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_DATABASE: mcp-data
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API with threading
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.threading
+    container_name: mcp-backend-threading
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      MONGODB_URI: mongodb://admin:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/mcp-data?authSource=admin
+      
+      # Threading configuration
+      THREADING_AUTO_START: ${THREADING_AUTO_START:-true}
+      WORKER_MAX_MEMORY_MB: ${WORKER_MAX_MEMORY_MB:-512}
+      WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL:-info}
+      
+      # Modbus configuration
+      MODBUS_HOST: ${MODBUS_HOST:-modbus-simulator}
+      MODBUS_PORT: ${MODBUS_PORT:-502}
+      MODBUS_TIMEOUT: ${MODBUS_TIMEOUT:-5000}
+      MODBUS_RETRY_ATTEMPTS: ${MODBUS_RETRY_ATTEMPTS:-3}
+      MODBUS_UNIT_ID: ${MODBUS_UNIT_ID:-1}
+      MODBUS_REGISTER_START: ${MODBUS_REGISTER_START:-0}
+      MODBUS_REGISTER_COUNT: ${MODBUS_REGISTER_COUNT:-10}
+      MODBUS_COLLECTION_INTERVAL: ${MODBUS_COLLECTION_INTERVAL:-5000}
+      
+      # Database configuration
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_TIMEOUT: ${DB_TIMEOUT:-10000}
+      DB_BATCH_SIZE: ${DB_BATCH_SIZE:-100}
+      DB_FLUSH_INTERVAL: ${DB_FLUSH_INTERVAL:-5000}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    networks:
+      - mcp-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Modbus simulator (for testing)
+  modbus-simulator:
+    image: oitc/modbus-server
+    container_name: mcp-modbus-simulator
+    restart: unless-stopped
+    ports:
+      - "502:502"
+    networks:
+      - mcp-network
+    environment:
+      MODBUS_PORT: 502
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "502"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: mcp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mcp-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - mcp-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mcp-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - mcp-network
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_USERS_ALLOW_SIGN_UP: false
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge

@@ -5,8 +5,22 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:threading": "node --expose-gc src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:threading": "nodemon --expose-gc src/server.js",
+    "dev:ts": "nodemon --exec \"node -r ts-node/register\" src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:e2e": "node --expose-gc -r ts-node/register src/services/threading/test-runner.ts",
+    "test:threading": "node --expose-gc src/services/threading/__tests__/run-tests.js",
+    "readiness:check": "node -r ts-node/register src/services/threading/readiness-check.ts",
+    "readiness:check:verbose": "node -r ts-node/register src/services/threading/readiness-check.ts --verbose",
+    "readiness:check:full": "node -r ts-node/register src/services/threading/readiness-check.ts --verbose --with-threading",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "threading:status": "curl -s http://localhost:3001/api/threading/status | jq",
+    "threading:health": "curl -s http://localhost:3001/api/threading/health | jq",
+    "threading:restart": "curl -X POST http://localhost:3001/api/threading/restart",
+    "logs:threading": "tail -f logs/threading.log"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,10 +33,14 @@
     "jsonwebtoken": "^9.0.2",
     "modbus-serial": "^8.0.23",
     "mongoose": "^7.5.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "winston": "^3.18.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "@types/node": "^20.0.0"
   },
   "keywords": [
     "facility-management",

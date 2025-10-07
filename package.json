@@ -9,7 +9,8 @@
     "frontend": "cd responsive-web-app && npm run dev",
     "install-all": "npm install && cd backend && npm install && cd ../responsive-web-app && npm install",
     "build": "cd responsive-web-app && npm run build",
-    "start": "cd backend && npm start",
+    "start": "concurrently -k -t -p \"[{name}]\" -n backend,mcp-agent -c \"yellowBright,greenBright\" \"cd backend && npm start\" \"cd mcp-modbus-agent && node standalone-collector.mjs\"",
+    "mcp-agent": "cd mcp-modbus-agent && node standalone-collector.mjs",
     "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./stop-dev.ps1"
   },
   "devDependencies": {

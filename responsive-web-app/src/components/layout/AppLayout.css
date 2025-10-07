@@ -15,19 +15,24 @@
 .app-layout__body {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow-x: visible; /* Allow horizontal expansion */
+  overflow-y: hidden; /* Prevent vertical overflow on body */
 }
 
 .app-layout__content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: visible; /* Allow horizontal expansion */
+  overflow-y: auto; /* Keep vertical scrolling */
   /* When a fixed sidebar is present, offset the content by its width so
      the content sits to the right of the sidebar. Default (desktop)
      uses the full sidebar width; collapsed state is handled below. */
   margin-left: var(--sidebar-width, 280px);
   transition: margin-left 0.25s ease;
+  /* Allow content to expand beyond viewport */
+  width: auto;
+  max-width: none;
 }
 
 /* When the layout root has the collapsed class, let the sidebar
@@ -55,9 +60,10 @@
 
 /* Breadcrumbs */
 .app-layout__breadcrumbs {
-  padding: 1rem 1.5rem 0;
+  padding: 1rem 1.5rem 0 0.5rem;
   background-color: var(--color-surface, #ffffff);
   border-bottom: 1px solid var(--color-border, #e0e0e0);
+  width: 100%;
 }
 
 .breadcrumb-list {
@@ -127,12 +133,17 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 1.5rem;
+  overflow: visible; /* Allow horizontal expansion for wide content */
+  padding: 0.5rem 0.5rem 0.5rem 0;
   background-color: var(--color-background, #f5f5f5);
   /* Ensure horizontal scrolling works for wide content */
   min-width: 0; /* Allow flex item to shrink below content size */
   min-height: 0; /* Allow flex item to shrink below content size */
+  /* Left-justify content right after sidebar */
+  align-items: flex-start;
+  /* Allow content to expand beyond viewport */
+  width: 100%;
+  max-width: none;
 }
 
 /* Loading State */
@@ -183,8 +194,6 @@
     margin-left: 0;
   }
 
-
-
   .page-title {
     font-size: 1.5rem;
   }
@@ -194,32 +203,37 @@
     justify-content: flex-end;
   }
 
+  /* Add minimal padding for mobile touch targets while maintaining full width utilization */
   .app-layout__page-content {
-    padding: 1rem;
+    padding: 0.5rem 0.25rem 0.5rem 0.25rem;
   }
 
   .app-layout__breadcrumbs {
-    padding: 0.75rem 1rem 0;
+    padding: 0.75rem 0.25rem 0 0.25rem;
   }
 
   .breadcrumb-list {
     font-size: 0.8rem;
   }
 
+  /* Ensure touch targets are at least 44px for accessibility */
   .breadcrumb-link,
   .breadcrumb-current {
-    padding: 0.125rem 0.25rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 }
 
 @media (max-width: 480px) {
-
   .page-title {
     font-size: 1.25rem;
   }
 
+  /* Maintain minimal padding for touch targets on very small screens */
   .app-layout__page-content {
-    padding: 0.75rem;
+    padding: 0.5rem 0.25rem 0.5rem 0.25rem;
   }
 
   .breadcrumb-list {
@@ -229,6 +243,13 @@
 
   .breadcrumb-separator {
     margin: 0 0.25rem;
+  }
+
+  /* Ensure breadcrumb touch targets remain accessible on small screens */
+  .breadcrumb-link,
+  .breadcrumb-current {
+    padding: 0.5rem 0.5rem;
+    min-height: 44px;
   }
 }
 

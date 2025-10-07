@@ -8,7 +8,17 @@ export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<MeterReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statsExpanded, setStatsExpanded] = useState(true);
+  
+  // Load initial state from localStorage, default to true if not found
+  const [statsExpanded, setStatsExpanded] = useState(() => {
+    const savedState = localStorage.getItem('dashboard-stats-expanded');
+    return savedState !== null ? JSON.parse(savedState) : true;
+  });
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('dashboard-stats-expanded', JSON.stringify(statsExpanded));
+  }, [statsExpanded]);
 
   // Fetch dashboard statistics
   const fetchStats = async () => {
@@ -151,8 +161,8 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">🔋</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Reactive Power</h3>
-                <p className="dashboard__stat-value">{formatNumber(stats.avgTotalReactivePower)} kVAR</p>
-                <p className="dashboard__stat-subtitle">Average reactive</p>
+                <p className="dashboard__stat-value">{formatNumber(stats.totalKVARh)} kVARh</p>
+                <p className="dashboard__stat-subtitle">Total reactive</p>
               </div>
             </div>
 
@@ -160,8 +170,8 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">⚡</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Apparent Power</h3>
-                <p className="dashboard__stat-value">{formatNumber(stats.avgTotalApparentPower)} kVA</p>
-                <p className="dashboard__stat-subtitle">Average apparent</p>
+                <p className="dashboard__stat-value">{formatNumber(stats.totalKVAh)} kVAh</p>
+                <p className="dashboard__stat-subtitle">Total apparent</p>
               </div>
             </div>
 
@@ -169,8 +179,8 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">🌡️</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Temperature</h3>
-                <p className="dashboard__stat-value">{stats.avgTemperature ? stats.avgTemperature.toFixed(1) : '--'} °C</p>
-                <p className="dashboard__stat-subtitle">System average</p>
+                <p className="dashboard__stat-value">N/A</p>
+                <p className="dashboard__stat-subtitle">Not available</p>
               </div>
             </div>
 
@@ -178,8 +188,8 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">📊</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Voltage THD</h3>
-                <p className="dashboard__stat-value">{stats.avgVoltageThd ? stats.avgVoltageThd.toFixed(2) : '--'}%</p>
-                <p className="dashboard__stat-subtitle">Power quality</p>
+                <p className="dashboard__stat-value">N/A</p>
+                <p className="dashboard__stat-subtitle">Not available</p>
               </div>
             </div>
 
@@ -187,7 +197,7 @@ export const Dashboard: React.FC = () => {
               <div className="dashboard__stat-icon">📈</div>
               <div className="dashboard__stat-content">
                 <h3 className="dashboard__stat-title">Max Demand</h3>
-                <p className="dashboard__stat-value">{formatNumber(stats.maxDemandKW)} kW</p>
+                <p className="dashboard__stat-value">{formatNumber(stats.maxKWpeak)} kW</p>
                 <p className="dashboard__stat-subtitle">Peak demand</p>
               </div>
             </div>
