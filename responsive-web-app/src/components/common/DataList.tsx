@@ -47,6 +47,13 @@ export function DataList<T extends Record<string, any>>({
   return (
     <div className="data-list">
       <div className="data-list__header">
+        <div className="data-list__header-left">
+          {headerActions && (
+            <div className="data-list__header-actions">
+              {headerActions}
+            </div>
+          )}
+        </div>
         {title && (
           <div className="data-list__title-section">
             <h2 className="data-list__title">{title}</h2>

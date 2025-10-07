@@ -1,6 +1,9 @@
 /* Meter Readings List Component Styles */
 
 .meter-readings-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   background: var(--color-surface, #ffffff);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -23,23 +26,116 @@
   color: var(--color-text-primary, #111827);
 }
 
+/* Header Actions Container */
+.meter-readings-list__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Override DataList header for meter readings */
+.meter-readings-list .data-list__header {
+  background: linear-gradient(135deg, var(--color-primary-light, #eff6ff), var(--color-background-alt, #f9fafb));
+  border-bottom: 2px solid var(--color-primary, #3b82f6);
+}
+
+/* Responsive header layout */
+@media (max-width: 768px) {
+  .data-list__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  
+  .data-list__header-left {
+    width: 100%;
+  }
+  
+  .data-list__header-actions {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+  
+  .meter-readings-list__refresh-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Toggle Button */
+.meter-readings-list__toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid var(--color-secondary, #6b7280);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 140px;
+  height: 36px;
+}
+
+.meter-readings-list__toggle-btn:hover {
+  background: var(--color-secondary, #6b7280);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* Enhanced Refresh Button */
 .meter-readings-list__refresh-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid var(--color-primary, #3b82f6);
+  border-radius: 6px;
+  background: var(--color-primary, #3b82f6);
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 140px;
+  height: 36px;
 }
 
-.meter-readings-list__refresh-btn:hover {
-  background: var(--color-background-hover, #f3f4f6);
-  transform: rotate(90deg);
+.meter-readings-list__refresh-btn:hover:not(:disabled) {
+  background: var(--color-primary-dark, #2563eb);
+  border-color: var(--color-primary-dark, #2563eb);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.meter-readings-list__refresh-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.meter-readings-list__refresh-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: var(--color-gray-400, #9ca3af);
+  border-color: var(--color-gray-400, #9ca3af);
+}
+
+/* Refresh Spinner Animation */
+.meter-readings-list__refresh-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Loading State */
@@ -214,29 +310,106 @@
   }
 }
 
+/* Make DataList fill remaining height */
+.meter-readings-list .data-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.meter-readings-list .list__main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.meter-readings-list .list__content {
+  flex: 1;
+  min-height: 0;
+}
+
+.meter-readings-list .data-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Table Scrolling Enhancement */
 .meter-readings-list .data-table__wrapper {
-  /* Ensure horizontal scrolling works properly */
+  /* Enable both horizontal and vertical scrolling */
   overflow-x: auto !important;
-  overflow-y: visible;
+  overflow-y: auto !important;
+  /* Fill remaining height instead of fixed max-height */
+  flex: 1;
+  min-height: 0;
   /* Add some padding to prevent content from being cut off */
-  padding-bottom: 8px;
+  padding-bottom: 4px;
+  padding-right: 4px;
   /* Add a subtle border to indicate scrollable area */
   border: 2px solid var(--color-primary, #3b82f6);
   border-radius: 6px;
   /* Add a subtle shadow to indicate depth */
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  /* Force the wrapper to have a specific width to trigger scrolling */
+  /* Force the wrapper to have a specific width to trigger horizontal scrolling */
   max-width: 100%;
-  /* Ensure scrollbar is always visible for debugging */
-  scrollbar-width: auto;
+  /* Enhanced scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary, #3b82f6) var(--color-background-alt, #f9fafb);
+}
+
+/* Enhanced webkit scrollbar for better visibility - both horizontal and vertical */
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar {
+  width: 12px;  /* Vertical scrollbar width */
+  height: 12px; /* Horizontal scrollbar height */
+  background: var(--color-background-alt, #f9fafb);
+}
+
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar-track {
+  background: var(--color-background-alt, #f9fafb);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+/* Horizontal scrollbar thumb */
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar-thumb:horizontal {
+  background: linear-gradient(90deg, var(--color-primary, #3b82f6), var(--color-primary-dark, #2563eb));
+  border-radius: 6px;
+  border: 1px solid var(--color-primary-dark, #2563eb);
+}
+
+/* Vertical scrollbar thumb */
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar-thumb:vertical {
+  background: linear-gradient(180deg, var(--color-primary, #3b82f6), var(--color-primary-dark, #2563eb));
+  border-radius: 6px;
+  border: 1px solid var(--color-primary-dark, #2563eb);
+}
+
+/* General scrollbar thumb (fallback) */
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, var(--color-primary, #3b82f6), var(--color-primary-dark, #2563eb));
+  border-radius: 6px;
+  border: 1px solid var(--color-primary-dark, #2563eb);
+}
+
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, var(--color-primary-dark, #2563eb), var(--color-primary, #3b82f6));
+}
+
+/* Scrollbar corner where horizontal and vertical meet */
+.meter-readings-list .data-table__wrapper::-webkit-scrollbar-corner {
+  background: var(--color-background-alt, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 6px;
 }
 
 .meter-readings-list .data-table__table {
-  /* Force minimum width for many columns */
-  min-width: 2000px; /* Increased to ensure scrolling is needed */
+  /* Force minimum width for many columns - increased for all new fields */
+  min-width: 4500px !important;
   /* Ensure table doesn't shrink */
   width: max-content;
+  /* Ensure table layout is fixed for consistent column widths */
+  table-layout: fixed;
 }
 
 .meter-readings-list .data-table__header,
@@ -262,11 +435,26 @@
   position: relative;
 }
 
+/* Add scroll indicator */
+.meter-readings-list .data-table::before {
+  content: "← Scroll horizontally for more columns | ↕ Scroll vertically for more rows →";
+  display: block;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary, #3b82f6);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
+  border: 1px solid var(--color-primary-light, #93c5fd);
+  border-radius: 6px 6px 0 0;
+  margin-bottom: -1px;
+}
+
 /* Force table to be wider than container for testing */
 .meter-readings-list .data-table__table {
-  /* Override previous styles with more specific width */
-  min-width: 2500px !important;
-  width: 2500px !important;
+  /* Override previous styles with more specific width - increased for all new columns */
+  min-width: 4000px !important;
+  width: 4000px !important;
 }
 
 /* Scroll hint - temporarily disabled for debugging */

@@ -177,6 +177,8 @@ export interface DetailedMeterReading {
   quality: 'good' | 'estimated' | 'questionable';
   createdAt: Date;
   updatedAt: Date;
+  
+  // Additional optional fields from modbus agent
   deviceIP?: string;
   slaveId?: number;
   source?: string;
@@ -186,12 +188,126 @@ export interface DetailedMeterReading {
   energy?: number;
   frequency?: number;
   powerFactor?: number;
+  
+  // Phase voltage measurements
   phaseAVoltage?: number;
   phaseBVoltage?: number;
   phaseCVoltage?: number;
+  
+  // Phase current measurements
+  phaseACurrent?: number;
+  phaseBCurrent?: number;
+  phaseCCurrent?: number;
+  
+  // Phase power measurements
+  phaseAPower?: number;
+  phaseBPower?: number;
+  phaseCPower?: number;
+  
+  // Line-to-line voltage measurements
+  lineToLineVoltageAB?: number;
+  lineToLineVoltageBC?: number;
+  lineToLineVoltageCA?: number;
+  
+  // Power measurements
+  totalActivePower?: number;
+  totalReactivePower?: number;
+  totalApparentPower?: number;
+  
+  // Energy measurements
   totalActiveEnergyWh?: number;
+  totalReactiveEnergyVARh?: number;
+  totalApparentEnergyVAh?: number;
+  importActiveEnergyWh?: number;
+  exportActiveEnergyWh?: number;
+  importReactiveEnergyVARh?: number;
+  exportReactiveEnergyVARh?: number;
+  
+  // Additional measurements
   frequencyHz?: number;
   temperatureC?: number;
+  humidity?: number;
+  neutralCurrent?: number;
+  groundCurrent?: number;
+  
+  // Power factor per phase
+  phaseAPowerFactor?: number;
+  phaseBPowerFactor?: number;
+  phaseCPowerFactor?: number;
+  
+  // Total harmonic distortion
+  voltageThd?: number;
+  currentThd?: number;
+  voltageThdPhaseA?: number;
+  voltageThdPhaseB?: number;
+  voltageThdPhaseC?: number;
+  currentThdPhaseA?: number;
+  currentThdPhaseB?: number;
+  currentThdPhaseC?: number;
+  
+  // Individual harmonic measurements
+  voltageHarmonic3?: number;
+  voltageHarmonic5?: number;
+  voltageHarmonic7?: number;
+  currentHarmonic3?: number;
+  currentHarmonic5?: number;
+  currentHarmonic7?: number;
+  
+  // Demand measurements
+  maxDemandKW?: number;
+  maxDemandKVAR?: number;
+  maxDemandKVA?: number;
+  currentDemandKW?: number;
+  currentDemandKVAR?: number;
+  currentDemandKVA?: number;
+  predictedDemandKW?: number;
+  
+  // Advanced power quality measurements
+  voltageUnbalance?: number;
+  currentUnbalance?: number;
+  voltageFlicker?: number;
+  frequencyDeviation?: number;
+  
+  // Phase sequence and rotation
+  phaseSequence?: 'ABC' | 'ACB' | 'BAC' | 'BCA' | 'CAB' | 'CBA';
+  phaseRotation?: 'positive' | 'negative';
+  
+  // Power direction indicators
+  powerDirection?: 'import' | 'export';
+  reactiveDirection?: 'inductive' | 'capacitive';
+  
+  // Communication and status fields
+  communicationStatus?: 'ok' | 'error' | 'timeout' | 'offline';
+  lastCommunication?: Date;
+  dataQuality?: 'good' | 'estimated' | 'questionable' | 'bad';
+  
+  // Register-specific Modbus data
+  modbusRegister40001?: number;
+  modbusRegister40002?: number;
+  modbusRegister40003?: number;
+  modbusRegister40004?: number;
+  modbusRegister40005?: number;
+  
+  // Device information
+  deviceModel?: string;
+  firmwareVersion?: string;
+  serialNumber?: string;
+  manufacturerCode?: number;
+  
+  // Meter configuration
+  currentTransformerRatio?: number;
+  voltageTransformerRatio?: number;
+  pulseConstant?: number;
+  
+  // Time and synchronization
+  deviceTime?: Date;
+  syncStatus?: 'synchronized' | 'unsynchronized';
+  timeSource?: 'internal' | 'ntp' | 'gps';
+  
+  // Alarm and event information
+  alarmStatus?: 'active' | 'inactive';
+  eventCounter?: number;
+  lastEvent?: string;
 }
 
 // Meter Reading Statistics

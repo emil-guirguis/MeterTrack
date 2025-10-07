@@ -200,7 +200,37 @@ router.get('/stats/summary', requirePermission('meter:read'), async (req, res) =
           avgVoltage: { $avg: '$V' },
           avgCurrent: { $avg: '$A' },
           maxKWpeak: { $max: '$kWpeak' },
-          uniqueMeters: { $addToSet: '$meterId' }
+          uniqueMeters: { $addToSet: '$meterId' },
+          
+          // Extended statistics for new fields
+          totalActiveEnergyWh: { $sum: '$totalActiveEnergyWh' },
+          totalReactiveEnergyVARh: { $sum: '$totalReactiveEnergyVARh' },
+          totalApparentEnergyVAh: { $sum: '$totalApparentEnergyVAh' },
+          avgTotalReactivePower: { $avg: '$totalReactivePower' },
+          avgTotalApparentPower: { $avg: '$totalApparentPower' },
+          avgTemperature: { $avg: '$temperatureC' },
+          avgNeutralCurrent: { $avg: '$neutralCurrent' },
+          avgVoltageThd: { $avg: '$voltageThd' },
+          avgCurrentThd: { $avg: '$currentThd' },
+          maxDemandKW: { $max: '$maxDemandKW' },
+          maxDemandKVAR: { $max: '$maxDemandKVAR' },
+          maxDemandKVA: { $max: '$maxDemandKVA' },
+          
+          // Phase averages
+          avgPhaseAVoltage: { $avg: '$phaseAVoltage' },
+          avgPhaseBVoltage: { $avg: '$phaseBVoltage' },
+          avgPhaseCVoltage: { $avg: '$phaseCVoltage' },
+          avgPhaseACurrent: { $avg: '$phaseACurrent' },
+          avgPhaseBCurrent: { $avg: '$phaseBCurrent' },
+          avgPhaseCCurrent: { $avg: '$phaseCCurrent' },
+          avgPhaseAPower: { $avg: '$phaseAPower' },
+          avgPhaseBPower: { $avg: '$phaseBPower' },
+          avgPhaseCPower: { $avg: '$phaseCPower' },
+          
+          // Line-to-line voltage averages
+          avgLineToLineVoltageAB: { $avg: '$lineToLineVoltageAB' },
+          avgLineToLineVoltageBC: { $avg: '$lineToLineVoltageBC' },
+          avgLineToLineVoltageCA: { $avg: '$lineToLineVoltageCA' }
         }
       },
       {
@@ -214,7 +244,37 @@ router.get('/stats/summary', requirePermission('meter:read'), async (req, res) =
           avgVoltage: { $round: ['$avgVoltage', 1] },
           avgCurrent: { $round: ['$avgCurrent', 1] },
           maxKWpeak: { $round: ['$maxKWpeak', 1] },
-          uniqueMeters: { $size: '$uniqueMeters' }
+          uniqueMeters: { $size: '$uniqueMeters' },
+          
+          // Extended statistics
+          totalActiveEnergyWh: { $round: ['$totalActiveEnergyWh', 2] },
+          totalReactiveEnergyVARh: { $round: ['$totalReactiveEnergyVARh', 2] },
+          totalApparentEnergyVAh: { $round: ['$totalApparentEnergyVAh', 2] },
+          avgTotalReactivePower: { $round: ['$avgTotalReactivePower', 1] },
+          avgTotalApparentPower: { $round: ['$avgTotalApparentPower', 1] },
+          avgTemperature: { $round: ['$avgTemperature', 1] },
+          avgNeutralCurrent: { $round: ['$avgNeutralCurrent', 2] },
+          avgVoltageThd: { $round: ['$avgVoltageThd', 2] },
+          avgCurrentThd: { $round: ['$avgCurrentThd', 2] },
+          maxDemandKW: { $round: ['$maxDemandKW', 1] },
+          maxDemandKVAR: { $round: ['$maxDemandKVAR', 1] },
+          maxDemandKVA: { $round: ['$maxDemandKVA', 1] },
+          
+          // Phase averages
+          avgPhaseAVoltage: { $round: ['$avgPhaseAVoltage', 1] },
+          avgPhaseBVoltage: { $round: ['$avgPhaseBVoltage', 1] },
+          avgPhaseCVoltage: { $round: ['$avgPhaseCVoltage', 1] },
+          avgPhaseACurrent: { $round: ['$avgPhaseACurrent', 2] },
+          avgPhaseBCurrent: { $round: ['$avgPhaseBCurrent', 2] },
+          avgPhaseCCurrent: { $round: ['$avgPhaseCCurrent', 2] },
+          avgPhaseAPower: { $round: ['$avgPhaseAPower', 1] },
+          avgPhaseBPower: { $round: ['$avgPhaseBPower', 1] },
+          avgPhaseCPower: { $round: ['$avgPhaseCPower', 1] },
+          
+          // Line-to-line voltage averages
+          avgLineToLineVoltageAB: { $round: ['$avgLineToLineVoltageAB', 1] },
+          avgLineToLineVoltageBC: { $round: ['$avgLineToLineVoltageBC', 1] },
+          avgLineToLineVoltageCA: { $round: ['$avgLineToLineVoltageCA', 1] }
         }
       }
     ]);
@@ -230,7 +290,31 @@ router.get('/stats/summary', requirePermission('meter:read'), async (req, res) =
         avgVoltage: 0,
         avgCurrent: 0,
         maxKWpeak: 0,
-        uniqueMeters: 0
+        uniqueMeters: 0,
+        totalActiveEnergyWh: 0,
+        totalReactiveEnergyVARh: 0,
+        totalApparentEnergyVAh: 0,
+        avgTotalReactivePower: 0,
+        avgTotalApparentPower: 0,
+        avgTemperature: 0,
+        avgNeutralCurrent: 0,
+        avgVoltageThd: 0,
+        avgCurrentThd: 0,
+        maxDemandKW: 0,
+        maxDemandKVAR: 0,
+        maxDemandKVA: 0,
+        avgPhaseAVoltage: 0,
+        avgPhaseBVoltage: 0,
+        avgPhaseCVoltage: 0,
+        avgPhaseACurrent: 0,
+        avgPhaseBCurrent: 0,
+        avgPhaseCCurrent: 0,
+        avgPhaseAPower: 0,
+        avgPhaseBPower: 0,
+        avgPhaseCPower: 0,
+        avgLineToLineVoltageAB: 0,
+        avgLineToLineVoltageBC: 0,
+        avgLineToLineVoltageCA: 0
       }
     });
   } catch (error) {

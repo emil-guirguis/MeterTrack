@@ -43,12 +43,60 @@ class ModbusService {
       port = 502,
       slaveId = 1,
       registers = {
+        // Basic measurements
         voltage: { address: 0, count: 1, scale: 10 },
         current: { address: 2, count: 1, scale: 100 },
         power: { address: 4, count: 1, scale: 1 },
         energy: { address: 6, count: 2, scale: 1 }, // 32-bit value
         frequency: { address: 8, count: 1, scale: 10 },
-        powerFactor: { address: 10, count: 1, scale: 1000 }
+        powerFactor: { address: 10, count: 1, scale: 1000 },
+        
+        // Phase voltages
+        phaseAVoltage: { address: 12, count: 1, scale: 10 },
+        phaseBVoltage: { address: 14, count: 1, scale: 10 },
+        phaseCVoltage: { address: 16, count: 1, scale: 10 },
+        
+        // Phase currents
+        phaseACurrent: { address: 18, count: 1, scale: 100 },
+        phaseBCurrent: { address: 20, count: 1, scale: 100 },
+        phaseCCurrent: { address: 22, count: 1, scale: 100 },
+        
+        // Phase powers
+        phaseAPower: { address: 24, count: 1, scale: 1 },
+        phaseBPower: { address: 26, count: 1, scale: 1 },
+        phaseCPower: { address: 28, count: 1, scale: 1 },
+        
+        // Line-to-line voltages
+        lineToLineVoltageAB: { address: 30, count: 1, scale: 10 },
+        lineToLineVoltageBC: { address: 32, count: 1, scale: 10 },
+        lineToLineVoltageCA: { address: 34, count: 1, scale: 10 },
+        
+        // Power measurements
+        totalReactivePower: { address: 36, count: 1, scale: 1 },
+        totalApparentPower: { address: 38, count: 1, scale: 1 },
+        
+        // Energy measurements
+        totalActiveEnergyWh: { address: 40, count: 2, scale: 1 },
+        totalReactiveEnergyVARh: { address: 42, count: 2, scale: 1 },
+        totalApparentEnergyVAh: { address: 44, count: 2, scale: 1 },
+        
+        // Additional measurements
+        temperatureC: { address: 46, count: 1, scale: 10 },
+        neutralCurrent: { address: 48, count: 1, scale: 100 },
+        
+        // Power factor per phase
+        phaseAPowerFactor: { address: 50, count: 1, scale: 1000 },
+        phaseBPowerFactor: { address: 52, count: 1, scale: 1000 },
+        phaseCPowerFactor: { address: 54, count: 1, scale: 1000 },
+        
+        // Harmonic distortion
+        voltageThd: { address: 56, count: 1, scale: 100 },
+        currentThd: { address: 58, count: 1, scale: 100 },
+        
+        // Demand measurements
+        maxDemandKW: { address: 60, count: 1, scale: 1 },
+        maxDemandKVAR: { address: 62, count: 1, scale: 1 },
+        maxDemandKVA: { address: 64, count: 1, scale: 1 }
       }
     } = config;
 

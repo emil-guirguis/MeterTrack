@@ -18,14 +18,32 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
   const [readings, setReadings] = useState<DetailedMeterReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllColumns, setShowAllColumns] = useState(false);
 
   // Fetch latest meter readings
-  const fetchReadings = useCallback(async () => {
+  const fetchReadings = useCallback(async (fetchAll = false) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await meterReadingService.getLatestReadings();
-      setReadings(data.slice(0, maxItems));
+
+      let data;
+      if (fetchAll) {
+        // Fetch all readings with pagination (get more data)
+        const response = await meterReadingService.getMeterReadings({
+          page: 1,
+          pageSize: Math.max(maxItems * 2, 100), // Get at least 100 or double maxItems
+          sortBy: 'timestamp',
+          sortOrder: 'desc'
+        });
+        data = response.items;
+      } else {
+        // Fetch just the latest readings
+        data = await meterReadingService.getLatestReadings();
+      }
+
+      // Sort by timestamp descending (newest first)
+      const sortedData = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setReadings(sortedData.slice(0, maxItems));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch meter readings');
     } finally {
@@ -33,8 +51,24 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
     }
   }, [maxItems]);
 
+  // Handle refresh button click
+  const handleRefreshClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    fetchReadings(true);
+  }, [fetchReadings]);
+
   useEffect(() => {
-    fetchReadings();
+    fetchReadings(false); // Initial load - just latest readings
+
+    // Set up auto-refresh every 30 seconds to show new data
+    const refreshInterval = setInterval(() => {
+      fetchReadings(false); // Auto-refresh - just latest readings
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, [fetchReadings]);
 
   // Safe number check
@@ -62,98 +96,29 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
     }
   };
 
-  // Define table columns
-  const columns = [
-      {
-        key: 'deviceIP',
-        label: 'Device IP',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.deviceIP || reading.ip || ''
-      },
-      {
-        key: 'slaveId',
-        label: 'Slave ID',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.slaveId ?? ''
-      },
-      {
-        key: 'source',
-        label: 'Source',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.source ?? ''
-      },
-      {
-        key: 'voltage',
-        label: 'Voltage (modbus)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.voltage ?? ''
-      },
-      {
-        key: 'current',
-        label: 'Current (modbus)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.current ?? ''
-      },
-      {
-        key: 'power',
-        label: 'Power (modbus)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.power ?? ''
-      },
-      {
-        key: 'energy',
-        label: 'Energy (modbus)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.energy ?? ''
-      },
-      {
-        key: 'frequency',
-        label: 'Frequency (modbus)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.frequency ?? ''
-      },
-      {
-        key: 'powerFactor',
-        label: 'Power Factor (modbus)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.powerFactor ?? ''
-      },
-      {
-        key: 'phaseAVoltage',
-        label: 'Phase A Voltage',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.phaseAVoltage ?? ''
-      },
-      {
-        key: 'phaseBVoltage',
-        label: 'Phase B Voltage',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.phaseBVoltage ?? ''
-      },
-      {
-        key: 'phaseCVoltage',
-        label: 'Phase C Voltage',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.phaseCVoltage ?? ''
-      },
-      {
-        key: 'totalActiveEnergyWh',
-        label: 'Total Active Energy (Wh)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.totalActiveEnergyWh ?? ''
-      },
-      {
-        key: 'frequencyHz',
-        label: 'Frequency (Hz)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.frequencyHz ?? ''
-      },
-      {
-        key: 'temperatureC',
-        label: 'Temperature (°C)',
-        sortable: true,
-        render: (_value: any, reading: DetailedMeterReading) => reading.temperatureC ?? ''
-      },
+  // Define essential columns (shown by default)
+  const essentialColumns = [
+    {
+      key: 'timestamp',
+      label: 'Last Updated',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => (
+        <div className="meter-readings__timestamp-cell">
+          <div className="meter-readings__date">
+            {new Date(reading.timestamp).toLocaleDateString()}
+          </div>
+          <div className="meter-readings__time">
+            {new Date(reading.timestamp).toLocaleTimeString()}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'deviceIP',
+      label: 'Device IP',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.deviceIP || reading.ip || ''
+    },
     {
       key: 'meterId',
       label: 'Meter ID',
@@ -238,22 +203,292 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
         </div>
       )
     },
+  ];
+
+  // Define additional columns (shown when expanded)
+  const additionalColumns = [
     {
-      key: 'timestamp',
-      label: 'Last Updated',
+      key: 'slaveId',
+      label: 'Slave ID',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.slaveId ?? ''
+    },
+    {
+      key: 'source',
+      label: 'Source',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.source ?? ''
+    },
+    {
+      key: 'voltage',
+      label: 'Voltage (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.voltage ? formatValue(reading.voltage, 'V') : ''
+    },
+    {
+      key: 'current',
+      label: 'Current (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.current ? formatValue(reading.current, 'A') : ''
+    },
+    {
+      key: 'power',
+      label: 'Power (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.power ? formatValue(reading.power, 'W') : ''
+    },
+    {
+      key: 'energy',
+      label: 'Energy (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.energy ? formatValue(reading.energy, 'Wh') : ''
+    },
+    {
+      key: 'frequency',
+      label: 'Frequency (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.frequency ? formatValue(reading.frequency, 'Hz') : ''
+    },
+    {
+      key: 'powerFactor',
+      label: 'Power Factor (modbus)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.powerFactor ? formatPowerFactor(reading.powerFactor) : ''
+    },
+    {
+      key: 'phaseAVoltage',
+      label: 'Phase A Voltage',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseAVoltage ? formatValue(reading.phaseAVoltage, 'V') : ''
+    },
+    {
+      key: 'phaseBVoltage',
+      label: 'Phase B Voltage',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseBVoltage ? formatValue(reading.phaseBVoltage, 'V') : ''
+    },
+    {
+      key: 'phaseCVoltage',
+      label: 'Phase C Voltage',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseCVoltage ? formatValue(reading.phaseCVoltage, 'V') : ''
+    },
+    {
+      key: 'phaseACurrent',
+      label: 'Phase A Current',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseACurrent ? formatValue(reading.phaseACurrent, 'A') : ''
+    },
+    {
+      key: 'phaseBCurrent',
+      label: 'Phase B Current',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseBCurrent ? formatValue(reading.phaseBCurrent, 'A') : ''
+    },
+    {
+      key: 'phaseCCurrent',
+      label: 'Phase C Current',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseCCurrent ? formatValue(reading.phaseCCurrent, 'A') : ''
+    },
+    {
+      key: 'phaseAPower',
+      label: 'Phase A Power',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseAPower ? formatValue(reading.phaseAPower, 'W') : ''
+    },
+    {
+      key: 'phaseBPower',
+      label: 'Phase B Power',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseBPower ? formatValue(reading.phaseBPower, 'W') : ''
+    },
+    {
+      key: 'phaseCPower',
+      label: 'Phase C Power',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseCPower ? formatValue(reading.phaseCPower, 'W') : ''
+    },
+    {
+      key: 'lineToLineVoltageAB',
+      label: 'Line Voltage AB',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.lineToLineVoltageAB ? formatValue(reading.lineToLineVoltageAB, 'V') : ''
+    },
+    {
+      key: 'lineToLineVoltageBC',
+      label: 'Line Voltage BC',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.lineToLineVoltageBC ? formatValue(reading.lineToLineVoltageBC, 'V') : ''
+    },
+    {
+      key: 'lineToLineVoltageCA',
+      label: 'Line Voltage CA',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.lineToLineVoltageCA ? formatValue(reading.lineToLineVoltageCA, 'V') : ''
+    },
+    {
+      key: 'totalActivePower',
+      label: 'Total Active Power',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.totalActivePower ? formatValue(reading.totalActivePower, 'W') : ''
+    },
+    {
+      key: 'totalReactivePower',
+      label: 'Total Reactive Power',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.totalReactivePower ? formatValue(reading.totalReactivePower, 'VAR') : ''
+    },
+    {
+      key: 'totalApparentPower',
+      label: 'Total Apparent Power',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.totalApparentPower ? formatValue(reading.totalApparentPower, 'VA') : ''
+    },
+    {
+      key: 'totalActiveEnergyWh',
+      label: 'Total Active Energy',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.totalActiveEnergyWh ? formatValue(reading.totalActiveEnergyWh, 'Wh') : ''
+    },
+    {
+      key: 'totalReactiveEnergyVARh',
+      label: 'Total Reactive Energy',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.totalReactiveEnergyVARh ? formatValue(reading.totalReactiveEnergyVARh, 'VARh') : ''
+    },
+    {
+      key: 'totalApparentEnergyVAh',
+      label: 'Total Apparent Energy',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.totalApparentEnergyVAh ? formatValue(reading.totalApparentEnergyVAh, 'VAh') : ''
+    },
+    {
+      key: 'frequencyHz',
+      label: 'Frequency (Hz)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.frequencyHz ? formatValue(reading.frequencyHz, 'Hz') : ''
+    },
+    {
+      key: 'temperatureC',
+      label: 'Temperature',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.temperatureC ? formatValue(reading.temperatureC, '°C') : ''
+    },
+    {
+      key: 'humidity',
+      label: 'Humidity',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.humidity ? formatValue(reading.humidity, '%') : ''
+    },
+    {
+      key: 'neutralCurrent',
+      label: 'Neutral Current',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.neutralCurrent ? formatValue(reading.neutralCurrent, 'A') : ''
+    },
+    {
+      key: 'phaseAPowerFactor',
+      label: 'Phase A PF',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseAPowerFactor ? formatPowerFactor(reading.phaseAPowerFactor) : ''
+    },
+    {
+      key: 'phaseBPowerFactor',
+      label: 'Phase B PF',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseBPowerFactor ? formatPowerFactor(reading.phaseBPowerFactor) : ''
+    },
+    {
+      key: 'phaseCPowerFactor',
+      label: 'Phase C PF',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.phaseCPowerFactor ? formatPowerFactor(reading.phaseCPowerFactor) : ''
+    },
+    {
+      key: 'voltageThd',
+      label: 'Voltage THD',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.voltageThd ? formatValue(reading.voltageThd, '%') : ''
+    },
+    {
+      key: 'currentThd',
+      label: 'Current THD',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.currentThd ? formatValue(reading.currentThd, '%') : ''
+    },
+    {
+      key: 'maxDemandKW',
+      label: 'Max Demand (kW)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.maxDemandKW ? formatValue(reading.maxDemandKW, 'kW') : ''
+    },
+    {
+      key: 'maxDemandKVAR',
+      label: 'Max Demand (kVAR)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.maxDemandKVAR ? formatValue(reading.maxDemandKVAR, 'kVAR') : ''
+    },
+    {
+      key: 'maxDemandKVA',
+      label: 'Max Demand (kVA)',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.maxDemandKVA ? formatValue(reading.maxDemandKVA, 'kVA') : ''
+    },
+    {
+      key: 'voltageUnbalance',
+      label: 'Voltage Unbalance',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.voltageUnbalance ? formatValue(reading.voltageUnbalance, '%') : ''
+    },
+    {
+      key: 'currentUnbalance',
+      label: 'Current Unbalance',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.currentUnbalance ? formatValue(reading.currentUnbalance, '%') : ''
+    },
+    {
+      key: 'communicationStatus',
+      label: 'Comm Status',
       sortable: true,
       render: (_value: any, reading: DetailedMeterReading) => (
-        <div className="meter-readings__timestamp-cell">
-          <div className="meter-readings__date">
-            {new Date(reading.timestamp).toLocaleDateString()}
-          </div>
-          <div className="meter-readings__time">
-            {new Date(reading.timestamp).toLocaleTimeString()}
-          </div>
-        </div>
+        <span className={`status-badge status-badge--${reading.communicationStatus === 'ok' ? 'success' : 'error'}`}>
+          {reading.communicationStatus || 'unknown'}
+        </span>
+      )
+    },
+    {
+      key: 'deviceModel',
+      label: 'Device Model',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.deviceModel || ''
+    },
+    {
+      key: 'firmwareVersion',
+      label: 'Firmware',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.firmwareVersion || ''
+    },
+    {
+      key: 'serialNumber',
+      label: 'Serial Number',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => reading.serialNumber || ''
+    },
+    {
+      key: 'alarmStatus',
+      label: 'Alarms',
+      sortable: true,
+      render: (_value: any, reading: DetailedMeterReading) => (
+        <span className={`status-badge status-badge--${reading.alarmStatus === 'active' ? 'warning' : 'success'}`}>
+          {reading.alarmStatus || 'inactive'}
+        </span>
       )
     }
   ];
+
+  // Combine columns based on user preference
+  const columns = showAllColumns ? [...essentialColumns, ...additionalColumns] : essentialColumns;
 
   if (loading) {
     return (
@@ -273,9 +508,13 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
         {showTitle && <h3 className="meter-readings-list__title">Latest Meter Readings</h3>}
         <div className="meter-readings-list__error">
           <p>Error: {error}</p>
-          <button 
+          <button
+            type="button"
             className="meter-readings-list__retry-btn"
-            onClick={fetchReadings}
+            onClick={(e) => {
+              e.preventDefault();
+              fetchReadings(false);
+            }}
           >
             Retry
           </button>
@@ -296,13 +535,34 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
         hoverable
         emptyMessage="No meter readings available"
         headerActions={
-          <button 
-            className="meter-readings-list__refresh-btn"
-            onClick={fetchReadings}
-            title="Refresh readings"
-          >
-            🔄
-          </button>
+          <div className="meter-readings-list__header-actions">
+            <button
+              type="button"
+              className="meter-readings-list__toggle-btn"
+              onClick={() => setShowAllColumns(!showAllColumns)}
+              title={showAllColumns ? 'Show essential columns only' : 'Show all columns'}
+            >
+              {showAllColumns ? '📋 Show Less' : '📊 Show All Columns'}
+            </button>
+            <button
+              type="button"
+              className="meter-readings-list__refresh-btn"
+              onClick={handleRefreshClick}
+              disabled={loading}
+              title="Refresh all meter readings from database"
+            >
+              {loading ? (
+                <>
+                  <span className="meter-readings-list__refresh-spinner">⟳</span>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  🔄 Refresh All Data
+                </>
+              )}
+            </button>
+          </div>
         }
       />
     </div>

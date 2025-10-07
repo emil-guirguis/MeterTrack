@@ -8,6 +8,36 @@
   overflow: hidden;
 }
 
+/* DataList Header Styles */
+.data-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--color-background-alt, #f9fafb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.data-list__header-left {
+  display: flex;
+  align-items: center;
+}
+
+.data-list__header-actions {
+  margin-right: 16px;
+}
+
+.data-list__title-section {
+  flex: 1;
+}
+
+.data-list__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
 /* Bulk Actions */
 .data-table__bulk-actions {
   display: flex;

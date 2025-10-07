@@ -27,12 +27,126 @@ const meterReadingSchema = new mongoose.Schema({
   energy: { type: Number, min: [0, 'Energy cannot be negative'] },
   frequency: { type: Number, min: [0, 'Frequency cannot be negative'] },
   powerFactor: { type: Number, min: [0, 'Power factor cannot be negative'], max: [1, 'Power factor cannot exceed 1'] },
-    phaseAVoltage: { type: Number },
-    phaseBVoltage: { type: Number },
-    phaseCVoltage: { type: Number },
-    totalActiveEnergyWh: { type: Number },
-    frequencyHz: { type: Number },
-    temperatureC: { type: Number },
+  
+  // Phase voltage measurements
+  phaseAVoltage: { type: Number },
+  phaseBVoltage: { type: Number },
+  phaseCVoltage: { type: Number },
+  
+  // Phase current measurements
+  phaseACurrent: { type: Number },
+  phaseBCurrent: { type: Number },
+  phaseCCurrent: { type: Number },
+  
+  // Phase power measurements
+  phaseAPower: { type: Number },
+  phaseBPower: { type: Number },
+  phaseCPower: { type: Number },
+  
+  // Line-to-line voltage measurements
+  lineToLineVoltageAB: { type: Number },
+  lineToLineVoltageBC: { type: Number },
+  lineToLineVoltageCA: { type: Number },
+  
+  // Power measurements
+  totalActivePower: { type: Number },
+  totalReactivePower: { type: Number },
+  totalApparentPower: { type: Number },
+  
+  // Energy measurements
+  totalActiveEnergyWh: { type: Number },
+  totalReactiveEnergyVARh: { type: Number },
+  totalApparentEnergyVAh: { type: Number },
+  importActiveEnergyWh: { type: Number },
+  exportActiveEnergyWh: { type: Number },
+  importReactiveEnergyVARh: { type: Number },
+  exportReactiveEnergyVARh: { type: Number },
+  
+  // Additional measurements
+  frequencyHz: { type: Number },
+  temperatureC: { type: Number },
+  humidity: { type: Number },
+  neutralCurrent: { type: Number },
+  groundCurrent: { type: Number },
+  
+  // Power factor per phase
+  phaseAPowerFactor: { type: Number, min: [0, 'Power factor cannot be negative'], max: [1, 'Power factor cannot exceed 1'] },
+  phaseBPowerFactor: { type: Number, min: [0, 'Power factor cannot be negative'], max: [1, 'Power factor cannot exceed 1'] },
+  phaseCPowerFactor: { type: Number, min: [0, 'Power factor cannot be negative'], max: [1, 'Power factor cannot exceed 1'] },
+  
+  // Total harmonic distortion
+  voltageThd: { type: Number },
+  currentThd: { type: Number },
+  voltageThdPhaseA: { type: Number },
+  voltageThdPhaseB: { type: Number },
+  voltageThdPhaseC: { type: Number },
+  currentThdPhaseA: { type: Number },
+  currentThdPhaseB: { type: Number },
+  currentThdPhaseC: { type: Number },
+  
+  // Individual harmonic measurements
+  voltageHarmonic3: { type: Number },
+  voltageHarmonic5: { type: Number },
+  voltageHarmonic7: { type: Number },
+  currentHarmonic3: { type: Number },
+  currentHarmonic5: { type: Number },
+  currentHarmonic7: { type: Number },
+  
+  // Demand measurements
+  maxDemandKW: { type: Number },
+  maxDemandKVAR: { type: Number },
+  maxDemandKVA: { type: Number },
+  currentDemandKW: { type: Number },
+  currentDemandKVAR: { type: Number },
+  currentDemandKVA: { type: Number },
+  predictedDemandKW: { type: Number },
+  
+  // Advanced power quality measurements
+  voltageUnbalance: { type: Number },
+  currentUnbalance: { type: Number },
+  voltageFlicker: { type: Number },
+  frequencyDeviation: { type: Number },
+  
+  // Phase sequence and rotation
+  phaseSequence: { type: String, enum: ['ABC', 'ACB', 'BAC', 'BCA', 'CAB', 'CBA'] },
+  phaseRotation: { type: String, enum: ['positive', 'negative'] },
+  
+  // Power direction indicators
+  powerDirection: { type: String, enum: ['import', 'export'] },
+  reactiveDirection: { type: String, enum: ['inductive', 'capacitive'] },
+  
+  // Communication and status fields
+  communicationStatus: { type: String, enum: ['ok', 'error', 'timeout', 'offline'] },
+  lastCommunication: { type: Date },
+  dataQuality: { type: String, enum: ['good', 'estimated', 'questionable', 'bad'] },
+  
+  // Register-specific Modbus data
+  modbusRegister40001: { type: Number },
+  modbusRegister40002: { type: Number },
+  modbusRegister40003: { type: Number },
+  modbusRegister40004: { type: Number },
+  modbusRegister40005: { type: Number },
+  
+  // Device information
+  deviceModel: { type: String },
+  firmwareVersion: { type: String },
+  serialNumber: { type: String },
+  manufacturerCode: { type: Number },
+  
+  // Meter configuration
+  currentTransformerRatio: { type: Number },
+  voltageTransformerRatio: { type: Number },
+  pulseConstant: { type: Number },
+  
+  // Time and synchronization
+  deviceTime: { type: Date },
+  syncStatus: { type: String, enum: ['synchronized', 'unsynchronized'] },
+  timeSource: { type: String, enum: ['internal', 'ntp', 'gps'] },
+  
+  // Alarm and event information
+  alarmStatus: { type: String, enum: ['active', 'inactive'] },
+  eventCounter: { type: Number },
+  lastEvent: { type: String },
   ip: {
     type: String,
     required: [true, 'IP address is required'],

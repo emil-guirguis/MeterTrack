@@ -8,6 +8,7 @@ export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<MeterReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statsExpanded, setStatsExpanded] = useState(true);
 
   // Fetch dashboard statistics
   const fetchStats = async () => {
@@ -25,6 +26,16 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchStats();
+    
+    // Set up auto-refresh for stats every 30 seconds
+    const statsInterval = setInterval(() => {
+      fetchStats();
+    }, 30000); // 30 seconds
+    
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(statsInterval);
+    };
   }, []);
 
   // Format large numbers
@@ -48,21 +59,39 @@ export const Dashboard: React.FC = () => {
         <p className="dashboard__subtitle">Real-time monitoring and energy management</p>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="dashboard__stats">
-        {loading ? (
-          <div className="dashboard__stats-loading">
-            <div className="dashboard__spinner"></div>
-            <p>Loading statistics...</p>
-          </div>
-        ) : error ? (
-          <div className="dashboard__stats-error">
-            <p>Error loading statistics: {error}</p>
-            <button type="button" onClick={fetchStats} className="dashboard__retry-btn">
-              Retry
-            </button>
-          </div>
-        ) : stats ? (
+      {/* Statistics Section - Collapsible */}
+      <div className="dashboard__stats-section">
+        <div className="dashboard__stats-header" onClick={() => setStatsExpanded(!statsExpanded)}>
+          <h2 className="dashboard__stats-title">
+            <span className="dashboard__stats-icon">📊</span>
+            Meter Statistics
+          </h2>
+          <button 
+            type="button" 
+            className={`dashboard__collapse-btn ${statsExpanded ? 'dashboard__collapse-btn--expanded' : ''}`}
+            aria-label={statsExpanded ? 'Collapse statistics' : 'Expand statistics'}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className={`dashboard__stats-content ${statsExpanded ? 'dashboard__stats-content--expanded' : ''}`}>
+          <div className="dashboard__stats">
+            {loading ? (
+              <div className="dashboard__stats-loading">
+                <div className="dashboard__spinner"></div>
+                <p>Loading statistics...</p>
+              </div>
+            ) : error ? (
+              <div className="dashboard__stats-error">
+                <p>Error loading statistics: {error}</p>
+                <button type="button" onClick={fetchStats} className="dashboard__retry-btn">
+                  Retry
+                </button>
+              </div>
+            ) : stats ? (
           <>
             <div className="dashboard__stat-card dashboard__stat-card--energy">
               <div className="dashboard__stat-icon">⚡</div>
@@ -117,15 +146,62 @@ export const Dashboard: React.FC = () => {
                 <p className="dashboard__stat-subtitle">System load</p>
               </div>
             </div>
-          </>
-        ) : null}
+
+            <div className="dashboard__stat-card dashboard__stat-card--reactive">
+              <div className="dashboard__stat-icon">🔋</div>
+              <div className="dashboard__stat-content">
+                <h3 className="dashboard__stat-title">Reactive Power</h3>
+                <p className="dashboard__stat-value">{formatNumber(stats.avgTotalReactivePower)} kVAR</p>
+                <p className="dashboard__stat-subtitle">Average reactive</p>
+              </div>
+            </div>
+
+            <div className="dashboard__stat-card dashboard__stat-card--apparent">
+              <div className="dashboard__stat-icon">⚡</div>
+              <div className="dashboard__stat-content">
+                <h3 className="dashboard__stat-title">Apparent Power</h3>
+                <p className="dashboard__stat-value">{formatNumber(stats.avgTotalApparentPower)} kVA</p>
+                <p className="dashboard__stat-subtitle">Average apparent</p>
+              </div>
+            </div>
+
+            <div className="dashboard__stat-card dashboard__stat-card--temperature">
+              <div className="dashboard__stat-icon">🌡️</div>
+              <div className="dashboard__stat-content">
+                <h3 className="dashboard__stat-title">Temperature</h3>
+                <p className="dashboard__stat-value">{stats.avgTemperature ? stats.avgTemperature.toFixed(1) : '--'} °C</p>
+                <p className="dashboard__stat-subtitle">System average</p>
+              </div>
+            </div>
+
+            <div className="dashboard__stat-card dashboard__stat-card--thd">
+              <div className="dashboard__stat-icon">📊</div>
+              <div className="dashboard__stat-content">
+                <h3 className="dashboard__stat-title">Voltage THD</h3>
+                <p className="dashboard__stat-value">{stats.avgVoltageThd ? stats.avgVoltageThd.toFixed(2) : '--'}%</p>
+                <p className="dashboard__stat-subtitle">Power quality</p>
+              </div>
+            </div>
+
+            <div className="dashboard__stat-card dashboard__stat-card--demand">
+              <div className="dashboard__stat-icon">📈</div>
+              <div className="dashboard__stat-content">
+                <h3 className="dashboard__stat-title">Max Demand</h3>
+                <p className="dashboard__stat-value">{formatNumber(stats.maxDemandKW)} kW</p>
+                <p className="dashboard__stat-subtitle">Peak demand</p>
+              </div>
+            </div>
+            </>
+          ) : null}
+          </div>
+        </div>
       </div>
 
       {/* Latest Meter Readings */}
       <div className="dashboard__content">
         <MeterReadingsList 
           className="dashboard__meter-readings"
-          maxItems={15}
+          maxItems={50}
         />
       </div>
     </div>
