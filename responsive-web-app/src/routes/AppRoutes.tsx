@@ -11,25 +11,6 @@ import { BuildingManagementPage } from '../pages/buildings';
 import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
 import { Permission, UserRole } from '../types/auth';
 import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
-        {/* Meters Module Placeholder */}
-        <Route
-          path="/meters"
-          element={
-            <AppLayout title="Meters">
-              <MetersPage />
-            </AppLayout>
-          }
-        />
-
-        {/* Email Templates Module Placeholder */}
-        <Route
-          path="/templates"
-          element={
-            <AppLayout title="Email Templates">
-              <TemplatesPage />
-            </AppLayout>
-          }
-        />
 
 // Dashboard Page with Layout
 const DashboardPage = () => (
@@ -140,6 +121,30 @@ const AppRoutes: React.FC = () => {
           element={
             <AuthGuard requiredPermissions={[Permission.CONTACT_READ]}>
               <ContactManagementPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Meters Module Placeholder */}
+        <Route
+          path="/meters"
+          element={
+            <AuthGuard requiredPermissions={[Permission.METER_READ]}>
+              <AppLayout title="Meters">
+                <MetersPage />
+              </AppLayout>
+            </AuthGuard>
+          }
+        />
+
+        {/* Email Templates Module Placeholder */}
+        <Route
+          path="/templates"
+          element={
+            <AuthGuard requiredPermissions={[Permission.TEMPLATE_READ]}>
+              <AppLayout title="Email Templates">
+                <TemplatesPage />
+              </AppLayout>
             </AuthGuard>
           }
         />

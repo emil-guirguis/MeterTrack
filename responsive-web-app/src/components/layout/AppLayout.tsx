@@ -36,13 +36,6 @@ const menuItems: MenuItem[] = [
     requiredPermission: Permission.BUILDING_READ
   },
   {
-    id: 'equipment',
-    label: 'Equipment',
-    icon: 'equipment',
-    path: '/equipment',
-    requiredPermission: Permission.EQUIPMENT_READ
-  },
-  {
     id: 'contacts',
     label: 'Contacts',
     icon: 'contacts',

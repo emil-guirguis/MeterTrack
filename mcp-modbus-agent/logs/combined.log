@@ -298,3 +298,26 @@
 {"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-07T23:42:05.598Z"}
 {"level":"info","message":"Data collector initialized successfully","service":"modbus-mcp-agent","timestamp":"2025-10-07T23:42:05.599Z"}
 {"level":"info","message":"Data collection started with interval: 30000ms","service":"modbus-mcp-agent","timestamp":"2025-10-07T23:42:05.603Z"}
+{"level":"info","message":"Connected to MongoDB: meterdb.meterreadings","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:36.822Z"}
+{"level":"info","message":"Database indexes created successfully","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:36.997Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.048Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.048Z"}
+{"level":"info","message":"Initializing data collector...","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.053Z"}
+{"level":"info","message":"Connected to MongoDB: meterdb.meterreadings","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.054Z"}
+{"level":"info","message":"Database indexes created successfully","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.219Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.223Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.224Z"}
+{"level":"info","message":"Data collector initialized successfully","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.225Z"}
+{"level":"info","message":"Data collection started with interval: 30000ms","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:09:37.229Z"}
+{"level":"info","message":"Shutting down data collector...","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:16:52.340Z"}
+{"level":"info","message":"Connected to MongoDB: meterdb.meterreadings","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:08.753Z"}
+{"level":"info","message":"Database indexes created successfully","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:08.909Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:08.959Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:08.962Z"}
+{"level":"info","message":"Initializing data collector...","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:08.975Z"}
+{"level":"info","message":"Connected to MongoDB: meterdb.meterreadings","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:08.976Z"}
+{"level":"info","message":"Database indexes created successfully","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:09.136Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:09.141Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:09.142Z"}
+{"level":"info","message":"Data collector initialized successfully","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:09.142Z"}
+{"level":"info","message":"Data collection started with interval: 30000ms","service":"modbus-mcp-agent","timestamp":"2025-10-08T00:17:09.146Z"}

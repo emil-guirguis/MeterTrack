@@ -501,7 +501,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
   if (loading) {
     return (
       <div className={`meter-readings-list ${className}`}>
-        {showTitle && <h3 className="meter-readings-list__title">Latest Meter Readings</h3>}
+        {showTitle && <h3 className="meter-readings-list__title">Meter Readings</h3>}
         <div className="meter-readings-list__loading">
           <div className="meter-readings-list__spinner"></div>
           <p>Loading meter readings...</p>
@@ -566,7 +566,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
                 </>
               ) : (
                 <>
-                  🔄 Refresh All Data
+                  🔄 Refresh
                 </>
               )}
             </button>
