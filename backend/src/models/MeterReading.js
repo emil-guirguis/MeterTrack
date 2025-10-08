@@ -21,6 +21,8 @@ const meterReadingSchema = new mongoose.Schema({
     trim: true
   },
   // Additional optional fields captured by the agent
+  rawBasic: { type: [Number] },
+  rawExtended: { type: [Number] },
   voltage: { type: Number, min: [0, 'Voltage cannot be negative'] },
   current: { type: Number, min: [0, 'Current cannot be negative'] },
   power: { type: Number, min: [0, 'Power cannot be negative'] },

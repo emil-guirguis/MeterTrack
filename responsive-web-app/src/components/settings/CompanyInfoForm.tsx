@@ -1,5 +1,6 @@
 import React from 'react';
 import { CountrySelect } from '../common';
+import Toast from '../common/Toast';
 import './SettingsForm.css';
 
 export interface CompanyInfoFormProps {
@@ -14,7 +15,8 @@ export interface CompanyInfoFormProps {
 const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onSubmit, onCancel, loading, error }) => {
   return (
     <form className="settings-form" onSubmit={e => { e.preventDefault(); onSubmit(); }}>
-      {error && <div className="settings-form__error">{error}</div>}
+      {/* Show error as a toast notification */}
+      {error && <Toast message={error} type="error" />}
       <div className="settings-form__section">
         <h3 className="settings-form__section-title">Company Information</h3>
         <div className="settings-form__row">

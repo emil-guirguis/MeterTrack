@@ -1,3 +1,20 @@
+// List of all expected fields for frontend datagrid
+const expectedFields = [
+  'timestamp','deviceIP','ip','port','meterId','energy','voltage','kWh','kW','V','A','dPF','dPFchannel','quality','slaveId','source','current','power','frequency','powerFactor','phaseAVoltage','phaseBVoltage','phaseCVoltage','phaseACurrent','phaseBCurrent','phaseCCurrent','phaseAPower','phaseBPower','phaseCPower','lineToLineVoltageAB','lineToLineVoltageBC','lineToLineVoltageCA','totalActivePower','totalReactivePower','totalApparentPower','totalActiveEnergyWh','totalReactiveEnergyVARh','totalApparentEnergyVAh','frequencyHz','temperatureC','humidity','neutralCurrent','phaseAPowerFactor','phaseBPowerFactor','phaseCPowerFactor','voltageThd','currentThd','maxDemandKW','maxDemandKVAR','maxDemandKVA','voltageUnbalance','currentUnbalance','communicationStatus','deviceModel','firmwareVersion','serialNumber','alarmStatus'
+];
+
+function fillMissingFields(reading) {
+  // Start with all existing fields
+  const result = { ...reading };
+  // Ensure expected fields are present (default to null if missing)
+  expectedFields.forEach(field => {
+    if (result[field] === undefined) result[field] = null;
+  });
+  // Preserve/derive id if present
+  if (reading.id) result.id = reading.id;
+  if (!result.id && reading._id) result.id = String(reading._id);
+  return result;
+}
 const express = require('express');
 const { query, validationResult } = require('express-validator');
 const MeterReading = require('../models/MeterReading');
@@ -60,7 +77,7 @@ router.get('/', [
     res.json({
       success: true,
       data: {
-        items: readings,
+        items: readings.map(fillMissingFields),
         total,
         page: parseInt(page),
         pageSize: parseInt(pageSize),
@@ -89,7 +106,7 @@ router.get('/recent', requirePermission('meter:read'), async (req, res) => {
 
     res.json({
       success: true,
-      data: recentReadings
+      data: recentReadings.map(fillMissingFields)
     });
   } catch (error) {
     console.error('Get recent readings error:', error);
@@ -127,7 +144,7 @@ router.get('/latest', requirePermission('meter:read'), async (req, res) => {
 
     res.json({
       success: true,
-      data: latestReadings
+      data: latestReadings.map(fillMissingFields)
     });
   } catch (error) {
     console.error('Get latest readings error:', error);
@@ -152,7 +169,7 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
 
     res.json({
       success: true,
-      data: reading
+      data: fillMissingFields(reading)
     });
   } catch (error) {
     console.error('Get meter reading error:', error);
@@ -197,7 +214,7 @@ router.get('/meter/:meterId', [
 
     res.json({
       success: true,
-      data: readings
+      data: readings.map(fillMissingFields)
     });
   } catch (error) {
     console.error('Get meter readings by meter ID error:', error);

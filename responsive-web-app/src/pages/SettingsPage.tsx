@@ -1,64 +1,84 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, Tab } from '@mui/material';
 import CompanyInfoForm from '../components/settings/CompanyInfoForm';
 import BrandingForm from '../components/settings/BrandingForm';
 import SystemConfigForm from '../components/settings/SystemConfigForm';
 import './SettingsPage.css';
+import { useSettings } from '../store/entities/settingsStore';
 
 const SettingsPage: React.FC = () => {
   const [tab, setTab] = useState(0);
+  const {
+    settings,
+    loading,
+    error,
+    fetchSettings,
+    updateSettings,
+    updateBranding,
+    updateSystemConfig,
+  } = useSettings();
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTab(newValue);
+  useEffect(() => {
+    fetchSettings();
+    // eslint-disable-next-line
+  }, []);
+
+  // Handlers for updating settings
+  const handleCompanyInfoChange = (field: string, value: any) => {
+    if (!settings) return;
+    updateSettings({ ...settings, [field]: value });
   };
-
-  // Mock state for demonstration; replace with real state management
-  const [companyInfo, setCompanyInfo] = useState<any>({});
-  const [branding, setBranding] = useState<any>({});
-  const [systemConfig, setSystemConfig] = useState<any>({});
-  const [loading] = useState(false);
-  const [error] = useState<string|null>(null);
+  const handleBrandingChange = (field: string, value: any) => {
+    if (!settings) return;
+    updateBranding({ ...settings.branding, [field]: value });
+  };
+  const handleSystemConfigChange = (field: string, value: any) => {
+    if (!settings) return;
+    updateSystemConfig({ ...settings.systemConfig, [field]: value });
+  };
 
   return (
     <div>
       <h2>Settings</h2>
-  <Tabs value={tab} onChange={handleTabChange} aria-label="Settings Tabs" className="settings-tabs">
+      <Tabs value={tab} onChange={(_event, newValue) => setTab(newValue)} aria-label="Settings Tabs" className="settings-tabs">
         <Tab label="Company Info" />
         <Tab label="Branding" />
         <Tab label="System Config" />
       </Tabs>
       <div className="settings-content">
-        {tab === 0 && (
+        {tab === 0 && settings && (
           <CompanyInfoForm
-            values={companyInfo}
-            onChange={(field, value) => setCompanyInfo((prev: any) => ({ ...prev, [field]: value }))}
+            values={settings}
+            onChange={handleCompanyInfoChange}
             onSubmit={() => {}}
             onCancel={() => {}}
             loading={loading}
             error={error}
           />
         )}
-        {tab === 1 && (
+        {tab === 1 && settings && (
           <BrandingForm
-            values={branding}
-            onChange={(field, value) => setBranding((prev: any) => ({ ...prev, [field]: value }))}
+            values={settings.branding}
+            onChange={handleBrandingChange}
             onSubmit={() => {}}
             onCancel={() => {}}
             loading={loading}
             error={error}
           />
         )}
-        {tab === 2 && (
+        {tab === 2 && settings && (
           <SystemConfigForm
-            values={systemConfig}
-            onChange={(field, value) => setSystemConfig((prev: any) => ({ ...prev, [field]: value }))}
+            values={settings.systemConfig}
+            onChange={handleSystemConfigChange}
             onSubmit={() => {}}
             onCancel={() => {}}
             loading={loading}
             error={error}
           />
         )}
+        {!settings && loading && <div>Loading...</div>}
+        {!settings && error && <div className="settings-form__error">{error}</div>}
       </div>
     </div>
   );
