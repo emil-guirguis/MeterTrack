@@ -7,21 +7,12 @@ const db = require('../config/database');
 
 class MeterReading {
     constructor(readingData = {}) {
-        this.id = readingData.id;
-        this.meterid = readingData.meterid;
-        this.reading_date = readingData.reading_date;
-        this.reading_value = readingData.reading_value;
-        this.reading_type = readingData.reading_type || 'manual';
-        this.multiplier = readingData.multiplier || 1;
-        this.final_value = readingData.final_value;
-        this.unit_of_measurement = readingData.unit_of_measurement;
-        this.status = readingData.status || 'active';
-        this.notes = readingData.notes;
-        this.read_by = readingData.read_by;
-        this.verified_by = readingData.verified_by;
-        this.verified_date = readingData.verified_date;
-        this.createdat = readingData.createdat;
-        this.updatedat = readingData.updatedat;
+        // Preserve ALL columns from the database row (including newly added ones)
+        Object.assign(this, readingData);
+        // Ensure some defaults for core fields
+        this.reading_type = this.reading_type || 'manual';
+        this.multiplier = this.multiplier ?? 1;
+        this.status = this.status || 'active';
     }
 
     /**
@@ -109,17 +100,18 @@ class MeterReading {
 
         if (filters.start_date) {
             paramCount++;
-            query += ` AND reading_date >= $${paramCount}`;
+            query += ` AND createdat >= $${paramCount}`;
             values.push(filters.start_date);
         }
 
         if (filters.end_date) {
             paramCount++;
-            query += ` AND reading_date <= $${paramCount}`;
+            query += ` AND createdat <= $${paramCount}`;
             values.push(filters.end_date);
         }
 
-        query += ' ORDER BY reading_date DESC';
+        // Order by created timestamp to support environments without reading_date
+        query += ' ORDER BY createdat DESC';
 
         if (filters.limit) {
             paramCount++;
@@ -133,6 +125,9 @@ class MeterReading {
             values.push(filters.offset);
         }
 
+        if (process.env.NODE_ENV !== 'production') {
+            try { console.log('[MeterReading.findAll] SQL:', query, 'params:', values); } catch {}
+        }
         const result = await db.query(query, values);
         return result.rows.map(data => new MeterReading(data));
     }
@@ -147,17 +142,18 @@ class MeterReading {
 
         if (options.start_date) {
             paramCount++;
-            query += ` AND reading_date >= $${paramCount}`;
+            query += ` AND createdat >= $${paramCount}`;
             values.push(options.start_date);
         }
 
         if (options.end_date) {
             paramCount++;
-            query += ` AND reading_date <= $${paramCount}`;
+            query += ` AND createdat <= $${paramCount}`;
             values.push(options.end_date);
         }
 
-        query += ' ORDER BY reading_date DESC';
+        // Order by created timestamp to support environments without reading_date
+        query += ' ORDER BY createdat DESC';
 
         if (options.limit) {
             paramCount++;
@@ -290,7 +286,7 @@ class MeterReading {
                 COUNT(CASE WHEN reading_type = 'manual' THEN 1 END) as manual_readings
             FROM meterreadings 
             WHERE meterid = $1 
-            AND reading_date >= NOW() - INTERVAL '${period}'
+            AND createdat >= NOW() - INTERVAL '${period}'
             AND status = 'active'
         `;
 
@@ -304,8 +300,8 @@ class MeterReading {
     static async getLatestByMeter(meterid) {
         const query = `
             SELECT * FROM meterreadings 
-            WHERE meterid = $1 AND status = 'active'
-            ORDER BY reading_date DESC 
+            WHERE meterid = $1 AND (status IS NULL OR status = 'active')
+            ORDER BY createdat DESC 
             LIMIT 1
         `;
 
@@ -327,12 +323,12 @@ class MeterReading {
                 SUM(final_value) as total_consumption,
                 COUNT(*) as reading_count,
                 AVG(final_value) as average_reading,
-                MIN(reading_date) as first_reading,
-                MAX(reading_date) as last_reading
+                MIN(createdat) as first_reading,
+                MAX(createdat) as last_reading
             FROM meterreadings 
             WHERE meterid = $1 
-            AND reading_date BETWEEN $2 AND $3
-            AND status = 'active'
+            AND createdat BETWEEN $2 AND $3
+            AND (status IS NULL OR status = 'active')
         `;
 
         const result = await db.query(query, [meterid, startDate, endDate]);

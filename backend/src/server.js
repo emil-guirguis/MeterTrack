@@ -205,6 +205,8 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/meters', meterRoutes);
 app.use('/api/meter-readings', meterReadingRoutes);
+// Alias without hyphen to match frontend service paths
+app.use('/api/meterreadings', meterReadingRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);

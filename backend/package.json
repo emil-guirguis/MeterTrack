@@ -20,7 +20,9 @@
     "threading:status": "curl -s http://localhost:3001/api/threading/status | jq",
     "threading:health": "curl -s http://localhost:3001/api/threading/health | jq",
     "threading:restart": "curl -X POST http://localhost:3001/api/threading/restart",
-    "logs:threading": "tail -f logs/threading.log"
+    "logs:threading": "tail -f logs/threading.log",
+    "db:migrate:extend-meterreadings": "node scripts/extend-meterreadings.js",
+    "db:test:stats": "node scripts/test-stats-sql.js"
   },
   "dependencies": {
     "@types/pg": "^8.15.5",

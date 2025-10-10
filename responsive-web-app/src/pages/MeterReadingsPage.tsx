@@ -70,12 +70,16 @@ export const MeterReadingsPage: React.FC = () => {
 
 
 
-  // Format functions
-  const formatPowerFactor = (value: number): string => {
+  // Safe number helpers and formatters (guard against undefined/null)
+  const isNum = (v: any): v is number => typeof v === 'number' && isFinite(v);
+
+  const formatPowerFactor = (value: any): string => {
+    if (!isNum(value)) return '—';
     return `${(value * 100).toFixed(1)}%`;
   };
 
-  const formatValue = (value: number, unit: string, decimals: number = 1): string => {
+  const formatValue = (value: any, unit: string, decimals: number = 1): string => {
+    if (!isNum(value)) return '—';
     return `${value.toFixed(decimals)} ${unit}`;
   };
 
@@ -96,8 +100,12 @@ export const MeterReadingsPage: React.FC = () => {
       sortable: true,
       render: (reading: DetailedMeterReading) => (
         <div className="meter-readings-page__meter-cell">
-          <div className="meter-readings-page__meter-id">{reading.meterId}</div>
-          <div className="meter-readings-page__meter-ip">{reading.ip}:{reading.port}</div>
+          <div className="meter-readings-page__meter-id">{reading.meterId || '—'}</div>
+          {(reading.ip || reading.deviceIP || reading.port) && (
+            <div className="meter-readings-page__meter-ip">
+              {(reading.ip || reading.deviceIP) ?? ''}{(reading.port ? `:${reading.port}` : '')}
+            </div>
+          )}
         </div>
       )
     },
@@ -176,7 +184,7 @@ export const MeterReadingsPage: React.FC = () => {
       render: (reading: DetailedMeterReading) => (
         <div className="meter-readings-page__pf-cell">
           <div className="meter-readings-page__pf-value">{formatPowerFactor(reading.dPF)}</div>
-          <div className="meter-readings-page__pf-channel">Ch: {reading.dPFchannel}</div>
+          <div className="meter-readings-page__pf-channel">Ch: {reading.dPFchannel ?? '—'}</div>
         </div>
       )
     },
@@ -185,31 +193,37 @@ export const MeterReadingsPage: React.FC = () => {
       label: 'Quality',
       sortable: true,
       align: 'center' as const,
-      render: (reading: DetailedMeterReading) => (
-        <div className="meter-readings-page__quality-cell">
-          <span className="meter-readings-page__quality-indicator">
-            {getQualityIndicator(reading.quality)}
-          </span>
-          <span className="meter-readings-page__quality-text">
-            {reading.quality.charAt(0).toUpperCase() + reading.quality.slice(1)}
-          </span>
-        </div>
-      )
+      render: (reading: DetailedMeterReading) => {
+        const q = reading.quality || 'good';
+        return (
+          <div className="meter-readings-page__quality-cell">
+            <span className="meter-readings-page__quality-indicator">
+              {getQualityIndicator(q)}
+            </span>
+            <span className="meter-readings-page__quality-text">
+              {q.charAt(0).toUpperCase() + q.slice(1)}
+            </span>
+          </div>
+        );
+      }
     },
     {
       key: 'timestamp',
       label: 'Timestamp',
       sortable: true,
-      render: (reading: DetailedMeterReading) => (
-        <div className="meter-readings-page__timestamp-cell">
-          <div className="meter-readings-page__date">
-            {new Date(reading.timestamp).toLocaleDateString()}
+      render: (reading: DetailedMeterReading) => {
+        const ts = reading.timestamp ? new Date(reading.timestamp) : null;
+        return (
+          <div className="meter-readings-page__timestamp-cell">
+            <div className="meter-readings-page__date">
+              {ts ? ts.toLocaleDateString() : '—'}
+            </div>
+            <div className="meter-readings-page__time">
+              {ts ? ts.toLocaleTimeString() : '—'}
+            </div>
           </div>
-          <div className="meter-readings-page__time">
-            {new Date(reading.timestamp).toLocaleTimeString()}
-          </div>
-        </div>
-      )
+        );
+      }
     }
   ];
 

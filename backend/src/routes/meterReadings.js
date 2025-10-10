@@ -1,23 +1,104 @@
-// List of all expected fields for frontend datagrid
+// Minimal mapper to align PG readings to frontend's expected fields,
+// then fill any remaining fields with nulls for robust rendering.
 const expectedFields = [
   'timestamp','deviceIP','ip','port','meterId','energy','voltage','kWh','kW','V','A','dPF','dPFchannel','quality','slaveId','source','current','power','frequency','powerFactor','phaseAVoltage','phaseBVoltage','phaseCVoltage','phaseACurrent','phaseBCurrent','phaseCCurrent','phaseAPower','phaseBPower','phaseCPower','lineToLineVoltageAB','lineToLineVoltageBC','lineToLineVoltageCA','totalActivePower','totalReactivePower','totalApparentPower','totalActiveEnergyWh','totalReactiveEnergyVARh','totalApparentEnergyVAh','frequencyHz','temperatureC','humidity','neutralCurrent','phaseAPowerFactor','phaseBPowerFactor','phaseCPowerFactor','voltageThd','currentThd','maxDemandKW','maxDemandKVAR','maxDemandKVA','voltageUnbalance','currentUnbalance','communicationStatus','deviceModel','firmwareVersion','serialNumber','alarmStatus'
 ];
 
-function fillMissingFields(reading) {
-  // Start with all existing fields
-  const result = { ...reading };
-  // Ensure expected fields are present (default to null if missing)
-  expectedFields.forEach(field => {
-    if (result[field] === undefined) result[field] = null;
+function toFrontendReading(pg) {
+  const unit = (pg.unit_of_measurement || '').toLowerCase();
+  // Quality mapping: prefer data_quality if present, fallback from status
+  const quality = pg.data_quality || (pg.status === 'active' ? 'good' : 'estimated');
+
+  const base = {
+    // Core identifiers/time
+    id: pg.id,
+    meterId: pg.meterid,
+  // Prefer explicit reading_date; fall back to createdat or timestamp (if present from legacy imports)
+  timestamp: pg.reading_date || pg.createdat || pg.timestamp || null,
+
+    // Connection/device meta
+    ip: pg.ip ?? null,
+  deviceIP: (pg.device_ip ?? pg.deviceip ?? null),
+  port: pg.port ?? null,
+  slaveId: (pg.slave_id ?? pg.slaveid ?? null),
+  source: pg.source ?? null,
+
+    // Shorthand UI metrics (direct columns if present)
+    V: pg.v ?? null,
+    A: pg.a ?? null,
+    dPF: pg.dpf ?? null,
+    dPFchannel: pg.dpfchannel ?? null,
+    kW: pg.kw ?? null,
+    kWpeak: pg.kwpeak ?? null,
+    kWh: pg.kwh ?? (unit === 'kwh' ? Number(pg.final_value) : null),
+    kVAh: pg.kvah ?? (unit === 'kvah' ? Number(pg.final_value) : null),
+    kVARh: pg.kvarh ?? (unit === 'kvarh' ? Number(pg.final_value) : null),
+
+    // Modbus-like rich metrics
+    energy: pg.energy ?? null,
+    voltage: pg.voltage ?? null,
+    current: pg.current ?? null,
+    power: pg.power ?? null,
+    frequency: pg.frequency ?? null,
+  powerFactor: (pg.power_factor ?? pg.powerfactor ?? null),
+
+    // Phase and line metrics
+  phaseAVoltage: (pg.phase_a_voltage ?? pg.phaseavoltage ?? null),
+  phaseBVoltage: (pg.phase_b_voltage ?? pg.phasebvoltage ?? null),
+  phaseCVoltage: (pg.phase_c_voltage ?? pg.phasecvoltage ?? null),
+  phaseACurrent: (pg.phase_a_current ?? pg.phaseacurrent ?? null),
+  phaseBCurrent: (pg.phase_b_current ?? pg.phasebcurrent ?? null),
+  phaseCCurrent: (pg.phase_c_current ?? pg.phaseccurrent ?? null),
+  phaseAPower: (pg.phase_a_power ?? pg.phaseapower ?? null),
+  phaseBPower: (pg.phase_b_power ?? pg.phasebpower ?? null),
+  phaseCPower: (pg.phase_c_power ?? pg.phasecpower ?? null),
+    lineToLineVoltageAB: pg.line_to_line_voltage_ab ?? null,
+    lineToLineVoltageBC: pg.line_to_line_voltage_bc ?? null,
+    lineToLineVoltageCA: pg.line_to_line_voltage_ca ?? null,
+
+    // Totals/energies
+    totalActivePower: pg.total_active_power ?? null,
+    totalReactivePower: pg.total_reactive_power ?? null,
+    totalApparentPower: pg.total_apparent_power ?? null,
+    totalActiveEnergyWh: pg.total_active_energy_wh ?? (unit === 'wh' ? Number(pg.final_value) : null),
+    totalReactiveEnergyVARh: pg.total_reactive_energy_varh ?? null,
+    totalApparentEnergyVAh: pg.total_apparent_energy_vah ?? null,
+
+    // Environment/other
+    frequencyHz: pg.frequency_hz ?? null,
+    temperatureC: pg.temperature_c ?? null,
+    humidity: pg.humidity ?? null,
+    neutralCurrent: pg.neutral_current ?? null,
+    phaseAPowerFactor: pg.phase_a_power_factor ?? null,
+    phaseBPowerFactor: pg.phase_b_power_factor ?? null,
+    phaseCPowerFactor: pg.phase_c_power_factor ?? null,
+    voltageThd: pg.voltage_thd ?? null,
+    currentThd: pg.current_thd ?? null,
+    maxDemandKW: pg.max_demand_kw ?? null,
+    maxDemandKVAR: pg.max_demand_kvar ?? null,
+    maxDemandKVA: pg.max_demand_kva ?? null,
+    voltageUnbalance: pg.voltage_unbalance ?? null,
+    currentUnbalance: pg.current_unbalance ?? null,
+    communicationStatus: pg.communication_status ?? null,
+    deviceModel: pg.device_model ?? null,
+    firmwareVersion: pg.firmware_version ?? null,
+    serialNumber: pg.serial_number ?? null,
+    alarmStatus: pg.alarm_status ?? null,
+
+    // Quality for UI (fallback to legacy 'quality' column)
+    quality: quality || pg.quality || null
+  };
+
+  // Ensure all expected fields exist so the UI doesn't break
+  expectedFields.forEach((key) => {
+    if (!(key in base)) base[key] = null;
   });
-  // Preserve/derive id if present
-  if (reading.id) result.id = reading.id;
-  if (!result.id && reading._id) result.id = String(reading._id);
-  return result;
+  return base;
 }
 const express = require('express');
 const { query, validationResult } = require('express-validator');
 const MeterReading = require('../models/MeterReadingPG');
+const db = require('../config/database');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -49,47 +130,58 @@ router.get('/', [
       pageSize = 20,
       sortBy = 'timestamp',
       sortOrder = 'desc',
-      meterId,
-      quality
+      meterId
     } = req.query;
 
-    // Build query
-    const query = {};
-    
-    // Apply filters
-    if (meterId) query.meterId = meterId;
-    if (quality) query.quality = quality;
+    const numericPage = parseInt(page);
+    const numericPageSize = parseInt(pageSize);
+    const skip = (numericPage - 1) * numericPageSize;
 
-    // Build sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    // Map filters to PG
+    const filters = {
+      meterid: meterId || undefined
+    };
 
-    // Execute query with pagination
-    const skip = (page - 1) * pageSize;
-    const [readings, total] = await Promise.all([
-      MeterReading.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(pageSize)),
-      MeterReading.countDocuments(query)
-    ]);
+    const all = await MeterReading.findAll(filters);
+
+    const sortKeyMap = {
+      timestamp: 'createdat',
+      meterId: 'meterid',
+      meterid: 'meterid',
+      value: 'final_value'
+    };
+    const key = sortKeyMap[sortBy] || 'createdat';
+    const sorted = all.sort((a, b) => {
+      const va = a[key];
+      const vb = b[key];
+      if (va == null && vb == null) return 0;
+      if (va == null) return sortOrder === 'desc' ? 1 : -1;
+      if (vb == null) return sortOrder === 'desc' ? -1 : 1;
+      if (va < vb) return sortOrder === 'desc' ? 1 : -1;
+      if (va > vb) return sortOrder === 'desc' ? -1 : 1;
+      return 0;
+    });
+
+    const total = sorted.length;
+    const pageItems = sorted.slice(skip, skip + numericPageSize).map(toFrontendReading);
 
     res.json({
       success: true,
       data: {
-        items: readings.map(fillMissingFields),
+        items: pageItems,
         total,
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
-        totalPages: Math.ceil(total / pageSize),
-        hasMore: skip + readings.length < total
+        page: numericPage,
+        pageSize: numericPageSize,
+        totalPages: Math.ceil(total / numericPageSize) || 1,
+        hasMore: skip + pageItems.length < total
       }
     });
   } catch (error) {
     console.error('Get meter readings error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch meter readings'
+      message: 'Failed to fetch meter readings',
+      ...(process.env.NODE_ENV !== 'production' ? { error: String(error && error.message || error) } : {})
     });
   }
 });
@@ -98,16 +190,14 @@ router.get('/', [
 router.get('/recent', requirePermission('meter:read'), async (req, res) => {
   try {
     const { limit = 20 } = req.query;
-    
-    // Get the most recent readings (not grouped by meter)
-    const recentReadings = await MeterReading.find({})
-      .sort({ timestamp: -1 })
-      .limit(parseInt(limit));
-
-    res.json({
-      success: true,
-      data: recentReadings.map(fillMissingFields)
+    const items = await MeterReading.findAll({ limit: parseInt(limit) });
+    // Items are ordered DESC by reading_date in model; ensure recency
+    const sorted = items.sort((a, b) => {
+      const ta = new Date(a.reading_date || a.createdat || 0).getTime();
+      const tb = new Date(b.reading_date || b.createdat || 0).getTime();
+      return tb - ta;
     });
+    res.json({ success: true, data: sorted.map(toFrontendReading) });
   } catch (error) {
     console.error('Get recent readings error:', error);
     res.status(500).json({
@@ -120,44 +210,35 @@ router.get('/recent', requirePermission('meter:read'), async (req, res) => {
 // Get latest readings for dashboard (per meter)
 router.get('/latest', requirePermission('meter:read'), async (req, res) => {
   try {
-    // Get the latest reading for each meter
-    const latestReadings = await MeterReading.aggregate([
-      {
-        $sort: { meterId: 1, timestamp: -1 }
-      },
-      {
-        $group: {
-          _id: '$meterId',
-          latestReading: { $first: '$$ROOT' }
-        }
-      },
-      {
-        $replaceRoot: { newRoot: '$latestReading' }
-      },
-      {
-        $sort: { timestamp: -1 }
-      },
-      {
-        $limit: 10 // Limit to 10 most recent readings
-      }
-    ]);
-
-    res.json({
-      success: true,
-      data: latestReadings.map(fillMissingFields)
-    });
+    // Latest per meter using DISTINCT ON
+    const sql = `
+      SELECT DISTINCT ON (meterid) *
+      FROM meterreadings
+      WHERE (status IS NULL OR status = 'active')
+      ORDER BY meterid, createdat DESC
+      LIMIT 10
+    `;
+    const result = await db.query(sql);
+    // Sort by reading_date desc for nicer display
+    const rows = result.rows.sort((a, b) => (new Date(b.reading_date || b.createdat) - new Date(a.reading_date || a.createdat)));
+    res.json({ success: true, data: rows.map(toFrontendReading) });
   } catch (error) {
     console.error('Get latest readings error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch latest readings'
+      message: 'Failed to fetch latest readings',
+      ...(process.env.NODE_ENV !== 'production' ? { error: String(error && error.message || error) } : {})
     });
   }
 });
 
 // Get meter reading by ID
-router.get('/:id', requirePermission('meter:read'), async (req, res) => {
+router.get('/:id', requirePermission('meter:read'), async (req, res, next) => {
   try {
+    // Allow subpaths like /meter/:meterId and /stats/summary to bypass
+    if (req.params.id === 'meter' || req.params.id === 'stats' || req.params.id === 'latest' || req.params.id === 'recent') {
+      return next();
+    }
     const reading = await MeterReading.findById(req.params.id);
     
     if (!reading) {
@@ -169,7 +250,7 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
 
     res.json({
       success: true,
-      data: fillMissingFields(reading)
+      data: toFrontendReading(reading)
     });
   } catch (error) {
     console.error('Get meter reading error:', error);
@@ -199,23 +280,15 @@ router.get('/meter/:meterId', [
     const { meterId } = req.params;
     const { limit = 100, startDate, endDate } = req.query;
 
-    // Build query
-    const query = { meterId };
-    
-    if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
-    }
+    const options = {
+      limit: parseInt(limit),
+      start_date: startDate ? new Date(startDate) : undefined,
+      end_date: endDate ? new Date(endDate) : undefined
+    };
 
-    const readings = await MeterReading.find(query)
-      .sort({ timestamp: -1 })
-      .limit(parseInt(limit));
+    const readings = await MeterReading.findByMeterId(meterId, options);
 
-    res.json({
-      success: true,
-      data: readings.map(fillMissingFields)
-    });
+    res.json({ success: true, data: readings.map(toFrontendReading) });
   } catch (error) {
     console.error('Get meter readings by meter ID error:', error);
     res.status(500).json({
@@ -228,140 +301,39 @@ router.get('/meter/:meterId', [
 // Get meter statistics
 router.get('/stats/summary', requirePermission('meter:read'), async (req, res) => {
   try {
-    const stats = await MeterReading.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalReadings: { $sum: 1 },
-          totalKWh: { $sum: '$kWh' },
-          totalKVAh: { $sum: '$kVAh' },
-          totalKVARh: { $sum: '$kVARh' },
-          avgPowerFactor: { $avg: '$dPF' },
-          avgVoltage: { $avg: '$V' },
-          avgCurrent: { $avg: '$A' },
-          maxKWpeak: { $max: '$kWpeak' },
-          uniqueMeters: { $addToSet: '$meterId' },
-          
-          // Extended statistics for new fields
-          totalActiveEnergyWh: { $sum: '$totalActiveEnergyWh' },
-          totalReactiveEnergyVARh: { $sum: '$totalReactiveEnergyVARh' },
-          totalApparentEnergyVAh: { $sum: '$totalApparentEnergyVAh' },
-          avgTotalReactivePower: { $avg: '$totalReactivePower' },
-          avgTotalApparentPower: { $avg: '$totalApparentPower' },
-          avgTemperature: { $avg: '$temperatureC' },
-          avgNeutralCurrent: { $avg: '$neutralCurrent' },
-          avgVoltageThd: { $avg: '$voltageThd' },
-          avgCurrentThd: { $avg: '$currentThd' },
-          maxDemandKW: { $max: '$maxDemandKW' },
-          maxDemandKVAR: { $max: '$maxDemandKVAR' },
-          maxDemandKVA: { $max: '$maxDemandKVA' },
-          
-          // Phase averages
-          avgPhaseAVoltage: { $avg: '$phaseAVoltage' },
-          avgPhaseBVoltage: { $avg: '$phaseBVoltage' },
-          avgPhaseCVoltage: { $avg: '$phaseCVoltage' },
-          avgPhaseACurrent: { $avg: '$phaseACurrent' },
-          avgPhaseBCurrent: { $avg: '$phaseBCurrent' },
-          avgPhaseCCurrent: { $avg: '$phaseCCurrent' },
-          avgPhaseAPower: { $avg: '$phaseAPower' },
-          avgPhaseBPower: { $avg: '$phaseBPower' },
-          avgPhaseCPower: { $avg: '$phaseCPower' },
-          
-          // Line-to-line voltage averages
-          avgLineToLineVoltageAB: { $avg: '$lineToLineVoltageAB' },
-          avgLineToLineVoltageBC: { $avg: '$lineToLineVoltageBC' },
-          avgLineToLineVoltageCA: { $avg: '$lineToLineVoltageCA' }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          totalReadings: 1,
-          totalKWh: { $round: ['$totalKWh', 2] },
-          totalKVAh: { $round: ['$totalKVAh', 2] },
-          totalKVARh: { $round: ['$totalKVARh', 2] },
-          avgPowerFactor: { $round: ['$avgPowerFactor', 3] },
-          avgVoltage: { $round: ['$avgVoltage', 1] },
-          avgCurrent: { $round: ['$avgCurrent', 1] },
-          maxKWpeak: { $round: ['$maxKWpeak', 1] },
-          uniqueMeters: { $size: '$uniqueMeters' },
-          
-          // Extended statistics
-          totalActiveEnergyWh: { $round: ['$totalActiveEnergyWh', 2] },
-          totalReactiveEnergyVARh: { $round: ['$totalReactiveEnergyVARh', 2] },
-          totalApparentEnergyVAh: { $round: ['$totalApparentEnergyVAh', 2] },
-          avgTotalReactivePower: { $round: ['$avgTotalReactivePower', 1] },
-          avgTotalApparentPower: { $round: ['$avgTotalApparentPower', 1] },
-          avgTemperature: { $round: ['$avgTemperature', 1] },
-          avgNeutralCurrent: { $round: ['$avgNeutralCurrent', 2] },
-          avgVoltageThd: { $round: ['$avgVoltageThd', 2] },
-          avgCurrentThd: { $round: ['$avgCurrentThd', 2] },
-          maxDemandKW: { $round: ['$maxDemandKW', 1] },
-          maxDemandKVAR: { $round: ['$maxDemandKVAR', 1] },
-          maxDemandKVA: { $round: ['$maxDemandKVA', 1] },
-          
-          // Phase averages
-          avgPhaseAVoltage: { $round: ['$avgPhaseAVoltage', 1] },
-          avgPhaseBVoltage: { $round: ['$avgPhaseBVoltage', 1] },
-          avgPhaseCVoltage: { $round: ['$avgPhaseCVoltage', 1] },
-          avgPhaseACurrent: { $round: ['$avgPhaseACurrent', 2] },
-          avgPhaseBCurrent: { $round: ['$avgPhaseBCurrent', 2] },
-          avgPhaseCCurrent: { $round: ['$avgPhaseCCurrent', 2] },
-          avgPhaseAPower: { $round: ['$avgPhaseAPower', 1] },
-          avgPhaseBPower: { $round: ['$avgPhaseBPower', 1] },
-          avgPhaseCPower: { $round: ['$avgPhaseCPower', 1] },
-          
-          // Line-to-line voltage averages
-          avgLineToLineVoltageAB: { $round: ['$avgLineToLineVoltageAB', 1] },
-          avgLineToLineVoltageBC: { $round: ['$avgLineToLineVoltageBC', 1] },
-          avgLineToLineVoltageCA: { $round: ['$avgLineToLineVoltageCA', 1] }
-        }
-      }
-    ]);
+    // Compute stats from PG schema; prefer shorthand columns when present, fallback to unit-based aggregation
+    const sql = `
+      SELECT 
+        COUNT(*)::int AS total_readings,
+        COUNT(DISTINCT meterid)::int AS unique_meters,
+        COALESCE(SUM(kwh), 0)::float AS total_kwh,
+        COALESCE(SUM(kvah), 0)::float AS total_kvah,
+        COALESCE(SUM(kvarh), 0)::float AS total_kvarh
+      FROM meterreadings
+      WHERE (status IS NULL OR status = 'active')
+    `;
+    const result = await db.query(sql);
+    const row = result.rows[0] || {};
 
-    res.json({
-      success: true,
-      data: stats[0] || {
-        totalReadings: 0,
-        totalKWh: 0,
-        totalKVAh: 0,
-        totalKVARh: 0,
-        avgPowerFactor: 0,
-        avgVoltage: 0,
-        avgCurrent: 0,
-        maxKWpeak: 0,
-        uniqueMeters: 0,
-        totalActiveEnergyWh: 0,
-        totalReactiveEnergyVARh: 0,
-        totalApparentEnergyVAh: 0,
-        avgTotalReactivePower: 0,
-        avgTotalApparentPower: 0,
-        avgTemperature: 0,
-        avgNeutralCurrent: 0,
-        avgVoltageThd: 0,
-        avgCurrentThd: 0,
-        maxDemandKW: 0,
-        maxDemandKVAR: 0,
-        maxDemandKVA: 0,
-        avgPhaseAVoltage: 0,
-        avgPhaseBVoltage: 0,
-        avgPhaseCVoltage: 0,
-        avgPhaseACurrent: 0,
-        avgPhaseBCurrent: 0,
-        avgPhaseCCurrent: 0,
-        avgPhaseAPower: 0,
-        avgPhaseBPower: 0,
-        avgPhaseCPower: 0,
-        avgLineToLineVoltageAB: 0,
-        avgLineToLineVoltageBC: 0,
-        avgLineToLineVoltageCA: 0
-      }
-    });
+    const data = {
+      totalReadings: Number(row.total_readings || 0),
+      totalKWh: Number(row.total_kwh || 0),
+      totalKVAh: Number(row.total_kvah || 0),
+      totalKVARh: Number(row.total_kvarh || 0),
+      avgPowerFactor: 0,
+      avgVoltage: 0,
+      avgCurrent: 0,
+      maxKWpeak: 0,
+      uniqueMeters: Number(row.unique_meters || 0)
+    };
+
+    res.json({ success: true, data });
   } catch (error) {
     console.error('Get meter stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch meter statistics'
+      message: 'Failed to fetch meter statistics',
+      ...(process.env.NODE_ENV !== 'production' ? { error: String(error && error.message || error) } : {})
     });
   }
 });

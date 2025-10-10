@@ -757,3 +757,28 @@
 {"current":"38.06A","level":"info","message":"Real meter data read successfully","power":"7612W","powerFactor":"1.000","rawRegisters":[60,0,0,0,1,22661,3806,7612,5,2],"service":"modbus-mcp-agent","timestamp":"2025-10-10T03:08:54.042Z","voltage":"113.31V"}
 {"errno":"ECONNREFUSED","level":"error","message":"Connection test failed: Port Not Open","name":"PortNotOpenError","service":"modbus-mcp-agent","stack":"PortNotOpenError: Port Not Open\n    at ModbusRTU.writeFC4 (C:\\Projects\\facility-management-app\\mcp-modbus-agent\\node_modules\\modbus-serial\\index.js:829:28)\n    at ModbusRTU.writeFC3 (C:\\Projects\\facility-management-app\\mcp-modbus-agent\\node_modules\\modbus-serial\\index.js:815:14)\n    at C:\\Projects\\facility-management-app\\mcp-modbus-agent\\node_modules\\modbus-serial\\apis\\promise.js:61:35\n    at new Promise (<anonymous>)\n    at ModbusRTU.converted [as readHoldingRegisters] (C:\\Projects\\facility-management-app\\mcp-modbus-agent\\node_modules\\modbus-serial\\apis\\promise.js:47:20)\n    at ModbusClient.testConnection (file:///C:/Projects/facility-management-app/mcp-modbus-agent/dist/modbus-client.js:210:31)\n    at DataCollector.healthCheck (file:///C:/Projects/facility-management-app/mcp-modbus-agent/dist/data-collector.js:142:54)\n    at Task._execution (file:///C:/Projects/facility-management-app/mcp-modbus-agent/dist/data-collector.js:84:28)\n    at Task.execute (C:\\Projects\\facility-management-app\\mcp-modbus-agent\\node_modules\\node-cron\\src\\task.js:17:25)\n    at ScheduledTask.now (C:\\Projects\\facility-management-app\\mcp-modbus-agent\\node_modules\\node-cron\\src\\scheduled-task.js:38:33)","timestamp":"2025-10-10T03:15:00.083Z"}
 {"level":"warn","message":"Modbus connection health check failed","service":"modbus-mcp-agent","timestamp":"2025-10-10T03:15:00.084Z"}
+{"level":"info","message":"Connected to PostgreSQL: postgres","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.411Z"}
+{"level":"info","message":"Meter readings realtime table created/verified","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.552Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.583Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.583Z"}
+{"level":"info","message":"Initializing data collector...","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.587Z"}
+{"level":"info","message":"Connected to PostgreSQL: postgres","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.588Z"}
+{"level":"info","message":"Meter readings realtime table created/verified","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.694Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.698Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.699Z"}
+{"level":"info","message":"Data collector initialized successfully","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.699Z"}
+{"level":"info","message":"Data collection started with interval: 30000000ms","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.702Z"}
+{"current":"37.87A","level":"info","message":"Real meter data read successfully","power":"7574W","powerFactor":"1.000","rawRegisters":[60,0,0,0,1,22414,3787,7574,5,2],"service":"modbus-mcp-agent","timestamp":"2025-10-10T05:01:56.705Z","voltage":"112.07V"}
+{"level":"info","message":"Connected to PostgreSQL: postgres","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.220Z"}
+{"level":"info","message":"Meter readings realtime table created/verified","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.373Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.411Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.412Z"}
+{"level":"info","message":"Initializing data collector...","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.418Z"}
+{"level":"info","message":"Connected to PostgreSQL: postgres","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.418Z"}
+{"level":"info","message":"Meter readings realtime table created/verified","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.534Z"}
+{"level":"info","message":"Connected to Modbus device at 10.10.10.11:502","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.537Z"}
+{"level":"info","message":"Modbus client connected","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.538Z"}
+{"level":"info","message":"Data collector initialized successfully","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.538Z"}
+{"level":"info","message":"Data collection started with interval: 30000000ms","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.541Z"}
+{"current":"38.08A","level":"info","message":"Real meter data read successfully","power":"7615W","powerFactor":"1.000","rawRegisters":[61,0,0,0,1,22825,3808,7615,5,2],"service":"modbus-mcp-agent","timestamp":"2025-10-10T05:18:55.544Z","voltage":"114.13V"}
+{"level":"info","message":"Shutting down data collector...","service":"modbus-mcp-agent","timestamp":"2025-10-10T05:21:08.466Z"}

@@ -10,6 +10,47 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+// Helper: map BuildingPG instance to frontend response shape
+function mapBuildingToResponse(b) {
+  if (!b) return null;
+  return {
+    id: b.id,
+    name: b.name,
+    type: b.type,
+    status: b.status,
+    address: {
+      street: b.address_street,
+      city: b.address_city,
+      state: b.address_state,
+      zipCode: b.address_zip_code,
+      country: b.address_country
+    },
+    contact: {
+      primaryContact: b.contact_primarycontact,
+      email: b.contact_email,
+      phone: b.contact_phone,
+      website: b.contact_website
+    },
+    // Keep backward compatible aliases expected by frontend
+    contactInfo: {
+      primaryContact: b.contact_primarycontact,
+      email: b.contact_email,
+      phone: b.contact_phone,
+      website: b.contact_website
+    },
+    totalFloors: b.totalfloors,
+    totalUnits: b.totalunits,
+    yearBuilt: b.yearbuilt,
+    squareFootage: b.squarefootage,
+    description: b.description,
+    notes: b.notes,
+    equipmentCount: b.equipmentcount,
+    meterCount: b.metercount,
+    createdAt: b.createdat,
+    updatedAt: b.updatedat
+  };
+}
+
 // Get all buildings with filtering and pagination
 router.get('/', [
   query('page').optional().isInt({ min: 1 }),
@@ -71,7 +112,7 @@ router.get('/', [
     });
 
     const total = sorted.length;
-    const buildings = sorted.slice(skip, skip + numericPageSize);
+    const buildings = sorted.slice(skip, skip + numericPageSize).map(mapBuildingToResponse);
 
     res.json({
       success: true,
@@ -97,8 +138,13 @@ router.get('/', [
 });
 
 // Get building by ID
-router.get('/:id', requirePermission('building:read'), async (req, res) => {
+router.get('/:id', requirePermission('building:read'), async (req, res, next) => {
   try {
+    // Allow explicitly defined routes like /stats or /bulk-status to pass through
+    if (req.params.id === 'stats' || req.params.id === 'bulk-status') {
+      return next();
+    }
+
     const building = await Building.findById(req.params.id);
     
     if (!building) {
@@ -110,7 +156,7 @@ router.get('/:id', requirePermission('building:read'), async (req, res) => {
 
     res.json({
       success: true,
-      data: building
+      data: mapBuildingToResponse(building)
     });
   } catch (error) {
     console.error('Get building error:', error);
@@ -147,12 +193,34 @@ router.post('/', [
       });
     }
 
-    const building = new Building(req.body);
-    await building.save();
+    const payload = req.body;
+    // Map request body to PG fields
+    const toCreate = {
+      name: payload.name,
+      address_street: payload.address.street,
+      address_city: payload.address.city,
+      address_state: payload.address.state,
+      address_zip_code: payload.address.zipCode,
+      address_country: payload.address.country ?? 'USA',
+      contact_primarycontact: payload.contactInfo?.primaryContact,
+      contact_email: payload.contactInfo.email,
+      contact_phone: payload.contactInfo.phone,
+      contact_website: payload.contactInfo?.website,
+      type: payload.type,
+      status: payload.status || 'active',
+      totalfloors: payload.totalFloors,
+      totalunits: payload.totalUnits,
+      yearbuilt: payload.yearBuilt,
+      squarefootage: payload.squareFootage,
+      description: payload.description,
+      notes: payload.notes
+    };
+
+    const building = await Building.create(toCreate);
 
     res.status(201).json({
       success: true,
-      data: building,
+      data: mapBuildingToResponse(building),
       message: 'Building created successfully'
     });
   } catch (error) {
@@ -190,22 +258,42 @@ router.put('/:id', [
       });
     }
 
-    const building = await Building.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!building) {
-      return res.status(404).json({
-        success: false,
-        message: 'Building not found'
-      });
+    const current = await Building.findById(req.params.id);
+    if (!current) {
+      return res.status(404).json({ success: false, message: 'Building not found' });
     }
+
+    const payload = req.body;
+    const updates = {};
+
+    if (payload.name !== undefined) updates.name = payload.name;
+    if (payload.type !== undefined) updates.type = payload.type;
+    if (payload.status !== undefined) updates.status = payload.status;
+    if (payload.totalFloors !== undefined) updates.totalfloors = payload.totalFloors;
+    if (payload.totalUnits !== undefined) updates.totalunits = payload.totalUnits;
+    if (payload.yearBuilt !== undefined) updates.yearbuilt = payload.yearBuilt;
+    if (payload.squareFootage !== undefined) updates.squarefootage = payload.squareFootage;
+    if (payload.description !== undefined) updates.description = payload.description;
+    if (payload.notes !== undefined) updates.notes = payload.notes;
+    if (payload.address) {
+      if (payload.address.street !== undefined) updates.address_street = payload.address.street;
+      if (payload.address.city !== undefined) updates.address_city = payload.address.city;
+      if (payload.address.state !== undefined) updates.address_state = payload.address.state;
+      if (payload.address.zipCode !== undefined) updates.address_zip_code = payload.address.zipCode;
+      if (payload.address.country !== undefined) updates.address_country = payload.address.country;
+    }
+    if (payload.contactInfo) {
+      if (payload.contactInfo.primaryContact !== undefined) updates.contact_primarycontact = payload.contactInfo.primaryContact;
+      if (payload.contactInfo.email !== undefined) updates.contact_email = payload.contactInfo.email;
+      if (payload.contactInfo.phone !== undefined) updates.contact_phone = payload.contactInfo.phone;
+      if (payload.contactInfo.website !== undefined) updates.contact_website = payload.contactInfo.website;
+    }
+
+    const updated = await current.update(updates);
 
     res.json({
       success: true,
-      data: building,
+      data: mapBuildingToResponse(updated),
       message: 'Building updated successfully'
     });
   } catch (error) {
@@ -220,11 +308,19 @@ router.put('/:id', [
 // Delete building
 router.delete('/:id', requirePermission('building:delete'), async (req, res) => {
   try {
+    const building = await Building.findById(req.params.id);
+    if (!building) {
+      return res.status(404).json({ success: false, message: 'Building not found' });
+    }
+
     // Check if building has associated equipment or meters
-    const [equipmentCount, meterCount] = await Promise.all([
-      Equipment.countDocuments({ buildingId: req.params.id }),
-      Meter.countDocuments({ buildingId: req.params.id })
+    const [equipmentList, metersList] = await Promise.all([
+      Equipment.findAll({ buildingid: req.params.id }),
+      Meter.findAll({ location_building: building.name })
     ]);
+
+    const equipmentCount = equipmentList.length;
+    const meterCount = metersList.length;
 
     if (equipmentCount > 0 || meterCount > 0) {
       return res.status(400).json({
@@ -233,14 +329,7 @@ router.delete('/:id', requirePermission('building:delete'), async (req, res) => 
       });
     }
 
-    const building = await Building.findByIdAndDelete(req.params.id);
-
-    if (!building) {
-      return res.status(404).json({
-        success: false,
-        message: 'Building not found'
-      });
-    }
+    await building.delete();
 
     res.json({
       success: true,
@@ -258,7 +347,7 @@ router.delete('/:id', requirePermission('building:delete'), async (req, res) => 
 // Bulk update building status
 router.patch('/bulk-status', [
   body('buildingIds').isArray().withMessage('Building IDs must be an array'),
-  body('buildingIds.*').isMongoId().withMessage('Invalid building ID'),
+  body('buildingIds.*').isUUID().withMessage('Invalid building ID'),
   body('status').isIn(['active', 'inactive', 'maintenance']).withMessage('Invalid status')
 ], requirePermission('building:update'), async (req, res) => {
   try {
@@ -272,18 +361,21 @@ router.patch('/bulk-status', [
     }
 
     const { buildingIds, status } = req.body;
-
-    const result = await Building.updateMany(
-      { _id: { $in: buildingIds } },
-      { status }
-    );
+    let modifiedCount = 0;
+    for (const id of buildingIds) {
+      const b = await Building.findById(id);
+      if (b) {
+        await b.update({ status });
+        modifiedCount++;
+      }
+    }
 
     res.json({
       success: true,
       data: {
-        modifiedCount: result.modifiedCount
+        modifiedCount
       },
-      message: `${result.modifiedCount} buildings updated successfully`
+      message: `${modifiedCount} buildings updated successfully`
     });
   } catch (error) {
     console.error('Bulk update buildings error:', error);
@@ -297,34 +389,21 @@ router.patch('/bulk-status', [
 // Get building statistics
 router.get('/stats', requirePermission('building:read'), async (req, res) => {
   try {
-    const [
-      total,
-      active,
-      inactive,
-      maintenance,
-      byType,
-      totalSquareFootage,
-      averageSquareFootage
-    ] = await Promise.all([
-      Building.countDocuments(),
-      Building.countDocuments({ status: 'active' }),
-      Building.countDocuments({ status: 'inactive' }),
-      Building.countDocuments({ status: 'maintenance' }),
-      Building.aggregate([
-        { $group: { _id: '$type', count: { $sum: 1 } } }
-      ]),
-      Building.aggregate([
-        { $group: { _id: null, total: { $sum: '$squareFootage' } } }
-      ]),
-      Building.aggregate([
-        { $group: { _id: null, average: { $avg: '$squareFootage' } } }
-      ])
-    ]);
+    const all = await Building.findAll();
+    const total = all.length;
+    const active = all.filter(b => b.status === 'active').length;
+    const inactive = all.filter(b => b.status === 'inactive').length;
+    const maintenance = all.filter(b => b.status === 'maintenance').length;
+    const byType = all.reduce((acc, b) => {
+      const key = b.type || 'unknown';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
 
-    const typeStats = {};
-    byType.forEach(item => {
-      typeStats[item._id] = item.count;
-    });
+    const squareValues = all.map(b => Number(b.squarefootage) || 0);
+    const totalSquareFootage = squareValues.reduce((sum, v) => sum + v, 0);
+    const countNonZero = squareValues.filter(v => v > 0).length;
+    const averageSquareFootage = countNonZero > 0 ? Math.round(totalSquareFootage / countNonZero) : 0;
 
     res.json({
       success: true,
@@ -333,9 +412,9 @@ router.get('/stats', requirePermission('building:read'), async (req, res) => {
         active,
         inactive,
         maintenance,
-        byType: typeStats,
-        totalSquareFootage: totalSquareFootage[0]?.total || 0,
-        averageSquareFootage: Math.round(averageSquareFootage[0]?.average || 0)
+        byType,
+        totalSquareFootage,
+        averageSquareFootage
       }
     });
   } catch (error) {

@@ -68,7 +68,12 @@ const requirePermission = (permission) => {
       });
     }
 
-    if (!req.user.permissions.includes(permission)) {
+    const rawPerms = req.user.permissions;
+    const perms = Array.isArray(rawPerms)
+      ? rawPerms
+      : (typeof rawPerms === 'string' ? [rawPerms] : []);
+
+    if (!perms.includes(permission)) {
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions'
