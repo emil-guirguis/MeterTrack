@@ -1,9 +1,11 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Import PostgreSQL database connection
+const db = require('./config/database');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -12,20 +14,22 @@ const buildingRoutes = require('./routes/buildings');
 const equipmentRoutes = require('./routes/equipment');
 const contactRoutes = require('./routes/contacts');
 const meterRoutes = require('./routes/meters');
-const meterReadingRoutes = require('./routes/meterReadings-test');
+const meterReadingRoutes = require('./routes/meterReadings');
 const templateRoutes = require('./routes/templates');
 const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const modbusRoutes = require('./routes/modbus');
-const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
+const directMeterRoutes = require('./routes/directMeter');
+// const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Threading service (will be initialized after MongoDB connection)
+// Threading service (will be initialized after PostgreSQL connection)
 let threadingService = null;
 
-// Mongo connection configuration
+// PostgreSQL connection will be handled by the database module
+// Legacy MongoDB configuration (keeping for reference during transition)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb';
 const MONGODB_DBNAME = process.env.MONGODB_DBNAME; // optional override
 
@@ -81,31 +85,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Connect to MongoDB and initialize threading service
+// Connect to PostgreSQL and initialize threading service
 (async () => {
   try {
-    const connectOptions = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      // Only set dbName if provided; connection string may already include it
-      ...(MONGODB_DBNAME ? { dbName: MONGODB_DBNAME } : {}),
-    };
-
-    await mongoose.connect(MONGODB_URI, connectOptions);
-
-    const db = mongoose.connection;
-    const activeDbName = db.name;
-    const hosts = db.hosts?.map(h => `${h.host}:${h.port}`).join(', ') || db.host;
-
-    console.log(`✅ Connected to MongoDB -> db: ${activeDbName} host(s): ${hosts}`);
+    // Connect to PostgreSQL
+    await db.connect();
 
     // Initialize threading service after successful database connection
-    await initializeThreadingSystem();
+    // await initializeThreadingSystem(); // TEMPORARILY DISABLED
+    console.log('✅ Threading system disabled for debugging');
   } catch (error) {
-    // Avoid leaking credentials in logs
-    const safeUri = MONGODB_URI.replace(/:\\?[^@/]+@/, '://***@');
-    console.error('❌ MongoDB connection error. URI:', safeUri);
-    console.error(error);
+    console.error('❌ Database connection error:', error.message);
     process.exit(1);
   }
 })();
@@ -219,15 +209,20 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/modbus', modbusRoutes);
-app.use('/api/threading', threadingRoutes);
+app.use('/api', directMeterRoutes);
+// app.use('/api/threading', threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   try {
+    // Get PostgreSQL health status
+    const dbHealth = await db.healthCheck();
+    
     const healthData = {
       status: 'OK',
       timestamp: new Date().toISOString(),
-      database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+      database: dbHealth.status === 'healthy' ? 'Connected' : 'Disconnected',
+      databaseDetails: dbHealth,
       threading: null
     };
 
@@ -274,27 +269,34 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Test endpoint to check database contents
+// TEMPORARILY DISABLED - methods may not be implemented
+/*
 app.get('/api/test/db-status', async (req, res) => {
   try {
-    const User = require('./models/User');
-    const MeterReading = require('./models/MeterReading');
+    const User = require('./models/UserPG');
     
-    const userCount = await User.countDocuments();
-    const meterReadingCount = await MeterReading.countDocuments();
-    const sampleUser = await User.findOne({}, { email: 1, name: 1, role: 1 });
-    const sampleReading = await MeterReading.findOne({}, { meterId: 1, kWh: 1, timestamp: 1 });
+    // Get database status and stats
+    const dbStatus = await db.getStatus();
+    const userStats = await User.getStats();
+    const sampleUsers = await User.findAll({ limit: 1 });
+    
+    // Get some sample data from meter readings table
+    const meterReadingCount = await db.query('SELECT COUNT(*) as count FROM meterreadings');
+    const sampleReading = await db.query('SELECT meterid, reading_value, reading_date FROM meterreadings LIMIT 1');
     
     res.json({
       success: true,
-      database: mongoose.connection.db.databaseName,
-      collections: {
-        users: userCount,
-        meterReadings: meterReadingCount
+      database: process.env.POSTGRES_DB,
+      connectionPool: dbStatus,
+      tables: {
+        users: userStats.total_users,
+        meterReadings: meterReadingCount.rows[0].count
       },
       samples: {
-        user: sampleUser,
-        meterReading: sampleReading
-      }
+        user: sampleUsers[0] || null,
+        meterReading: sampleReading.rows[0] || null
+      },
+      userStats
     });
   } catch (error) {
     res.status(500).json({
@@ -303,11 +305,14 @@ app.get('/api/test/db-status', async (req, res) => {
     });
   }
 });
+*/
 
 // Test endpoint to create a test user
+// TEMPORARILY DISABLED - methods may not be implemented
+/*
 app.post('/api/test/create-user', async (req, res) => {
   try {
-    const User = require('./models/User');
+    const User = require('./models/UserPG'); // Updated to use PostgreSQL model
     
     // Check if user already exists
     const existingUser = await User.findOne({ email: 'admin@example.com' });
@@ -355,6 +360,7 @@ app.post('/api/test/create-user', async (req, res) => {
     });
   }
 });
+*/
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -413,12 +419,10 @@ async function gracefulShutdown(signal) {
       console.log('✅ Threading service stopped');
     }
     
-    // Close database connection
-    if (mongoose.connection.readyState === 1) {
-      console.log('📊 Closing database connection...');
-      await mongoose.connection.close();
-      console.log('✅ Database connection closed');
-    }
+    // Close PostgreSQL database connections
+    console.log('📊 Closing database connections...');
+    await db.disconnect();
+    console.log('✅ Database connections closed');
     
     console.log('✅ Graceful shutdown completed');
     process.exit(0);
@@ -429,19 +433,22 @@ async function gracefulShutdown(signal) {
 }
 
 // Setup graceful shutdown handlers
+// TEMPORARILY DISABLED for debugging
+/*
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
+*/
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
-  gracefulShutdown('uncaughtException');
+  // gracefulShutdown('uncaughtException'); // TEMPORARILY DISABLED
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  gracefulShutdown('unhandledRejection');
+  // gracefulShutdown('unhandledRejection'); // TEMPORARILY DISABLED
 });
 
 // Start server

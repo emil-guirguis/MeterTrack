@@ -1,8 +1,8 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const Building = require('../models/Building');
-const Equipment = require('../models/Equipment');
-const Meter = require('../models/Meter');
+const Building = require('../models/BuildingPG'); // Updated to use PostgreSQL model
+const Equipment = require('../models/EquipmentPG'); // Updated to use PostgreSQL model
+const Meter = require('../models/MeterPG'); // Updated to use PostgreSQL model
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -39,46 +39,52 @@ router.get('/', [
       'filter.city': filterCity
     } = req.query;
 
-    // Build query
-    const query = {};
-    
-    // Apply filters
-    if (filterType) query.type = filterType;
-    if (filterStatus) query.status = filterStatus;
-    if (filterCity) query['address.city'] = new RegExp(filterCity, 'i');
-    
-    // Apply search
-    if (search) {
-      query.$or = [
-        { name: new RegExp(search, 'i') },
-        { 'address.city': new RegExp(search, 'i') },
-        { 'address.state': new RegExp(search, 'i') }
-      ];
-    }
+    const numericPage = parseInt(page);
+    const numericPageSize = parseInt(pageSize);
+    const skip = (numericPage - 1) * numericPageSize;
 
-    // Build sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    // Use PG model findAll with filters
+    const filters = {
+      type: filterType || undefined,
+      status: filterStatus || undefined,
+      search: search || undefined
+    };
 
-    // Execute query with pagination
-    const skip = (page - 1) * pageSize;
-    const [buildings, total] = await Promise.all([
-      Building.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(pageSize)),
-      Building.countDocuments(query)
-    ]);
+    const allBuildings = await Building.findAll(filters);
+    
+    // Sort in-memory
+    const sortKeyMap = {
+      name: 'name',
+      city: 'address_city',
+      state: 'address_state',
+      type: 'type',
+      status: 'status',
+      createdAt: 'createdat'
+    };
+    const key = sortKeyMap[sortBy] || 'name';
+    const sorted = allBuildings.sort((a, b) => {
+      const va = (a[key] ?? '').toString().toLowerCase();
+      const vb = (b[key] ?? '').toString().toLowerCase();
+      if (va < vb) return sortOrder === 'desc' ? 1 : -1;
+      if (va > vb) return sortOrder === 'desc' ? -1 : 1;
+      return 0;
+    });
+
+    const total = sorted.length;
+    const buildings = sorted.slice(skip, skip + numericPageSize);
 
     res.json({
       success: true,
       data: {
         items: buildings,
-        total,
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
-        totalPages: Math.ceil(total / pageSize),
-        hasMore: skip + buildings.length < total
+        pagination: {
+          currentPage: numericPage,
+          pageSize: numericPageSize,
+          totalItems: total,
+          totalPages: Math.ceil(total / numericPageSize),
+          hasNextPage: numericPage < Math.ceil(total / numericPageSize),
+          hasPreviousPage: numericPage > 1
+        }
       }
     });
   } catch (error) {

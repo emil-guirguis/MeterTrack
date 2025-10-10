@@ -14,10 +14,30 @@ export interface MeterReading {
     energy: number;
     frequency: number;
     powerFactor: number;
+    temperature?: number;
     quality: 'good' | 'estimated' | 'questionable';
     source: string;
     deviceIP: string;
     meterId: string;
+    slaveId: number;
+    kWh?: number;
+    kW?: number;
+    V?: number;
+    A?: number;
+    dPF?: number;
+    dPFchannel?: number;
+    kWpeak?: number;
+    kVARh?: number;
+    kVAh?: number;
+    phaseAVoltage?: number;
+    phaseBVoltage?: number;
+    phaseCVoltage?: number;
+    phaseACurrent?: number;
+    phaseBCurrent?: number;
+    phaseCCurrent?: number;
+    phaseAPower?: number;
+    phaseBPower?: number;
+    phaseCPower?: number;
 }
 export declare class ModbusClient extends EventEmitter {
     private client;

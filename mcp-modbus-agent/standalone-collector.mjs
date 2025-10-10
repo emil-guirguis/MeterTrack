@@ -35,9 +35,12 @@ const config = {
     timeout: parseInt(process.env.MODBUS_TIMEOUT || '5000', 10)
   },
   database: {
-    uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb',
-    databaseName: 'meterdb',
-    collectionName: process.env.MONGODB_COLLECTION || 'meterreadings'
+    host: process.env.POSTGRES_HOST || 'aws-1-us-west-1.pooler.supabase.com',
+    port: parseInt(process.env.POSTGRES_PORT || '6543', 10),
+    database: process.env.POSTGRES_DB || 'postgres',
+    user: process.env.POSTGRES_USER || 'postgres.hpetwjgsfpscjlnzmzby',
+    password: process.env.POSTGRES_PASSWORD || 'your-password-here',
+    ssl: process.env.POSTGRES_SSL !== 'false'
   },
   collectionInterval: parseInt(process.env.COLLECTION_INTERVAL || '30000', 10),
   autoStart: true // Force auto-start for standalone mode
@@ -45,7 +48,7 @@ const config = {
 
 console.log('🚀 Starting Standalone Meter Data Collector');
 console.log(`📊 Meter: ${config.modbus.ip}:${config.modbus.port}`);
-console.log(`💾 Database: ${config.database.uri}`);
+console.log(`💾 Database: PostgreSQL ${config.database.host}:${config.database.port}/${config.database.database}`);
 console.log(`⏱️  Collection Interval: ${config.collectionInterval}ms (${config.collectionInterval/1000} seconds)`);
 console.log(`🔄 Starting continuous data collection...\n`);
 
@@ -73,7 +76,7 @@ async function startCollector() {
     const dbConnected = await dataCollector.databaseManager.testConnection();
     const modbusConnected = await dataCollector.modbusClient.testConnection();
     
-    console.log(`   MongoDB: ${dbConnected ? '✅ Connected' : '❌ Failed'}`);
+    console.log(`   PostgreSQL: ${dbConnected ? '✅ Connected' : '❌ Failed'}`);
     console.log(`   Modbus: ${modbusConnected ? '✅ Connected' : '❌ Failed'}`);
     
     if (!dbConnected || !modbusConnected) {

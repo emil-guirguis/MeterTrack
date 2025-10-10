@@ -3,267 +3,180 @@
 import type { Meter } from '../../types/entities';
 import { createEntityStore, createEntityHook } from '../slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../middleware/apiMiddleware';
+import { tokenStorage } from '../../utils/tokenStorage';
 
-// Mock service for now - will be replaced with actual API service
+// Real API service
 const metersService = {
   async getAll(params?: any) {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      const mockMeters: Meter[] = [
-        {
-          id: '1',
-          serialNumber: 'MTR001',
-          type: 'electric',
-          buildingId: '1',
-          equipmentId: '1',
-          status: 'active',
-          manufacturer: 'Schneider Electric',
-          model: 'ION7650',
-          installDate: new Date('2023-01-15'),
-          lastReading: {
-            value: 12450.5,
-            timestamp: new Date('2024-12-01T10:00:00Z'),
-            unit: 'kWh',
-            quality: 'good',
-          },
-          configuration: {
-            readingInterval: 15, // minutes
-            units: 'kWh',
-            multiplier: 1,
-            registers: [1, 2, 3],
-            communicationProtocol: 'Modbus TCP',
-            ipAddress: '192.168.1.100',
-            port: 502,
-          },
-          location: 'Main Electrical Room',
-          notes: 'Primary building meter',
-          createdAt: new Date('2023-01-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '2',
-          serialNumber: 'MTR002',
-          type: 'gas',
-          buildingId: '2',
-          status: 'active',
-          manufacturer: 'Honeywell',
-          model: 'GAS-200',
-          installDate: new Date('2023-02-20'),
-          lastReading: {
-            value: 8750.2,
-            timestamp: new Date('2024-12-01T09:30:00Z'),
-            unit: 'CCF',
-            quality: 'good',
-          },
-          configuration: {
-            readingInterval: 60, // minutes
-            units: 'CCF',
-            multiplier: 1,
-            registers: [1],
-            communicationProtocol: 'Pulse',
-          },
-          location: 'Gas Meter Room',
-          notes: 'Natural gas consumption meter',
-          createdAt: new Date('2023-02-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-        {
-          id: '3',
-          serialNumber: 'MTR003',
-          type: 'water',
-          buildingId: '1',
-          status: 'active',
-          manufacturer: 'Neptune',
-          model: 'T-10',
-          installDate: new Date('2023-03-10'),
-          lastReading: {
-            value: 15680.8,
-            timestamp: new Date('2024-12-01T08:00:00Z'),
-            unit: 'gallons',
-            quality: 'good',
-          },
-          configuration: {
-            readingInterval: 30, // minutes
-            units: 'gallons',
-            multiplier: 10,
-            registers: [1],
-            communicationProtocol: 'AMR',
-          },
-          location: 'Water Meter Pit',
-          notes: 'Main water supply meter',
-          createdAt: new Date('2023-03-01'),
-          updatedAt: new Date('2024-01-01'),
-        },
-      ];
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 450));
-
-      // Apply filters and pagination
-      let filteredMeters = mockMeters;
+      const queryParams = new URLSearchParams();
       
-      if (params?.search) {
-        const search = params.search.toLowerCase();
-        filteredMeters = filteredMeters.filter(meter =>
-          meter.serialNumber.toLowerCase().includes(search) ||
-          (meter.manufacturer && meter.manufacturer.toLowerCase().includes(search)) ||
-          (meter.model && meter.model.toLowerCase().includes(search)) ||
-          (meter.location && meter.location.toLowerCase().includes(search))
-        );
-      }
-
-      if (params?.filters?.type) {
-        filteredMeters = filteredMeters.filter(meter => meter.type === params.filters.type);
-      }
-
-      if (params?.filters?.status) {
-        filteredMeters = filteredMeters.filter(meter => meter.status === params.filters.status);
-      }
-
-      if (params?.filters?.buildingId) {
-        filteredMeters = filteredMeters.filter(meter => meter.buildingId === params.filters.buildingId);
-      }
-
-      if (params?.filters?.equipmentId) {
-        filteredMeters = filteredMeters.filter(meter => meter.equipmentId === params.filters.equipmentId);
-      }
-
-      // Sort
-      if (params?.sortBy) {
-        filteredMeters.sort((a, b) => {
-          let aVal = (a as any)[params.sortBy];
-          let bVal = (b as any)[params.sortBy];
-          
-          // Handle nested properties
-          if (params.sortBy === 'lastReading.value') {
-            aVal = a.lastReading?.value || 0;
-            bVal = b.lastReading?.value || 0;
-          } else if (params.sortBy === 'lastReading.timestamp') {
-            aVal = a.lastReading?.timestamp || new Date(0);
-            bVal = b.lastReading?.timestamp || new Date(0);
-          }
-          
-          const order = params.sortOrder === 'desc' ? -1 : 1;
-          
-          if (aVal < bVal) return -1 * order;
-          if (aVal > bVal) return 1 * order;
-          return 0;
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      if (params?.search) queryParams.append('search', params.search);
+      
+      // Apply filters
+      if (params?.filters) {
+        Object.entries(params.filters).forEach(([key, value]) => {
+          if (value) queryParams.append(`filter.${key}`, value as string);
         });
       }
 
-      // Paginate
-      const page = params?.page || 1;
-      const pageSize = params?.pageSize || 20;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedMeters = filteredMeters.slice(startIndex, endIndex);
+      const listHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const listToken = tokenStorage.getToken();
+      if (listToken) listHeaders['Authorization'] = `Bearer ${listToken}`;
+
+      const response = await fetch(`/api/meters?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: listHeaders
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch meters');
+      }
 
       return {
-        items: paginatedMeters,
-        total: filteredMeters.length,
-        hasMore: endIndex < filteredMeters.length,
+        items: data.data.items || [],
+        total: data.data.pagination?.totalItems || 0,
+        hasMore: data.data.pagination?.hasNextPage || false,
       };
     });
   },
 
   async getById(id: string) {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const mockMeter: Meter = {
-        id,
-        serialNumber: `MTR${id}`,
-        type: 'electric',
-        buildingId: '1',
-        status: 'active',
-        manufacturer: 'Generic',
-        model: `MODEL-${id}`,
-        installDate: new Date(),
-        configuration: {
-          readingInterval: 15,
-          units: 'kWh',
-          multiplier: 1,
-          registers: [1],
-        },
-        location: 'Unknown',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const getHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const getToken = tokenStorage.getToken();
+      if (getToken) getHeaders['Authorization'] = `Bearer ${getToken}`;
 
-      return mockMeter;
+      const response = await fetch(`/api/meters/${id}`, {
+        method: 'GET',
+        headers: getHeaders
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch meter');
+      }
+
+      return data.data;
     });
   },
 
-  async create(data: Partial<Meter>) {
+  async create(meterData: Partial<Meter>) {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 650));
-      
-      const newMeter: Meter = {
-        id: Date.now().toString(),
-        serialNumber: data.serialNumber || '',
-        type: data.type || 'electric',
-        buildingId: data.buildingId || '',
-        equipmentId: data.equipmentId,
-        status: data.status || 'active',
-        manufacturer: data.manufacturer || '',
-        model: data.model || '',
-        installDate: data.installDate || new Date(),
-        lastReading: data.lastReading,
-        configuration: data.configuration || {
-          readingInterval: 15,
-          units: 'kWh',
-          multiplier: 1,
-          registers: [1],
-        },
-        location: data.location || '',
-        notes: data.notes || '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const createHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const createToken = tokenStorage.getToken();
+      if (createToken) createHeaders['Authorization'] = `Bearer ${createToken}`;
 
-      return newMeter;
+      const response = await fetch('/api/meters', {
+        method: 'POST',
+        headers: createHeaders,
+        body: JSON.stringify(meterData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to create meter');
+      }
+
+      return data.data;
     });
   },
 
-  async update(id: string, data: Partial<Meter>) {
+  async update(id: string, meterData: Partial<Meter>) {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 550));
-      
-      const updatedMeter: Meter = {
-        id,
-        serialNumber: data.serialNumber || `MTR${id}`,
-        type: data.type || 'electric',
-        buildingId: data.buildingId || '1',
-        equipmentId: data.equipmentId,
-        status: data.status || 'active',
-        manufacturer: data.manufacturer || 'Generic',
-        model: data.model || `MODEL-${id}`,
-        installDate: data.installDate || new Date(),
-        lastReading: data.lastReading,
-        configuration: data.configuration || {
-          readingInterval: 15,
-          units: 'kWh',
-          multiplier: 1,
-          registers: [1],
-        },
-        location: data.location || 'Unknown',
-        notes: data.notes || '',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date(),
-      };
+      const updateHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const updateToken = tokenStorage.getToken();
+      if (updateToken) updateHeaders['Authorization'] = `Bearer ${updateToken}`;
 
-      return updatedMeter;
+      const response = await fetch(`/api/meters/${id}`, {
+        method: 'PUT',
+        headers: updateHeaders,
+        body: JSON.stringify(meterData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update meter');
+      }
+
+      return data.data;
     });
   },
 
-  async delete(_id: string) {
+  async delete(id: string) {
     return withTokenRefresh(async () => {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 350));
-      // In real implementation, this would make DELETE request
+      const deleteHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const deleteToken = tokenStorage.getToken();
+      if (deleteToken) deleteHeaders['Authorization'] = `Bearer ${deleteToken}`;
+
+      const response = await fetch(`/api/meters/${id}`, {
+        method: 'DELETE',
+        headers: deleteHeaders
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete meter');
+      }
+
+      return;
+    });
+  },
+
+  // Test meter connection
+  async testConnection(id: string) {
+    return withTokenRefresh(async () => {
+      const testHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const testToken = tokenStorage.getToken();
+      if (testToken) testHeaders['Authorization'] = `Bearer ${testToken}`;
+
+      const response = await fetch(`/api/meters/${id}/test-connection`, {
+        method: 'POST',
+        headers: testHeaders
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
     });
   },
 };

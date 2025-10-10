@@ -1,0 +1,212 @@
+.meters-page {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.page-header__content h1 {
+  margin: 0 0 0.5rem 0;
+  color: #111827;
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+.page-header__content p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.page-content {
+  padding: 0 2rem;
+}
+
+/* Meter Details View */
+.meter-details {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.meter-details__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.meter-details__header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.meter-details__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.meter-details__content {
+  padding: 2rem;
+}
+
+.detail-section {
+  margin-bottom: 2rem;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h4 {
+  margin: 0 0 1rem 0;
+  color: #374151;
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-item--full {
+  grid-column: 1 / -1;
+}
+
+.detail-item label {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.detail-item span {
+  color: #111827;
+  font-size: 0.875rem;
+}
+
+/* Status indicators and badges specific to meters page */
+.meter-details .status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.meter-details .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.meter-details .status-dot--active {
+  background-color: #10b981;
+}
+
+.meter-details .status-dot--inactive {
+  background-color: #6b7280;
+}
+
+.meter-details .status-dot--maintenance {
+  background-color: #f59e0b;
+}
+
+.meter-details .badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.meter-details .badge--primary {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.meter-details .badge--warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.meter-details .badge--info {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.meter-details .badge--success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .page-header__actions {
+    justify-content: stretch;
+  }
+  
+  .page-header__actions .btn {
+    flex: 1;
+  }
+  
+  .page-content {
+    padding: 0 1rem;
+  }
+  
+  .meter-details__header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .meter-details__actions {
+    justify-content: stretch;
+  }
+  
+  .meter-details__actions .btn {
+    flex: 1;
+  }
+  
+  .meter-details__content {
+    padding: 1rem;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

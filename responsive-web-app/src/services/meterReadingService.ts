@@ -46,7 +46,7 @@ class MeterReadingService {
     hasMore: boolean;
   }> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: any }> = await this.apiClient.get('/meter-readings', { params });
+      const response: AxiosResponse<{ success: boolean; data: any }> = await this.apiClient.get('/meterreadings', { params });
       return response.data.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -60,7 +60,7 @@ class MeterReadingService {
   // Get latest readings for dashboard
   async getLatestReadings(): Promise<DetailedMeterReading[]> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: DetailedMeterReading[] }> = await this.apiClient.get('/meter-readings/latest');
+      const response: AxiosResponse<{ success: boolean; data: DetailedMeterReading[] }> = await this.apiClient.get('/meterreadings/latest');
       return response.data.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -74,7 +74,7 @@ class MeterReadingService {
   // Get meter reading by ID
   async getMeterReading(id: string): Promise<DetailedMeterReading> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: DetailedMeterReading }> = await this.apiClient.get(`/meter-readings/${id}`);
+      const response: AxiosResponse<{ success: boolean; data: DetailedMeterReading }> = await this.apiClient.get(`/meterreadings/${id}`);
       return response.data.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -92,7 +92,7 @@ class MeterReadingService {
     endDate?: string;
   }): Promise<DetailedMeterReading[]> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: DetailedMeterReading[] }> = await this.apiClient.get(`/meter-readings/meter/${meterId}`, { params });
+      const response: AxiosResponse<{ success: boolean; data: DetailedMeterReading[] }> = await this.apiClient.get(`/meterreadings/meter/${meterId}`, { params });
       return response.data.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -106,7 +106,7 @@ class MeterReadingService {
   // Get meter statistics
   async getMeterStats(): Promise<MeterReadingStats> {
     try {
-      const response: AxiosResponse<{ success: boolean; data: MeterReadingStats }> = await this.apiClient.get('/meter-readings/stats/summary');
+      const response: AxiosResponse<{ success: boolean; data: MeterReadingStats }> = await this.apiClient.get('/meterreadings/stats/summary');
       return response.data.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {

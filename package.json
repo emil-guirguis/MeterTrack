@@ -5,6 +5,7 @@
   "scripts": {
   "predev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./prepare-dev.ps1",
   "dev": "concurrently -k -t -p \"[{name}]\" -n backend,frontend -c \"yellowBright,cyanBright\" \"npm run backend\" \"npm run frontend\"",
+    "dev:no-agent": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:SKIP_MCP_AGENT='1'; npm run dev\"",
     "backend": "cd backend && npm start",
     "frontend": "cd responsive-web-app && npm run dev",
     "install-all": "npm install && cd backend && npm install && cd ../responsive-web-app && npm install",
@@ -24,5 +25,10 @@
     "typescript"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "mongoose": "^8.19.1",
+    "pg": "^8.16.3"
+  }
 }

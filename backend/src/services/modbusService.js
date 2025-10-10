@@ -43,13 +43,13 @@ class ModbusService {
       port = 502,
       slaveId = 1,
       registers = {
-        // Basic measurements
-        voltage: { address: 0, count: 1, scale: 10 },
-        current: { address: 2, count: 1, scale: 100 },
-        power: { address: 4, count: 1, scale: 1 },
-        energy: { address: 6, count: 2, scale: 1 }, // 32-bit value
-        frequency: { address: 8, count: 1, scale: 10 },
-        powerFactor: { address: 10, count: 1, scale: 1000 },
+        // REAL METER MAPPING - Based on actual device at 10.10.10.11:502
+        voltage: { address: 5, count: 1, scale: 200 },    // Register 5, scale by 200
+        current: { address: 6, count: 1, scale: 100 },    // Register 6, scale by 100  
+        power: { address: 7, count: 1, scale: 1 },        // Register 7, direct watts
+        energy: { address: 8, count: 1, scale: 1 },       // Register 8 estimate
+        frequency: { address: 0, count: 1, scale: 10 },   // Register 0, scale by 10
+        powerFactor: { address: 9, count: 1, scale: 1000 }, // Register 9 estimate
         
         // Phase voltages
         phaseAVoltage: { address: 12, count: 1, scale: 10 },

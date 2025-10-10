@@ -99,9 +99,13 @@ export const withApiCall = async <T>(
 // Check if error is authentication related
 const isAuthError = (error: unknown): boolean => {
   if (error instanceof Error) {
-    return error.message.includes('401') || 
-           error.message.includes('Unauthorized') ||
-           error.message.includes('Token expired');
+    const msg = error.message;
+    return msg.includes('401') ||
+           msg.includes('Unauthorized') ||
+           msg.includes('Token expired') ||
+           msg.includes('Invalid token') ||
+           msg.includes('Access token required') ||
+           msg.includes('Authentication required');
   }
   return false;
 };

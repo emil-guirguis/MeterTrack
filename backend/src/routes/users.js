@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const User = require('../models/User');
+const User = require('../models/UserPG'); // Updated to use PostgreSQL model
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -36,44 +36,38 @@ router.get('/', [
       'filter.status': filterStatus
     } = req.query;
 
-    // Build query
-    const query = {};
+    // Build PostgreSQL query filters
+    const filters = {};
     
     // Apply filters
-    if (filterRole) query.role = filterRole;
-    if (filterStatus) query.status = filterStatus;
+    if (filterRole) filters.role = filterRole;
+    if (filterStatus) filters.status = filterStatus;
     
-    // Apply search
+    // Apply search - PostgreSQL version with ILIKE
     if (search) {
-      query.$or = [
-        { name: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') }
-      ];
+      // Pass search directly to the model
     }
 
-    // Build sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    // Execute query with pagination
-    const skip = (page - 1) * pageSize;
-    const [users, total] = await Promise.all([
-      User.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(pageSize)),
-      User.countDocuments(query)
-    ]);
+    // Execute query with pagination using PostgreSQL model
+    const offset = (page - 1) * pageSize;
+    const result = await User.findAll({
+      filters,
+      sortBy,
+      sortOrder,
+      limit: parseInt(pageSize),
+      offset,
+      search
+    });
 
     res.json({
       success: true,
       data: {
-        items: users,
-        total,
+        items: result.users,
+        total: result.total,
         page: parseInt(page),
         pageSize: parseInt(pageSize),
-        totalPages: Math.ceil(total / pageSize),
-        hasMore: skip + users.length < total
+        totalPages: Math.ceil(result.total / pageSize),
+        hasMore: offset + result.users.length < result.total
       }
     });
   } catch (error) {
@@ -129,8 +123,7 @@ router.post('/', [
       });
     }
 
-    const user = new User(req.body);
-    await user.save();
+    const user = await User.create(req.body);
 
     res.status(201).json({
       success: true,
@@ -168,18 +161,18 @@ router.put('/:id', [
     const updateData = { ...req.body };
     delete updateData.password;
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
+    // First find the user
+    const user = await User.findById(req.params.id);
+    
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+
+    // Update the user
+    await user.update(updateData);
 
     res.json({
       success: true,
@@ -223,7 +216,7 @@ router.put('/:id/password', [
     }
 
     // If user is changing their own password, verify current password
-    if (req.user._id.toString() === userId && currentPassword) {
+    if (req.user.id === userId && currentPassword) {
       const isCurrentPasswordValid = await user.comparePassword(currentPassword);
       if (!isCurrentPasswordValid) {
         return res.status(400).json({
@@ -233,9 +226,8 @@ router.put('/:id/password', [
       }
     }
 
-    // Update password (will be hashed by the pre-save middleware)
-    user.password = password;
-    await user.save();
+    // Update password using the updatePassword method
+    await user.updatePassword(password);
 
     res.json({
       success: true,
@@ -253,7 +245,8 @@ router.put('/:id/password', [
 // Delete user
 router.delete('/:id', requirePermission('user:delete'), async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    // First find the user
+    const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({
@@ -261,6 +254,9 @@ router.delete('/:id', requirePermission('user:delete'), async (req, res) => {
         message: 'User not found'
       });
     }
+
+    // Delete the user (soft delete)
+    await user.delete();
 
     res.json({
       success: true,

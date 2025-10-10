@@ -1,6 +1,6 @@
 import winston from 'winston';
 import { ModbusClient, ModbusConfig, MeterReading } from './modbus-client.js';
-import { DatabaseManager, DatabaseConfig } from './database-manager.js';
+import { PostgresDatabaseManager, DatabaseConfig } from './postgres-database-manager.js';
 export interface DataCollectorConfig {
     modbus: ModbusConfig;
     database: DatabaseConfig;
@@ -9,7 +9,7 @@ export interface DataCollectorConfig {
 }
 export declare class DataCollector {
     readonly modbusClient: ModbusClient;
-    readonly databaseManager: DatabaseManager;
+    readonly databaseManager: PostgresDatabaseManager;
     private logger;
     private config;
     private collectionTimer;

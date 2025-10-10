@@ -1,0 +1,98 @@
+.meter-form {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.meter-form .form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.meter-form .form-section:last-of-type {
+  border-bottom: none;
+}
+
+.meter-form .form-section h3 {
+  margin: 0 0 1rem 0;
+  color: #374151;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.meter-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.meter-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.meter-form .form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.meter-form .form-control {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.meter-form .form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.meter-form .form-control--error {
+  border-color: #ef4444;
+}
+
+.meter-form .form-control--error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.meter-form .form-error {
+  margin-top: 0.25rem;
+  color: #ef4444;
+  font-size: 0.75rem;
+}
+
+.meter-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 2rem;
+}
+
+.meter-form .error-message {
+  padding: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .meter-form .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .meter-form .form-actions {
+    flex-direction: column;
+  }
+}

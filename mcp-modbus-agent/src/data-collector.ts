@@ -1,7 +1,7 @@
 import winston from 'winston';
 import cron from 'node-cron';
 import { ModbusClient, ModbusConfig, MeterReading } from './modbus-client.js';
-import { DatabaseManager, DatabaseConfig } from './database-manager.js';
+import { PostgresDatabaseManager, DatabaseConfig } from './postgres-database-manager.js';
 
 export interface DataCollectorConfig {
   modbus: ModbusConfig;
@@ -12,7 +12,7 @@ export interface DataCollectorConfig {
 
 export class DataCollector {
   public readonly modbusClient: ModbusClient;
-  public readonly databaseManager: DatabaseManager;
+  public readonly databaseManager: PostgresDatabaseManager;
   private logger: winston.Logger;
   private config: DataCollectorConfig;
   private collectionTimer: NodeJS.Timeout | null = null;
@@ -26,7 +26,7 @@ export class DataCollector {
     this.logger = logger;
     
     this.modbusClient = new ModbusClient(config.modbus, logger);
-    this.databaseManager = new DatabaseManager(config.database, logger);
+    this.databaseManager = new PostgresDatabaseManager(config.database, logger);
     
     this.setupEventHandlers();
   }

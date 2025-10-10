@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
+const User = require('../models/UserPG'); // Updated to use PostgreSQL User model
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -39,7 +39,7 @@ router.post('/login', [
     const { email, password, rememberMe } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findByEmail(email);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -65,12 +65,11 @@ router.post('/login', [
     }
 
     // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    await user.updateLastLogin();
 
     // Generate tokens
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
 
     // Calculate expiration time
     const expiresIn = rememberMe ? 7 * 24 * 60 * 60 : 60 * 60; // 7 days or 1 hour
@@ -78,7 +77,14 @@ router.post('/login', [
     res.json({
       success: true,
       data: {
-        user: user.toJSON(),
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          permissions: user.permissions,
+          status: user.status
+        },
         token,
         refreshToken,
         expiresIn
@@ -121,13 +127,20 @@ router.post('/refresh', [
     }
 
     // Generate new tokens
-    const newToken = generateToken(user._id);
-    const newRefreshToken = generateRefreshToken(user._id);
+    const newToken = generateToken(user.id);
+    const newRefreshToken = generateRefreshToken(user.id);
 
     res.json({
       success: true,
       data: {
-        user: user.toJSON(),
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          permissions: user.permissions,
+          status: user.status
+        },
         token: newToken,
         refreshToken: newRefreshToken,
         expiresIn: 60 * 60 // 1 hour

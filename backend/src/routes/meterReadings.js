@@ -17,13 +17,13 @@ function fillMissingFields(reading) {
 }
 const express = require('express');
 const { query, validationResult } = require('express-validator');
-const MeterReading = require('../models/MeterReading');
+const MeterReading = require('../models/MeterReadingPG');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Apply authentication to all routes (temporarily disabled for testing)
-// router.use(authenticateToken);
+// Apply authentication to all routes
+router.use(authenticateToken);
 
 // Get all meter readings with filtering and pagination
 router.get('/', [

@@ -325,7 +325,13 @@ export interface MeterReadingStats {
 
 export interface Meter {
   id: string;
+  meterId: string; // User-friendly meter identifier
   serialNumber: string;
+  brand: string; // Manufacturer/brand name
+  model: string; // Model number
+  ip: string; // IP address for connection
+  portNumber: number; // Port number for connection
+  slaveId?: number; // Modbus slave ID
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
   buildingId?: string;
   buildingName?: string; // For display purposes
@@ -335,24 +341,38 @@ export interface Meter {
   lastReading?: MeterReading;
   status: 'active' | 'inactive' | 'maintenance';
   installDate: Date;
-  manufacturer?: string;
-  model?: string;
   location?: string;
+  description?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  createdBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  updatedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export interface MeterCreateRequest {
+  meterId: string;
   serialNumber: string;
+  brand: string;
+  model: string;
+  ip: string;
+  portNumber: number;
+  slaveId?: number;
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
   buildingId?: string;
   equipmentId?: string;
   configuration: MeterConfig;
   installDate: Date;
-  manufacturer?: string;
-  model?: string;
   location?: string;
+  description?: string;
   notes?: string;
 }
 

@@ -1,0 +1,314 @@
+/* Meter Data Retriever Component Styles */
+.meter-data-retriever {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.meter-data-retriever__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  gap: 1rem;
+}
+
+.meter-data-retriever__title-section {
+  flex: 1;
+}
+
+.meter-data-retriever__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.meter-data-retriever__icon {
+  font-size: 1.5rem;
+}
+
+.meter-data-retriever__subtitle {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.875rem;
+}
+
+.meter-data-retriever__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.meter-data-retriever__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.meter-data-retriever__btn--primary {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.meter-data-retriever__btn--primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.meter-data-retriever__btn--primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.meter-data-retriever__btn-icon {
+  font-size: 1rem;
+}
+
+.meter-data-retriever__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.meter-data-retriever__last-update {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.meter-data-retriever__update-label {
+  font-weight: 500;
+  margin-bottom: 0.125rem;
+}
+
+.meter-data-retriever__update-time {
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.meter-data-retriever__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 1.5rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+}
+
+.meter-data-retriever__error-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.meter-data-retriever__error-content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.meter-data-retriever__error-content p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.meter-data-retriever__content {
+  padding: 1.5rem;
+}
+
+/* Meter Data Grid Styles */
+.meter-data-grid__empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.meter-data-grid {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.meter-data-grid__header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.8fr 1fr;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.meter-data-grid__body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.meter-data-grid__row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 0.8fr 1fr;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.meter-data-grid__row:hover {
+  background: #f9fafb;
+}
+
+.meter-data-grid__row:last-child {
+  border-bottom: none;
+}
+
+.meter-data-grid__cell {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #f3f4f6;
+}
+
+.meter-data-grid__cell:last-child {
+  border-right: none;
+}
+
+.meter-data-grid__cell--header {
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.meter-data-grid__cell--name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.meter-data-grid__cell--value {
+  font-family: 'Courier New', monospace;
+  color: #059669;
+  font-weight: 600;
+  justify-content: flex-end;
+}
+
+.meter-data-grid__cell--unit {
+  color: #6b7280;
+  font-style: italic;
+  justify-content: center;
+}
+
+.meter-data-grid__cell--address {
+  font-family: 'Courier New', monospace;
+  color: #7c3aed;
+  font-size: 0.8rem;
+  justify-content: center;
+}
+
+.meter-data-grid__cell--type {
+  color: #dc2626;
+  font-size: 0.8rem;
+  justify-content: center;
+}
+
+.meter-data-retriever__summary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.meter-data-retriever__summary-text {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .meter-data-retriever__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .meter-data-retriever__controls {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .meter-data-retriever__last-update {
+    align-items: flex-start;
+  }
+  
+  .meter-data-grid__header,
+  .meter-data-grid__row {
+    grid-template-columns: 1.5fr 1fr 0.6fr 0.6fr 0.8fr;
+  }
+  
+  .meter-data-grid__cell {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .meter-data-retriever__content {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .meter-data-grid__header,
+  .meter-data-grid__row {
+    grid-template-columns: 1fr;
+  }
+  
+  .meter-data-grid__cell {
+    border-right: none;
+    border-bottom: 1px solid #f3f4f6;
+    justify-content: space-between;
+  }
+  
+  .meter-data-grid__cell::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .meter-data-grid__cell--header {
+    display: none;
+  }
+}

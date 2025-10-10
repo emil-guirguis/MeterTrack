@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { ModbusClient } from './modbus-client.js';
-import { DatabaseManager } from './database-manager.js';
+import { PostgresDatabaseManager } from './postgres-database-manager.js';
 export class DataCollector {
     modbusClient;
     databaseManager;
@@ -15,7 +15,7 @@ export class DataCollector {
         this.config = config;
         this.logger = logger;
         this.modbusClient = new ModbusClient(config.modbus, logger);
-        this.databaseManager = new DatabaseManager(config.database, logger);
+        this.databaseManager = new PostgresDatabaseManager(config.database, logger);
         this.setupEventHandlers();
     }
     setupEventHandlers() {

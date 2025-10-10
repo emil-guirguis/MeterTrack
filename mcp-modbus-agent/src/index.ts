@@ -38,9 +38,12 @@ const config: DataCollectorConfig = {
     timeout: parseInt(process.env.MODBUS_TIMEOUT || '5000')
   },
   database: {
-    uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb',
-    databaseName: 'meterdb',
-    collectionName: process.env.MONGODB_COLLECTION || 'meterreadings'
+    host: process.env.POSTGRES_HOST || 'aws-1-us-west-1.pooler.supabase.com',
+    port: parseInt(process.env.POSTGRES_PORT || '6543'),
+    database: process.env.POSTGRES_DB || 'postgres',
+    user: process.env.POSTGRES_USER || 'postgres.hpetwjgsfpscjlnzmzby',
+    password: process.env.POSTGRES_PASSWORD || 'your-password-here',
+    ssl: process.env.POSTGRES_SSL !== 'false'
   },
   collectionInterval: parseInt(process.env.COLLECTION_INTERVAL || '900000'),
   autoStart: process.env.AUTO_START_COLLECTION === 'true'
@@ -368,7 +371,7 @@ class ModbusMCPServer {
     await this.server.connect(transport);
     
     this.logger.info(`🚀 Modbus MCP Server started successfully`);
-    this.logger.info(`📊 Configuration: Modbus IP: ${config.modbus.ip}, MongoDB: ${config.database.uri}`);
+    this.logger.info(`📊 Configuration: Modbus IP: ${config.modbus.ip}, PostgreSQL: ${config.database.host}:${config.database.port}/${config.database.database}`);
     this.logger.info(`⏱️  Collection Interval: ${config.collectionInterval}ms (${config.collectionInterval / 60000} minutes)`);
     this.logger.info(`🔧 Auto-start Collection: ${config.autoStart}`);
     this.logger.info(`📡 Server ready for MCP client connections via stdio`);

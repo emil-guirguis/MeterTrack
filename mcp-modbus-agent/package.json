@@ -12,7 +12,7 @@
     "dev:simple": "node start-dev.mjs",
     "dev:background": "npm run build && start /b node dist/index.js",
     "test:modbus": "node test-modbus.mjs",
-  "test:modbus:scan": "node test-modbus-scan.mjs",
+    "test:modbus:scan": "node test-modbus-scan.mjs",
     "test:mcp": "node test-mcp.mjs",
     "start:dev": "nodemon dist/index.js",
     "stop": "powershell -ExecutionPolicy Bypass -File manage-agent.ps1 -Action stop",
@@ -22,6 +22,9 @@
     "clean": "rm -rf dist",
     "watch": "tsc --watch",
     "type-check": "tsc --noEmit",
+    "db:backfill": "node scripts/backfill-meterreadings.mjs",
+    "db:backfill:map": "cross-env MODBUS_MAP_FILE=modbus-map.example.json node scripts/backfill-meterreadings.mjs",
+    "db:backfill:scan": "node scripts/backfill-from-scan-log.mjs",
     "kill-all": "taskkill /f /im node.exe /fi \"COMMANDLINE eq *mcp*\" 2>nul || echo No MCP processes found"
   },
   "dependencies": {
@@ -35,7 +38,9 @@
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.15.5",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "nodemon": "^3.0.2",
     "tsx": "^4.6.2",
     "typescript": "^5.3.3"
