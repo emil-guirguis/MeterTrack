@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { directModbusService } from '../../services/directModbusService';
 import './MeterDataRetriever.css';
 
+
+
 interface MeterDataPoint {
   name: string;
   value: string | number;
@@ -67,7 +69,7 @@ export const MeterDataRetriever: React.FC = () => {
       // Connect directly to meter using the same logic as MCP agent
       const reading = await directModbusService.connectAndReadMeter();
       
-      console.log('✅ REAL meter data received:', reading);
+  console.log('✅ REAL meter data received:', reading);
       
       // Convert real meter data to display format
       const realDataPoints: MeterDataPoint[] = [
@@ -83,22 +85,22 @@ export const MeterDataRetriever: React.FC = () => {
         { name: 'Energy Estimate', value: reading.energy.toFixed(3), unit: 'kWh', type: 'Calculated' },
         
         // Device info
-        { name: 'Device IP', value: '10.10.10.11', unit: '', type: 'Info' },
-        { name: 'Modbus Port', value: '502', unit: '', type: 'Info' },
-        { name: 'Slave ID', value: '1', unit: '', type: 'Info' },
-        { name: 'Connection Type', value: 'Direct TCP', unit: '', type: 'Info' },
-        { name: 'Data Source', value: 'Live Meter', unit: '', type: 'Info' },
+        { name: 'Device IP', value: reading.deviceIP || reading.ip || '—', unit: '', type: 'Info' },
+        { name: 'Modbus Port', value: (reading.port as any) || '—', unit: '', type: 'Info' },
+        { name: 'Slave ID', value: (reading.slaveId as any) || '—', unit: '', type: 'Info' },
+        { name: 'Connection Type', value: 'Backend API', unit: '', type: 'Info' },
+        { name: 'Data Source', value: 'Latest Reading (DB)', unit: '', type: 'Info' },
         { name: 'Timestamp', value: reading.timestamp.toLocaleTimeString(), unit: '', type: 'Info' },
       ];
       
       setMeterData(realDataPoints);
-      setError(`✅ REAL meter data | ${reading.voltage.toFixed(1)}V | ${reading.current.toFixed(1)}A | ${(reading.power/1000).toFixed(2)}kW | Direct connection to 10.10.10.11:502`);
+  setError(`✅ REAL meter data | ${reading.voltage.toFixed(1)}V | ${reading.current.toFixed(1)}A | ${(reading.power/1000).toFixed(2)}kW`);
       setLastUpdate(new Date());
       console.log(`✅ Successfully loaded ${realDataPoints.length} REAL data points from meter`);
       
     } catch (error) {
       console.error('❌ Direct meter connection failed:', error);
-      setError(`❌ Failed to connect to meter at 10.10.10.11:502 - ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setError(`❌ Failed to load latest meter data - ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
