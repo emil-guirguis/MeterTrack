@@ -1,0 +1,169 @@
+.template-list {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.template-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.template-list-header h1 {
+  margin: 0;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.template-list-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.template-status-chip {
+  text-transform: capitalize;
+  font-size: 0.75rem;
+  height: 24px;
+}
+
+.template-category-badge {
+  background-color: #f5f5f5;
+  color: #666;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.template-usage-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.template-last-used {
+  color: #999;
+  font-size: 0.875rem;
+}
+
+.template-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.template-actions .MuiIconButton-root {
+  padding: 6px;
+}
+
+.template-actions .MuiIconButton-root:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.template-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.template-name {
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+}
+
+.template-category {
+  color: #666;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.template-subject-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-import-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.template-import-input {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+/* Status colors */
+.template-status-active {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.template-status-inactive {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.template-status-draft {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .template-list {
+    padding: 16px;
+  }
+  
+  .template-list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .template-list-header h1 {
+    text-align: center;
+  }
+  
+  .template-list-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .template-subject-cell {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .template-list {
+    padding: 12px;
+  }
+  
+  .template-list-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .template-list-actions button {
+    width: 100%;
+  }
+  
+  .template-subject-cell {
+    max-width: 120px;
+  }
+}
+
+.template-import-hidden-input {
+  display: none;
+}

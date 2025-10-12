@@ -16,6 +16,7 @@ const contactRoutes = require('./routes/contacts');
 const meterRoutes = require('./routes/meters');
 const meterReadingRoutes = require('./routes/meterReadings');
 const templateRoutes = require('./routes/templates');
+const emailRoutes = require('./routes/emails');
 const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const modbusRoutes = require('./routes/modbus');
@@ -85,11 +86,29 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Connect to PostgreSQL and initialize threading service
+// Connect to PostgreSQL and initialize services
 (async () => {
   try {
     // Connect to PostgreSQL
     await db.connect();
+
+    // Initialize email templates (seed default templates if needed)
+    await initializeEmailTemplates();
+
+    // Initialize email service
+    await initializeEmailService();
+
+    // Initialize notification scheduler
+    await initializeNotificationScheduler();
+
+    // Initialize meter data analyzer
+    await initializeMeterDataAnalyzer();
+
+    // Initialize meter integration service
+    await initializeMeterIntegrationService();
+
+    // Initialize meter monitoring service
+    await initializeMeterMonitoringService();
 
     // Initialize threading service after successful database connection
     // await initializeThreadingSystem(); // TEMPORARILY DISABLED
@@ -99,6 +118,139 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     process.exit(1);
   }
 })();
+
+/**
+ * Initialize email templates system
+ */
+async function initializeEmailTemplates() {
+  try {
+    // Import EmailTemplateSeeder
+    const EmailTemplateSeeder = require('./services/EmailTemplateSeeder');
+    
+    // Seed default templates if needed
+    await EmailTemplateSeeder.seedOnStartup();
+  } catch (error) {
+    console.error('❌ Failed to initialize email templates:', error.message);
+    // Don't exit the process - the server can still run without templates
+  }
+}
+
+/**
+ * Initialize email service
+ */
+async function initializeEmailService() {
+  try {
+    // Import EmailService
+    const emailService = require('./services/EmailService');
+    
+    // Initialize with default configuration
+    const result = await emailService.initialize();
+    
+    if (result.success) {
+      console.log('📧 Email service initialized successfully');
+    } else {
+      console.log('⚠️ Email service initialization failed:', result.error);
+      console.log('💡 Configure SMTP settings in .env file to enable email functionality');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize email service:', error.message);
+    // Don't exit the process - the server can still run without email
+  }
+}
+
+/**
+ * Initialize notification scheduler
+ */
+async function initializeNotificationScheduler() {
+  try {
+    // Import NotificationScheduler
+    const notificationScheduler = require('./services/NotificationScheduler');
+    
+    // Initialize with default configuration
+    const result = await notificationScheduler.initialize();
+    
+    if (result.success) {
+      console.log('📅 Notification scheduler initialized successfully');
+    } else {
+      console.log('⚠️ Notification scheduler initialization failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize notification scheduler:', error.message);
+    // Don't exit the process - the server can still run without scheduler
+  }
+}
+
+/**
+ * Initialize meter data analyzer
+ */
+async function initializeMeterDataAnalyzer() {
+  try {
+    // Import MeterDataAnalyzer
+    const meterDataAnalyzer = require('./services/MeterDataAnalyzer');
+    
+    // Initialize with default configuration
+    const result = await meterDataAnalyzer.initialize();
+    
+    if (result.success) {
+      console.log('📊 Meter data analyzer initialized successfully');
+      
+      // Start monitoring if enabled
+      meterDataAnalyzer.startMonitoring();
+    } else {
+      console.log('⚠️ Meter data analyzer initialization failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize meter data analyzer:', error.message);
+    // Don't exit the process - the server can still run without analyzer
+  }
+}
+
+/**
+ * Initialize meter integration service
+ */
+async function initializeMeterIntegrationService() {
+  try {
+    // Import MeterIntegrationService
+    const meterIntegrationService = require('./services/MeterIntegrationService');
+    
+    // Initialize with default configuration
+    const result = await meterIntegrationService.initialize();
+    
+    if (result.success) {
+      console.log('📡 Meter integration service initialized successfully');
+    } else {
+      console.log('⚠️ Meter integration service initialization failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize meter integration service:', error.message);
+    // Don't exit the process - the server can still run without integration
+  }
+}
+
+/**
+ * Initialize meter monitoring service
+ */
+async function initializeMeterMonitoringService() {
+  try {
+    // Import MeterMonitoringService
+    const meterMonitoringService = require('./services/MeterMonitoringService');
+    
+    // Initialize with default configuration
+    const result = await meterMonitoringService.initialize();
+    
+    if (result.success) {
+      console.log('📊 Meter monitoring service initialized successfully');
+      
+      // Start monitoring if enabled
+      meterMonitoringService.startMonitoring();
+    } else {
+      console.log('⚠️ Meter monitoring service initialization failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize meter monitoring service:', error.message);
+    // Don't exit the process - the server can still run without monitoring
+  }
+}
 
 /**
  * Initialize the threading system
@@ -208,6 +360,7 @@ app.use('/api/meter-readings', meterReadingRoutes);
 // Alias without hyphen to match frontend service paths
 app.use('/api/meterreadings', meterReadingRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/emails', emailRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/modbus', modbusRoutes);
@@ -220,11 +373,51 @@ app.get('/api/health', async (req, res) => {
     // Get PostgreSQL health status
     const dbHealth = await db.healthCheck();
     
+    // Get email templates health status
+    let templatesHealth = null;
+    try {
+      const EmailTemplateSeeder = require('./services/EmailTemplateSeeder');
+      templatesHealth = await EmailTemplateSeeder.checkTemplateHealth();
+    } catch (error) {
+      templatesHealth = { isHealthy: false, error: error.message };
+    }
+
+    // Get email service health status
+    let emailHealth = null;
+    try {
+      const emailService = require('./services/EmailService');
+      emailHealth = await emailService.getHealthStatus();
+    } catch (error) {
+      emailHealth = { isHealthy: false, error: error.message };
+    }
+
+    // Get notification scheduler health status
+    let schedulerHealth = null;
+    try {
+      const notificationScheduler = require('./services/NotificationScheduler');
+      schedulerHealth = await notificationScheduler.getHealthStatus();
+    } catch (error) {
+      schedulerHealth = { isHealthy: false, error: error.message };
+    }
+
+    // Get meter data analyzer health status
+    let analyzerHealth = null;
+    try {
+      const meterDataAnalyzer = require('./services/MeterDataAnalyzer');
+      analyzerHealth = await meterDataAnalyzer.getHealthStatus();
+    } catch (error) {
+      analyzerHealth = { isHealthy: false, error: error.message };
+    }
+    
     const healthData = {
       status: 'OK',
       timestamp: new Date().toISOString(),
       database: dbHealth.status === 'healthy' ? 'Connected' : 'Disconnected',
       databaseDetails: dbHealth,
+      templates: templatesHealth,
+      email: emailHealth,
+      scheduler: schedulerHealth,
+      analyzer: analyzerHealth,
       threading: null
     };
 
@@ -256,7 +449,11 @@ app.get('/api/health', async (req, res) => {
 
     // Determine overall status
     const isHealthy = healthData.database === 'Connected' && 
-                     (!threadingService || healthData.threading.status === 'Healthy');
+                     (!threadingService || healthData.threading.status === 'Healthy') &&
+                     (templatesHealth && templatesHealth.isHealthy) &&
+                     (emailHealth && emailHealth.isHealthy) &&
+                     (schedulerHealth && schedulerHealth.isHealthy) &&
+                     (analyzerHealth && analyzerHealth.isHealthy);
     
     healthData.status = isHealthy ? 'OK' : 'Degraded';
 

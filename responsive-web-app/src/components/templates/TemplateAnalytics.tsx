@@ -1,0 +1,312 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  LinearProgress
+} from '@mui/material';
+import {
+  TrendingUp as TrendingUpIcon,
+  Email as EmailIcon,
+  CheckCircle as SuccessIcon,
+  Error as ErrorIcon
+} from '@mui/icons-material';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+import { templateService } from '../../services/templateService';
+
+interface TemplateStats {
+  templateId: string;
+  templateName: string;
+  usageCount: number;
+  successRate: number;
+  lastUsed?: Date;
+  category: string;
+}
+
+interface AnalyticsData {
+  totalTemplates: number;
+  totalEmailsSent: number;
+  averageSuccessRate: number;
+  topTemplates: TemplateStats[];
+  recentActivity: Array<{
+    templateName: string;
+    emailsSent: number;
+    date: Date;
+  }>;
+}
+
+export const TemplateAnalytics: React.FC = () => {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Mock data - in real implementation, this would call the backend
+      const mockData: AnalyticsData = {
+        totalTemplates: 12,
+        totalEmailsSent: 1547,
+        averageSuccessRate: 94.2,
+        topTemplates: [
+          {
+            templateId: '1',
+            templateName: 'Monthly Meter Reading Summary',
+            usageCount: 456,
+            successRate: 98.5,
+            lastUsed: new Date('2024-01-15'),
+            category: 'meter_readings'
+          },
+          {
+            templateId: '2',
+            templateName: 'Meter Not Responding Alert',
+            usageCount: 234,
+            successRate: 92.1,
+            lastUsed: new Date('2024-01-14'),
+            category: 'meter_errors'
+          },
+          {
+            templateId: '3',
+            templateName: 'Maintenance Reminder',
+            usageCount: 189,
+            successRate: 96.8,
+            lastUsed: new Date('2024-01-13'),
+            category: 'maintenance'
+          }
+        ],
+        recentActivity: [
+          { templateName: 'Monthly Summary', emailsSent: 45, date: new Date('2024-01-15') },
+          { templateName: 'Error Alert', emailsSent: 12, date: new Date('2024-01-14') },
+          { templateName: 'Maintenance', emailsSent: 8, date: new Date('2024-01-13') }
+        ]
+      };
+      
+      setAnalytics(mockData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load analytics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'meter_readings': return 'primary';
+      case 'meter_errors': return 'error';
+      case 'maintenance': return 'warning';
+      default: return 'default';
+    }
+  };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography>No analytics data available</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Template Analytics
+      </Typography>
+
+      {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <EmailIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Total Templates</Typography>
+              </Box>
+              <Typography variant="h4" color="primary">
+                {analytics.totalTemplates}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <TrendingUpIcon color="success" sx={{ mr: 1 }} />
+                <Typography variant="h6">Emails Sent</Typography>
+              </Box>
+              <Typography variant="h4" color="success.main">
+                {analytics.totalEmailsSent.toLocaleString()}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <SuccessIcon color="success" sx={{ mr: 1 }} />
+                <Typography variant="h6">Success Rate</Typography>
+              </Box>
+              <Typography variant="h4" color="success.main">
+                {analytics.averageSuccessRate}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <ErrorIcon color="warning" sx={{ mr: 1 }} />
+                <Typography variant="h6">Failure Rate</Typography>
+              </Box>
+              <Typography variant="h4" color="warning.main">
+                {(100 - analytics.averageSuccessRate).toFixed(1)}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3}>
+        {/* Top Templates */}
+        <Grid item xs={12} lg={8}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Top Performing Templates
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Template Name</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell align="right">Usage Count</TableCell>
+                    <TableCell align="right">Success Rate</TableCell>
+                    <TableCell>Last Used</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {analytics.topTemplates.map((template) => (
+                    <TableRow key={template.templateId}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {template.templateName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={template.category.replace(/_/g, ' ')}
+                          color={getCategoryColor(template.category) as any}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        {template.usageCount.toLocaleString()}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          <Typography variant="body2" sx={{ mr: 1 }}>
+                            {template.successRate}%
+                          </Typography>
+                          <LinearProgress
+                            variant="determinate"
+                            value={template.successRate}
+                            sx={{ width: 60, height: 6 }}
+                            color={template.successRate > 95 ? 'success' : template.successRate > 90 ? 'warning' : 'error'}
+                          />
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {template.lastUsed ? formatDate(template.lastUsed) : 'Never'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+
+        {/* Recent Activity */}
+        <Grid item xs={12} lg={4}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Recent Activity
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {analytics.recentActivity.map((activity, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 2,
+                    bgcolor: 'grey.50',
+                    borderRadius: 1
+                  }}
+                >
+                  <Box>
+                    <Typography variant="body2" fontWeight="medium">
+                      {activity.templateName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDate(activity.date)}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={`${activity.emailsSent} sent`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+};

@@ -5,3 +5,4 @@ export { meterReadingService } from './meterReadingService';
 export { contactService } from './contactService';
 export { modbusService } from './modbusService';
 export { mcpService } from './mcpService';
+export { templateService } from './templateService';
