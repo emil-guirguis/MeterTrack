@@ -81,6 +81,7 @@ router.get('/', [
       location: m.fullLocation,
       createdAt: m.createdat,
       updatedAt: m.updatedat,
+      register_map: m.register_map ?? null,
       // Align with frontend expectations; configuration may not exist in PG
       configuration: undefined,
       lastReading: null
@@ -135,6 +136,7 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
       location: meter.fullLocation,
       createdAt: meter.createdat,
       updatedAt: meter.updatedat,
+      register_map: meter.register_map ?? null,
       configuration: undefined,
       lastReading: null
     };
@@ -163,7 +165,8 @@ router.post('/', [
   body('type').optional().isIn(['electric','gas','water']),
   body('status').optional().isIn(['active','inactive','maintenance']),
   body('location').optional().isLength({ max: 200 }).trim(),
-  body('notes').optional().isLength({ max: 500 }).trim()
+  body('notes').optional().isLength({ max: 500 }).trim(),
+  body('register_map').optional().isObject()
 ], requirePermission('meter:create'), async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -190,7 +193,8 @@ router.post('/', [
       location_description: req.body.location || req.body.location_description || undefined,
       unit_of_measurement: req.body.unit_of_measurement || undefined,
       multiplier: req.body.multiplier || 1,
-      notes: req.body.notes || undefined
+      notes: req.body.notes || undefined,
+      register_map: req.body.register_map || null
     };
 
     if (!normalized.meterid) {
@@ -211,6 +215,7 @@ router.post('/', [
       location: created.fullLocation,
       createdAt: created.createdat,
       updatedAt: created.updatedat,
+      register_map: created.register_map ?? null,
     };
 
     res.status(201).json({
@@ -256,7 +261,8 @@ router.put('/:id', [
   body('type').optional().isIn(['electric','gas','water']),
   body('status').optional().isIn(['active','inactive','maintenance']),
   body('location').optional().isLength({ max: 200 }).trim(),
-  body('notes').optional().isLength({ max: 500 }).trim()
+  body('notes').optional().isLength({ max: 500 }).trim(),
+  body('register_map').optional().isObject()
 ], requirePermission('meter:update'), async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -286,7 +292,8 @@ router.put('/:id', [
       location_description: req.body.location || req.body.location_description,
       unit_of_measurement: req.body.unit_of_measurement,
       multiplier: req.body.multiplier,
-      notes: req.body.notes
+      notes: req.body.notes,
+      register_map: req.body.register_map
     };
 
     const updated = await meter.update(updateData);
@@ -302,6 +309,7 @@ router.put('/:id', [
       location: updated.fullLocation,
       createdAt: updated.createdat,
       updatedAt: updated.updatedat,
+      register_map: updated.register_map ?? null,
     };
 
     res.json({ success: true, data: responseItem, message: 'Meter updated successfully' });
@@ -366,6 +374,44 @@ router.post('/:id/test-connection', requirePermission('meter:read'), async (req,
   } catch (error) {
     console.error('Connection test error:', error);
     res.status(500).json({ success: false, message: 'Failed to test connection', error: error.message });
+  }
+});
+
+// Get all meter maps (templates)
+router.get('/maps/templates', requirePermission('meter:read'), async (req, res) => {
+  try {
+    const db = require('../config/database');
+    const query = `
+      SELECT id, name, created_at, manufacturer, model, description, register_map
+      FROM meter_maps 
+      ORDER BY name ASC
+    `;
+    
+    const result = await db.query(query);
+    
+    const templates = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      manufacturer: row.manufacturer || 'Generic',
+      model: row.model || 'Universal',
+      description: row.description || '',
+      registerMap: row.register_map
+    }));
+
+    res.json({
+      success: true,
+      data: templates,
+      count: templates.length
+    });
+
+  } catch (error) {
+    console.error('Meter maps fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch meter map templates',
+      error: error.message
+    });
   }
 });
 

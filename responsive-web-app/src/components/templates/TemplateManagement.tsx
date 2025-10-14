@@ -36,7 +36,7 @@ export const TemplateManagement: React.FC = () => {
     setSelectedTemplate(null);
   };
 
-  const handleTemplateSaved = (template: EmailTemplate) => {
+  const handleTemplateSaved = () => {
     // Refresh the list by incrementing the refresh counter
     setRefreshList(prev => prev + 1);
   };

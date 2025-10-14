@@ -1,3 +1,8 @@
+const express = require('express');
+const { authenticateToken, requirePermission } = require('../middleware/auth');
+const router = express.Router();
+router.use(authenticateToken);
+
 // Direct Modbus meter read (live)
 const modbusService = require('../services/modbusService');
 
@@ -118,16 +123,9 @@ function toFrontendReading(pg) {
   });
   return base;
 }
-const express = require('express');
 const { query, validationResult } = require('express-validator');
 const MeterReading = require('../models/MeterReadingPG');
 const db = require('../config/database');
-const { authenticateToken, requirePermission } = require('../middleware/auth');
-
-const router = express.Router();
-
-// Apply authentication to all routes
-router.use(authenticateToken);
 
 // Get all meter readings with filtering and pagination
 router.get('/', [

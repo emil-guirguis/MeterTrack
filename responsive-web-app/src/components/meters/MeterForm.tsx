@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import type { Meter, MeterCreateRequest } from '../../types/entities';
+import type { Meter, CreateMeterRequest } from '../../types/meter';
 import { Permission } from '../../types/auth';
+import RegisterMapEditor from './RegisterMapEditor';
 import './MeterForm.css';
 
 interface MeterFormProps {
   meter?: Meter;
-  onSubmit: (data: MeterCreateRequest) => Promise<void>;
+  onSubmit: (data: CreateMeterRequest) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -19,7 +20,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 }) => {
   const { checkPermission } = useAuth();
   
-  const [formData, setFormData] = useState<MeterCreateRequest>({
+  const [formData, setFormData] = useState<CreateMeterRequest>({
     meterId: meter?.meterId || '',
     serialNumber: meter?.serialNumber || '',
     brand: meter?.brand || '',
@@ -28,19 +29,9 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     portNumber: meter?.portNumber || 502,
     slaveId: meter?.slaveId || 1,
     type: meter?.type || 'electric',
-    buildingId: meter?.buildingId || '',
-    equipmentId: meter?.equipmentId || '',
-    configuration: meter?.configuration || {
-      readingInterval: 15,
-      units: 'kWh',
-      multiplier: 1,
-      registers: [5, 6, 7],
-      communicationProtocol: 'Modbus TCP',
-    },
-    installDate: meter?.installDate || new Date(),
     location: meter?.location || '',
     description: meter?.description || '',
-    notes: meter?.notes || '',
+    register_map: meter?.register_map || null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -105,29 +96,19 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof MeterCreateRequest, value: any) => {
-    setFormData(prev => ({
+  const handleInputChange = (field: keyof CreateMeterRequest, value: any) => {
+    setFormData((prev: CreateMeterRequest) => ({
       ...prev,
       [field]: value,
     }));
     
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as string]) {
       setErrors(prev => ({
         ...prev,
-        [field]: '',
+        [field as string]: '',
       }));
     }
-  };
-
-  const handleConfigurationChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      configuration: {
-        ...prev.configuration,
-        [field]: value,
-      },
-    }));
   };
 
   if (isEditing && !canUpdate) {
@@ -146,36 +127,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="meterId">Meter ID *</label>
-              <input
-                type="text"
-                id="meterId"
-                value={formData.meterId}
-                onChange={(e) => handleInputChange('meterId', e.target.value)}
-                className={errors.meterId ? 'form-control form-control--error' : 'form-control'}
-                placeholder="e.g., MTR001"
-                maxLength={50}
-              />
-              {errors.meterId && <div className="form-error">{errors.meterId}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="serialNumber">Serial Number *</label>
-              <input
-                type="text"
-                id="serialNumber"
-                value={formData.serialNumber}
-                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                className={errors.serialNumber ? 'form-control form-control--error' : 'form-control'}
-                placeholder="e.g., SN123456789"
-                maxLength={100}
-              />
-              {errors.serialNumber && <div className="form-error">{errors.serialNumber}</div>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
               <label htmlFor="brand">Brand *</label>
               <select
                 id="brand"
@@ -184,11 +135,11 @@ export const MeterForm: React.FC<MeterFormProps> = ({
                 className={errors.brand ? 'form-control form-control--error' : 'form-control'}
               >
                 <option value="">Select Brand</option>
-                <option value="Schneider Electric">Schneider Electric</option>
-                <option value="ABB">ABB</option>
-                <option value="Siemens">Siemens</option>
-                <option value="GE">GE</option>
                 <option value="Honeywell">Honeywell</option>
+                <option value="GE">GE</option>
+                <option value="ClearSign">ClearSign</option>
+                <option value="Powerside">Powerside</option>
+                <option value="Siemens">Siemens</option>
                 <option value="Other">Other</option>
               </select>
               {errors.brand && <div className="form-error">{errors.brand}</div>}
@@ -211,6 +162,23 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
           <div className="form-row">
             <div className="form-group">
+              <label htmlFor="serialNumber">Serial Number *</label>
+              <input
+                type="text"
+                id="serialNumber"
+                value={formData.serialNumber}
+                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                className={errors.serialNumber ? 'form-control form-control--error' : 'form-control'}
+                placeholder="e.g., SN123456789"
+                maxLength={100}
+              />
+              {errors.serialNumber && <div className="form-error">{errors.serialNumber}</div>}
+            </div>
+          </div>
+
+
+          <div className="form-row">
+            <div className="form-group">
               <label htmlFor="type">Type</label>
               <select
                 id="type"
@@ -227,13 +195,14 @@ export const MeterForm: React.FC<MeterFormProps> = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="installDate">Install Date</label>
+              <label htmlFor="location">Location</label>
               <input
-                type="date"
-                id="installDate"
-                value={formData.installDate.toISOString().split('T')[0]}
-                onChange={(e) => handleInputChange('installDate', new Date(e.target.value))}
+                type="text"
+                id="location"
+                value={formData.location || ''}
+                onChange={(e) => handleInputChange('location', e.target.value)}
                 className="form-control"
+                placeholder="e.g., Main Electrical Room"
               />
             </div>
           </div>
@@ -287,37 +256,13 @@ export const MeterForm: React.FC<MeterFormProps> = ({
               {errors.slaveId && <div className="form-error">{errors.slaveId}</div>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="readingInterval">Reading Interval (minutes)</label>
-              <input
-                type="number"
-                id="readingInterval"
-                value={formData.configuration.readingInterval}
-                onChange={(e) => handleConfigurationChange('readingInterval', parseInt(e.target.value))}
-                className="form-control"
-                min="1"
-                max="1440"
-              />
-            </div>
+
           </div>
         </div>
 
         <div className="form-section">
           <h3>Location & Description</h3>
           
-          <div className="form-group">
-            <label htmlFor="location">Location</label>
-            <input
-              type="text"
-              id="location"
-              value={formData.location || ''}
-              onChange={(e) => handleInputChange('location', e.target.value)}
-              className="form-control"
-              placeholder="e.g., Main Electrical Room"
-              maxLength={200}
-            />
-          </div>
-
           <div className="form-group">
             <label htmlFor="description">Description</label>
             <textarea
@@ -330,18 +275,14 @@ export const MeterForm: React.FC<MeterFormProps> = ({
               maxLength={500}
             />
           </div>
+        </div>
 
-          <div className="form-group">
-            <label htmlFor="notes">Notes</label>
-            <textarea
-              id="notes"
-              value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              className="form-control"
-              rows={3}
-              placeholder="Additional notes..."
-            />
-          </div>
+        <div className="form-section">
+          <RegisterMapEditor
+            value={formData.register_map}
+            onChange={(registerMap) => handleInputChange('register_map', registerMap)}
+            disabled={loading}
+          />
         </div>
 
         <div className="form-actions">

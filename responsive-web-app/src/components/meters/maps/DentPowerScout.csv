@@ -1,0 +1,593 @@
+Modbus Register Name,"Modbus
+ Register","Absolute
+ Address",Item Description,Units,Functionality,Data Type,R/W,"BACnet
+ Object","BACnet 
+Object Type","BACnet 
+Object Name","System or 
+Element",Value/Range,Public Notes,Models
+SunSpec C001 Common Model,-,-,SunSpec Common Model,-,-,-,-,-,-,-,-,-,-,-
+SunSpec Model ID LSW,1001,41002,SunSpec Model (SunS) 1,,,uint32,R,,,,system,Su (0x5375),,ALL
+SunSpec Model ID MSW,1002,41003,,,,,,,,,system,nS (0x6E53),,ALL
+SunSpec Device ID,1003,41004,Unique SunSpec Model Identifier (1),,,unit16,R,,,,system,1,,ALL
+Model Length,1004,41005,Model Length (66),,,unit16,R,,,,system,66,,ALL
+Manufacturer 0,1005,41006,Manufacturer Name (string),,Factory,string(16),R,Dev Obj Prop,,,system,2 Char,Factory Set,ALL
+Manufacturer 1,1006,41007,,,,,,,,,system,2 Char,,ALL
+Manufacturer 2,1007,41008,,,,,,,,,system,2 Char,,ALL
+Manufacturer 3,1008,41009,,,,,,,,,system,2 Char,,ALL
+Manufacturer 4,1009,41010,,,,,,,,,system,2 Char,,ALL
+Manufacturer 5,1010,41011,,,,,,,,,system,2 Char,,ALL
+Manufacturer 6,1011,41012,,,,,,,,,system,2 Char,,ALL
+Manufacturer 7,1012,41013,,,,,,,,,system,2 Char,,ALL
+Manufacturer 8,1013,41014,,,,,,,,,system,2 Char,,ALL
+Manufacturer 9,1014,41015,,,,,,,,,system,2 Char,,ALL
+Manufacturer 10,1015,41016,,,,,,,,,system,2 Char,,ALL
+Manufacturer 11,1016,41017,,,,,,,,,system,2 Char,,ALL
+Manufacturer 12,1017,41018,,,,,,,,,system,2 Char,,ALL
+Manufacturer 13,1018,41019,,,,,,,,,system,2 Char,,ALL
+Manufacturer 14,1019,41020,,,,,,,,,system,2 Char,,ALL
+Manufacturer 15,1020,41021,,,,,,,,,system,1 Char NULL,,ALL
+Model 0,1021,41022,Model Name (Model Number),,Factory,string(16),R,,,,system,2 Char,Factory Set,ALL
+Model 1,1022,41023,,,,,,,,,system,2 Char,,ALL
+Model 2,1023,41024,,,,,,,,,system,2 Char,,ALL
+Model 3,1024,41025,,,,,,,,,system,2 Char,,ALL
+Model 4,1025,41026,,,,,,,,,system,2 Char,,ALL
+Model 5,1026,41027,,,,,,,,,system,2 Char,,ALL
+Model 6,1027,41028,,,,,,,,,system,2 Char,,ALL
+Model 7,1028,41029,,,,,,,,,system,2 Char,,ALL
+Model 8,1029,41030,,,,,,,,,system,2 Char,,ALL
+Model 9,1030,41031,,,,,,,,,system,2 Char,,ALL
+Model 10,1031,41032,,,,,,,,,system,2 Char,,ALL
+Model 11,1032,41033,,,,,,,,,system,2 Char,,ALL
+Model 12,1033,41034,,,,,,,,,system,2 Char,,ALL
+Model 13,1034,41035,,,,,,,,,system,2 Char,,ALL
+Model 14,1035,41036,,,,,,,,,system,2 Char,,ALL
+Model 15,1036,41037,,,,,,,,,system,1 Char NULL,,ALL
+Options 0,1037,41038,Options,,Future,string(8),R,,,,system,2 Char,,ALL
+Options 1,1038,41039,,,,,,,,,system,2 Char,,ALL
+Options 2,1039,41040,,,,,,,,,system,2 Char,,ALL
+Options 3,1040,41041,,,,,,,,,system,2 Char,,ALL
+Options 4,1041,41042,,,,,,,,,system,2 Char,,ALL
+Options 5,1042,41043,,,,,,,,,system,2 Char,,ALL
+Options 6,1043,41044,,,,,,,,,system,2 Char,,ALL
+Options 7,1044,41045,,,,,,,,,system,1 Char NULL,,ALL
+Version 0,1045,41046,Firmware Version,,Factory,string(8),R,,,,system,2 Char,,ALL
+Version 1,1046,41047,,,,,,,,,system,2 Char,,ALL
+Version 2,1047,41048,,,,,,,,,system,2 Char,,ALL
+Version 3,1048,41049,,,,,,,,,system,2 Char,,ALL
+Version 4,1049,41050,,,,,,,,,system,2 Char,,ALL
+Version 5,1050,41051,,,,,,,,,system,2 Char,,ALL
+Version 6,1051,41052,,,,,,,,,system,2 Char,,ALL
+Version 7,1052,41053,,,,,,,,,system,1 Char NULL,,ALL
+SerialNumber 0,1053,41054,Serial Number(xxxYYMMNNN),,Factory,string(16),R,,,,system,2 Char,Factory Set,ALL
+SerialNumber 1,1054,41055,,,,,,,,,system,2 Char,,ALL
+SerialNumber 2,1055,41056,,,,,,,,,system,2 Char,,ALL
+SerialNumber 3,1056,41057,,,,,,,,,system,2 Char,,ALL
+SerialNumber 4,1057,41058,,,,,,,,,system,2 Char,,ALL
+SerialNumber 5,1058,41059,,,,,,,,,system,2 Char,,ALL
+SerialNumber 6,1059,41060,,,,,,,,,system,2 Char,,ALL
+SerialNumber 7,1060,41061,,,,,,,,,system,2 Char,,ALL
+SerialNumber 8,1061,41062,,,,,,,,,system,2 Char,,ALL
+SerialNumber 9,1062,41063,,,,,,,,,system,2 Char,,ALL
+SerialNumber 10,1063,41064,,,,,,,,,system,2 Char,,ALL
+SerialNumber 11,1064,41065,,,,,,,,,system,2 Char,,ALL
+SerialNumber 12,1065,41066,,,,,,,,,system,2 Char,,ALL
+SerialNumber 13,1066,41067,,,,,,,,,system,2 Char,,ALL
+SerialNumber 14,1067,41068,,,,,,,,,system,2 Char,,ALL
+SerialNumber 15,1068,41069,,,,,,,,,system,1 Char NULL,,ALL
+Dev Addr,1069,41070,Modbus Device Address,,,unit16,R/W,1069,PIV,SERIAL ADDRESS                             ,system,1 - 245,,ALL
+Common Pad,1070,41071,,,,,,,,,system,0,,ALL
+SunSpec NC016 TCP Network Stack Model ,-,-,TCP Network Stack,-,-,-,-,-,-,-,-,-,-,-
+SunSpec NC016 MODEL ID,1071,41072,SunSpec Model (016),,,unit16,R,,,,system,16 (0x10),,ALL
+NC016 MODEL LENGTH,1072,41073,Model Length (52),,,unit16,R,,,,system,52 (0x34),,ALL
+NC016 INTERFACE NAME 0,1073,41074,Interface name,,,string(4),R,,,,system,ET (0x4554),,ALL
+NC016 INTERFACE NAME 1,1074,41075,,,,,,,,,system,H0 (0x4830),,ALL
+NC016 INTERFACE NAME 2,1075,41076,,,,,,,,,system,0,,ALL
+NC016 INTERFACE NAME 3,1076,41077,,,,,,,,,system,0,,ALL
+DHCP/STATIC CONFIG,1077,41078,Enum for force IPV4 config method (0=static/1=DHCP),,,enum16,R/W,1077,BV,DHCP/STATIC CONFIG,system,1,,ALL
+NTP/DNS CONTROL,1078,41079,Bitmask value configure use of services (0=DNS/1=NTP),,,enum16,R/W,,,,system,0,,ALL
+IP ADDRESS 0,1079,41080,IP Address,,,string(8),R/W,1079,CSV,IP Address,system,2 Char,,ALL
+IP ADDRESS 1,1080,41081,,,,,,,,,system,2 Char,,ALL
+IP ADDRESS 2,1081,41082,,,,,,,,,system,2 Char,,ALL
+IP ADDRESS 3,1082,41083,,,,,,,,,system,2 Char,,ALL
+IP ADDRESS 4,1083,41084,,,,,,,,,system,2 Char,,ALL
+IP ADDRESS 5,1084,41085,,,,,,,,,system,2 Char,,ALL
+IP ADDRESS 6,1085,41086,,,,,,,,,system,2 Char,,ALL
+IP ADDRESS 7,1086,41087,,,,,,,,,system,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+NETMASK 0,1087,41088,Netmask,,,string(8),R/W,1087,CSV,IP Netmask,system,2 Char,,ALL
+NETMASK 1,1088,41089,,,,,,,,,system,2 Char,,ALL
+NETMASK 2,1089,41090,,,,,,,,,system,2 Char,,ALL
+NETMASK 3,1090,41091,,,,,,,,,system,2 Char,,ALL
+NETMASK 4,1091,41092,,,,,,,,,system,2 Char,,ALL
+NETMASK 5,1092,41093,,,,,,,,,system,2 Char,,ALL
+NETMASK 6,1093,41094,,,,,,,,,system,2 Char,,ALL
+NETMASK 7,1094,41095,,,,,,,,,system,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+GATEWAY 0,1095,41096,Gateway,,,string(8),R/W,1095,CSV,IP Gateway,system,2 Char,,ALL
+GATEWAY 1,1096,41097,,,,,,,,,system,2 Char,,ALL
+GATEWAY 2,1097,41098,,,,,,,,,system,2 Char,,ALL
+GATEWAY 3,1098,41099,,,,,,,,,system,2 Char,,ALL
+GATEWAY 4,1099,41100,,,,,,,,,system,2 Char,,ALL
+GATEWAY 5,1100,41101,,,,,,,,,system,2 Char,,ALL
+GATEWAY 6,1101,41102,,,,,,,,,system,2 Char,,ALL
+GATEWAY 7,1102,41103,,,,,,,,,system,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+DNS1 ADDRESS 0,1103,41104,32 bit IP address of DNS server,,,string(8),R/W,,,,system,2 Char,,ALL
+DNS1 ADDRESS 1,1104,41105,,,,,,,,,system,2 Char,,ALL
+DNS1 ADDRESS 2,1105,41106,,,,,,,,,system,2 Char,,ALL
+DNS1 ADDRESS 3,1106,41107,,,,,,,,,system,2 Char,,ALL
+DNS1 ADDRESS 4,1107,41108,,,,,,,,,system,2 Char,,ALL
+DNS1 ADDRESS 5,1108,41109,,,,,,,,,system,2 Char,,ALL
+DNS1 ADDRESS 6,1109,41110,,,,,,,,,system,2 Char,,ALL
+DNS1 ADDRESS 7,1110,41111,,,,,,,,,system,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+DNS2 ADDRESS 0,1111,41112,32 bit IP address of DNS server,,,string(8),R/W,,,,system,2 Char,,ALL
+DNS2 ADDRESS 1,1112,41113,,,,,,,,,system,2 Char,,ALL
+DNS2 ADDRESS 2,1113,41114,,,,,,,,,system,2 Char,,ALL
+DNS2 ADDRESS 3,1114,41115,,,,,,,,,system,2 Char,,ALL
+DNS2 ADDRESS 4,1115,41116,,,,,,,,,system,2 Char,,ALL
+DNS2 ADDRESS 5,1116,41117,,,,,,,,,system,2 Char,,ALL
+DNS2 ADDRESS 6,1117,41118,,,,,,,,,system,2 Char,,ALL
+DNS2 ADDRESS 7,1118,41119,,,,,,,,,system,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+MAC ADDRESS 0,1119,41120,IEEE MAC address of this interface,,,unit64,R,,,,system,0,,ALL
+MAC ADDRESS 1,1120,41121,,,,,,,,,system,0x000D,,ALL
+MAC ADDRESS 2,1121,41122,,,,,,,,,system,0x633x,"x=1 (PS48), x=2(PS12), x=3 (PS3), x=4 (PS24)",ALL
+MAC ADDRESS 3,1122,41123,,,,,,,,,system,unit #,,ALL
+LINK CONTROL,1123,41124,Bitmask value link control flags,,,,R,,,,system,3,,ALL
+PAD,1124,41125,,,,,,,,,,0,,ALL
+SunSpec NC017 Serial Interface Model,-,-,Serial Interface Model,-,-,-,-,-,-,-,-,-,-,-
+SunSpec NC017 MODEL ID,1125,41126,SunSpec Model (017),,,unit16,R,,,,system,17,,ALL
+NC017 MODEL LENGTH,1126,41127,Model Length (12),,,unit16,R,,,,system,12,,ALL
+NC017 INTERFACE NAME 0,1127,41128,Interface name,,,string(4),R/W,,,,system,2 Char,,ALL
+NC017 INTERFACE NAME 1,1128,41129,,,,,,,,,system,2 Char,,ALL
+NC017 INTERFACE NAME 2,1129,41130,,,,,,,,,system,2 Char,,ALL
+NC017 INTERFACE NAME 3,1130,41131,,,,,,,,,system,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+SERIAL BAUD RATE MSW,1131,41132,Interface baud rate in bits per second,,,uint32,R/W,1131,PIV,Serial Baudrate,system,9600 - 115k,,ALL
+SERIAL BAUD RATE LSW,1132,41133,,,,,,,,,system,,,ALL
+SERIAL BITS,1133,41134,Number of data bits per character,,,enum16,R/W,,,,system,8,,ALL
+SERIAL PARITY,1134,41135,Bitmask value - parity setting,,,enum16,R/W,,,,system,0-2,,ALL
+SERIAL DUPLEX,1135,41136,Enumerated value - duplex mode,,,enum16,R/W,,,,system,0-1,,ALL
+SERIAL FLOW CONTROL,1136,41137,Flow control method,,,enum16,R/W,,,,system,0-2,"(0 = none, 1 = Odd, 2 = Even)",ALL
+SERIAL INTERFACE TYPE,1137,41138,Enumerated value - interface type,,,enum16,R,,,,system,2,,ALL
+SERIAL PROTOCOL SELECTION,1138,41139,Enumerated value - serial protocol selection,,,enum16,R,,,,system,1,,ALL
+SunSpec 213 Wye Float Model,-,-,Wye Float Model,-,-,-,-,-,-,-,-,-,-,-
+SunSpec 213 MODEL ID,1139,41140,SunSpec Model (213),,,unit16,R,,,,system,213 (0xD5),,ALL
+SunSpec 213 MODEL LENGTH,1140,41141,Model Length (124),,,unit16,R,,,,system,124 (0x7C),,ALL
+Current Avg Element (MSW),1141,41142,Current Avg Element,A,Metrology,float32,R,1141,AI,Current Avg Element,element,,Average current of enabled channels,ALL
+Current Avg Element (LSW),1142,41143,,,,,,,,,element,,,ALL
+Current CH1 (MSW),1143,41144,Current CH1 (A),A,Metrology,float32,R,1143,AI,Current CH1,element,,RMS,ALL
+Current CH1 (LSW),1144,41145,,,,,,,,,element,,,ALL
+Current CH2 (MSW),1145,41146,Current CH2 (B),A,Metrology,float32,R,1145,AI,Current CH2,element,,RMS,ALL
+Current CH2 (LSW),1146,41147,,,,,,,,,element,,,ALL
+Current CH3 (MSW),1147,41148,Current CH3 (C),A,Metrology,float32,R,1147,AI,Current CH3,element,,RMS,ALL
+Current CH3 (LSW),1148,41149,,,,,,,,,element,,,ALL
+Voltage L to N Avg Element (MSW),1149,41150,Voltage L to N Avg Element,V,Metrology,float32,R,1149,AI,Voltage L to N Avg Element,element,,Voltage (AN+BN+CN)/3 (VREF is selected per element in Reg 2217),ALL
+Voltage L to N Avg Element (LSW),1150,41151,,,,,,,,,element,,,ALL
+Voltage L1 to N (MSW),1151,41152,Voltage L1 to N (AN),V,Metrology,float32,R,1151,AI,Voltage L1 to N,element,,RMS (Vref selected by Reg 2217),ALL
+Voltage L1 to N (LSW),1152,41153,,,,,,,,,element,,,ALL
+Voltage L2 to N (MSW),1153,41154,Voltage L2 to N (BN),V,Metrology,float32,R,1153,AI,Voltage L2 to N,element,,RMS (Vref selected by Reg 2217),ALL
+Voltage L2 to N (LSW),1154,41155,,,,,,,,,element,,,ALL
+Voltage L3 to N (MSW),1155,41156,Voltage L3 to N (CN),V,Metrology,float32,R,1155,AI,Voltage L3 to N,element,,RMS (Vref selected by Reg 2217),ALL
+Voltage L3 to N (LSW),1156,41157,,,,,,,,,element,,,ALL
+Voltage L to L Avg Element (MSW),1157,41158,Voltage L to L Avg Element,V,Metrology,float32,R,1157,AI,Voltage L to L Avg Element,element,,(AB+BC+CA)/3 (VREF is selected per element in Reg 2217),ALL
+Voltage L to L Avg Element (LSW),1158,41159,,,,,,,,,element,,,ALL
+Voltage L1 to L2 (MSW),1159,41160,Voltage L1 to L2 (AB),V,Metrology,float32,R,1159,AI,Voltage L1 to L2,element,,AN-BN RMS (Vref selected by Reg 2217),ALL
+Voltage L1 to L2 (LSW),1160,41161,,,,,,,,,element,,,ALL
+Voltage L2 to L3 (MSW),1161,41162,Voltage L2 to L3 (BC),V,Metrology,float32,R,1161,AI,Voltage L2 to L3,element,,BN-CN RMS (Vref selected by Reg 2217),ALL
+Voltage L2 to L3 (LSW),1162,41163,,,,,,,,,element,,,ALL
+Voltage L3 to L1 (MSW),1163,41164,Voltage L3 to L1 (CA),V,Metrology,float32,R,1163,AI,Voltage L3 to L1,element,,CN-AN RMS (Vref selected by Reg 2217),ALL
+Voltage L3 to L1 (LSW),1164,41165,,,,,,,,,element,,,ALL
+Line Frequency (MSW),1165,41166,Line Frequency,Hz,Metrology,float32,R,1165,AI,Line Frequency,element,45 - 70,Can take up to 10 seconds to respond to abrupt change in service frequency,ALL
+Line Frequency (LSW),1166,41167,,,,,,,,,element,,,ALL
+Watt Sum Element (MSW),1167,41168,Power Sum Element,kW,Metrology,float32,R,1167,AI,Power Sum Element,element,,Power_A+Power_B+Power_C,ALL
+Watt Sum Element (LSW),1168,41169,,,,,,,,,element,,,ALL
+Watt CH1 (MSW),1169,41170,Power CH1 (A),kW,Metrology,float32,R,1169,AI,Power CH1,element,,Signed Power,ALL
+Watt CH1 (LSW),1170,41171,,,,,,,,,element,,,ALL
+Watt CH2 (MSW),1171,41172,Power CH2 (B),kW,Metrology,float32,R,1171,AI,Power CH2,element,,Signed Power,ALL
+Wattr CH2 (LSW),1172,41173,,,,,,,,,element,,,ALL
+Watt CH3 (MSW),1173,41174,Power CH3 (C),kW,Metrology,float32,R,1173,AI,Power CH3,element,,Signed Power,ALL
+Watt CH3 (LSW),1174,41175,,,,,,,,,element,,,ALL
+VA Sum Element (MSW),1175,41176,VA Sum Element,kVA,Metrology,float32,R,1175,AI,VA Sum Element,element,,VA_A+VA_B+VA_C,ALL
+VA Sum Element (LSW),1176,41177,,,,,,,,,element,,,ALL
+VA CH1 (MSW),1177,41178,VA CH1 (A),kVA,Metrology,float32,R,1177,AI,VA CH1,element,,Signed VA,ALL
+VA CH1 (LSW),1178,41179,,,,,,,,,element,,,ALL
+VA CH2 (MSW),1179,41180,VA CH2 (B),kVA,Metrology,float32,R,1179,AI,VA CH2,element,,Signed VA,ALL
+VA CH2 (LSW),1180,41181,,,,,,,,,element,,,ALL
+VA CH3 (MSW),1181,41182,VA CH3 (C),kVA,Metrology,float32,R,1181,AI,VA CH3,element,,Signed VA,ALL
+VA CH3 (LSW),1182,41183,,,,,,,,,element,,,ALL
+VAR Sum Element (MSW),1183,41184,VAR Sum Element,kVAr,Metrology,float32,R,1183,AI,VAR Sum Element,element,,VAR_A+VAR_B+VAR_C,ALL
+VAR Sum Element (LSW),1184,41185,,,,,,,,,element,,,ALL
+VAR CH1 (MSW),1185,41186,VAR CH1 (A),kVAr,Metrology,float32,R,1185,AI,VAR CH1,element,,Signed VAR,ALL
+VAR CH1 (LSW),1186,41187,,,,,,,,,element,,,ALL
+VAR CH2 (MSW),1187,41188,VAR CH2 (B),kVAr,Metrology,float32,R,1187,AI,VAR CH2,element,,Signed VAR,ALL
+VAR CH2 (LSW),1188,41189,,,,,,,,,element,,,ALL
+VAR CH3 (MSW),1189,41190,VAR CH3 (C),kVAr,Metrology,float32,R,1189,AI,VAR CH3,element,,Signed VAR,ALL
+VAR CH3 (LSW),1190,41191,,,,,,,,,element,,,ALL
+Apparent PF Avg Element (MSW),1191,41192,Apparent PF Avg Element,PF,Metrology,float32,R,1191,AI,Apparent PF Avg Element,element,,(PF CH1 (A) + PF CH2 (B) + PF CH3 (C) )/ 3,ALL
+Apparent PF Avg Element (LSW),1192,41193,,,,,,,,,element,,,ALL
+Apparent PF CH1 (MSW),1193,41194,Apparent PF CH1 (A),PF,Metrology,float32,R,1193,AI,Apparent PF CH1,element,,Apparent_PF_A,ALL
+Apparent PF CH1 (LSW),1194,41195,,,,,,,,,element,,,ALL
+Apparent PF CH2 (MSW),1195,41196,Apparent PF CH2 (B),PF,Metrology,float32,R,1195,AI,Apparent PF CH2,element,,Apparent_PF_B,ALL
+Apparent PF CH2 (LSW),1196,41197,,,,,,,,,element,,,ALL
+Apparent PF CH3 (MSW),1197,41198,Apparent PF CH3 ( C),PF,Metrology,float32,R,1197,AI,Apparent PF CH3,element,,Apparent_PF_C,ALL
+Apparent PF CH3 (LSW),1198,41199,,,,,,,,,element,,,ALL
+Exported Energy Sum Element (MSW),1199,41200,Exported Energy Sum Element,kWh,Metrology,float32,R,1199,AI,Exported Energy Sum Element,element,,Total Energy Expported (CH1 + CH2 + CH3),ALL
+Exported Energy Sum Element (LSW),1200,41201,,,,,,,,,element,,,ALL
+Exported Energy CH1 (MSW),1201,41202,Exported Energy CH1 (A),kWh,Metrology,float32,R,1201,AI,Exported Energy CH1,element,,Source Power,ALL
+Exported Energy CH1 (LSW),1202,41203,,,,,,,,,element,,,ALL
+Exported Energy CH2 (MSW),1203,41204,Exported Energy CH2 (B),kWh,Metrology,float32,R,1203,AI,Exported Energy CH2,element,,Source Power,ALL
+Exported Energy CH2 (LSW),1204,41205,,,,,,,,,element,,,ALL
+Exported Energy CH3 (MSW),1205,41206,Exported Energy CH3 (C),kWh,Metrology,float32,R,1205,AI,Exported Energy CH3,element,,Source Power,ALL
+Exported Energy CH3 (LSW),1206,41207,,,,,,,,,element,,,ALL
+Imported Energy Sum Element (MSW),1207,41208,Imported Energy Sum Element,kWh,Metrology,float32,R,1207,AI,Imported Energy Sum Element,element,,Total Energy Imported (CH1 + CH2 + CH3),ALL
+Imported Energy Sum Element (LSW),1208,41209,,,,,,,,,element,,,ALL
+Imported Energy CH1 (MSW),1209,41210,Imported Energy CH1 (A),kWh,Metrology,float32,R,1209,AI,Imported Energy CH1,element,,Load Power,ALL
+Imported Energy CH1 (LSW),1210,41211,,,,,,,,,element,,,ALL
+Imported Energy  CH2 (MSW),1211,41212,Imported Energy CH2 (B),kWh,Metrology,float32,R,1211,AI,Imported Energy  CH2,element,,Load Power,ALL
+Imported Energy  CH2 (LSW),1212,41213,,,,,,,,,element,,,ALL
+Imported Energy CH3 (MSW),1213,41214,Imported Energy CH3 (C),kWh,Metrology,float32,R,1213,AI,Imported Energy CH3,element,,Load Power,ALL
+Imported Energy CH3 (LSW),1214,41215,,,,,,,,,element,,,ALL
+Exported VAh Sum Element (MSW),1215,41216,Exported VAh Sum Element,kVAh,Metrology,float32,R,1215,AI,Exported VAh Sum Element,element,,Total Exported VAh (CH1 + CH2 + CH3),ALL
+Exported VAh Sum Element (LSW),1216,41217,,,,,,,,,element,,,ALL
+Exported VAh CH1 (MSW),1217,41218,Exported VAh CH1 (A),kVAh,Metrology,float32,R,1217,AI,Exported VAh CH1,element,,Source Apparent Energy,ALL
+Exported VAh CH1 (LSW),1218,41219,,,,,,,,,element,,,ALL
+Exported VAh CH2 (MSW),1219,41220,Exported VAh CH2 (B),kVAh,Metrology,float32,R,1219,AI,Exported VAh CH2,element,,Source Apparent Energy,ALL
+Exported VAh CH2 (LSW),1220,41221,,,,,,,,,element,,,ALL
+Exported VAh CH3 (MSW),1221,41222,Exported VAh CH3 (C),kVAh,Metrology,float32,R,1221,AI,Exported VAh CH3,element,,Source Apparent Energy,ALL
+Exported VAh CH3 (LSW),1222,41223,,,,,,,,,element,,,ALL
+Imported VAh Sum Element (MSW),1223,41224,Imported VAh Sum Element,kVAh,Metrology,float32,R,1223,AI,Imported VAh Sum Element,element,,Total Imported VAh (CH1 + CH2 + CH3),ALL
+Imported VAh Sum Element (LSW),1224,41225,,,,,,,,,element,,,ALL
+Imported VAh CH1 (MSW),1225,41226,Imported VAh CH1 (A),kVAh,Metrology,float32,R,1225,AI,Imported VAh CH1,element,,Load Apparent Energy,ALL
+Imported VAh CH1 (LSW),1226,41227,,,,,,,,,element,,,ALL
+Imported VAh CH2 (MSW),1227,41228,Imported VAh CH2 (B),kVAh,Metrology,float32,R,1227,AI,Imported VAh CH2,element,,Load Apparent Energy,ALL
+Imported VAh CH2 (LSW),1228,41229,,,,,,,,,element,,,ALL
+Imported VAh CH3 (MSW),1229,41230,Imported VAh CH3 (C),kVAh,Metrology,float32,R,1229,AI,Imported VAh CH3,element,,Load Apparent Energy,ALL
+Imported VAh CH3 (LSW),1230,41231,,,,,,,,,element,,,ALL
+Imported VARh Q1 Sum Element (MSW),1231,41232,Imported VARh Q1 Sum Element,kVArh,Metrology,float32,R,1231,AI,Imported VARh Q1 Sum Element,element,,Total Imported VARh in Q1 (Ch1 + Ch2 + Ch3),ALL
+Imported VARh Q1 Sum Element (LSW),1232,41233,,,,,,,,,element,,,ALL
+Imported VARh Q1 CH1 (MSW),1233,41234,Imported VARh Q1 CH1 (A),kVArh,Metrology,float32,R,1233,AI,Imported VARh Q1 CH1,element,,Load Postive Reactive Energy,ALL
+Imported VARh Q1 CH1 (LSW),1234,41235,,,,,,,,,element,,,ALL
+Imported VARh Q1 CH2 (MSW),1235,41236,Imported VARh Q1 CH2 (B),kVArh,Metrology,float32,R,1235,AI,Imported VARh Q1 CH2,element,,Load Positive Reactive Energy,ALL
+Imported VARh Q1 CH2 (LSW),1236,41237,,,,,,,,,element,,,ALL
+Imported VARh Q1 CH3 (MSW),1237,41238,Imported VARh Q1 CH3 (C),kVArh,Metrology,float32,R,1237,AI,Imported VARh Q1 CH3,element,,Load Positive Reactive Energy,ALL
+Imported VARh Q1 CH3 (LSW),1238,41239,,,,,,,,,element,,,ALL
+Imported VARh Q2 Sum Element (MSW),1239,41240,Imported VARh Q2 Sum Element,kVArh,Metrology,float32,R,1239,AI,Imported VARh Q2 Sum Element,element,,Total Imported VARh in Q2 (Ch1 + Ch2 + Ch3),ALL
+Imported VARh Q2 Sum Element (LSW),1240,41241,,,,,,,,,element,,,ALL
+Imported VARh Q2 CH1 (MSW),1241,41242,Imported VARh Q2 CH1 (A),kVArh,Metrology,float32,R,1241,AI,Imported VARh Q2 CH1,element,,Source Positive Reactive Energy,ALL
+Imported VARh Q2 CH1 (LSW),1242,41243,,,,,,,,,element,,,ALL
+Imported VARh Q2 CH2 (MSW),1243,41244,Imported VARh Q2 CH2 (B),kVArh,Metrology,float32,R,1243,AI,Imported VARh Q2 CH2,element,,Source Positive Reactive Energy,ALL
+Imported VARh Q2 CH2 (LSW),1244,41245,,,,,,,,,element,,,ALL
+Imported VARh Q2 CH3 (MSW),1245,41246,Imported VARh Q2 CH3 (C),kVArh,Metrology,float32,R,1245,AI,Imported VARh Q2 CH3,element,,Source Positive Reactive Energy,ALL
+Imported VARh Q2 CH3 (LSW),1246,41247,,,,,,,,,element,,,ALL
+Exported VARh Q3 Sum Element (MSW),1247,41248,Exported VARh Q3 Sum Element,kVArh,Metrology,float32,R,1247,AI,Exported VARh Q3 Sum Element,element,,Total Exported VARh in Q3 (Ch1 + Ch2 + Ch3),ALL
+Exported VARh Q3 Sum Element (LSW),1248,41249,,,,,,,,,element,,,ALL
+Exported VARh Q3 CH1 (MSW),1249,41250,Exported VARh Q3 CH1 (A),kVArh,Metrology,float32,R,1249,AI,Exported VARh Q3 CH1,element,,Source Negative Reactive Energy,ALL
+Exported VARh Q3 CH1 (LSW),1250,41251,,,,,,,,,element,,,ALL
+Exported VARh Q3 CH2 (MSW),1251,41252,Exported VARh Q3 CH2 (B),kVArh,Metrology,float32,R,1251,AI,Exported VARh Q3 CH2,element,,Source Negative Reactive Energy,ALL
+Exported VARh Q3 CH2 (LSW),1252,41253,,,,,,,,,element,,,ALL
+Exported VARh Q3 CH3 (MSW),1253,41254,Exported VARh Q3 CH3 (C),kVArh,Metrology,float32,R,1253,AI,Exported VARh Q3 CH3,element,,Source Negative Reactive Energy,ALL
+Exported VARh Q3 CH3 (LSW),1254,41255,,,,,,,,,element,,,ALL
+Exported VARh Q4 Sum Element (MSW),1255,41256,Exported VARh Q4 Sum Element,kVArh,Metrology,float32,R,1255,AI,Exported VARh Q4 Sum Element,element,,Total Exported VARh in Q4 (Ch1 + Ch2 + Ch3),ALL
+Exported VARh Q4 Sum Element (LSW),1256,41257,,,,,,,,,element,,,ALL
+Exported VARh Q4 CH1 (MSW),1257,41258,Exported VARh Q4 CH1 (A),kVArh,Metrology,float32,R,1257,AI,Exported VARh Q4 CH1,element,,Load Negative Reactive Energy,ALL
+Exported VARh Q4 CH1 (LSW),1258,41259,,,,,,,,,element,,,ALL
+Exported VARh Q4 CH2 (MSW),1259,41260,Exported VARh Q4 CH2 (B),kVArh,Metrology,float32,R,1259,AI,Exported VARh Q4 CH2,element,,Load Negative Reactive Energy,ALL
+Exported VARh Q4 CH2 (LSW),1260,41261,,,,,,,,,element,,,ALL
+Exported VARh Q4 CH3 (MSW),1261,41262,Exported VARh Q4 CH3 �,kVArh,Metrology,float32,R,1261,AI,Exported VARh Q4 CH3,element,,Load Negative Reactive Energy,ALL
+Exported VARh Q4 CH3 (LSW),1262,41263,,,,,,,,,element,,,ALL
+Events MSW,1263,41264,Events MSW,,,bitfield32,R,1263,AI,Events,system,,,ALL
+Events LSW,1264,41265,Events LSW,,,,,,,,system,,,ALL
+SUNSPEC_M_DID_END,1265,41266,Sunspec Device ID END (0xFFFF),,,uint16,R,,,,element,,,ALL
+SUNSPEC_M_Length_END,1266,41267,Sunspec Length end (0),,,uint16,R,,,,element,,,ALL
+USER COMMAND POINTS,-,-,USER COMMAND POINTS,-,-,-,-,-,-,-,-,-,-,-
+Reset Processor,2100,42101,Reset (software) processor,,User,unit16,W,2100,BV,Reset Processor,system,1 or 1234,"Modbus Reset Command (1234), or BACnet Reset Command (1)",ALL
+Clear Accumulated Measurements All,2101,42102,Clear all accumulated measurements (CAM),,User,unit16,W,2101,BV,Clear Accumulated Measurements All,system,1 or 1234,"Modbus Reset Command (1234), or BACnet Reset Command (1)",ALL
+Clear Accumulated Measurements Element,2102,42103,Clear Accumulated Measurements Element (CAM),,User,unit16,W,2102,BV,Clear Accumulated Measurements Element,element,1 or 1234,"Modbus Reset Command (1234), or BACnet Reset Command (1)",ALL
+Clear Peak Demand Element,2103,42104,Clear Peak Demand Element,,User,unit16,W,2103,BV,Clear Peak Demand Element,element,1 or 1234,"Modbus Reset Command (1234), or BACnet Reset Command (1)",ALL
+Clear Peak Demand All,2104,42105,Clear Peak Demand All,,User,unit16,W,2104,BV,Clear Peak Demand All,system,1 or 1234,"Modbus Reset Command (1234), or BACnet Reset Command (1)",ALL
+Reset to User Defaults,2105,42106,Reset to User Defaults,,User,unit16,W,2105,BV,Reset to User Defaults,system,1 or 1234,"Modbus Reset Command (1234), or BACnet Reset Command (1)",ALL
+USER CONFIG POINTS,-,-,USER CONFIG POINTS,-,-,-,-,-,-,-,-,-,-,-
+Demand Window Type,2201,42202,Sliding or Fixed,,Config,enum16,R,2201,MSV,Demand Window Type,system,1-2,Currently Sliding Mode Only,ALL
+Demand Window,2202,42203,Demand Window,Min,Config,uint16,R,2202,PIV,Demand Window Length,system,15,Currently set to 15 minutes,ALL
+Volt Multiplier VINPUT1 (MSW),2203,42204,Volt Multiplier VINPUT1,,Config,float32,R/W,2203,AV,Volt Multiplier VINPUT1,system,>0,Used with Potential Transformer,ALL
+Volt Multiplier VINPUT1 (LSW),2204,42205,,,,,,,,,system,>0,,ALL
+Volt Multiplier VINPUT2 (MSW),2205,42206,Volt Multiplier VINPUT2,,Config,float32,R/W,2205,AV,Volt Multiplier VINPUT2,system,>0,Used with Potential Transformer,PS 24 / 48
+Volt Multiplier VINPUT2 (LSW),2206,42207,,,,,,,,,system,>0,,PS 24 / 48
+Service Type Element,2207,42208,Service Type,,Config,enum16,R/W,2207,MSV,Service Type Element,element,1-5,"(4Wire 3?=1), 3Wire 3?=2,3Wire 1?=3,2Wire 1?=4, OFF=5)",ALL
+Millivolt Snap Threshold (MSW),2208,42209,Snap MV Threshold,PER,Config,float32,R/W,2208,AV,Millivolt Snap Threshold,system,>= 0,"Report 0 rather than values below this % of full scale CT , use with caution",ALL
+Millivolt Snap Threshold (LSW),2209,42210,,,,,,,,,system,,,ALL
+RoCoil Snap Threshold (MSW),2210,42211,Snap Rog Threshold,PER,Config,float32,R/W,2210,AV,RoCoil Snap Threshold,system,>= 0,"Report 0 rather than values below this % of full scale CT , use with caution",ALL
+RoCoil Snap Threshold (LSW),2211,42212,,,,,,,,,system,,,ALL
+Voltage Snap Threshold (MSW),2212,42213,Snap Volt Threshold,V,Config,float32,R/W,2212,AV,Voltage Snap Threshold,system,>= 0,"Report 0 rather than values below this absolute voltage , use with caution",ALL
+Voltage Snap Threshold (LSW),2213,42214,,,,,,,,,system,,,ALL
+Communications Mode,2214,42215,Communications Mode,,Config,,,2214,MSV, Communications Mode,system,1-2,"1 (Modbus), 2 (BACnet) - Applicable for RS-485 Communications",ALL
+RoCoil Millivolt per Kiloamp (MSW),2215,42216,RoCoil Millivolt per Kiloamp (MSW),,Config,float32,R/W,2215,AV,RoCoil Millivolt per Kiloamp,system,50-1000,"Gain at 60 HZ, use with caution (preset to 131)",ALL
+RoCoil Millivolt per Kiloamp (LSW),2216,42217,,,,,,,,,system,,,ALL
+Voltage Input Element,2217,42218,Element Voltage Input,,Config,enum16,R/W,2217,MSV,Voltage Input,element,1-2,,PS 24 / 48
+CH1 CT Full Scale Rating (MSW),2218,42219,CT1 RANGE,A,Config,float32,R/W,2218,AV,CH1 CT Full Scale Rating,element,>0,,ALL
+CH1 CT Full Scale Rating (LSW),2219,42220,,,,,,,,,element,>0,,ALL
+CH1 CT Voltage Reference,2220,42221,Voltage Reference for CT1,,Config,enum16,R/W,2220,MSV,CH1 CT Voltage Reference,element,1-6,"  (L1-N=1, L2-N=2, L3-N=3, L1-L2=4, L2-L3=5, L3-L1=6)",ALL
+CH1 CT  Multiplier (MSW),2221,42222,CT1 AMPS MULTIPLIER,,Config,float32,R/W,2221,AV,CH1 CT  Multiplier,element,>0,,ALL
+CH1 CT  Multiplier (LSW),2222,42223,,,,,,,,,element,>0,,ALL
+CH1 CT Type,2223,42224,CT1 TYPE,,Config,enum16,R/W,2223,PIV,CH1 CT Type,element,0-2,"0 (OFF), 1 (mV), 2 (RoCoil)",ALL
+CH1 CT Phase Shift (MSW),2224,42225,CT1 PHASE SHIFT,Deg,Config,float32,R/W,2224,AV,CH1 CT Phase Shift,element,-4.0? to +4.0?,,ALL
+CH1 CT Phase Shift (LSW),2225,42226,,,,,,,,,element,,,ALL
+CH1 CT Sign,2226,42227,FLIP THE SIGN OF CT 1 READING,,,uint16,R/W,2226,BV,CH1 CT Flipper,element,0-1,"0(NORMAL), 1(REVERSED)",ALL
+CH2 CT Full Scale Rating (MSW),2227,42228,CT2 RANGE,A,Config,float32,R/W,2227,AV,CH2 CT Full Scale Rating,element,>0,,ALL
+CH2 CT Full Scale Rating (LSW),2228,42229,,,,,,,,,element,>0,,ALL
+CH2 CT Voltage Reference,2229,42230,Voltage Reference for CT2,,Config,enum16,R/W,2229,MSV,CH2 CT Volts reference,element,1-6," (L1-N=1, L2-N=2, L3-N=3, L1-L2=4, L2-L3=5, L3-L1=6)",ALL
+CH2 CT Multiplier (MSW),2230,42231,CT2 AMPS MULTIPLIER,,Config,float32,R/W,2230,AV,CH2 CT Multiplier,element,>0,,ALL
+CH2 CT Multiplier (LSW),2231,42232,,,,,,,,,element,>0,,ALL
+CH2 CT type,2232,42233,CT2 TYPE,,Config,enum16,R/W,2232,PIV,CH2 CT type,element,0-2,"0 (OFF), 1 (mV), 2 (RoCoil)",ALL
+CH2 CT Phase Shift (MSW),2233,42234,CT2 PHASE SHIFT,Deg,Config,float32,R/W,2233,AV,CH2 CT Phase Shift,element,-4.0? to +4.0?,,ALL
+CH2 CT Phase Shift (LSW),2234,42235,,,,,,,,,element,,,ALL
+CH2 CT Sign,2235,42236,FLIP THE SIGN OF CT 2 READING,,Config,uint16,R/W,2235,BV,CH2 CT Flipper,element,0-1,"0(NORMAL), 1(REVERSED)",ALL
+CH3 CT Full Scale Rating (MSW),2236,42237,CT3 INTEGER,A,Config,float32,R/W,2236,AV,CH3 CT Full Scale Rating,element,>0,,ALL
+CH3 CT Full Scale Rating (LSW),2237,42238,,,,,,,,,element,>0,,ALL
+CH3 CT Voltage Reference,2238,42239,Voltage Reference for CT3,,Config,enum16,R/W,2238,MSV,CH3 CT volt reference,element,1-6," (L1-N=1, L2-N=2, L3-N=3, L1-L2=4, L2-L3=5, L3-L1=6)",ALL
+CH3 CT amps multiplier (MSW),2239,42240,CT3 AMPS MULTIPLIER,,Config,float32,R/W,2239,AV,CH3 CT Multiplier,element,>0,,ALL
+CH3 CT amps multiplier (LSW),2240,42241,,,,,,,,,element,>0,,ALL
+CH3 CT type,2241,42242,CT3 TYPE,,Config,enum16,R/W,2241,PIV,CH3 CT type,element,0-2,"0 (OFF), 1 (mV), 2 (RoCoil)",ALL
+CH3 CT Phase Shift (MSW),2242,42243,CT3 PHASE SHIFT,Deg,Config,float32,R/W,2242,AV,CH3 CT Phase Shift,element,-4.0? to +4.0?,,ALL
+CH3 CT Phase Shift (LSW),2243,42244,,,,,,,,,element,,,ALL
+CH3 CT Sign,2244,42245,FLIP THE SIGN OF CT 3 READING,,Config,uint16,R/W,2244,BV,CH3 CT Flipper,element,0-1,"0(NORMAL), 1(REVERSED)",ALL
+Not Used,2245,42246,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2246,42247,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2247,42248,Not Used,,,,,,,,,,Reserved,ALL
+PF Sign Convention,2248,42249,PF Sign Convention,,Config,uint16,R/W,2248,MSV,PF Sign Convention,system,1-2,"1 (ANSI),2 (IEEE)",ALL
+Modbus TCP Port,2249,42250,Modbus TCP Port,,,,R,,,,system,502,,ALL
+BACnet UDP Port,2250,42251,BACnet UDP Port,,Config,uint16,R/W,2250,PIV,UDP Port,system,,,ALL
+Not Used,2251,42252,Not Used,,,,,,,,,,Legacy Enable Element (Behavior covered by Register 2207 with value of 5),ALL
+BACnet Vendor ID (MSW),2252,42253,BACnet Vendor ID,,Config,uint32,R,Dev Obj Prop,,,system,,,ALL
+BACnet Vendor ID (LSW),2253,42254,,,,,,,,,system,,,ALL
+BACnet Device ID (MSW),2260,42261,BACnet Device ID,,Config,uint32,R/W,Dev Obj Prop,,,system,,,ALL
+BACnet Device ID (LSW),2261,42262,,,,,,,,,,,,ALL
+BACnet Max Info Frames,2262,42263,BACnet Max Info Frames,,Config,uint16,R/W,Dev Obj Prop,,,system,,,ALL
+Bacnet Max Masters,2263,42264,Bacnet Max Masters,,Config,uint16,R/W,Dev Obj Prop,,,system,,,ALL
+BBMD IP Address 0,2264,42265,BBMD IP Address,,Config,string(16),R/W,2264,CSV,BBMD IP Address,system,2 Char,,ALL
+BBMD IP Address 1,2265,42266,,,,,,,,,,2 Char,,ALL
+BBMD IP Address 2,2266,42267,,,,,,,,,,2 Char,,ALL
+BBMD IP Address 3,2267,42268,,,,,,,,,,2 Char,,ALL
+BBMD IP Address 4,2268,42269,,,,,,,,,,2 Char,,ALL
+BBMD IP Address 5,2269,42270,,,,,,,,,,2 Char,,ALL
+BBMD IP Address 6,2270,42271,,,,,,,,,,2 Char,,ALL
+BBMD IP Address 7,2271,42272,,,,,,,,,,1 CHAR NULL,Meter String Block Updated Upon Write to Final Character,ALL
+LCD/WebApp Read Password,2272,42273,LCD/WebApp Read Password,,Config,uint16,R/W,2272,PIV,LCD/WebApp Read Password,system,,Encoded PIN,ALL
+LCD/WebApp Read/Write Password,2273,42274,LCD/WebApp Read/Write Password,,Config,uint16,R/W,2273,PIV,LCD/WebApp Read/Write Password,system,,Encoded PIN,ALL
+Customer Line frequency (MSW),2274,42275,Customer Line frequency,,Config,float,R/W,2274,AV,Line Frequency Expected,system,,Reserved,ALL
+Customer Line frequency (LSW),2275,42276,,,,,,,,,,,Reserved,ALL
+Communications Interface Configured,2276,42277,Communications Interface Configured,,Config,uint16,R/W,,,,system,,Reserved,ALL
+Not Used,2277,42278,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2278,42279,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2279,42280,Not Used,,,,,,,,,,Legacy Pulse_Output1_Acc_Type,ALL
+Not Used,2280,42281,Not Used,,,,,,,,,,Legacy Pulse_Output1_Source_Element_Num,ALL
+Not Used,2281,42282,Not Used,,,,,,,,,,Legacy Pulse_Output1_Manual_Value,ALL
+Not Used,2282,42283,Not Used,,,,,,,,,,Legacy Pulse_Output1_Energy_MSW,ALL
+Not Used,2283,42284,Not Used,,,,,,,,,,Legacy Pulse_Output1_Energy_LSW,ALL
+Not Used,2284,42285,Not Used,,,,,,,,,,Legcay Pulse_Output1_Type,ALL
+Not Used,2285,42286,Not Used,,,,,,,,,,Legacy Pulse_Output2_Acc_Type,ALL
+Not Used,2286,42287,Not Used,,,,,,,,,,Legacy Pulse_Output1_Source_Element_Num,ALL
+Not Used,2287,42288,Not Used,,,,,,,,,,Legacy Pulse_Output2_Manual_Value,ALL
+Not Used,2288,42289,Not Used,,,,,,,,,,Legacy Pulse_Output2_Energy_MSW,ALL
+Not Used,2289,42290,Not Used,,,,,,,,,,Legacy Pulse_Output2_Energy_LSW,ALL
+Not Used,2290,42291,Not Used,,,,,,,,,,Legacy Pulse_Output2_Type ,ALL
+VOLTAGE_CONV_CONSTANT (MSW),2291,42292,Voltage conversion constant - ADC to Engg unit,,Config,,R,,,,,,Reserved,ALL
+VOLTAGE_CONV_CONSTANT (LSW),2292,42293,,,,,,,,,,,,ALL
+CURRENT_CONV_CONSTANT (MSW),2293,42294,Current conversion constant - ADC to Engg unit,,Config,,R,,,,,,Reserved,ALL
+CURRENT_CONV_CONSTANT (LSW),2294,42295,,,,,,,,,,,,ALL
+COMMUNICATION INACTIVITY TIMEOUT,2295,42296,Processor Reset Period Under Loss Of Communications,Min,Config,uint16,R/W,,,,System,0-65535,Reset Processor if no comms are detected for N minutes  (0 is disabled),ALL
+USER_CONFIG,2296,42297,User Config to enable/disable features,,Config,uint16,R/W,,,,System,0-255,"BIT (0) Web App Enable, BIT (1) UDP Discovery Enable.",ALL
+METROLOGY POINTS,-,-,METROLOGY POINTS,-,-,-,-,-,-,-,-,-,-,-
+Displacement PF Avg Element (MSW),2300,42301,Displacement PF Avg Element,dPF,Metrology,float32,R,2300,AI,Displacement PF Avg Element,element,,Element KW / SQRT ( Element KW^2 + Element VAR^2),ALL
+Displacement PF Avg Element (LSW),2301,42302,,,,,,,,,,,,ALL
+Displacement PF CH1 (MSW),2302,42303,Displacement PF CH1 (A),dPF,Metrology,float32,R,2302,AI,Displacement PF CH1,element,,CH KW / SQRT ( CH KW^2 + CH VAR^2),ALL
+Displacement PF CH1 (LSW),2303,42304,,,,,,,,,,,,ALL
+Displacement PF CH2 (MSW),2304,42305,Displacement PF CH2 (B),dPF,Metrology,float32,R,2304,AI,Displacement PF CH2,element,,CH KW / SQRT ( CH KW^2 + CH VAR^2),ALL
+Displacement PF CH2 (LSW),2305,42306,,,,,,,,,,,,ALL
+Displacement PF CH3 (MSW),2306,42307,Displacement PF CH3 (C),dPF,Metrology,float32,R,2306,AI,Displacement PF CH3,element,,CH KW / SQRT ( CH KW^2 + CH VAR^2),ALL
+Displacement PF CH3 (LSW),2307,42308,,,,,,,,,,,,ALL
+Apparent PF Avg Element (MSW),2308,42309,Avg Apparent PF Element,aPF,Metrology,float32,R,2308,AI, Apparent PF Avg Element,element,,Element Power / Element VA,ALL
+Apparent PF Avg Element (LSW),2309,42310,,,,,,,,,,,,ALL
+Apparent PF CH1 (MSW),2310,42311,Apparent PF CH1 (A),aPF,Metrology,float32,R,2310,AI,Apparent PF CH1,element,,(Duplicate of Reg # 1193),ALL
+Apparent PF CH1 (LSW),2311,42312,,,,,,,,,,,,ALL
+Apparent PF CH2 (MSW),2312,42313,Apparent PF CH2 (B),aPF,Metrology,float32,R,2312,AI,Apparent PF CH2,element,,(Duplicate of Reg # 1195),ALL
+Apparent PF CH2 (LSW),2313,42314,,,,,,,,,,,,ALL
+Apparent PF CH3 (MSW),2314,42315,Apparent PF CH3 ( C),aPF,Metrology,float32,R,2314,AI,Apparent PF CH3,element,,(Duplicate of Reg # 1197),ALL
+Apparent PF CH3 (LSW),2315,42316,,,,,,,,,,,,ALL
+Distortion PF Avg  Element (MSW),2316,42317,Distortion PF Avg Element,tPF,Metrology,float32,R,2316,AI,Distortion PF Avg  Element,element,,Computed as Element aPF / Element dPF,ALL
+Distortion PF Avg  Element (LSW),2317,42318,,,,,,,,,,,,ALL
+Distortion PF CH1 (MSW),2318,42319,Distortion PF CH1 (A),tPF,Metrology,float32,R,2318,AI,Distortion PF CH1,element,,Computed as CH aPF / CH dPF,ALL
+Distortion PF CH1 (LSW),2319,42320,,,,,,,,,,,,ALL
+Distortion PF CH2 (MSW),2320,42321,Distortion PF CH2 (B),tPF,Metrology,float32,R,2320,AI,Distortion PF CH2,element,,Computed as CH aPF / CH dPF,ALL
+Distortion PF CH2 (LSW),2321,42322,,,,,,,,,,,,ALL
+Distortion PF CH3 (MSW),2322,42323,Distortion PF CH3 (C),tPF,Metrology,float32,R,2322,AI,Distortion PF CH3,element,,Computed as CH aPF / CH dPF,ALL
+Distortion PF CH3 (LSW),2323,42324,,,,,,,,,,,,ALL
+THD Avg Element (MSW),2324,42325,THD Avg Element,%,Metrology,float32,R,2324,AI,THD Avg Element,element,,Computed Element THD,ALL
+THD Avg Element (LSW),2325,42326,,,,,,,,,,,,ALL
+THD CH1 (MSW),2326,42327,THD CH1 (A),%,Metrology,float32,R,2326,AI,THD CH1,element,,Computed CH THD on Power,ALL
+THD CH1 (LSW),2327,42328,,,,,,,,,,,,ALL
+THD CH2 (MSW),2328,42329,THD CH2 (B),%,Metrology,float32,R,2328,AI,THD CH2,element,,Computed CH THD on Power,ALL
+THD CH2 (LSW),2329,42330,,,,,,,,,,,,ALL
+THD CH3 (MSW),2330,42331,THD CH3 (C),%,Metrology,float32,R,2330,AI,THD CH3,element,,Computed CH THD on Power,ALL
+THD CH3 (LSW),2331,42332,,,,,,,,,,,,ALL
+Watt Peak Demand Element (MSW),2332,42333,Power Demand  Max Interval Element,kW,Metrology,float32,R,2332,AI,Power Demand  Max Interval Element,element,,Calculated from Imported Energy,ALL
+Watt Peak Demand Element (LSW),2333,42334,,,,,,,,,,,,ALL
+Watt Demand This Interval Element (MSW),2334,42335,Power Demand This Interval Element,kW,Metrology,float32,R,2334,AI,Power Demand This Interval Element,element,,Calculated from Imported Energy,ALL
+Watt Demand This Interval Element (LSW),2335,42336,,,,,,,,,,,,ALL
+VA Peak Demand Element (MSW),2336,42337,VA Demand Max Interval Element,kVA,Metrology,float32,R,2336,AI,VA Demand Max Interval Element,element,,Calculated from Imported Energy,ALL
+VA Peak Demand Element (LSW),2337,42338,,,,,,,,,,,,ALL
+VA Demand This Interval  Element (MSW),2338,42339,VA Demand This Interval  Element,kVA,Metrology,float32,R,2338,AI,VA Demand This Interval  Element,element,,Calculated from Imported Energy,ALL
+VA Demand This Interval  Element (MSW),2339,42340,,,,,,,,,,,,ALL
+Not Used,2340,42341,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2341,42342,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2342,42343,Not Used,,,,,,,,,,Reserved,ALL
+Not Used,2343,42344,Not Used,,,,,,,,,,Reserved,ALL
+Active Energy Net Sum Element (MSW),2344,42345,Energy Net Sum Element,kWh,Metrology,float32,R,2344,AI,Energy Net Sum Element,element,,Total Watt-hours Imported (1207) - Total Watt-hours Exported (1199),ALL
+Active Energy Net Sum Element (LSW),2345,42346,,,,,,,,,element,,,ALL
+Active Energy Net CH1 (MSW),2346,42347,Energy Net CH1,kWh,Metrology,float32,R,2346,AI,Energy Net CH1,element,,Total Watt-hours Imported phase A (1209) - Total Watt-hours Exported phase A (1201),ALL
+Active Energy Net CH1 (LSW),2347,42348,,,,,,,,,element,,,ALL
+Active Energy Net CH2 (MSW),2348,42349,Energy Net CH2,kWh,Metrology,float32,R,2348,AI,Energy Net CH2,element,,Total Watt-hours Imported phase B (1211) - Total Watt-hours Exported phase B (1203),ALL
+Active Energy Net CH2 (LSW),2349,42350,,,,,,,,,element,,,ALL
+Active Energy Net CH3 (MSW),2350,42351,Energy Net CH3,kWh,Metrology,float32,R,2350,AI,Energy Net CH3,element,,Total Watt-hours Imported phase C (1213) - Total Watt-hours Exported phase C (1205),ALL
+Active Energy Net CH3 (LSW),2351,42352,,,,,,,,,element,,,ALL
+Apparent Energy Net Sum Element (MSW),2352,42353,Apparent Energy Net Sum Element,kVAh,Metrology,float32,R,2352,AI,Apparent Energy Net Sum Element,element,,Total VA-hours Imported (1223) - Total VA-hours Exported (1215),ALL
+Apparent Energy Net Sum Element (LSW),2353,42354,,,,,,,,,element,,,ALL
+Apparent Energy Net CH1 (MSW),2354,42355,Apparent Energy Net CH1,kVAh,Metrology,float32,R,2354,AI,Apparent Energy Net CH1,element,,Total VA-hours Imported phase A (1225) - Total VA-hours Exported phase A (1217),ALL
+Apparent Energy Net CH1 (LSW),2355,42356,,,,,,,,,element,,,ALL
+Apparent Energy Net CH2 (MSW),2356,42357,Apparent Energy Net CH2,kVAh,Metrology,float32,R,2356,AI,Apparent Energy Net CH2,element,,Total VA-hours Imported phase B (1227) - Total Watt-hours Exported phase B (1219),ALL
+Apparent Energy Net CH2 (LSW),2357,42358,,,,,,,,,element,,,ALL
+Apparent Energy Net CH3 (MSW),2358,42359,Apparent Energy Net CH3,kVAh,Metrology,float32,R,2358,AI,Apparent Energy Net CH3,element,,Total VA-hours Imported phase C (1229) - Total VA-hours Exported phase C (1221),ALL
+Apparent Energy Net CH3 (LSW),2359,42360,,,,,,,,,element,,,ALL
+Reactive Energy Net Sum Element (MSW),2360,42361,VARh Net Sum Element,kVArh,Metrology,float32,R,2360,AI,VARh Net Sum Element,element,,Total VAR-hours Imported (1231+1239) - Total VAR-hours Exported (1247+1255),ALL
+Reactive Energy Net Sum Element (LSW),2361,42362,,,,,,,,,element,,,ALL
+Reactive Energy Net CH1 (MSW),2362,42363,VARh Net CH1,kVArh,Metrology,float32,R,2362,AI,VARh Net CH1,element,,Total VAR-hours Imported (1233+1241) - Total VAR-hours Exported (1249+1257),ALL
+Reactive Energy Net CH1 (LSW),2363,42364,,,,,,,,,element,,,ALL
+Reactive Energy Net CH2 (MSW),2364,42365,VARh Net CH2,kVArh,Metrology,float32,R,2364,AI,VARh Net CH2,element,,Total VAR-hours Imported (1235+1243) - Total VAR-hours Exported (1251+1259),ALL
+Reactive Energy Net CH2 (LSW),2365,42366,,,,,,,,,element,,,ALL
+Reactive Energy Net CH3 (MSW),2366,42367,VARh Net CH3,kVArh,Metrology,float32,R,2366,AI,VARh Net CH3,element,,Total VAR-hours Imported (1237+1245) - Total VAR-hours Exported (1253+1261),ALL
+Reactive Energy Net CH3 (LSW),2367,42368,,,,,,,,,element,,,ALL
+Time Since Reset (MSW),2368,42369,Time Since Reset MSW,Sec,Metrology,uint32,,2368,AI,Time Since CAM,system,,Time Since Clearing Accumulators,ALL
+Time Since Reset (LSW),2369,42370,Time Since Reset LSW,Sec,Metrology,,,,,,system,,,ALL
+Not Used,2370,42371,Not Used,,,,,,,,,,Legacy Data Acquisition Tick,ALL
+Theta CH1 MSW,2371,42372,CH1 Angle,Deg,Metrology,float32,R,2371,AI,Theta L1,element,,CH1 Displacement Angle,ALL
+Theta CH1 LSW,2372,42373,,,,,,,,,element,,,ALL
+Theta CH2 MSW,2373,42374,CH2 Angle,Deg,Metrology,float32,R,2373,AI,Theta L2,element,,CH2 Displacement Angle,ALL
+Theta CH2 LSW,2374,42375,,,,,,,,,element,,,ALL
+Theta CH3 MSW,2375,42376,CH3 Angle,Deg,Metrology,float32,R,2375,AI,Theta L3,element,,CH3 Displacement Angle,ALL
+Theta CH3 LSW,2376,42377,,,,,,,,,,,,ALL
+Phase Chek System Status,2377,42378,System Phase Check Status,,Metrology,bitfield16,R,2377,BSV,Phase Check System Status,system,0-16,"Modbus registers are little-endian (ie Element A is bit 0, Element B is bit 1�Element P is bit 15) BACnet is big-endian (ie Element A is bit 15, Element B is bit 14�.Element P is bit 0)
+",ALL
+Phase Chek Element Status,2378,42379,Element Phase Check Status,,Metrology,bitfield16,R,2378,BSV,Element Phase Check Status,element,0-7,"Modbus registers are little-endian (CT1 is bit 0, CT2 is bit 1, CT3 is bit 2) BACnet is  big-endian (CT1 is bit 7, CT2 is bit 6, CT3 is bit 5)
+",ALL
+RoCoil PGA Gain Ch1,2379,42380,RoCoil PGA Gain Ch1,,Metrology,uint16,R,,,,Element,,Reserved For Future Use,ALL
+RoCoil PGA Gain Ch2,2380,42381,RoCoil PGA Gain Ch2,,Metrology,uint16,R,,,,Element,,Reserved For Future Use,ALL
+RoCoil PGA Gain Ch3,2381,42382,RoCoil PGA Gain Ch3,,Metrology,uint16,R,,,,Element,,Reserved For Future Use,ALL
+Theta Element MSW,2391,42392,Element Angle,,Metrology,float,R,2391,AI,Theta Element,Element,,Calculated Element Displacement Angle,ALL
+Theta Element LSW,2392,42393,,,,,,,,,,,,ALL
+PULSE INPUTS,-,-,PULSE INPUTS,-,-,-,-,-,-,-,-,-,-,-
+Pulse Input 1 Enable,2400,42401,Pulse Input 1 Enable,,Config,uint16,R/W,2400,BV,Pulse Input 1 Enable,system,"0,1","0 (Off), 1(Enabled)",PS 12 / 24 / 48
+Pulse Input 1 Scale Factor,2401,42402,Pulse Input 1 Scale Factor,,Config,float32,R/W,2401,AV,Pulse Input 1 Scale Factor,system,,,PS 12 / 24 / 48
+,2402,42403,,,Config,,R/W,,,,system,,,PS 12 / 24 / 48
+Pulse Input 1 Units,2403,42404,Pulse Input 1 Units ,,Config,string(4),R/W,2403,CSV,Pulse Input 1 Units ,system,2 Char,,PS 12 / 24 / 48
+,2404,42405,,,Config,,R/W,,,,,2 Char,,PS 12 / 24 / 48
+,2405,42406,,,Config,,R/W,,,,,2 Char,,PS 12 / 24 / 48
+,2406,42407,,,Config,,R/W,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,PS 12 / 24 / 48
+Pulse Input 1 Scale Accumulator,2407,42408,Pulse Input 1 Accumulator,,Metrology,float32,R,2407,AI,Pulse Input 1 Accumulator,system,,,PS 12 / 24 / 48
+,2408,42409,,,,,R,,,,system,,,PS 12 / 24 / 48
+Pulse Input 1 Accumulator Clear,2409,42410,Pulse Input 1 Accumulator Clear,,User,unit16,W,2409,BV,Pulse Input 1 Accumulator Clear,system,,Write a 1 to clear. Can't be read.,PS 12 / 24 / 48
+Pulse Input 2 Enable,2410,42411,Pulse Input 2 Enable,,Config,uint16,R/W,2410,BV,Pulse Input 2 Enable,system,"0,1","0 (Off), 1(Enabled)",PS 12 / 24 / 48
+Pulse Input 2 Scale Factor,2411,42412,Pulse Input 2 Scale Factor,,Config,float32,R/W,2411,AV,Pulse Input 2 Scale Factor,system,,,PS 12 / 24 / 48
+,2412,42413,,,,,R/W,,,,system,,,PS 12 / 24 / 48
+Pulse Input 2 Units,2413,42414,Pulse Input 2 Units ,,Config,string(4),R/W,2413,CSV,Pulse Input 2 Units ,system,2 Char,,PS 12 / 24 / 48
+,2414,42415,,,Config,,R/W,,,,,2 Char,,PS 12 / 24 / 48
+,2415,42416,,,Config,,R/W,,,,,2 Char,,PS 12 / 24 / 48
+,2416,42417,,,Config,,R/W,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,PS 12 / 24 / 48
+Pulse Input 2 Scale Accumulator,2417,42418,Pulse Input 2 Accumulator,,Metrology,float32,R,2417,AI,Pulse Input 2 Accumulator,system,,,PS 12 / 24 / 48
+,2418,42419,,,,,R,,,,system,,,PS 12 / 24 / 48
+Pulse Input 2 Accumulator Clear,2419,42420,Pulse Input 2 Accumulator Clear,,User,unit16,W,2419,BV,Pulse Input 2 Accumulator Clear,system,,Write a 1 to clear. Can't be read.,PS 12 / 24 / 48
+Pulse Input 3 Enable,2420,42421,Pulse Input 3 Enable,,Config,uint16,R/W,2420,BV,Pulse Input 3 Enable,system,"0,1","0 (Off), 1(Enabled)",PS 12
+Pulse Input 3 Scale Factor,2421,42422,Pulse Input 3 Scale Factor,,Config,float32,R/W,2421,AV,Pulse Input 3 Scale Factor,system,,,PS 12
+,2422,42423,,,,,R/W,,,,system,,,PS 12
+Pulse Input 3 Units,2423,42424,Pulse Input 3 Units ,,Config,string(4),R/W,2423,CSV,Pulse Input 3 Units ,system,2 Char,,PS 12
+,2424,42425,,,Config,,R/W,,,,,2 Char,,PS 12
+,2425,42426,,,Config,,R/W,,,,,2 Char,,PS 12
+,2426,42427,,,Config,,R/W,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,PS 12
+Pulse Input 3 Scale Accumulator,2427,42428,Pulse Input 3 Accumulator,,Metrology,float32,R,2427,AI,Pulse Input 3 Accumulator,system,,,PS 12
+,2428,42429,,,,,R,,,,system,,,PS 12
+Pulse Input 3 Accumulator Clear,2429,42430,Pulse Input 3 Accumulator Clear,,User,,W,2429,BV,Pulse Input 3 Accumulator Clear,system,,Write a 1 to clear. Can't be read.,PS 12
+Pulse Input 4 Enable,2430,42431,Pulse Input 4 Enable,,Config,uint16,R/W,2430,BV,Pulse Input 4 Enable,system,"0,1","0 (Off), 1(Enabled)",PS 12
+Pulse Input 4 Scale Factor,2431,42432,Pulse Input 4 Scale Factor,,Config,float32,R/W,2431,AV,Pulse Input 4 Scale Factor,system,,,PS 12
+,2432,42433,,,,,R/W,,,,system,,,PS 12
+Pulse Input 4 Units,2433,42434,Pulse Input 4 Units ,,Config,string(4),R/W,2433,CSV,Pulse Input 4 Units ,system,2 Char,,PS 12
+,2434,42435,,,Config,,R/W,,,,,2 Char,,PS 12
+,2435,42436,,,Config,,R/W,,,,,2 Char,,PS 12
+,2436,42437,,,Config,,R/W,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,PS 12
+Pulse Input 4 Scale Accumulator,2437,42438,Pulse Input 4 Accumulator,,Metrology,float32,R,2437,AI,Pulse Input 4 Accumulator,system,,,PS 12
+,2438,42439,,,,,R,,,,system,,,PS 12
+Pulse Input 4 Accumulator Clear,2439,42440,Pulse Input 4 Accumulator Clear,,User,unit16,W,2439,BV,Pulse Input 4 Accumulator Clear,system,,Write a 1 to clear. Can't be read.,PS 12
+ALARMS,-,-,ALARMS,-,-,-,-,-,-,-,-,-,-,-
+Alarm Output Status,2451,42452,State of Alarm,,Metrology,uint16,R/W,2451,BV,Alarm Output Status,system,,"0 (No alarm) 1 (Alarm triggered), set to 0 to clear",ALL
+Not Used,2452,42453,Not Used,,Config,bitfield16,R/W,,,,element,,"Legacy, bitfield for enabeling CT alarms",ALL
+Not Used,2453,42454,Not Used,A,Config,uint16,R/W,,,,element,,"Legacy, CT Alarm Threshold Under Current",ALL
+Not Used,2454,42455,Not Used,,,,,,,,Element,,"Legacy, Sets High Threshold for All CT's",ALL
+Not Used,2455,42456,Not Used,Sec,Config,uint16,R/W,,,,element,3 - 60,"Legacy, Current Alarm Persistence Setting",ALL
+Not Used,2456,42457,Not Used,,Config,bitfield8,R,,,,element,0-7,"Legacy, CT Alarm Status Under Current",ALL
+Not Used,2457,42458,Not Used,,,,,,,,,,"Legacy, Modbus registers are little-endian (CT1 is bit 0, CT2 is bit 1, CT3 is bit 2) BACnet is  big-endian (CT1 is bit 7, CT2 is bit 6, CT3 is bit 5)",ALL
+Voltage Alarm Vin1 Mask                  ,2458,42459,Bitfield for all VIN1 and associated phases,,Config,bitfield8,R/W,2458,BSV,Voltage Alarm Vin1 Mask                  ,system,0-63," Modbus is little-endian  (L1-N=bit 0, L2-N=bit 1, L3-N=bit 2, L1-L2=bit 3, L2-L3=bit 4, L3-L1=bit 5) BACnet is big-endian  (L1-N=bit 7, L2-N=bit 6, L3-N=bit 5, L1-L2=bit 4, L2-L3=bit 3, L3-L1=bit 2)",ALL
+Voltage Alarm Vin2 Mask,2459,42460,Bitfield for all VIN2 (PS48) and associated phases,,Config,bitfield8,R/W,2459,BSV,Voltage Alarm Vin2 Mask,system,0-63," Modbus is little-endian  (L1-N=bit 0, L2-N=bit 1, L3-N=bit 2, L1-L2=bit 3, L2-L3=bit 4, L3-L1=bit 5) BACnet is big-endian  (L1-N=bit 7, L2-N=bit 6, L3-N=bit 5, L1-L2=bit 4, L2-L3=bit 3, L3-L1=bit 2)",ALL
+Voltage Alarm Range Vin1 L1N Under,2460,42461,Voltage Alarm Range Vin1 L1N Under,V,Config,uint16,R/W,2460,PIV,Voltage Alarm Range Vin1 L1N Under,system,1-385,,ALL
+Not Used,2461,42462,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin1 L1N Over, unsupported beyond firmware 2.07",ALL
+Voltage Alarm Range Vin1 L2N Under,2462,42463,Voltage Alarm Range Vin1 L2N Under,V,Config,uint16,R/W,2462,PIV,Voltage Alarm Range Vin1 L2N Under,system,1-385,,ALL
+Not Used,2463,42464,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin1 L2N Over, unsupported beyond firmware 2.07",ALL
+Voltage Alarm Range Vin1 L3N Under,2464,42465,Voltage Alarm Range Vin1 L3N Under,V,Config,uint16,R/W,2464,PIV,Voltage Alarm Range Vin1 L3N Under,system,1-385,,ALL
+Not Used,2465,42466,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin1 L3N Over, unsupported beyond firmware 2.07",ALL
+Voltage Alarm Range Vin1 L1L2 Under,2466,42467,Voltage Alarm Range Vin1 L1L2 Under,V,Config,uint16,R/W,2466,PIV,Voltage Alarm Range Vin1 L1L2 Under,system,1-660,,ALL
+Not Used,2467,42468,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin1 L1L2 Over, unsupported beyond firmware 2.07",ALL
+Voltage Alarm Range Vin1 L2L3 Under,2468,42469,Voltage Alarm Range Vin1 L2L3 Under,V,Config,uint16,R/W,2468,PIV,Voltage Alarm Range Vin1 L2L3 Under,system,1-660,,ALL
+Not Used,2469,42470,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin1 L2L3 Over, unsupported beyond firmware 2.07",ALL
+Voltage Alarm Range Vin1 L3L1 Under,2470,42471,Voltage Alarm Range Vin1 L3L1 Under,V,Config,uint16,R/W,2470,PIV,Voltage Alarm Range Vin1 L3L1 Under,system,1-660,,ALL
+Not Used,2471,42472,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin1 L3L1 Over, unsupported beyond firmware 2.07",ALL
+Voltage Alarm Range Vin2 L1N Under,2472,42473,Voltage Alarm Range Vin2 L1N Under,V,Config,uint16,R/W,2472,PIV,Voltage Alarm Range Vin2 L1N Under,system,1-660,,PS 24 / 48
+Not Used,2473,42474,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin2 L1N Over, unsupported beyond firmware 2.07",PS 24 / 48
+Voltage Alarm Range Vin2 L2N Under,2474,42475,Voltage Alarm Range Vin2 L2N Under,V,Config,uint16,R/W,2474,PIV,Voltage Alarm Range Vin2 L2N Under,system,1-660,,PS 24 / 48
+Not Used,2475,42476,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin2 L2N Over, unsupported beyond firmware 2.07",PS 24 / 48
+Voltage Alarm Range Vin2 L3N Under,2476,42477,Voltage Alarm Range Vin2 L3N Under,V,Config,uint16,R/W,2476,PIV,Voltage Alarm Range Vin2 L3N Under,system,1-660,,PS 24 / 48
+Not Used,2477,42478,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin2 L3N Over, unsupported beyond firmware 2.07",PS 24 / 48
+Voltage Alarm Range Vin2 L1L2 Under,2478,42479,Voltage Alarm Range Vin2 L1L2 Under,V,Config,uint16,R/W,2478,PIV,Voltage Alarm Range Vin2 L1L2 Under,system,1-660,,PS 24 / 48
+Not Used,2479,42480,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin2 L1L2 Over, unsupported beyond firmware 2.07",PS 24 / 48
+Voltage Alarm Range Vin2 L2L3 Under,2480,42481,Voltage Alarm Range Vin2 L2L3 Under,V,Config,uint16,R/W,2480,PIV,Voltage Alarm Range Vin2 L2L3 Under,system,1-660,,PS 24 / 48
+Not Used,2481,42482,Not Used,,,,,,,,,,"Legacy, Voltage Alarm Range Vin2 L2L3 Over, unsupported beyond firmware 2.07",PS 24 / 48
+Voltage Alarm Range Vin2 L3L1 Under,2482,42483,Voltage Alarm Range Vin2 L3L1 Under,V,Config,uint16,R/W,2482,PIV,Voltage Alarm Range Vin2 L3L1 Under,system,1-660,,PS 24 / 48
+Not Used,2483,42484,Not Used,,,,,,,,,1-660,"Legacy, Voltage Alarm Range Vin2 L3L1 Over, unsupported beyond firmware 2.07",PS 24 / 48
+Voltage Alarm Persistence,2484,42485,Voltage Alarm Persistence,Sec,Config,uint16,R/W,2484,PIV,Voltage Alarm Persistence,system,15-60,minimum time is 15 seconds,ALL
+Voltage Vin1 Alarm Status Under,2485,42486,Voltage Vin1 Alarm Status Under,,Metrology,bitfield8,R,2485,BSV,Voltage Vin1 Alarm Status Under,system,0-63," Modbus is little-endian  (L1-N=bit 0, L2-N=bit 1, L3-N=bit 2, L1-L2=bit 3, L2-L3=bit 4, L3-L1=bit 5) BACnet is big-endian  (L1-N=bit 7, L2-N=bit 6, L3-N=bit 5, L1-L2=bit 4, L2-L3=bit 3, L3-L1=bit 2)",ALL
+Not Used,2486,42487,Not Used,,,,,,,,,,"legacy, Voltage Vin1 Alarm Status Over, unsupported beyond firmware 2.07",ALL
+Voltage Vin2 Alarm Status Under,2487,42488,Voltage Vin2 Alarm Status Under,,Metrology,bitfield8,R,2487,BSV,Voltage Vin2 Alarm Status Under,system,0-63," Modbus is little-endian  (L1-N=bit 0, L2-N=bit 1, L3-N=bit 2, L1-L2=bit 3, L2-L3=bit 4, L3-L1=bit 5) BACnet is big-endian  (L1-N=bit 7, L2-N=bit 6, L3-N=bit 5, L1-L2=bit 4, L2-L3=bit 3, L3-L1=bit 2)",PS 24 / 48
+Not Used,2488,42489,Not Used,,,,,,,,,,"Legacy, Voltage Vin2 Alarm Status Over, unsupported beyond firmware 2.07",PS 24 / 48
+Real Time Clock MSW,2489,42490,Real Time Clock MSW,,Config,uint16,R/W,2489,PIV,RTC CLOCK,system,,"Number of seconds since Jan 1, 1970 in UTC time",ALL
+Real Time Clock LSW,2490,42491,Real Time Clock LSW,,Config,uint16,R/W,,,,system,,,ALL
+USER CONFIG POINTS 2,-,-,USER CONFIG POINTS 2,-,-,-,-,-,-,-,-,-,-,-
+System Description 0,2601,42602,System Description 0,,Config,string(32),,Dev Obj Prop,DO,Property Name,system,2 Char,,ALL
+System Description 1,2602,42603,System Description 1,,,,,,,,,2 Char,,ALL
+System Description 2,2603,42604,System Description 2,,,,,,,,,2 Char,,ALL
+System Description 3,2604,42605,System Description 3,,,,,,,,,2 Char,,ALL
+System Description 4,2605,42606,System Description 4,,,,,,,,,2 Char,,ALL
+System Description 5,2606,42607,System Description 5,,,,,,,,,2 Char,,ALL
+System Description 6,2607,42608,System Description 6,,,,,,,,,2 Char,,ALL
+System Description 7,2608,42609,System Description 7,,,,,,,,,2 Char,,ALL
+System Description 8,2609,42610,System Description 8,,,,,,,,,2 Char,,ALL
+System Description 9,2610,42611,System Description 9,,,,,,,,,2 Char,,ALL
+System Description 10,2611,42612,System Description 10,,,,,,,,,2 Char,,ALL
+System Description 11,2612,42613,System Description 11,,,,,,,,,2 Char,,ALL
+System Description 12,2613,42614,System Description 12,,,,,,,,,2 Char,,ALL
+System Description 13,2614,42615,System Description 13,,,,,,,,,2 Char,,ALL
+System Description 14,2615,42616,System Description 14,,,,,,,,,2 Char,,ALL
+System Description 15,2616,42617,System Description 15,,,,,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+Element Description 0,2617,42618,Element Description 0,,Config,string(32),,,SVO,Property Name Structured View 1-17,element,2 Char,,ALL
+Element Description 1,2618,42619,Element Description 1,,,,,,,,,2 Char,,ALL
+Element Description 2,2619,42620,Element Description 2,,,,,,,,,2 Char,,ALL
+Element Description 3,2620,42621,Element Description 3,,,,,,,,,2 Char,,ALL
+Element Description 4,2621,42622,Element Description 4,,,,,,,,,2 Char,,ALL
+Element Description 5,2622,42623,Element Description 5,,,,,,,,,2 Char,,ALL
+Element Description 6,2623,42624,Element Description 6,,,,,,,,,2 Char,,ALL
+Element Description 7,2624,42625,Element Description 7,,,,,,,,,2 Char,,ALL
+Element Description 8,2625,42626,Element Description 8,,,,,,,,,2 Char,,ALL
+Element Description 9,2626,42627,Element Description 9,,,,,,,,,2 Char,,ALL
+Element Description 10,2627,42628,Element Description 10,,,,,,,,,2 Char,,ALL
+Element Description 11,2628,42629,Element Description 11,,,,,,,,,2 Char,,ALL
+Element Description 12,2629,42630,Element Description 12,,,,,,,,,2 Char,,ALL
+Element Description 13,2630,42631,Element Description 13,,,,,,,,,2 Char,,ALL
+Element Description 14,2631,42632,Element Description 14,,,,,,,,,2 Char,,ALL
+Element Description 15,2632,42633,Element Description 15,,,,,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL
+BACnet Description 0,2633,42634,BACnet Description 0,,Config,string(32),,Dev Obj Prop,DO,Property Description,system,2 Char,,ALL
+BACnet Description 1,2634,42635,BACnet Description 1,,,,,,,,,2 Char,,ALL
+BACnet Description 2,2635,42636,BACnet Description 2,,,,,,,,,2 Char,,ALL
+BACnet Description 3,2636,42637,BACnet Description 3,,,,,,,,,2 Char,,ALL
+BACnet Description 4,2637,42638,BACnet Description 4,,,,,,,,,2 Char,,ALL
+BACnet Description 5,2638,42639,BACnet Description 5,,,,,,,,,2 Char,,ALL
+BACnet Description 6,2639,42640,BACnet Description 6,,,,,,,,,2 Char,,ALL
+BACnet Description 7,2640,42641,BACnet Description 7,,,,,,,,,2 Char,,ALL
+BACnet Description 8,2641,42642,BACnet Description 8,,,,,,,,,2 Char,,ALL
+BACnet Description 9,2642,42643,BACnet Description 9,,,,,,,,,2 Char,,ALL
+BACnet Description 10,2643,42644,BACnet Description 10,,,,,,,,,2 Char,,ALL
+BACnet Description 11,2644,42645,BACnet Description 11,,,,,,,,,2 Char,,ALL
+BACnet Description 12,2645,42646,BACnet Description 12,,,,,,,,,2 Char,,ALL
+BACnet Description 13,2646,42647,BACnet Description 13,,,,,,,,,2 Char,,ALL
+BACnet Description 14,2647,42648,BACnet Description 14,,,,,,,,,2 Char,,ALL
+BACnet Description 15,2648,42649,BACnet Description 15,,,,,,,,,1 Char NULL,Meter String Block Updated Upon Write to Final Character,ALL

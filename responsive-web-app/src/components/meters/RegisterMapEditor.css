@@ -1,0 +1,247 @@
+.register-map-editor {
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fafbfc;
+}
+
+.register-map-editor--collapsed {
+  background: #f8f9fa;
+}
+
+.register-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.register-map-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.register-map-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.register-map-description {
+  color: #6c757d;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.register-fields {
+  margin-top: 1rem;
+}
+
+.register-fields-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.register-fields-header h5 {
+  margin: 0;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.register-fields-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.register-fields-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.register-field {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+  background: white;
+}
+
+.register-field-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.register-field-row--advanced {
+  grid-template-columns: 1fr 1fr 3fr;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f3f4;
+}
+
+.form-group--small {
+  margin-bottom: 0;
+}
+
+.form-group--small label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.form-control--small {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+}
+
+.form-group--description {
+  grid-column: span 2;
+}
+
+.register-field-actions {
+  display: flex;
+  align-items: end;
+}
+
+.btn--small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.btn--ghost {
+  background: transparent;
+  color: #6c757d;
+  border: 1px solid transparent;
+}
+
+.btn--ghost:hover {
+  color: #495057;
+  border-color: #dee2e6;
+}
+
+.btn--danger {
+  background-color: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+}
+
+.btn--danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .register-field-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .register-field-row--advanced {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-group--description {
+    grid-column: span 1;
+  }
+  
+  .register-map-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .register-fields-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+}
+
+/* Template Dropdown Styles */
+.template-dropdown {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.template-dropdown h5 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.template-item {
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.template-item:hover {
+  border-color: #007bff;
+  background: #f8f9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.template-item--default {
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.template-item--default:hover {
+  border-color: #28a745;
+  background: #e8f5e8;
+}
+
+.template-name {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.template-details {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.template-description {
+  color: #868e96;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* Loading state */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

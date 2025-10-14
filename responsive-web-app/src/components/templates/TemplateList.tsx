@@ -50,8 +50,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [sortBy, setSortBy] = useState<string>('updatedAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy] = useState<string>('updatedAt');
+  const [sortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [searchQuery, setSearchQuery] = useState('');
   

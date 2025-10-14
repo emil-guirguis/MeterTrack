@@ -3,11 +3,9 @@ import type { HeaderProps } from '../../types/ui';
 import './Header.css';
 
 const Header: React.FC<HeaderProps> = ({
-  title,
   user,
   notifications = [],
   onLogout,
-  onToggleSidebar,
   isMobile
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -104,7 +102,7 @@ const Header: React.FC<HeaderProps> = ({
               className="user-menu-trigger"
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               aria-label="User menu"
-              aria-expanded={userMenuOpen}
+              {...(userMenuOpen ? { 'aria-expanded': true } : { 'aria-expanded': false })}
               type="button"
             >
               <div className="user-avatar">

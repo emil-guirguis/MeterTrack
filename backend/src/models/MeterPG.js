@@ -24,6 +24,7 @@ class Meter {
         this.unit_of_measurement = meterData.unit_of_measurement;
         this.multiplier = meterData.multiplier || 1;
         this.notes = meterData.notes;
+        this.register_map = meterData.register_map; // JSONB column
         this.createdat = meterData.createdat;
         this.updatedat = meterData.updatedat;
     }
@@ -44,8 +45,8 @@ class Meter {
                 meterid, name, type, manufacturer, model, serialnumber,
                 installation_date, last_reading_date, status, location_building,
                 location_floor, location_room, location_description,
-                unit_of_measurement, multiplier, notes, createdat, updatedat
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                unit_of_measurement, multiplier, notes, register_map, createdat, updatedat
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *
         `;
 
@@ -53,7 +54,7 @@ class Meter {
             meterid, name, type, manufacturer, model, serialnumber,
             installation_date, last_reading_date, status || 'active', location_building,
             location_floor, location_room, location_description,
-            unit_of_measurement, multiplier || 1, notes
+            unit_of_measurement, multiplier || 1, notes, meterData.register_map || null
         ];
 
         try {
@@ -147,7 +148,7 @@ class Meter {
             'meterid', 'name', 'type', 'manufacturer', 'model', 'serialnumber',
             'installation_date', 'last_reading_date', 'status', 'location_building',
             'location_floor', 'location_room', 'location_description',
-            'unit_of_measurement', 'multiplier', 'notes'
+            'unit_of_measurement', 'multiplier', 'notes', 'register_map'
         ];
         
         const updates = [];

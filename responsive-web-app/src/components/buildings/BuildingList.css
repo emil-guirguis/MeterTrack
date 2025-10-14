@@ -7,9 +7,10 @@
   padding: 1rem;
 }
 
-/* Head}
+/* Building List Header */
 
-/* Building-specific filters and search styles */fic customizations */__header {
+/* Building-specific filters and search styles */
+.building-list__header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;

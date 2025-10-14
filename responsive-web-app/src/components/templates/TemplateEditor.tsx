@@ -530,14 +530,13 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       >
         <div
           ref={editorRef}
-          className="template-editor-editable"
+          className="template-editor-editable template-editor-editable-content"
           contentEditable
           suppressContentEditableWarning
           onInput={handleContentChange}
           onFocus={() => setIsEditorFocused(true)}
           onBlur={() => setIsEditorFocused(false)}
           onKeyDown={handleKeyDown}
-          className="template-editor-editable-content"
           data-placeholder={placeholder}
         />
       </Paper>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import type { FormModalProps } from '../../types/ui';
 import { useResponsive } from '../../hooks/useResponsive';
 import './FormModal.css';
@@ -6,11 +6,9 @@ import './FormModal.css';
 export function FormModal<T extends Record<string, any>>({
   isOpen,
   title,
-  data,
   loading = false,
   error,
   onClose,
-  onSubmit,
   children,
   size = 'md',
   fullScreen = false,

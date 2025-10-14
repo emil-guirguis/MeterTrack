@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ReactNode } from 'react';
 import { DataTable } from './DataTable';
 import type { DataTableProps, ColumnDefinition, BulkAction } from '../../types/ui';

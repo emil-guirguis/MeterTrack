@@ -1,3 +1,25 @@
+export interface RegisterMapField {
+  name: string; // Modbus Register Name
+  register: number; // Modbus Register
+  absoluteAddress: number; // Absolute Address  
+  description: string; // Item Description
+  units?: string; // Units
+  functionality?: string; // Functionality
+  dataType: 'uint16' | 'uint32' | 'int16' | 'int32' | 'float32' | 'string'; // Data Type
+  readWrite: 'R' | 'W' | 'R/W'; // R/W
+  bacnetObject?: string; // BACnet Object
+  bacnetObjectType?: string; // BACnet Object Type
+  bacnetObjectName?: string; // BACnet Object Name
+  systemElement?: string; // System or Element
+  valueRange?: string; // Value/Range
+  publicNotes?: string; // Public Notes
+  models?: string; // Models
+}
+
+export interface RegisterMap {
+  description?: string;
+  fields: RegisterMapField[];
+}
 export interface Meter {
   id: string;
   meterId: string;
@@ -10,7 +32,8 @@ export interface Meter {
   location?: string;
   description?: string;
   status: 'active' | 'inactive' | 'maintenance';
-  type?: 'electric' | 'gas' | 'water';
+  type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
+  register_map?: RegisterMap | null;
   createdAt: string;
   updatedAt: string;
   createdBy?: {
@@ -60,7 +83,8 @@ export interface CreateMeterRequest {
   slaveId?: number;
   location?: string;
   description?: string;
-  type?: 'electric' | 'gas' | 'water';
+  type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
+  register_map?: RegisterMap | null;
 }
 
 export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {

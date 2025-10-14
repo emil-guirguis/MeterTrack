@@ -29,7 +29,7 @@ export { MeterList, MeterForm } from './meters';
 export { TemplateList, TemplateForm, TemplatePreview, TemplateEditor, RichTextEditor, TemplateAnalytics, TemplateManagement } from './templates';
 
 // Settings Components
-export { BrandingForm, CompanyInfoForm, SystemConfigForm, EmailConfigForm } from './settings';
+export { BrandingForm, CompanyInfoForm, SystemConfigForm, DefaultsForm, EmailConfigForm } from './settings';
 
 // System Components
 export { SystemHealth } from './system';

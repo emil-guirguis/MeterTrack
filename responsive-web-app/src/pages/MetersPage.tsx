@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MeterList, MeterForm } from '../components/meters';
 import { useMetersEnhanced } from '../store/entities/metersStore';
 import { FormModal } from '../components/common/FormModal';
-import type { Meter, MeterCreateRequest } from '../types/entities';
+import type { Meter, CreateMeterRequest } from '../types/meter';
 import './MetersPage.css';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view';
@@ -18,17 +18,17 @@ const MetersPage: React.FC = () => {
     setViewMode('create');
   };
 
-  const handleEditMeter = (meter: Meter) => {
+  const handleEditMeter = (meter: any) => {
     setSelectedMeter(meter);
     setViewMode('edit');
   };
 
-  const handleViewMeter = (meter: Meter) => {
+  const handleViewMeter = (meter: any) => {
     setSelectedMeter(meter);
     setViewMode('view');
   };
 
-  const handleFormSubmit = async (data: MeterCreateRequest) => {
+  const handleFormSubmit = async (data: CreateMeterRequest) => {
     setIsSubmitting(true);
     try {
       if (viewMode === 'create') {
@@ -76,20 +76,16 @@ const MetersPage: React.FC = () => {
           <h4>Basic Information</h4>
           <div className="detail-grid">
             <div className="detail-item">
-              <label>Meter ID:</label>
-              <span>{meter.meterId}</span>
-            </div>
-            <div className="detail-item">
-              <label>Serial Number:</label>
-              <span>{meter.serialNumber}</span>
-            </div>
-            <div className="detail-item">
               <label>Brand:</label>
               <span>{meter.brand}</span>
             </div>
             <div className="detail-item">
               <label>Model:</label>
               <span>{meter.model}</span>
+            </div>
+            <div className="detail-item">
+              <label>Serial Number:</label>
+              <span>{meter.serialNumber}</span>
             </div>
             <div className="detail-item">
               <label>Type:</label>
@@ -124,7 +120,7 @@ const MetersPage: React.FC = () => {
             </div>
             <div className="detail-item">
               <label>Protocol:</label>
-              <span>{meter.configuration?.communicationProtocol || 'Modbus TCP'}</span>
+              <span>Modbus TCP</span>
             </div>
           </div>
         </div>
@@ -149,27 +145,15 @@ const MetersPage: React.FC = () => {
           </div>
         )}
 
-        {meter.lastReading && (
-          <div className="detail-section">
-            <h4>Last Reading</h4>
-            <div className="detail-grid">
-              <div className="detail-item">
-                <label>Value:</label>
-                <span>{meter.lastReading.value} {meter.lastReading.unit}</span>
-              </div>
-              <div className="detail-item">
-                <label>Timestamp:</label>
-                <span>{new Date(meter.lastReading.timestamp).toLocaleString()}</span>
-              </div>
-              <div className="detail-item">
-                <label>Quality:</label>
-                <span className={`badge badge--${meter.lastReading.quality === 'good' ? 'success' : 'warning'}`}>
-                  {meter.lastReading.quality}
-                </span>
-              </div>
+        <div className="detail-section">
+          <h4>Last Reading</h4>
+          <div className="detail-grid">
+            <div className="detail-item">
+              <label>Value:</label>
+              <span>No readings available</span>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

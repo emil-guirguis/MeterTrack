@@ -390,14 +390,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       >
         <div
           ref={editorRef}
-          className="rich-text-editor-editable"
+          className="rich-text-editor-editable rich-text-editor-editable-content"
           contentEditable={!readOnly}
           suppressContentEditableWarning
           onInput={handleContentChange}
           onFocus={() => setIsEditorFocused(true)}
           onBlur={() => setIsEditorFocused(false)}
           onKeyDown={handleKeyDown}
-          className="rich-text-editor-editable-content"
           data-placeholder={placeholder}
         />
       </Paper>
