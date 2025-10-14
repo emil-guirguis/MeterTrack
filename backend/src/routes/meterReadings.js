@@ -124,7 +124,7 @@ function toFrontendReading(pg) {
   return base;
 }
 const { query, validationResult } = require('express-validator');
-const MeterReading = require('../models/MeterReadingPG');
+const MeterReading = require('../models/MeterReading');
 const db = require('../config/database');
 
 // Get all meter readings with filtering and pagination
@@ -169,7 +169,11 @@ router.get('/', [
       timestamp: 'createdat',
       meterId: 'meterid',
       meterid: 'meterid',
-      value: 'final_value'
+      value: 'final_value',
+      createdAt: 'createdat',
+      updatedAt: 'updatedat',
+      createdat: 'createdat',
+      updatedat: 'updatedat'
     };
     const key = sortKeyMap[sortBy] || 'createdat';
     const sorted = all.sort((a, b) => {

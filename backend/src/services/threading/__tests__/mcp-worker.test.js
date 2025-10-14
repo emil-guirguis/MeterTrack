@@ -22,7 +22,7 @@ jest.mock('worker_threads', () => ({
   workerData: {
     config: {
       modbus: { ip: '10.10.10.11', port: 502 },
-      database: { uri: 'mongodb://localhost:27017/test' }
+      database: { url: 'postgresql://localhost:5432/test' }
     }
   },
   MessagePort: jest.fn(() => mockMessagePort)

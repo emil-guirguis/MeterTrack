@@ -1,229 +1,301 @@
-const mongoose = require('mongoose');
+/**
+ * Meter Model for PostgreSQL
+ * Replaces the Mongoose Meter model
+ */
 
-// Meter configuration sub-schema
-const meterConfigSchema = new mongoose.Schema({
-  ip: {
-    type: String,
-    required: [true, 'IP address is required'],
-    trim: true,
-    match: [/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, 'Please enter a valid IP address']
-  },
-  portNumber: {
-    type: Number,
-    required: [true, 'Port number is required'],
-    min: [1, 'Port number must be between 1 and 65535'],
-    max: [65535, 'Port number must be between 1 and 65535'],
-    default: 502
-  },
-  slaveId: {
-    type: Number,
-    default: 1,
-    min: [1, 'Slave ID must be between 1 and 247'],
-    max: [247, 'Slave ID must be between 1 and 247']
-  },
-  timeout: {
-    type: Number,
-    default: 5000,
-    min: [1000, 'Timeout must be at least 1000ms']
-  },
-  readingInterval: {
-    type: Number,
-    default: 300, // 5 minutes
-    min: [1, 'Reading interval must be at least 1 second']
-  },
-  registers: {
-    voltage: { address: { type: Number, default: 5 }, scale: { type: Number, default: 200 } },
-    current: { address: { type: Number, default: 6 }, scale: { type: Number, default: 100 } },
-    power: { address: { type: Number, default: 7 }, scale: { type: Number, default: 1 } },
-    frequency: { address: { type: Number, default: 0 }, scale: { type: Number, default: 10 } },
-    powerFactor: { address: { type: Number, default: 9 }, scale: { type: Number, default: 1000 } }
-  }
-});
+const db = require('../config/database');
 
-// Meter reading sub-schema
-const meterReadingSchema = new mongoose.Schema({
-  value: {
-    type: Number,
-    required: [true, 'Reading value is required']
-  },
-  timestamp: {
-    type: Date,
-    required: [true, 'Reading timestamp is required']
-  },
-  unit: {
-    type: String,
-    required: [true, 'Reading unit is required'],
-    trim: true
-  },
-  quality: {
-    type: String,
-    enum: ['good', 'estimated', 'questionable'],
-    default: 'good'
-  }
-});
-
-// Main meter schema
-const meterSchema = new mongoose.Schema({
-  meterId: {
-    type: String,
-    required: [true, 'Meter ID is required'],
-    unique: true,
-    trim: true,
-    maxlength: [50, 'Meter ID cannot exceed 50 characters']
-  },
-  serialNumber: {
-    type: String,
-    required: [true, 'Serial number is required'],
-    trim: true,
-    maxlength: [100, 'Serial number cannot exceed 100 characters']
-  },
-  type: {
-    type: String,
-    enum: ['electric', 'gas', 'water', 'steam', 'other'],
-    required: [true, 'Meter type is required']
-  },
-  brand: {
-    type: String,
-    required: [true, 'Brand is required'],
-    trim: true,
-    maxlength: [100, 'Brand cannot exceed 100 characters']
-  },
-  model: {
-    type: String,
-    required: [true, 'Model is required'],
-    trim: true,
-    maxlength: [100, 'Model cannot exceed 100 characters']
-  },
-  buildingId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Building'
-  },
-  buildingName: {
-    type: String,
-    trim: true
-  },
-  equipmentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Equipment'
-  },
-  equipmentName: {
-    type: String,
-    trim: true
-  },
-  configuration: {
-    type: meterConfigSchema,
-    required: true
-  },
-  lastReading: {
-    type: meterReadingSchema
-  },
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'maintenance', 'error'],
-    default: 'active'
-  },
-  installationDate: {
-    type: Date,
-    validate: {
-      validator: function(date) {
-        return !date || date <= new Date();
-      },
-      message: 'Installation date cannot be in the future'
-    }
-  },
-  lastMaintenance: {
-    type: Date
-  },
-  nextMaintenance: {
-    type: Date
-  },
-  location: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Location cannot exceed 500 characters']
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Description cannot exceed 500 characters']
-  },
-  notes: {
-    type: String,
-    maxlength: [2000, 'Notes cannot exceed 2000 characters']
-  },
-  // Metadata
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
-
-// Virtual for connection string
-meterSchema.virtual('connectionString').get(function() {
-  return `${this.configuration.ip}:${this.configuration.portNumber}`;
-});
-
-// Virtual for full meter identifier
-meterSchema.virtual('fullIdentifier').get(function() {
-  return `${this.brand} ${this.model} (${this.meterId})`;
-});
-
-// Indexes for better query performance
-meterSchema.index({ meterId: 1 });
-meterSchema.index({ serialNumber: 1 });
-meterSchema.index({ type: 1 });
-meterSchema.index({ status: 1 });
-meterSchema.index({ buildingId: 1 });
-meterSchema.index({ equipmentId: 1 });
-meterSchema.index({ 'configuration.ip': 1 });
-
-// Pre-save middleware
-meterSchema.pre('save', async function(next) {
-  try {
-    // Update building and equipment names
-    if (this.isModified('buildingId') && this.buildingId) {
-      const Building = mongoose.model('Building');
-      const building = await Building.findById(this.buildingId);
-      if (building) {
-        this.buildingName = building.name;
-      }
-    }
-    
-    if (this.isModified('equipmentId') && this.equipmentId) {
-      const Equipment = mongoose.model('Equipment');
-      const equipment = await Equipment.findById(this.equipmentId);
-      if (equipment) {
-        this.equipmentName = equipment.name;
-      }
+class Meter {
+    constructor(meterData = {}) {
+        this.id = meterData.id;
+        this.meterid = meterData.meterid;
+        this.name = meterData.name;
+        this.type = meterData.type;
+        this.device_id = meterData.device_id;
+        // Joined fields from devices table (when available)
+        this.device_name = meterData.device_name;
+        this.device_description = meterData.device_description;
+        this.serialnumber = meterData.serialnumber;
+        this.installation_date = meterData.installation_date;
+        this.last_reading_date = meterData.last_reading_date;
+        this.status = meterData.status || 'active';
+        this.location_building = meterData.location_building;
+        this.location_floor = meterData.location_floor;
+        this.location_room = meterData.location_room;
+        this.location_description = meterData.location_description;
+        this.unit_of_measurement = meterData.unit_of_measurement;
+        this.multiplier = meterData.multiplier || 1;
+        this.notes = meterData.notes;
+        this.register_map = meterData.register_map; // JSONB column
+        this.createdat = meterData.createdat;
+        this.updatedat = meterData.updatedat;
     }
 
-    // Validate IP and port combination is unique
-    if (this.isModified('configuration.ip') || this.isModified('configuration.portNumber')) {
-      const Meter = mongoose.model('Meter');
-      const existingMeter = await Meter.findOne({ 
-        'configuration.ip': this.configuration.ip, 
-        'configuration.portNumber': this.configuration.portNumber,
-        _id: { $ne: this._id }
-      });
-      
-      if (existingMeter) {
-        const error = new Error('IP and port combination already exists');
-        error.code = 'DUPLICATE_CONNECTION';
-        return next(error);
-      }
-    }
-  } catch (error) {
-    console.error('Error in meter pre-save middleware:', error);
-  }
-  next();
-});
+    /**
+     * Create new meter
+     */
+    static async create(meterData) {
+        const {
+            meterid, name, type, device_id, serialnumber,
+            installation_date, last_reading_date, status, location_building,
+            location_floor, location_room, location_description,
+            unit_of_measurement, multiplier, notes
+        } = meterData;
 
-module.exports = mongoose.model('Meter', meterSchema);
+        const query = `
+            INSERT INTO meters (
+                meterid, name, type, device_id, serialnumber,
+                installation_date, last_reading_date, status, location_building,
+                location_floor, location_room, location_description,
+                unit_of_measurement, multiplier, notes, register_map, createdat, updatedat
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING *
+        `;
+
+        const values = [
+            meterid, name, type, device_id, serialnumber,
+            installation_date, last_reading_date, status || 'active', location_building,
+            location_floor, location_room, location_description,
+            unit_of_measurement, multiplier || 1, notes, meterData.register_map || null
+        ];
+
+        try {
+            const result = await db.query(query, values);
+            return new Meter(result.rows[0]);
+        } catch (error) {
+            if (error.code === '23505') { // Unique constraint violation
+                throw new Error('Meter ID already exists');
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Find meter by ID
+     */
+    static async findById(id) {
+        const query = `
+            SELECT m.*, d.name as device_name, d.description as device_description
+            FROM meters m
+            LEFT JOIN devices d ON m.device_id = d.id
+            WHERE m.id = $1
+        `;
+        const result = await db.query(query, [id]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return new Meter(result.rows[0]);
+    }
+
+    /**
+     * Find meter by meter ID
+     */
+    static async findByMeterId(meterid) {
+        const query = 'SELECT * FROM meters WHERE meterid = $1';
+        const result = await db.query(query, [meterid]);
+        
+        if (result.rows.length === 0) {
+            return null;
+        }
+        
+        return new Meter(result.rows[0]);
+    }
+
+    /**
+     * Find all meters with optional filters
+     */
+    static async findAll(filters = {}) {
+        let query = `SELECT m.*, d.name as device_name, d.description as device_description FROM meters m LEFT JOIN devices d ON m.device_id = d.id WHERE 1=1`;
+        const values = [];
+        let paramCount = 0;
+
+        if (filters.type) {
+            paramCount++;
+            query += ` AND m.type = ${paramCount}`;
+            values.push(filters.type);
+        }
+
+        if (filters.status) {
+            paramCount++;
+            query += ` AND m.status = ${paramCount}`;
+            values.push(filters.status);
+        }
+
+        if (filters.location_building) {
+            paramCount++;
+            query += ` AND m.location_building = ${paramCount}`;
+            values.push(filters.location_building);
+        }
+
+        if (filters.search) {
+            paramCount++;
+            query += ` AND (m.meterid ILIKE ${paramCount} OR m.name ILIKE ${paramCount} OR d.name ILIKE ${paramCount})`;
+            values.push(`%${filters.search}%`);
+        }
+
+        query += ' ORDER BY m.meterid ASC';
+
+        if (filters.limit) {
+            paramCount++;
+            query += ` LIMIT ${paramCount}`;
+            values.push(filters.limit);
+        }
+
+        const result = await db.query(query, values);
+        return result.rows.map(data => new Meter(data));
+    }
+
+    /**
+     * Update meter
+     */
+    async update(updateData) {
+        const allowedFields = [
+            'meterid', 'name', 'type', 'device_id', 'serialnumber',
+            'installation_date', 'last_reading_date', 'status', 'location_building',
+            'location_floor', 'location_room', 'location_description',
+            'unit_of_measurement', 'multiplier', 'notes', 'register_map'
+        ];
+        const updates = [];
+        const values = [];
+        let paramCount = 0;
+
+        for (const [key, value] of Object.entries(updateData)) {
+            if (allowedFields.includes(key) && value !== undefined) {
+                paramCount++;
+                updates.push(`${key} = ${paramCount}`);
+                values.push(value);
+            }
+        }
+
+        if (updates.length === 0) {
+            throw new Error('No valid fields to update');
+        }
+
+        paramCount++;
+        updates.push(`updatedat = CURRENT_TIMESTAMP`);
+        values.push(this.id);
+
+        const query = `
+            UPDATE meters 
+            SET ${updates.join(', ')}
+            WHERE id = ${paramCount}
+            RETURNING *
+        `;
+
+        try {
+            const result = await db.query(query, values);
+            
+            if (result.rows.length === 0) {
+                throw new Error('Meter not found');
+            }
+
+            // Update current instance
+            Object.assign(this, result.rows[0]);
+            return this;
+        } catch (error) {
+            if (error.code === '23505') { // Unique constraint violation
+                throw new Error('Meter ID already exists');
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Delete meter (soft delete)
+     */
+    async delete() {
+        const query = `
+            UPDATE meters 
+            SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const result = await db.query(query, [this.id]);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Meter not found');
+        }
+
+        this.status = 'inactive';
+        this.updatedat = result.rows[0].updatedat;
+        return this;
+    }
+
+    /**
+     * Update last reading date
+     */
+    async updateLastReading(readingDate = new Date()) {
+        const query = `
+            UPDATE meters 
+            SET last_reading_date = $1, updatedat = CURRENT_TIMESTAMP
+            WHERE id = $2
+            RETURNING *
+        `;
+
+        const result = await db.query(query, [readingDate, this.id]);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Meter not found');
+        }
+
+        this.last_reading_date = result.rows[0].last_reading_date;
+        this.updatedat = result.rows[0].updatedat;
+        return this;
+    }
+
+    /**
+     * Get meter statistics
+     */
+    static async getStats() {
+        const query = `
+            SELECT 
+                COUNT(*) as total_meters,
+                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_meters,
+                COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_meters,
+                COUNT(CASE WHEN type = 'electric' THEN 1 END) as electric_meters,
+                COUNT(CASE WHEN type = 'gas' THEN 1 END) as gas_meters,
+                COUNT(CASE WHEN type = 'water' THEN 1 END) as water_meters,
+                COUNT(DISTINCT location_building) as buildings_with_meters
+            FROM meters
+        `;
+
+        const result = await db.query(query);
+        return result.rows[0];
+    }
+
+    /**
+     * Get meters by building
+     */
+    static async findByBuilding(building) {
+        const query = 'SELECT * FROM meters WHERE location_building = $1 ORDER BY meterid ASC';
+        const result = await db.query(query, [building]);
+        return result.rows.map(data => new Meter(data));
+    }
+
+    /**
+     * Get full location string
+     */
+    get fullLocation() {
+        const parts = [
+            this.location_building,
+            this.location_floor && `Floor ${this.location_floor}`,
+            this.location_room && `Room ${this.location_room}`,
+            this.location_description
+        ].filter(part => part && part.trim());
+        
+        return parts.join(', ');
+    }
+
+    /**
+     * Convert to JSON
+     */
+    toJSON() {
+        return {
+            ...this,
+            fullLocation: this.fullLocation
+        };
+    }
+}
+
+module.exports = Meter;

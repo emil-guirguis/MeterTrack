@@ -3,7 +3,7 @@
  * Business logic layer for email template management
  */
 
-const EmailTemplate = require('../models/EmailTemplatePG');
+const EmailTemplate = require('../models/EmailTemplate');
 const TemplateValidator = require('./TemplateValidator');
 
 class TemplateService {

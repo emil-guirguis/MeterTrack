@@ -135,14 +135,8 @@ if "%backend_health%"=="200" (
     exit /b 1
 )
 
-REM Check MongoDB
-docker-compose -f "%COMPOSE_FILE%" exec -T mongodb mongosh --eval "db.adminCommand('ping')" >nul 2>&1
-if not errorlevel 1 (
-    call :print_status "MongoDB health check passed"
-) else (
-    call :print_error "MongoDB health check failed"
-    exit /b 1
-)
+REM PostgreSQL health check would go here if using containerized database
+REM docker-compose -f "%COMPOSE_FILE%" exec -T postgres pg_isready -U postgres >nul 2>&1
 
 call :print_status "All health checks passed"
 goto :eof
@@ -161,7 +155,7 @@ echo Service URLs:
 echo   Backend API: http://localhost:3001
 echo   API Health: http://localhost:3001/api/health
 echo   Threading Status: http://localhost:3001/api/threading/status
-echo   MongoDB: mongodb://localhost:27017
+REM   PostgreSQL: postgresql://localhost:5432 (when using containerized database)
 
 docker-compose -f "%COMPOSE_FILE%" ps | findstr "prometheus" >nul
 if not errorlevel 1 echo   Prometheus: http://localhost:9090

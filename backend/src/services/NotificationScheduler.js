@@ -5,7 +5,7 @@
 
 const cron = require('node-cron');
 const emailService = require('./EmailService');
-const EmailTemplate = require('../models/EmailTemplatePG');
+const EmailTemplate = require('../models/EmailTemplate');
 const db = require('../config/database');
 
 class NotificationScheduler {

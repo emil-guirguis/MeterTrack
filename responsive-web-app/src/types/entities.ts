@@ -97,20 +97,30 @@ export interface EquipmentUpdateRequest extends Partial<EquipmentCreateRequest> 
 // Contact Management (Customers and Vendors)
 export interface Contact {
   id: string;
-  type: 'customer' | 'vendor';
+  category: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
   name: string;
-  contactPerson: string;
+  company?: string;
+  role?: string;
   email: string;
   phone: string;
-  address: Address;
+  address_street?: string;
+  address_city?: string;
+  address_state?: string;
+  address_zip_code?: string;
+  address_country?: string;
   status: 'active' | 'inactive';
-  businessType: string;
-  industry: string;
-  website?: string;
   notes?: string;
+  createdat: Date;
+  updatedat: Date;
+  // Legacy fields for backward compatibility
+  contactPerson?: string;
+  address?: Address;
+  businessType?: string;
+  industry?: string;
+  website?: string;
   tags?: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface BusinessInfo {
@@ -122,13 +132,21 @@ export interface BusinessInfo {
 }
 
 export interface ContactCreateRequest {
-  type: 'customer' | 'vendor';
+  category: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
   name: string;
   company?: string;
+  role?: string;
   email: string;
   phone: string;
-  address: Address;
+  address_street?: string;
+  address_city?: string;
+  address_state?: string;
+  address_zip_code?: string;
+  address_country?: string;
   notes?: string;
+  // Legacy fields for backward compatibility
+  type?: 'customer' | 'vendor';
+  address?: Address;
   businessInfo?: BusinessInfo;
 }
 
@@ -327,7 +345,7 @@ export interface Meter {
   id: string;
   meterId: string; // User-friendly meter identifier
   serialNumber: string;
-  brand: string; // Manufacturer/brand name
+  device: string; // Manufacturer/device name
   model: string; // Model number
   ip: string; // IP address for connection
   portNumber: number; // Port number for connection
@@ -361,7 +379,7 @@ export interface Meter {
 export interface MeterCreateRequest {
   meterId: string;
   serialNumber: string;
-  brand: string;
+  device: string;
   model: string;
   ip: string;
   portNumber: number;

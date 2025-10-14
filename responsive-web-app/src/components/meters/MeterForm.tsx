@@ -20,11 +20,12 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 }) => {
   const { checkPermission } = useAuth();
   
-  const [formData, setFormData] = useState<CreateMeterRequest>({
+  const [formData, setFormData] = useState<CreateMeterRequest & { device_id?: string }>({
     meterId: meter?.meterId || '',
     serialNumber: meter?.serialNumber || '',
-    brand: meter?.brand || '',
+    manufacture: meter?.manufacture || '',
     model: meter?.model || '',
+    device_id: meter?.device_id || undefined,
     ip: meter?.ip || '',
     portNumber: meter?.portNumber || 502,
     slaveId: meter?.slaveId || 1,
@@ -96,12 +97,11 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof CreateMeterRequest, value: any) => {
-    setFormData((prev: CreateMeterRequest) => ({
+  const handleInputChange = (field: keyof (CreateMeterRequest & { device_id?: string }), value: any) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-    
     // Clear error when user starts typing
     if (errors[field as string]) {
       setErrors(prev => ({

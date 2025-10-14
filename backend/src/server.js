@@ -21,6 +21,7 @@ const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const modbusRoutes = require('./routes/modbus');
 const directMeterRoutes = require('./routes/directMeter');
+const devicesRoutes = require('./routes/devices');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 const app = express();
@@ -30,9 +31,6 @@ const PORT = process.env.PORT || 3001;
 let threadingService = null;
 
 // PostgreSQL connection will be handled by the database module
-// Legacy MongoDB configuration (keeping for reference during transition)
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb';
-const MONGODB_DBNAME = process.env.MONGODB_DBNAME; // optional override
 
 // Security middleware
 app.use(helmet());
@@ -282,7 +280,6 @@ async function initializeThreadingSystem() {
             }
           },
           database: {
-            connectionString: MONGODB_URI,
             poolSize: parseInt(process.env.DB_POOL_SIZE) || 10,
             timeout: parseInt(process.env.DB_TIMEOUT) || 10000,
             retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS) || 3,
@@ -365,6 +362,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/modbus', modbusRoutes);
 app.use('/api', directMeterRoutes);
+app.use('/api/devices', devicesRoutes);
 // app.use('/api/threading', threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint
@@ -472,7 +470,7 @@ app.get('/api/health', async (req, res) => {
 /*
 app.get('/api/test/db-status', async (req, res) => {
   try {
-    const User = require('./models/UserPG');
+    const User = require('./models/User');
     
     // Get database status and stats
     const dbStatus = await db.getStatus();
@@ -511,7 +509,7 @@ app.get('/api/test/db-status', async (req, res) => {
 /*
 app.post('/api/test/create-user', async (req, res) => {
   try {
-    const User = require('./models/UserPG'); // Updated to use PostgreSQL model
+    const User = require('./models/User'); // Using standard PostgreSQL model
     
     // Check if user already exists
     const existingUser = await User.findOne({ email: 'admin@example.com' });
@@ -565,26 +563,28 @@ app.post('/api/test/create-user', async (req, res) => {
 app.use((error, req, res, next) => {
   console.error('Error:', error);
   
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation Error',
-      errors: Object.values(error.errors).map(err => err.message)
-    });
-  }
-  
-  if (error.name === 'CastError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid ID format'
-    });
-  }
-  
-  if (error.code === 11000) {
+  // Handle PostgreSQL-specific errors
+  if (error.code === '23505') {
     return res.status(400).json({
       success: false,
       message: 'Duplicate entry',
-      field: Object.keys(error.keyPattern)[0]
+      error: 'A record with this value already exists'
+    });
+  }
+  
+  if (error.code === '23503') {
+    return res.status(400).json({
+      success: false,
+      message: 'Foreign key constraint violation',
+      error: 'Referenced record does not exist'
+    });
+  }
+  
+  if (error.code === '22P02') {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid input format',
+      error: 'Invalid data type or format'
     });
   }
   

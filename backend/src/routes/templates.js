@@ -29,7 +29,7 @@ router.get('/',
     query('category').optional().isIn(['meter_readings', 'meter_errors', 'maintenance', 'general']).withMessage('Invalid category'),
     query('isActive').optional().isBoolean().withMessage('isActive must be boolean'),
     query('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
-    query('sortBy').optional().isIn(['name', 'subject', 'category', 'usagecount', 'createdat', 'updatedat']).withMessage('Invalid sort field'),
+    query('sortBy').optional().isIn(['name', 'subject', 'category', 'usagecount', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'lastused']).withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
     query('search').optional().isLength({ min: 1, max: 100 }).withMessage('Search query must be 1-100 characters')
   ],

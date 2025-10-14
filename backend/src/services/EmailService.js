@@ -5,7 +5,7 @@
 
 const nodemailer = require('nodemailer');
 const TemplateRenderer = require('./TemplateRenderer');
-const EmailTemplate = require('../models/EmailTemplatePG');
+const EmailTemplate = require('../models/EmailTemplate');
 const db = require('../config/database');
 
 class EmailService {

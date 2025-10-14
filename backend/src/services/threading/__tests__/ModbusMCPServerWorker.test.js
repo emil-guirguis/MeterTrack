@@ -45,9 +45,9 @@ describe('ModbusMCPServerWorker', () => {
         timeout: 5000
       },
       database: {
-        uri: 'mongodb://localhost:27017/test',
-        databaseName: 'test',
-        collectionName: 'readings'
+        url: 'postgresql://localhost:5432/test',
+        database: 'test',
+        table: 'meter_readings'
       },
       collectionInterval: 900000,
       autoStart: false
@@ -78,7 +78,7 @@ describe('ModbusMCPServerWorker', () => {
         ...mockConfig,
         database: {
           ...mockConfig.database,
-          uri: 'mongodb://user:password@localhost:27017/test'
+          url: 'postgresql://user:password@localhost:5432/test'
         }
       };
 
@@ -87,7 +87,7 @@ describe('ModbusMCPServerWorker', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'ModbusMCPServerWorker initialized',
         expect.objectContaining({
-          databaseUri: 'mongodb://***@localhost:27017/test'
+          databaseUrl: 'postgresql://***@localhost:5432/test'
         })
       );
     });
@@ -274,7 +274,7 @@ describe('ModbusMCPServerWorker', () => {
       const request = { action: 'test_connections' };
       const result = await worker.handleDataRequest(request);
 
-      expect(result).toHaveProperty('mongodb');
+      expect(result).toHaveProperty('postgresql');
       expect(result).toHaveProperty('modbus');
       expect(result).toHaveProperty('timestamp');
     });
@@ -398,10 +398,10 @@ describe('ModbusMCPServerWorker', () => {
       // Access private method through handleDataRequest
       const result = await worker.handleDataRequest({ action: 'test_connections' });
 
-      expect(result).toHaveProperty('mongodb');
+      expect(result).toHaveProperty('postgresql');
       expect(result).toHaveProperty('modbus');
       expect(result).toHaveProperty('timestamp');
-      expect(typeof result.mongodb).toBe('boolean');
+      expect(typeof result.postgresql).toBe('boolean');
       expect(typeof result.modbus).toBe('boolean');
     });
   });
@@ -419,7 +419,7 @@ describe('ModbusMCPServerWorker', () => {
       // Mock environment variables
       process.env.MODBUS_IP = '192.168.1.50';
       process.env.MODBUS_PORT = '503';
-      process.env.MONGODB_URI = 'mongodb://test:27017/testdb';
+      process.env.DATABASE_URL = 'postgresql://test:5432/testdb';
 
       const envWorker = new ModbusMCPServerWorker();
       

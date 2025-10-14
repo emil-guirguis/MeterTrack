@@ -25,7 +25,7 @@ export const ContactList: React.FC<ContactListProps> = ({
   const contacts = useContactsEnhanced();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [industryFilter, setIndustryFilter] = useState<string>('');
   const [businessTypeFilter, setBusinessTypeFilter] = useState<string>('');
@@ -45,7 +45,7 @@ export const ContactList: React.FC<ContactListProps> = ({
   useEffect(() => {
     const filters: Record<string, any> = {};
     
-    if (typeFilter) filters.type = typeFilter;
+    if (categoryFilter) filters.category = categoryFilter;
     if (statusFilter) filters.status = statusFilter;
     if (industryFilter) filters.industry = industryFilter;
     if (businessTypeFilter) filters.businessType = businessTypeFilter;
@@ -53,7 +53,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     contacts.setFilters(filters);
     contacts.setSearch(searchQuery);
     contacts.fetchItems();
-  }, [searchQuery, typeFilter, statusFilter, industryFilter, businessTypeFilter]);
+  }, [searchQuery, categoryFilter, statusFilter, industryFilter, businessTypeFilter]);
 
   // Define table columns
   const columns: ColumnDefinition<Contact>[] = useMemo(() => [
@@ -65,8 +65,8 @@ export const ContactList: React.FC<ContactListProps> = ({
         <div className="table-cell--two-line">
           <div className="table-cell__primary">{value}</div>
           <div className="table-cell__secondary">
-            <span className={`badge badge--${contact.type === 'customer' ? 'primary' : 'secondary'}`}>
-              {contact.type.charAt(0).toUpperCase() + contact.type.slice(1)}
+            <span className={`badge badge--${contact.category === 'customer' ? 'primary' : 'secondary'}`}>
+              {contact.category?.charAt(0).toUpperCase() + contact.category?.slice(1) || 'Unknown'}
             </span>
           </div>
         </div>
@@ -79,7 +79,7 @@ export const ContactList: React.FC<ContactListProps> = ({
       render: (value, contact) => (
         <div className="table-cell--two-line">
           <div className="table-cell__primary">{value}</div>
-          <div className="table-cell__secondary">{contact.email}</div>
+          <div className="table-cell__secondary">{contact.company || contact.role || contact.email}</div>
         </div>
       ),
     },
@@ -111,8 +111,8 @@ export const ContactList: React.FC<ContactListProps> = ({
       sortable: true,
       render: (_, contact) => (
         <div className="contact-list__location">
-          <div>{contact.address.city}, {contact.address.state}</div>
-          <div className="contact-list__zip">{contact.address.zipCode}</div>
+          <div>{contact.address_city}, {contact.address_state}</div>
+          <div className="contact-list__zip">{contact.address_zip_code}</div>
         </div>
       ),
       responsive: 'hide-mobile',
@@ -234,22 +234,22 @@ export const ContactList: React.FC<ContactListProps> = ({
       headers.join(','),
       ...contactsToExport.map(contact => [
         `"${contact.name}"`,
-        contact.type,
-        `"${contact.contactPerson}"`,
+        contact.category,
+        `"${contact.company || contact.role || ''}"`,
         contact.email,
         contact.phone,
         contact.status,
-        `"${contact.address.street}"`,
-        `"${contact.address.city}"`,
-        contact.address.state,
-        contact.address.zipCode,
-        contact.address.country,
+        `"${contact.address_street || ''}"`,
+        `"${contact.address_city || ''}"`,
+        contact.address_state || '',
+        contact.address_zip_code || '',
+        contact.address_country || '',
         contact.businessType || '',
         contact.industry || '',
         contact.website || '',
         contact.tags ? contact.tags.join(';') : '',
         contact.notes ? `"${contact.notes.replace(/"/g, '""')}"` : '',
-        new Date(contact.createdAt).toISOString(),
+        new Date(contact.createdat).toISOString(),
       ].join(','))
     ].join('\\n');
 
@@ -302,10 +302,10 @@ export const ContactList: React.FC<ContactListProps> = ({
 
       <div className="contact-list__filter-group">
         <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
           className="contact-list__filter-select"
-          aria-label="Filter by type"
+          aria-label="Filter by category"
         >
           <option value="">All Types</option>
           <option value="customer">Customer</option>
@@ -347,12 +347,12 @@ export const ContactList: React.FC<ContactListProps> = ({
           ))}
         </select>
 
-        {(typeFilter || statusFilter || industryFilter || businessTypeFilter || searchQuery) && (
+        {(categoryFilter || statusFilter || industryFilter || businessTypeFilter || searchQuery) && (
           <button
             type="button"
             className="contact-list__clear-filters"
             onClick={() => {
-              setTypeFilter('');
+              setCategoryFilter('');
               setStatusFilter('');
               setIndustryFilter('');
               setBusinessTypeFilter('');

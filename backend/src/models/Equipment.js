@@ -1,100 +1,296 @@
-const mongoose = require('mongoose');
+/**
+ * Equipment Model for PostgreSQL
+ * Replaces the Mongoose Equipment model
+ */
 
-const equipmentSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Equipment name is required'],
-    trim: true,
-    maxlength: [200, 'Equipment name cannot exceed 200 characters']
-  },
-  type: {
-    type: String,
-    required: [true, 'Equipment type is required'],
-    trim: true
-  },
-  buildingId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Building',
-    required: [true, 'Building assignment is required']
-  },
-  buildingName: {
-    type: String,
-    trim: true
-  },
-  specifications: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  },
-  status: {
-    type: String,
-    enum: ['operational', 'maintenance', 'offline'],
-    default: 'operational'
-  },
-  installDate: {
-    type: Date,
-    required: [true, 'Install date is required'],
-    validate: {
-      validator: function(date) {
-        return date <= new Date();
-      },
-      message: 'Install date cannot be in the future'
+const db = require('../config/database');
+
+class Equipment {
+    constructor(equipmentData = {}) {
+        this.id = equipmentData.id;
+        this.name = equipmentData.name;
+        this.type = equipmentData.type;
+        this.buildingid = equipmentData.buildingid;
+        this.buildingname = equipmentData.buildingname;
+        this.specifications = equipmentData.specifications;
+        this.status = equipmentData.status || 'active';
+        this.installdate = equipmentData.installdate;
+        this.lastmaintenance = equipmentData.lastmaintenance;
+        this.nextmaintenance = equipmentData.nextmaintenance;
+        this.serialnumber = equipmentData.serialnumber;
+        this.manufacturer = equipmentData.manufacturer;
+        this.model = equipmentData.model;
+        this.location = equipmentData.location;
+        this.notes = equipmentData.notes;
+        this.createdat = equipmentData.createdat;
+        this.updatedat = equipmentData.updatedat;
     }
-  },
-  lastMaintenance: {
-    type: Date
-  },
-  nextMaintenance: {
-    type: Date
-  },
-  serialNumber: {
-    type: String,
-    trim: true,
-    sparse: true,
-    unique: true
-  },
-  manufacturer: {
-    type: String,
-    trim: true
-  },
-  model: {
-    type: String,
-    trim: true
-  },
-  location: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Location cannot exceed 500 characters']
-  },
-  notes: {
-    type: String,
-    maxlength: [2000, 'Notes cannot exceed 2000 characters']
-  }
-}, {
-  timestamps: true
-});
 
-// Indexes for better query performance
-equipmentSchema.index({ name: 1 });
-equipmentSchema.index({ type: 1 });
-equipmentSchema.index({ status: 1 });
-equipmentSchema.index({ buildingId: 1 });
-equipmentSchema.index({ serialNumber: 1 });
-equipmentSchema.index({ nextMaintenance: 1 });
+    /**
+     * Create new equipment
+     */
+    static async create(equipmentData) {
+        const {
+            name, type, buildingid, buildingname, specifications, status,
+            installdate, lastmaintenance, nextmaintenance, serialnumber,
+            manufacturer, model, location, notes
+        } = equipmentData;
 
-// Pre-save middleware to update building name
-equipmentSchema.pre('save', async function(next) {
-  if (this.isModified('buildingId') && this.buildingId) {
-    try {
-      const Building = mongoose.model('Building');
-      const building = await Building.findById(this.buildingId);
-      if (building) {
-        this.buildingName = building.name;
-      }
-    } catch (error) {
-      console.error('Error updating building name:', error);
+        const query = `
+            INSERT INTO equipment (
+                name, type, buildingid, buildingname, specifications, status,
+                installdate, lastmaintenance, nextmaintenance, serialnumber,
+                manufacturer, model, location, notes, createdat, updatedat
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING *
+        `;
+
+        const values = [
+            name, type, buildingid, buildingname, 
+            JSON.stringify(specifications || {}), status || 'active',
+            installdate, lastmaintenance, nextmaintenance, serialnumber,
+            manufacturer, model, location, notes
+        ];
+
+        const result = await db.query(query, values);
+        const equipment = new Equipment(result.rows[0]);
+        
+        // Parse JSON fields
+        if (equipment.specifications && typeof equipment.specifications === 'string') {
+            equipment.specifications = JSON.parse(equipment.specifications);
+        }
+        
+        return equipment;
     }
-  }
-  next();
-});
 
-module.exports = mongoose.model('Equipment', equipmentSchema);
+    /**
+     * Find equipment by ID
+     */
+    static async findById(id) {
+        const query = 'SELECT * FROM equipment WHERE id = $1';
+        const result = await db.query(query, [id]);
+        
+        if (result.rows.length === 0) {
+            return null;
+        }
+
+        const equipment = new Equipment(result.rows[0]);
+        
+        // Parse JSON fields
+        if (equipment.specifications && typeof equipment.specifications === 'string') {
+            equipment.specifications = JSON.parse(equipment.specifications);
+        }
+        
+        return equipment;
+    }
+
+    /**
+     * Find all equipment with optional filters
+     */
+    static async findAll(filters = {}) {
+        let query = 'SELECT * FROM equipment WHERE 1=1';
+        const values = [];
+        let paramCount = 0;
+
+        if (filters.type) {
+            paramCount++;
+            query += ` AND type = $${paramCount}`;
+            values.push(filters.type);
+        }
+
+        if (filters.status) {
+            paramCount++;
+            query += ` AND status = $${paramCount}`;
+            values.push(filters.status);
+        }
+
+        if (filters.buildingid) {
+            paramCount++;
+            query += ` AND buildingid = $${paramCount}`;
+            values.push(filters.buildingid);
+        }
+
+        if (filters.search) {
+            paramCount++;
+            query += ` AND (name ILIKE $${paramCount} OR manufacturer ILIKE $${paramCount} OR model ILIKE $${paramCount})`;
+            values.push(`%${filters.search}%`);
+        }
+
+        query += ' ORDER BY name ASC';
+
+        if (filters.limit) {
+            paramCount++;
+            query += ` LIMIT $${paramCount}`;
+            values.push(filters.limit);
+        }
+
+        const result = await db.query(query, values);
+        
+        return result.rows.map(data => {
+            const equipment = new Equipment(data);
+            // Parse JSON fields
+            if (equipment.specifications && typeof equipment.specifications === 'string') {
+                equipment.specifications = JSON.parse(equipment.specifications);
+            }
+            return equipment;
+        });
+    }
+
+    /**
+     * Update equipment
+     */
+    async update(updateData) {
+        const allowedFields = [
+            'name', 'type', 'buildingid', 'buildingname', 'specifications', 'status',
+            'installdate', 'lastmaintenance', 'nextmaintenance', 'serialnumber',
+            'manufacturer', 'model', 'location', 'notes'
+        ];
+        
+        const updates = [];
+        const values = [];
+        let paramCount = 0;
+
+        for (const [key, value] of Object.entries(updateData)) {
+            if (allowedFields.includes(key) && value !== undefined) {
+                paramCount++;
+                updates.push(`${key} = ${paramCount}`);
+                
+                if (key === 'specifications') {
+                    values.push(JSON.stringify(value));
+                } else {
+                    values.push(value);
+                }
+            }
+        }
+
+        if (updates.length === 0) {
+            throw new Error('No valid fields to update');
+        }
+
+        paramCount++;
+        updates.push(`updatedat = CURRENT_TIMESTAMP`);
+        values.push(this.id);
+
+        const query = `
+            UPDATE equipment 
+            SET ${updates.join(', ')}
+            WHERE id = $${paramCount}
+            RETURNING *
+        `;
+
+        const result = await db.query(query, values);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Equipment not found');
+        }
+
+        // Update current instance
+        Object.assign(this, result.rows[0]);
+        
+        // Parse JSON fields
+        if (this.specifications && typeof this.specifications === 'string') {
+            this.specifications = JSON.parse(this.specifications);
+        }
+        
+        return this;
+    }
+
+    /**
+     * Delete equipment (soft delete)
+     */
+    async delete() {
+        const query = `
+            UPDATE equipment 
+            SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const result = await db.query(query, [this.id]);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Equipment not found');
+        }
+
+        this.status = 'inactive';
+        this.updatedat = result.rows[0].updatedat;
+        return this;
+    }
+
+    /**
+     * Get equipment statistics
+     */
+    static async getStats() {
+        const query = `
+            SELECT 
+                COUNT(*) as total_equipment,
+                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_equipment,
+                COUNT(CASE WHEN status = 'maintenance' THEN 1 END) as maintenance_equipment,
+                COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_equipment,
+                COUNT(DISTINCT type) as equipment_types,
+                COUNT(DISTINCT buildingid) as buildings_with_equipment
+            FROM equipment
+        `;
+
+        const result = await db.query(query);
+        return result.rows[0];
+    }
+
+    /**
+     * Get equipment by building
+     */
+    static async findByBuilding(buildingId) {
+        const query = 'SELECT * FROM equipment WHERE buildingid = $1 ORDER BY name ASC';
+        const result = await db.query(query, [buildingId]);
+        
+        return result.rows.map(data => {
+            const equipment = new Equipment(data);
+            // Parse JSON fields
+            if (equipment.specifications && typeof equipment.specifications === 'string') {
+                equipment.specifications = JSON.parse(equipment.specifications);
+            }
+            return equipment;
+        });
+    }
+
+    /**
+     * Update maintenance date
+     */
+    async updateMaintenance(maintenanceDate, nextMaintenanceDate = null) {
+        const query = `
+            UPDATE equipment 
+            SET lastmaintenance = $1, 
+                nextmaintenance = $2,
+                updatedat = CURRENT_TIMESTAMP
+            WHERE id = $3
+            RETURNING *
+        `;
+
+        const result = await db.query(query, [maintenanceDate, nextMaintenanceDate, this.id]);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Equipment not found');
+        }
+
+        this.lastmaintenance = result.rows[0].lastmaintenance;
+        this.nextmaintenance = result.rows[0].nextmaintenance;
+        this.updatedat = result.rows[0].updatedat;
+        
+        return this;
+    }
+
+    /**
+     * Convert to JSON
+     */
+    toJSON() {
+        return {
+            ...this,
+            // Ensure specifications is an object
+            specifications: typeof this.specifications === 'string' 
+                ? JSON.parse(this.specifications) 
+                : this.specifications
+        };
+    }
+}
+
+module.exports = Equipment;

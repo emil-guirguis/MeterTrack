@@ -2,3 +2,4 @@
 export * from './tokenStorage';
 export * from './routeConfig';
 export * from './navigationUtils';
+export * from './errorHandler';

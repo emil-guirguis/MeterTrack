@@ -1,9 +1,11 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const Meter = require('../models/MeterPG'); // PostgreSQL model
+const Meter = require('../models/Meter');
+const DeviceService = require('../services/deviceService');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
+const db = require('../config/database');
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -57,8 +59,8 @@ router.get('/', [
       status: 'status',
       type: 'type',
       serialNumber: 'serialnumber',
-      brand: 'manufacturer',
-      model: 'model'
+      brand: 'device_name',
+      model: 'device_description'
     };
     const key = sortKeyMap[sortBy] || 'createdat';
     const sorted = allMeters.sort((a, b) => {
@@ -74,8 +76,8 @@ router.get('/', [
       id: m.id,
       meterId: m.meterid,
       serialNumber: m.serialnumber,
-      brand: m.manufacturer,
-      model: m.model,
+      brand: m.device_name || null,
+      model: m.device_description || null,
       type: m.type,
       status: m.status,
       location: m.fullLocation,
@@ -129,8 +131,8 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
       id: meter.id,
       meterId: meter.meterid,
       serialNumber: meter.serialnumber,
-      brand: meter.manufacturer,
-      model: meter.model,
+      brand: meter.device_name || null,
+      model: meter.device_description || null,
       type: meter.type,
       status: meter.status,
       location: meter.fullLocation,
@@ -157,8 +159,8 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
 router.post('/', [
   body('meterId').optional().isLength({ max: 50 }).trim(),
   body('meterid').optional().isLength({ max: 50 }).trim(),
+  body('device_id').optional().isUUID(),
   body('brand').optional().isLength({ max: 100 }).trim(),
-  body('manufacturer').optional().isLength({ max: 100 }).trim(),
   body('model').optional().isLength({ max: 100 }).trim(),
   body('serialNumber').optional().isLength({ max: 100 }).trim(),
   body('serialnumber').optional().isLength({ max: 100 }).trim(),
@@ -179,12 +181,56 @@ router.post('/', [
     }
 
     // Normalize body to PG model fields
+    // Resolve device_id: accept device_id directly, or brand/model strings and upsert into devices table
+    let resolvedDeviceId = req.body.device_id || null;
+    if (!resolvedDeviceId && (req.body.brand || req.body.model)) {
+      const deviceName = (req.body.brand || '').trim();
+      const deviceDescription = (req.body.model || '').trim() || null;
+      if (deviceName) {
+        try {
+          // Try to find existing device by name and description
+          const allDevices = await DeviceService.getAllDevices();
+          let existingDevice = allDevices.find(device => 
+            device.name === deviceName && 
+            (device.description === deviceDescription || (!device.description && !deviceDescription))
+          );
+          
+          if (!existingDevice && deviceDescription) {
+            // If not found with description, try by name only
+            existingDevice = allDevices.find(device => device.name === deviceName);
+          }
+          
+          if (existingDevice) {
+            resolvedDeviceId = existingDevice.id;
+          } else {
+            // Create new device using DeviceService
+            const newDevice = await DeviceService.createDevice({
+              name: deviceName,
+              description: deviceDescription
+            });
+            resolvedDeviceId = newDevice.id;
+          }
+        } catch (error) {
+          console.error('Error resolving device:', error);
+          // If device creation fails due to duplicate name, try to find it again
+          if (error.message.includes('already exists')) {
+            const allDevices = await DeviceService.getAllDevices();
+            const existingDevice = allDevices.find(device => device.name === deviceName);
+            if (existingDevice) {
+              resolvedDeviceId = existingDevice.id;
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
+
     const normalized = {
       meterid: req.body.meterid || req.body.meterId,
       name: req.body.name || req.body.meterId,
       type: req.body.type,
-      manufacturer: req.body.manufacturer || req.body.brand,
-      model: req.body.model,
+      device_id: resolvedDeviceId,
       serialnumber: req.body.serialnumber || req.body.serialNumber,
       status: req.body.status || 'active',
       location_building: req.body.location_building || undefined,
@@ -207,9 +253,10 @@ router.post('/', [
     const responseItem = {
       id: created.id,
       meterId: created.meterid,
+      device_id: created.device_id || null,
       serialNumber: created.serialnumber,
-      brand: created.manufacturer,
-      model: created.model,
+      brand: created.device_name || null,
+      model: created.device_description || null,
       type: created.type,
       status: created.status,
       location: created.fullLocation,
@@ -253,8 +300,8 @@ router.post('/', [
 router.put('/:id', [
   body('meterId').optional().isLength({ max: 50 }).trim(),
   body('meterid').optional().isLength({ max: 50 }).trim(),
+  body('device_id').optional().isUUID(),
   body('brand').optional().isLength({ max: 100 }).trim(),
-  body('manufacturer').optional().isLength({ max: 100 }).trim(),
   body('model').optional().isLength({ max: 100 }).trim(),
   body('serialNumber').optional().isLength({ max: 100 }).trim(),
   body('serialnumber').optional().isLength({ max: 100 }).trim(),
@@ -279,11 +326,55 @@ router.put('/:id', [
       return res.status(404).json({ success: false, message: 'Meter not found' });
     }
 
+    // Resolve device_id: accept device_id directly, or brand/model strings and upsert into devices table
+    let resolvedDeviceId = req.body.device_id || null;
+    if (!resolvedDeviceId && (req.body.brand || req.body.model)) {
+      const deviceName = (req.body.brand || '').trim();
+      const deviceDescription = (req.body.model || '').trim() || null;
+      if (deviceName) {
+        try {
+          // Try to find existing device by name and description
+          const allDevices = await DeviceService.getAllDevices();
+          let existingDevice = allDevices.find(device => 
+            device.name === deviceName && 
+            (device.description === deviceDescription || (!device.description && !deviceDescription))
+          );
+          
+          if (!existingDevice && deviceDescription) {
+            // If not found with description, try by name only
+            existingDevice = allDevices.find(device => device.name === deviceName);
+          }
+          
+          if (existingDevice) {
+            resolvedDeviceId = existingDevice.id;
+          } else {
+            // Create new device using DeviceService
+            const newDevice = await DeviceService.createDevice({
+              name: deviceName,
+              description: deviceDescription
+            });
+            resolvedDeviceId = newDevice.id;
+          }
+        } catch (error) {
+          console.error('Error resolving device during update:', error);
+          // If device creation fails due to duplicate name, try to find it again
+          if (error.message.includes('already exists')) {
+            const allDevices = await DeviceService.getAllDevices();
+            const existingDevice = allDevices.find(device => device.name === deviceName);
+            if (existingDevice) {
+              resolvedDeviceId = existingDevice.id;
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
+
     const updateData = {
       meterid: req.body.meterid || req.body.meterId,
       type: req.body.type,
-      manufacturer: req.body.manufacturer || req.body.brand,
-      model: req.body.model,
+      device_id: resolvedDeviceId,
       serialnumber: req.body.serialnumber || req.body.serialNumber,
       status: req.body.status,
       location_building: req.body.location_building,
@@ -302,8 +393,8 @@ router.put('/:id', [
       id: updated.id,
       meterId: updated.meterid,
       serialNumber: updated.serialnumber,
-      brand: updated.manufacturer,
-      model: updated.model,
+      brand: updated.device_name || null,
+      model: updated.device_description || null,
       type: updated.type,
       status: updated.status,
       location: updated.fullLocation,

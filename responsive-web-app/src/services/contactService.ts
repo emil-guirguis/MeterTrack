@@ -4,11 +4,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 
 export interface ContactFilters {
   search?: string;
-  type?: 'customer' | 'vendor';
+  category?: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
   status?: 'active' | 'inactive';
   industry?: string;
   businessType?: string;
   tag?: string;
+  // Legacy field for backward compatibility
+  type?: 'customer' | 'vendor';
 }
 
 export interface ContactListParams {

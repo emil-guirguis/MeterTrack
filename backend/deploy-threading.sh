@@ -154,13 +154,13 @@ run_health_checks() {
         return 1
     fi
     
-    # Check MongoDB
-    if docker-compose -f "$COMPOSE_FILE" exec -T mongodb mongosh --eval "db.adminCommand('ping')" &>/dev/null; then
-        print_status "MongoDB health check passed"
-    else
-        print_error "MongoDB health check failed"
-        return 1
-    fi
+    # PostgreSQL health check would go here if using containerized database
+    # if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_isready -U postgres &>/dev/null; then
+    #     print_status "PostgreSQL health check passed"
+    # else
+    #     print_error "PostgreSQL health check failed"
+    #     return 1
+    # fi
     
     print_status "All health checks passed"
 }
@@ -179,7 +179,7 @@ show_status() {
     echo "  Backend API: http://localhost:3001"
     echo "  API Health: http://localhost:3001/api/health"
     echo "  Threading Status: http://localhost:3001/api/threading/status"
-    echo "  MongoDB: mongodb://localhost:27017"
+    # echo "  PostgreSQL: postgresql://localhost:5432" (when using containerized database)
     
     if docker-compose -f "$COMPOSE_FILE" ps | grep -q "prometheus"; then
         echo "  Prometheus: http://localhost:9090"

@@ -1,3 +1,16 @@
 {
-    "typescript.autoClosingTags": false
+    "typescript.autoClosingTags": false,
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "aws-1-us-west-1.pooler.supabase.com",
+            "port": 6543,
+            "driver": "PostgreSQL",
+            "name": "MeterIt",
+            "database": "postgres",
+            "username": "postgres.uueumbslimaecposqsdf",
+            "password": "meteritpassword2468"
+        }
+    ]
 }

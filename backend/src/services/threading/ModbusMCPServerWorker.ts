@@ -10,11 +10,11 @@ interface DataCollectorConfig {
     slaveId: number;
     timeout: number;
   };
-  database: {
-    uri: string;
-    databaseName: string;
-    collectionName: string;
-  };
+  // database: {
+  //   uri: string;
+  //   databaseName: string;
+  //   collectionName: string;
+  // };
   collectionInterval: number;
   autoStart: boolean;
 }
@@ -28,9 +28,9 @@ interface MockDataCollector {
   collectData(): Promise<any>;
   getLatestReading(): Promise<any>;
   getStatistics(hours: number): Promise<any>;
-  databaseManager?: {
-    testConnection(): Promise<boolean>;
-  };
+  // databaseManager?: {
+  //   testConnection(): Promise<boolean>;
+  // };
   modbusClient?: {
     testConnection(): Promise<boolean>;
   };
@@ -59,7 +59,7 @@ export class ModbusMCPServerWorker {
     
     this.logger.info('ModbusMCPServerWorker initialized', {
       modbusIp: this.config.modbus.ip,
-      databaseUri: this.maskSensitiveInfo(this.config.database.uri),
+      // databaseUri: this.maskSensitiveInfo(this.config.database.uri),
       collectionInterval: this.config.collectionInterval
     });
   }
@@ -157,7 +157,7 @@ export class ModbusMCPServerWorker {
       ...this.config,
       ...newConfig,
       modbus: { ...this.config.modbus, ...newConfig.modbus },
-      database: { ...this.config.database, ...newConfig.database }
+      // database: { ...this.config.database, ...newConfig.database }
     };
     
     // If server is running, restart with new configuration
@@ -267,15 +267,15 @@ export class ModbusMCPServerWorker {
   private async testConnections(): Promise<any> {
     try {
       const results = {
-        mongodb: false,
+        // mongodb: false,
         modbus: false,
         timestamp: new Date().toISOString()
       };
 
       // Test database connection
-      if (this.dataCollector?.databaseManager) {
-        results.mongodb = await this.dataCollector.databaseManager.testConnection();
-      }
+      // if (this.dataCollector?.databaseManager) {
+      //   results.mongodb = await this.dataCollector.databaseManager.testConnection();
+      // }
 
       // Test Modbus connection
       if (this.dataCollector?.modbusClient) {
@@ -541,13 +541,6 @@ export class ModbusMCPServerWorker {
         totalEnergy: 1234.5 + Math.random() * 50,
         startTime: new Date(Date.now() - hours * 60 * 60 * 1000).toISOString(),
         endTime: new Date().toISOString()
-      }),
-      databaseManager: {
-        testConnection: async () => {
-          this.logger.info('Testing mock database connection');
-          // Simulate connection test
-          return Math.random() > 0.1; // 90% success rate for testing
-        }
       },
       modbusClient: {
         testConnection: async () => {
@@ -557,6 +550,13 @@ export class ModbusMCPServerWorker {
         }
       }
     };
+      // databaseManager: {
+      //   testConnection: async () => {
+      //     this.logger.info('Testing mock database connection');
+      //     // Simulate connection test
+      //     return Math.random() > 0.1; // 90% success rate for testing
+      //   }
+      // }
   }
 
   /**
@@ -582,11 +582,11 @@ export class ModbusMCPServerWorker {
         slaveId: parseInt(process.env.MODBUS_SLAVE_ID || '1'),
         timeout: parseInt(process.env.MODBUS_TIMEOUT || '5000')
       },
-      database: {
-        uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb',
-        databaseName: 'meterdb',
-        collectionName: process.env.MONGODB_COLLECTION || 'meterreadings'
-      },
+      // database: {
+      //   uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/meterdb',
+      //   databaseName: 'meterdb',
+      //   collectionName: process.env.MONGODB_COLLECTION || 'meterreadings'
+      // },
       collectionInterval: parseInt(process.env.COLLECTION_INTERVAL || '900000'),
       autoStart: process.env.AUTO_START_COLLECTION === 'true'
     };
@@ -595,7 +595,7 @@ export class ModbusMCPServerWorker {
       ...defaultConfig,
       ...config,
       modbus: { ...defaultConfig.modbus, ...config?.modbus },
-      database: { ...defaultConfig.database, ...config?.database }
+      // database: { ...defaultConfig.database, ...config?.database }
     };
   }
 

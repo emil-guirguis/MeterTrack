@@ -1,6 +1,6 @@
 const express = require('express');
 const { query, validationResult } = require('express-validator');
-const MeterReading = require('../models/MeterReadingPG'); // Updated to use PostgreSQL model
+const MeterReading = require('../models/MeterReading');
 
 const router = express.Router();
 

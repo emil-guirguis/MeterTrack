@@ -5,7 +5,7 @@
 
 const db = require('../config/database');
 const meterIntegrationService = require('./MeterIntegrationService');
-const Meter = require('../models/MeterPG');
+const Meter = require('../models/Meter');
 
 class MeterMonitoringService {
     constructor() {

@@ -1,8 +1,8 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const Building = require('../models/BuildingPG'); // Updated to use PostgreSQL model
-const Equipment = require('../models/EquipmentPG'); // Updated to use PostgreSQL model
-const Meter = require('../models/MeterPG'); // Updated to use PostgreSQL model
+const Building = require('../models/Building');
+const Equipment = require('../models/Equipment');
+const Meter = require('../models/Meter');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(authenticateToken);
 
-// Helper: map BuildingPG instance to frontend response shape
+// Helper: map Building instance to frontend response shape
 function mapBuildingToResponse(b) {
   if (!b) return null;
   return {

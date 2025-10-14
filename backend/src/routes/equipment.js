@@ -1,5 +1,5 @@
 const express = require('express');
-const Equipment = require('../models/EquipmentPG'); // Updated to use PostgreSQL model
+const Equipment = require('../models/Equipment');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();

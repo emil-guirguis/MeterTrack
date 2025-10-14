@@ -6,7 +6,7 @@
 const db = require('../config/database');
 const notificationScheduler = require('./NotificationScheduler');
 const meterDataAnalyzer = require('./MeterDataAnalyzer');
-const Meter = require('../models/MeterPG');
+const Meter = require('../models/Meter');
 
 class MeterIntegrationService {
     constructor() {

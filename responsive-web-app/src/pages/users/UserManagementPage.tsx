@@ -59,7 +59,7 @@ export const UserManagementPage: React.FC = () => {
     if (!selectedUser) return;
     
     try {
-      // Use _id if id is not available (MongoDB documents use _id)
+      // Use _id if id is not available (legacy compatibility)
       const userId = selectedUser.id || (selectedUser as any)._id;
       await users.updateUser(userId, userData);
       setShowEditModal(false);

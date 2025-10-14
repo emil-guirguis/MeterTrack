@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const User = require('../models/UserPG'); // Updated to use PostgreSQL model
+const User = require('../models/User');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -72,9 +72,11 @@ router.get('/', [
     });
   } catch (error) {
     console.error('Get users error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch users'
+      message: 'Failed to fetch users',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

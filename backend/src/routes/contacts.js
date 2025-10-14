@@ -1,5 +1,5 @@
 const express = require('express');
-const Contact = require('../models/ContactPG'); // Updated to use PostgreSQL model
+const Contact = require('../models/Contact');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
       category
     } = req.query;
 
-    // Build filters for ContactPG
+    // Build filters for Contact
     const filters = {};
     if (search) filters.search = search;
     if (status) filters.status = status;

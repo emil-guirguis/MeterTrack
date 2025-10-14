@@ -131,6 +131,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       sortable: true,
       render: (_value: any, reading: DetailedMeterReading) => (
         <div className="meter-readings__meter-cell">
+          <div className="meter-readings__meter-id">{reading.meterId}</div>
           <div className="meter-readings__meter-ip">{reading.ip}:{reading.port}</div>
         </div>
       )

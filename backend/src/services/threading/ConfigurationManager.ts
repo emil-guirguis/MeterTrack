@@ -362,7 +362,8 @@ export class ConfigurationManager extends EventEmitter {
               count: 10,
               interval: 5000
             }
-          },
+          }
+          ,
           database: {
             connectionString: 'mongodb://localhost:27017/mcp-data',
             poolSize: 10,

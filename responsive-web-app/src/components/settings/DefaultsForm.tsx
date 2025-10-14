@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+import DeviceList from './DeviceList';
+import DeviceEditForm from './DeviceEditForm';
+import { Dialog, DialogTitle } from '@mui/material';
 import { Button, Typography, Box, Paper, Alert } from '@mui/material';
+import { Card, Divider } from '@mui/material';
 import { useModbus } from '../../services/modbusService';
 import './SettingsForm.css';
 
@@ -13,8 +17,8 @@ export interface DefaultsFormProps {
 }
 
 const DefaultsForm: React.FC<DefaultsFormProps> = ({ 
-  values, 
-  onChange, 
+  values: _values, 
+  onChange: _onChange, 
   onSubmit, 
   onCancel, 
   loading, 
@@ -24,6 +28,10 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
   const [meterTypes, setMeterTypes] = useState<any>({});
   const [loadingMeterTypes, setLoadingMeterTypes] = useState(false);
   const [meterTypesError, setMeterTypesError] = useState<string | null>(null);
+  const [showDevices, setShowDevices] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<any | null>(null);
+  const [showDeviceEdit, setShowDeviceEdit] = useState(false);
+  const [deviceSuccess, setDeviceSuccess] = useState<string | null>(null);
 
   const handleLoadMeterMaps = async () => {
     setLoadingMeterTypes(true);
@@ -44,51 +52,7 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
     }
   };
 
-  const handleCreateDefaultMeterMap = () => {
-    // Create a basic default meter map configuration
-    const defaultMeterMap = {
-      name: 'Default Generic Meter',
-      description: 'Standard Modbus register layout for generic energy meters',
-      manufacturer: 'Generic',
-      model: 'Universal',
-      registers: {
-        voltage: { address: 0, description: 'Line voltage (V)', dataType: 'uint16', unit: 'V' },
-        current: { address: 1, description: 'Line current (A)', dataType: 'uint16', unit: 'A' },
-        power: { address: 2, description: 'Active power (W)', dataType: 'uint16', unit: 'W' },
-        energy: { address: 3, description: 'Total energy (Wh)', dataType: 'uint32', unit: 'Wh' },
-        frequency: { address: 5, description: 'Frequency (Hz)', dataType: 'uint16', unit: 'Hz' }
-      }
-    };
-    
-    console.log('Created default meter map:', defaultMeterMap);
-    // TODO: Save to backend/database
-  };
 
-  const handleImportMeterMap = () => {
-    // Create a file input to import JSON meter map configurations
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,.csv';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const content = e.target?.result as string;
-            const meterMap = JSON.parse(content);
-            console.log('Imported meter map:', meterMap);
-            // TODO: Validate and save meter map
-          } catch (error) {
-            console.error('Failed to parse meter map file:', error);
-            setMeterTypesError('Invalid meter map file format');
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
 
   const handleExportMeterMaps = () => {
     // Export current meter types as JSON
@@ -137,180 +101,101 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
             </Alert>
           )}
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-              <Button
-                variant="contained"
-                onClick={handleLoadMeterMaps}
-                disabled={loadingMeterTypes || loading}
-                sx={{ minWidth: '160px' }}
-              >
-                {loadingMeterTypes ? 'Loading...' : 'Load Meter Maps'}
-              </Button>
-              
-              <Button
-                variant="outlined"
-                onClick={handleCreateDefaultMeterMap}
-                disabled={loading}
-                sx={{ minWidth: '160px' }}
-              >
-                Create Default Map
-              </Button>
-              
-              <Button
-                variant="outlined"
-                onClick={handleImportMeterMap}
-                disabled={loading}
-                sx={{ minWidth: '160px' }}
-              >
-                Import Map
-              </Button>
-              
-              <Button
-                variant="outlined"
-                onClick={handleExportMeterMaps}
-                disabled={loading || Object.keys(meterTypes).length === 0}
-                sx={{ minWidth: '160px' }}
-              >
-                Export Maps
-              </Button>
-            </Box>
 
-            {Object.keys(meterTypes).length > 0 && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Successfully loaded {Object.keys(meterTypes).length} meter map(s) from the system.
-              </Alert>
-            )}
+          {/* Devices Section */}
+          <Card sx={{ mb: 3, p: 2 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Device Management</Typography>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => setShowDevices(true)}
+              sx={{ minWidth: '160px' }}
+            >
+              Devices
+            </Button>
+          </Card>
+          <Divider sx={{ mb: 3 }} />
+          {/* Meter Maps Section */}
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleLoadMeterMaps}
+              disabled={loadingMeterTypes || loading}
+              sx={{ minWidth: '160px' }}
+            >
+              {loadingMeterTypes ? 'Loading...' : 'Load Meter Maps'}
+            </Button>
+            
+            <Button
+              variant="outlined"
+              onClick={handleExportMeterMaps}
+              disabled={!meterTypes || Object.keys(meterTypes).length === 0 || loading}
+              sx={{ minWidth: '160px' }}
+            >
+              Export Maps
+            </Button>
+          </Box>
 
-            {Object.keys(meterTypes).length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Available Meter Types ({Object.keys(meterTypes).length}):
-                </Typography>
-                <Box sx={{ pl: 2 }}>
-                  {Object.entries(meterTypes).map(([key, type]: [string, any]) => (
-                    <Paper key={key} sx={{ p: 2, mb: 2, backgroundColor: 'grey.50' }}>
-                      <Typography variant="body1" component="div" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        {type.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {type.description}
-                      </Typography>
-                      {type.registers && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                            Register Map:
-                          </Typography>
-                          <Box sx={{ pl: 1, mt: 0.5 }}>
-                            {Object.entries(type.registers).map(([regKey, reg]: [string, any]) => (
-                              <Typography key={regKey} variant="caption" component="div" sx={{ mb: 0.5 }}>
-                                • <strong>{regKey}</strong>: Address {reg.address} - {reg.description}
-                              </Typography>
-                            ))}
-                          </Box>
-                        </Box>
-                      )}
-                    </Paper>
-                  ))}
-                </Box>
+          {/* Display loaded meter types */}
+          {meterTypes && Object.keys(meterTypes).length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Loaded Meter Types: {Object.keys(meterTypes).length}
+              </Typography>
+              <Box sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid #ddd', p: 1, borderRadius: 1 }}>
+                <pre className="meter-types-display">
+                  {JSON.stringify(meterTypes, null, 2)}
+                </pre>
               </Box>
-            )}
-          </Box>
-        </Paper>
+            </Box>
+          )}
 
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            System Defaults
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Configure default values for new meters, buildings, and other system entities.
-          </Typography>
-
-          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' } }}>
-            <div className="settings-form__field">
-              <label className="settings-form__label">Default Meter Reading Interval (minutes)</label>
-              <input
-                type="number"
-                value={values?.defaultMeterInterval || 15}
-                onChange={e => onChange?.('defaultMeterInterval', Number(e.target.value))}
-                className="settings-form__input"
-                disabled={loading}
-                min={1}
-                max={1440}
-                placeholder="15"
-                title="Default reading interval for new meters"
-              />
-            </div>
-            
-            <div className="settings-form__field">
-              <label className="settings-form__label">Default Meter Communication Protocol</label>
-              <select
-                value={values?.defaultMeterProtocol || 'Modbus TCP'}
-                onChange={e => onChange?.('defaultMeterProtocol', e.target.value)}
-                className="settings-form__input"
-                disabled={loading}
-                title="Default communication protocol for new meters"
-              >
-                <option value="Modbus TCP">Modbus TCP</option>
-                <option value="Modbus RTU">Modbus RTU</option>
-                <option value="BACnet">BACnet</option>
-                <option value="Pulse">Pulse</option>
-                <option value="AMR">AMR</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div className="settings-form__field">
-              <label className="settings-form__label">Default Modbus Port</label>
-              <input
-                type="number"
-                value={values?.defaultModbusPort || 502}
-                onChange={e => onChange?.('defaultModbusPort', Number(e.target.value))}
-                className="settings-form__input"
-                disabled={loading}
-                min={1}
-                max={65535}
-                placeholder="502"
-                title="Default Modbus TCP port for new meters"
-              />
-            </div>
-            
-            <div className="settings-form__field">
-              <label className="settings-form__label">Default Slave ID</label>
-              <input
-                type="number"
-                value={values?.defaultSlaveId || 1}
-                onChange={e => onChange?.('defaultSlaveId', Number(e.target.value))}
-                className="settings-form__input"
-                disabled={loading}
-                min={1}
-                max={255}
-                placeholder="1"
-                title="Default Modbus slave ID for new meters"
-              />
-            </div>
-          </Box>
+          {deviceSuccess && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              {deviceSuccess}
+            </Alert>
+          )}
         </Paper>
+        
+        <div className="settings-form__actions">
+          <button type="button" className="settings-form__btn settings-form__btn--secondary" onClick={onCancel} disabled={loading}>
+            Cancel
+          </button>
+          <button type="submit" className="settings-form__btn settings-form__btn--primary" disabled={loading}>
+            Save
+          </button>
+        </div>
       </div>
 
-      <div className="settings-form__actions">
-        <button 
-          type="button" 
-          className="settings-form__btn settings-form__btn--secondary" 
-          onClick={onCancel} 
-          disabled={loading}
-        >
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          className="settings-form__btn settings-form__btn--primary" 
-          disabled={loading}
-        >
-          Save
-        </button>
-      </div>
+      {/* Device List Dialog */}
+      <Dialog open={showDevices} onClose={() => setShowDevices(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Device Management</DialogTitle>
+        <DeviceList 
+          onEdit={(device) => {
+            setEditingDevice(device);
+            setShowDeviceEdit(true);
+            setShowDevices(false);
+          }}
+        />
+      </Dialog>
+
+      {/* Device Edit Dialog */}
+      <Dialog open={showDeviceEdit} onClose={() => setShowDeviceEdit(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingDevice ? 'Edit Device' : 'Add Device'}</DialogTitle>
+        <DeviceEditForm 
+          device={editingDevice}
+          onSaved={(device) => {
+            setDeviceSuccess(`Device "${device.name}" saved successfully!`);
+            setShowDeviceEdit(false);
+            setEditingDevice(null);
+            setTimeout(() => setDeviceSuccess(null), 3000);
+          }}
+          onCancel={() => {
+            setShowDeviceEdit(false);
+            setEditingDevice(null);
+          }}
+        />
+      </Dialog>
     </form>
   );
 };

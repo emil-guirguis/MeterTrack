@@ -23,8 +23,9 @@ export interface RegisterMap {
 export interface Meter {
   id: string;
   meterId: string;
-  brand: string;
-  model: string;
+  device: string; // From devices table
+  model: string; // From devices table
+  device_id?: string; // For backend compatibility
   ip: string;
   serialNumber: string;
   portNumber: number;
@@ -75,7 +76,7 @@ export interface MeterConnectionTest {
 
 export interface CreateMeterRequest {
   meterId: string;
-  brand: string;
+  device: string;
   model: string;
   ip: string;
   serialNumber: string;
@@ -92,7 +93,7 @@ export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {
 }
 
 export interface MeterFilters {
-  brand?: string;
+  device?: string;
   status?: string;
   type?: string;
   location?: string;

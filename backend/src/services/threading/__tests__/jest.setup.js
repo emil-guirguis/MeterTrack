@@ -8,7 +8,7 @@ beforeAll(() => {
   process.env.NODE_ENV = 'test';
   process.env.MODBUS_IP = '10.10.10.11';
   process.env.MODBUS_PORT = '502';
-  process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
+  process.env.DATABASE_URL = 'postgresql://localhost:5432/test';
   process.env.LOG_LEVEL = 'error'; // Reduce log noise during tests
 });
 
@@ -38,9 +38,9 @@ global.testUtils = {
       timeout: 5000
     },
     database: {
-      uri: 'mongodb://localhost:27017/test',
-      databaseName: 'test',
-      collectionName: 'readings'
+      url: 'postgresql://localhost:5432/test',
+      database: 'test',
+      table: 'meter_readings'
     },
     collectionInterval: 900000,
     autoStart: false,
