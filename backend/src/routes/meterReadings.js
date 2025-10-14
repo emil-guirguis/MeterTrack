@@ -1,3 +1,26 @@
+// Direct Modbus meter read (live)
+const modbusService = require('../services/modbusService');
+
+// GET /api/meterreadings/direct - fetch live data from Modbus meter
+router.get('/direct', requirePermission('meter:read'), async (req, res) => {
+  try {
+    const deviceIP = req.query.deviceIP || '10.10.10.11';
+    const port = req.query.port ? parseInt(req.query.port) : 502;
+    const slaveId = req.query.slaveId ? parseInt(req.query.slaveId) : 1;
+    console.log(`[Modbus API] /direct called with deviceIP=${deviceIP}, port=${port}, slaveId=${slaveId}`);
+
+    const result = await modbusService.readMeterData(deviceIP, { port, slaveId });
+    console.log(`[Modbus API] Result:`, result);
+    if (!result.success) {
+      console.error(`[Modbus API] Error:`, result.error);
+      return res.status(500).json({ success: false, message: result.error || 'Failed to read meter', data: null });
+    }
+    res.json({ success: true, data: result.data, meta: { deviceIP, port, slaveId, timestamp: result.timestamp } });
+  } catch (error) {
+    console.error('[Modbus API] Direct Modbus read error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Direct Modbus read failed', data: null });
+  }
+});
 // Minimal mapper to align PG readings to frontend's expected fields,
 // then fill any remaining fields with nulls for robust rendering.
 const expectedFields = [

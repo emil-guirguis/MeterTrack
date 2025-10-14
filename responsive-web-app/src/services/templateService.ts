@@ -6,7 +6,7 @@ import type {
   ListResponse,
   ApiResponse 
 } from '../types/entities';
-import { AppErrorHandler, ErrorCodes, GracefulDegradation } from '../utils/errorHandler';
+import { AppErrorHandler, ErrorCodes } from '../utils/errorHandler';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 

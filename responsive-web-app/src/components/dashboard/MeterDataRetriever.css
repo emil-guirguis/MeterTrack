@@ -69,7 +69,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.meter-data-retriever__btn--primary:hover:not(:disabled) {
+.meter-data-retriever__btn--primary:hover:not(:disabled) {  
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
@@ -172,10 +172,13 @@
   background: #f9fafb;
   border-bottom: 2px solid #e5e7eb;
 }
-
 .meter-data-grid__body {
-  max-height: 400px;
+  max-height: 500px;
+  min-height: 200px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .meter-data-grid__row {
@@ -311,4 +314,3 @@
   .meter-data-grid__cell--header {
     display: none;
   }
-}

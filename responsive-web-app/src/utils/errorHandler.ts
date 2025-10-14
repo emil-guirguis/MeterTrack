@@ -8,33 +8,35 @@ export interface AppError {
   userMessage: string;
 }
 
-export enum ErrorCodes {
+export const ErrorCodes = {
   // Template errors
-  TEMPLATE_NOT_FOUND = 'TEMPLATE_NOT_FOUND',
-  TEMPLATE_VALIDATION_FAILED = 'TEMPLATE_VALIDATION_FAILED',
-  TEMPLATE_RENDER_FAILED = 'TEMPLATE_RENDER_FAILED',
+  TEMPLATE_NOT_FOUND: 'TEMPLATE_NOT_FOUND',
+  TEMPLATE_VALIDATION_FAILED: 'TEMPLATE_VALIDATION_FAILED',
+  TEMPLATE_RENDER_FAILED: 'TEMPLATE_RENDER_FAILED',
   
   // Email errors
-  EMAIL_SEND_FAILED = 'EMAIL_SEND_FAILED',
-  SMTP_CONNECTION_FAILED = 'SMTP_CONNECTION_FAILED',
-  INVALID_EMAIL_ADDRESS = 'INVALID_EMAIL_ADDRESS',
+  EMAIL_SEND_FAILED: 'EMAIL_SEND_FAILED',
+  SMTP_CONNECTION_FAILED: 'SMTP_CONNECTION_FAILED',
+  INVALID_EMAIL_ADDRESS: 'INVALID_EMAIL_ADDRESS',
   
   // Service errors
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  AUTHENTICATION_FAILED = 'AUTHENTICATION_FAILED',
-  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  AUTHENTICATION_FAILED: 'AUTHENTICATION_FAILED',
+  PERMISSION_DENIED: 'PERMISSION_DENIED',
   
   // Validation errors
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  REQUIRED_FIELD_MISSING = 'REQUIRED_FIELD_MISSING',
-  INVALID_FORMAT = 'INVALID_FORMAT',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  REQUIRED_FIELD_MISSING: 'REQUIRED_FIELD_MISSING',
+  INVALID_FORMAT: 'INVALID_FORMAT',
   
   // System errors
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
-  DATABASE_ERROR = 'DATABASE_ERROR',
-  FILE_SYSTEM_ERROR = 'FILE_SYSTEM_ERROR'
-}
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  FILE_SYSTEM_ERROR: 'FILE_SYSTEM_ERROR'
+} as const;
+
+export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
 
 export class AppErrorHandler {
   private static errorMessages: Record<string, string> = {
@@ -56,7 +58,7 @@ export class AppErrorHandler {
     [ErrorCodes.FILE_SYSTEM_ERROR]: 'File system error occurred. Please try again.'
   };
 
-  static createError(code: ErrorCodes, details?: any, customMessage?: string): AppError {
+  static createError(code: ErrorCode, details?: any, customMessage?: string): AppError {
     return {
       code,
       message: this.errorMessages[code] || 'An error occurred',
@@ -92,7 +94,7 @@ export class AppErrorHandler {
       return this.createError(ErrorCodes.NETWORK_ERROR, error);
     } else if (error.code) {
       // Known error code
-      return this.createError(error.code as ErrorCodes, error);
+      return this.createError(error.code as ErrorCode, error);
     } else {
       // Unknown error
       return this.createError(ErrorCodes.UNKNOWN_ERROR, error);
@@ -127,7 +129,7 @@ export class AppErrorHandler {
     });
   }
 
-  static getRetryableErrors(): ErrorCodes[] {
+  static getRetryableErrors(): ErrorCode[] {
     return [
       ErrorCodes.NETWORK_ERROR,
       ErrorCodes.SERVICE_UNAVAILABLE,
@@ -137,7 +139,7 @@ export class AppErrorHandler {
   }
 
   static isRetryable(error: AppError): boolean {
-    return this.getRetryableErrors().includes(error.code as ErrorCodes);
+    return this.getRetryableErrors().includes(error.code as ErrorCode);
   }
 }
 

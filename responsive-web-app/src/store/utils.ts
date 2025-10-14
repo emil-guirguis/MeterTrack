@@ -259,7 +259,8 @@ export const debounce = <T extends (...args: any[]) => any>(
 
 // Generate unique ID
 export const generateId = (): string => {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Deterministic timestamp-based ID (no random mock data)
+  return `${Date.now()}`;
 };
 
 // Deep clone object

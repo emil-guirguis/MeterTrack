@@ -86,18 +86,8 @@ export const EmailConfigForm: React.FC<EmailConfigFormProps> = ({
     setTestResult(null);
     
     try {
-      // Simulate API call to test email configuration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock test result - in real implementation, this would call the backend
-      const success = config.smtpHost && config.smtpUser && config.fromEmail;
-      
-      setTestResult({
-        success,
-        message: success 
-          ? 'Email configuration test successful!' 
-          : 'Email configuration test failed. Please check your settings.'
-      });
+      // TODO: Integrate with backend endpoint to test email configuration
+      setTestResult({ success: false, message: 'Email test not implemented yet' });
     } catch (error) {
       setTestResult({
         success: false,

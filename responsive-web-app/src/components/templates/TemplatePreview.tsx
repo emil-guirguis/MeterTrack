@@ -1,27 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-
-  TextField,
-  Grid,
-
-  Alert,
-  Tabs,
-  Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
-} from '@mui/material';
-import {
-
-  Refresh as RefreshIcon,
-  Send as SendIcon,
-  Close as CloseIcon
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Grid from '@mui/material/Grid';
+import Alert from '@mui/material/Alert';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import Toast from '../common/Toast';
 import { templateService } from '../../services/templateService';
@@ -92,24 +87,11 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       const variables = await templateService.getAvailableVariables(template.category);
       setAvailableVariables(variables);
       
-      // Initialize variable values with sample data
+      // Initialize variable values with backend-provided sample data only
       const initialValues: Record<string, any> = {};
       Object.entries(variables).forEach(([key, info]: [string, any]) => {
-        switch (info.type) {
-          case 'text':
-            initialValues[key] = info.sample || `Sample ${key.replace(/_/g, ' ')}`;
-            break;
-          case 'number':
-            initialValues[key] = info.sample || 123.45;
-            break;
-          case 'date':
-            initialValues[key] = info.sample || new Date().toISOString().split('T')[0];
-            break;
-          case 'boolean':
-            initialValues[key] = info.sample !== undefined ? info.sample : true;
-            break;
-          default:
-            initialValues[key] = info.sample || `Sample ${key}`;
+        if (info && Object.prototype.hasOwnProperty.call(info, 'sample')) {
+          initialValues[key] = info.sample;
         }
       });
       
@@ -190,20 +172,25 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       
       case 'boolean':
         return (
-          <TextField
-            fullWidth
-            select
-            label={variableName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-            value={value.toString()}
-            onChange={(e) => handleVariableChange(variableName, e.target.value === 'true')}
-            helperText={variableInfo.description}
-            size="small"
-            SelectProps={{ native: true }}
-            inputProps={{ 'aria-label': `${variableName.replace(/_/g, ' ')} boolean value` }}
-          >
-            <option value="true">True</option>
-            <option value="false">False</option>
-          </TextField>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              {variableName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </Typography>
+            <Select
+              fullWidth
+              value={value.toString()}
+              onChange={(e) => handleVariableChange(variableName, e.target.value === 'true')}
+              aria-label={`${variableName.replace(/_/g, ' ')} boolean value`}
+              title={`${variableName.replace(/_/g, ' ')} boolean value`}
+              size="small"
+            >
+              <MenuItem value="true">True</MenuItem>
+              <MenuItem value="false">False</MenuItem>
+            </Select>
+            <Typography variant="caption" color="text.secondary">
+              {variableInfo.description}
+            </Typography>
+          </Box>
         );
       
       default:

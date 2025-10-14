@@ -71,39 +71,17 @@ export const TemplateList: React.FC<TemplateListProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
-      // Mock data for now since backend might not be ready
-      const mockTemplates = [
-        {
-          id: '1',
-          name: 'Monthly Meter Reading Summary',
-          subject: 'Monthly Reading Summary - {{building_name}}',
-          content: '<h2>Monthly Summary</h2><p>Dear {{recipient_name}}, here is your monthly meter reading summary...</p>',
-          category: 'meter_readings',
-          variables: [],
-          status: 'active' as const,
-          usageCount: 45,
-          lastUsed: new Date('2024-01-15'),
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-15')
-        },
-        {
-          id: '2',
-          name: 'Meter Error Alert',
-          subject: 'ALERT: Meter Not Responding - {{meter_id}}',
-          content: '<h2>Meter Alert</h2><p>Meter {{meter_id}} is not responding. Please check immediately.</p>',
-          category: 'meter_errors',
-          variables: [],
-          status: 'active' as const,
-          usageCount: 12,
-          lastUsed: new Date('2024-01-14'),
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-14')
-        }
-      ];
-      
-      setTemplates(mockTemplates);
-      setTotal(mockTemplates.length);
+      const params: ListParams = {
+        page,
+        pageSize,
+        sortBy,
+        sortOrder,
+        filters,
+        search: searchQuery,
+      };
+      const result = await templateService.getTemplates(params);
+      setTemplates(result.items);
+      setTotal(result.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load templates');
     } finally {
@@ -113,7 +91,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
 
   useEffect(() => {
     loadTemplates();
-  }, [loadTemplates]);
+  }, [loadTemplates, page, pageSize, sortBy, sortOrder, JSON.stringify(filters), searchQuery]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

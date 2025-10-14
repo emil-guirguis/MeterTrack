@@ -6,6 +6,35 @@
 const db = require('../config/database');
 
 class Contact {
+    /**
+     * Count all contacts with optional filters
+     */
+    static async countAll(filters = {}) {
+        let query = 'SELECT COUNT(*) FROM contacts WHERE 1=1';
+        const values = [];
+        let paramCount = 0;
+
+        if (filters.category) {
+            paramCount++;
+            query += ` AND category = $${paramCount}`;
+            values.push(filters.category);
+        }
+
+        if (filters.status) {
+            paramCount++;
+            query += ` AND status = $${paramCount}`;
+            values.push(filters.status);
+        }
+
+        if (filters.search) {
+            paramCount++;
+            query += ` AND (name ILIKE $${paramCount} OR company ILIKE $${paramCount} OR email ILIKE $${paramCount})`;
+            values.push(`%${filters.search}%`);
+        }
+
+        const result = await db.query(query, values);
+        return parseInt(result.rows[0].count, 10);
+    }
     constructor(contactData = {}) {
         this.id = contactData.id;
         this.name = contactData.name;

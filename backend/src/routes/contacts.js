@@ -12,46 +12,23 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
       page = 1,
       limit = 25,
       search,
-      type,
       status,
-      industry,
-      businessType,
-      tag,
-      sortBy = 'name',
-      sortOrder = 'asc'
+      category
     } = req.query;
 
-    // Build filter object
-    const filter = {};
-    
-    if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { contactPerson: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { 'address.city': { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    if (type) filter.type = type;
-    if (status) filter.status = status;
-    if (industry) filter.industry = { $regex: industry, $options: 'i' };
-    if (businessType) filter.businessType = { $regex: businessType, $options: 'i' };
-    if (tag) filter.tags = { $in: [tag] };
+    // Build filters for ContactPG
+    const filters = {};
+    if (search) filters.search = search;
+    if (status) filters.status = status;
+    if (category) filters.category = category;
+    filters.limit = parseInt(limit);
+    filters.offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // Build sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    // Get contacts
+    const contacts = await Contact.findAll(filters);
 
-    // Execute query with pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const contacts = await Contact.find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
-
-    const total = await Contact.countDocuments(filter);
+    // Get total count for pagination
+    const total = await Contact.countAll(filters);
 
     res.json({
       success: true,

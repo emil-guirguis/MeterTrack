@@ -58,46 +58,30 @@ export const TemplateAnalytics: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Mock data - in real implementation, this would call the backend
-      const mockData: AnalyticsData = {
-        totalTemplates: 12,
-        totalEmailsSent: 1547,
-        averageSuccessRate: 94.2,
-        topTemplates: [
-          {
-            templateId: '1',
-            templateName: 'Monthly Meter Reading Summary',
-            usageCount: 456,
-            successRate: 98.5,
-            lastUsed: new Date('2024-01-15'),
-            category: 'meter_readings'
-          },
-          {
-            templateId: '2',
-            templateName: 'Meter Not Responding Alert',
-            usageCount: 234,
-            successRate: 92.1,
-            lastUsed: new Date('2024-01-14'),
-            category: 'meter_errors'
-          },
-          {
-            templateId: '3',
-            templateName: 'Maintenance Reminder',
-            usageCount: 189,
-            successRate: 96.8,
-            lastUsed: new Date('2024-01-13'),
-            category: 'maintenance'
-          }
-        ],
-        recentActivity: [
-          { templateName: 'Monthly Summary', emailsSent: 45, date: new Date('2024-01-15') },
-          { templateName: 'Error Alert', emailsSent: 12, date: new Date('2024-01-14') },
-          { templateName: 'Maintenance', emailsSent: 8, date: new Date('2024-01-13') }
-        ]
-      };
-      
-      setAnalytics(mockData);
+      const stats = await templateService.getTemplateStats();
+      const totalTemplates = stats.length;
+      const totalEmailsSent = stats.reduce((sum, s) => sum + (s.usageCount || 0), 0);
+      const averageSuccessRate = totalTemplates > 0
+        ? Math.round((stats.reduce((sum, s) => sum + (s.successRate || 0), 0) / totalTemplates) * 10) / 10
+        : 0;
+      const topTemplates = [...stats]
+        .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+        .slice(0, 5)
+        .map(s => ({
+          templateId: s.templateId,
+          templateName: s.templateId,
+          usageCount: s.usageCount,
+          successRate: s.successRate,
+          lastUsed: s.lastUsed ? new Date(s.lastUsed) : undefined,
+          category: 'general'
+        }));
+      setAnalytics({
+        totalTemplates,
+        totalEmailsSent,
+        averageSuccessRate,
+        topTemplates,
+        recentActivity: []
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
     } finally {

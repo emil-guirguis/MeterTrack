@@ -64,10 +64,10 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
-      <div className="dashboard__header">
+      {/* <div className="dashboard__header">
         <h1 className="dashboard__title">Facility Management Dashboard</h1>
         <p className="dashboard__subtitle">Real-time monitoring and energy management</p>
-      </div>
+      </div> */}
 
       {/* Live Meter Data Retriever */}
       <MeterDataRetriever />

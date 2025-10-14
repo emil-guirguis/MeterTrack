@@ -45,47 +45,76 @@ export const SystemHealth: React.FC = () => {
 
   const loadHealthStatus = async () => {
     try {
-      // Mock health data - in real implementation, this would call health check endpoints
-      const mockHealth: HealthStatus[] = [
-        {
-          service: 'Template Service',
-          status: 'healthy',
-          message: 'All template operations working normally',
-          lastCheck: new Date(),
-          responseTime: 45
-        },
-        {
-          service: 'Email Service',
-          status: 'healthy',
-          message: 'SMTP connection established',
-          lastCheck: new Date(),
-          responseTime: 120
-        },
-        {
-          service: 'Database',
-          status: 'healthy',
-          message: 'Database connections stable',
-          lastCheck: new Date(),
-          responseTime: 25
-        },
-        {
-          service: 'Notification Scheduler',
-          status: 'warning',
-          message: 'Some scheduled jobs delayed',
-          lastCheck: new Date(),
-          responseTime: 200
+      const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001/api';
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      // Threading health
+      const [healthRes, statusRes, statsRes] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/threading/health`, { headers }),
+        fetch(`${API_BASE_URL}/threading/status`, { headers }),
+        fetch(`${API_BASE_URL}/threading/stats`, { headers })
+      ]);
+
+      const services: HealthStatus[] = [];
+
+      // Threading health summary
+      if (healthRes.status === 'fulfilled' && healthRes.value.ok) {
+        const json = await healthRes.value.json();
+        const overall = json?.data?.overall === 'healthy' ? 'healthy' : 'error';
+        const responseTime = json?.data?.health?.lastResponseTime || json?.data?.health?.responseTime;
+        services.push({
+          service: 'Threading Service',
+          status: overall,
+          message: overall === 'healthy' ? 'Threading system is healthy' : 'Threading system reports issues',
+          lastCheck: new Date(json?.data?.lastCheck || Date.now()),
+          responseTime: typeof responseTime === 'number' ? responseTime : undefined
+        });
+      } else {
+        services.push({
+          service: 'Threading Service',
+          status: 'error',
+          message: 'Failed to fetch threading health',
+          lastCheck: new Date()
+        });
+      }
+
+      // Optional: include message/error stats when available
+      if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
+        const json = await statusRes.value.json();
+        const errorsCount = (json?.data?.errors?.length ?? 0);
+        if (errorsCount > 0) {
+          services.push({
+            service: 'Threading Errors',
+            status: 'warning',
+            message: `${errorsCount} recent errors reported`,
+            lastCheck: new Date(json?.data?.timestamp || Date.now())
+          });
         }
-      ];
+      }
 
-      const mockMetrics: SystemMetrics = {
-        emailsSentToday: 1247,
-        templatesActive: 12,
-        errorRate: 2.3,
-        avgResponseTime: 98
-      };
+      setHealthStatus(services);
 
-      setHealthStatus(mockHealth);
-      setMetrics(mockMetrics);
+      // Try to compute high-level metrics from stats when available
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const json = await statsRes.value.json();
+        const perf = json?.data?.performance || {};
+        const msgs = json?.data?.messages || {};
+        const errs = json?.data?.errors || {};
+        const totalMsgs = msgs.total ?? msgs.count ?? 0;
+        const totalErrs = errs.total ?? errs.count ?? 0;
+        const avgRt = perf.avgResponseTime ?? perf.averageResponseTime ?? undefined;
+        setMetrics({
+          emailsSentToday: 0, // Not available from threading stats
+          templatesActive: 0, // Not available here
+          errorRate: totalMsgs > 0 ? Math.round((totalErrs / totalMsgs) * 1000) / 10 : 0,
+          avgResponseTime: typeof avgRt === 'number' ? Math.round(avgRt) : 0
+        });
+      } else {
+        // If no metrics endpoint or failed, hide metrics
+        setMetrics(null);
+      }
     } catch (error) {
       console.error('Failed to load health status:', error);
     } finally {

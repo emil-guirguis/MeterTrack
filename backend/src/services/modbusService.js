@@ -14,8 +14,9 @@ class ModbusService {
    */
   async connectDevice(deviceIP, port = 502, slaveId = 1) {
     const clientKey = `${deviceIP}:${port}:${slaveId}`;
-    
+    console.log(`[ModbusService] Attempting connection to ${deviceIP}:${port} (slaveId=${slaveId})`);
     if (this.clients.has(clientKey)) {
+      console.log(`[ModbusService] Reusing existing client for ${clientKey}`);
       return this.clients.get(clientKey);
     }
 
@@ -24,10 +25,11 @@ class ModbusService {
       await client.connectTCP(deviceIP, { port });
       client.setID(slaveId);
       client.setTimeout(5000); // 5 second timeout
-      
       this.clients.set(clientKey, client);
+      console.log(`[ModbusService] Connected to ${clientKey}`);
       return client;
     } catch (error) {
+      console.error(`[ModbusService] Connection failed for ${clientKey}:`, error);
       throw new Error(`Failed to connect to Modbus device at ${deviceIP}:${port} - ${error.message}`);
     }
   }
@@ -103,38 +105,35 @@ class ModbusService {
     let client;
     try {
       client = await this.connectDevice(deviceIP, port, slaveId);
-      
+      console.log(`[ModbusService] Connected, starting register reads for ${deviceIP}`);
       const readings = {};
-      
       // Read each register type
       for (const [key, regConfig] of Object.entries(registers)) {
         try {
+          console.log(`[ModbusService] Reading ${key}: address=${regConfig.address}, count=${regConfig.count}`);
           const result = await client.readHoldingRegisters(regConfig.address, regConfig.count);
-          
+          console.log(`[ModbusService] ${key} raw data:`, result.data);
           if (regConfig.count === 1) {
-            // Single register
             readings[key] = result.data[0] / regConfig.scale;
           } else if (regConfig.count === 2) {
-            // 32-bit value (high word first)
             readings[key] = ((result.data[0] << 16) + result.data[1]) / regConfig.scale;
           } else {
-            // Multiple registers
             readings[key] = result.data.map(val => val / regConfig.scale);
           }
         } catch (regError) {
-          console.warn(`Failed to read ${key} from ${deviceIP}: ${regError.message}`);
+          console.warn(`[ModbusService] Failed to read ${key} from ${deviceIP}: ${regError.message}`);
           readings[key] = null;
         }
       }
-
+      console.log(`[ModbusService] Final readings:`, readings);
       return {
         deviceIP,
         timestamp: new Date(),
         success: true,
         data: readings
       };
-
     } catch (error) {
+      console.error(`[ModbusService] Error during meter read:`, error);
       return {
         deviceIP,
         timestamp: new Date(),

@@ -232,18 +232,11 @@ export class SyncManager {
     }
   }
 
-  // Execute the actual operation (mock implementation)
-  private async executeOperation(operation: SyncOperation): Promise<void> {
-    // This would be replaced with actual API calls
-    console.log(`Executing ${operation.type} operation for ${operation.entityType}`, operation);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 400));
-    
-    // Simulate occasional failures for testing
-    if (Math.random() < 0.1) {
-      throw new Error('Simulated network error');
-    }
+  // Execute the actual operation (to be implemented with real API calls)
+  private async executeOperation(_operation: SyncOperation): Promise<void> {
+    // Integrate with real API layer for each entity type.
+    // This placeholder intentionally performs no mock behavior.
+    return;
   }
 
   // Get sync statistics
@@ -380,7 +373,8 @@ export class SyncManager {
 
   // Generate unique ID
   private generateId(): string {
-    return `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Deterministic timestamp-based ID without random component
+    return `sync_${Date.now()}`;
   }
 
   // Cleanup

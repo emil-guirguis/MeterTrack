@@ -118,15 +118,9 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
 
   const loadAvailableVariables = useCallback(async (category: string) => {
     try {
-      // Mock variables for now since backend might not be ready
-      const mockVariables = {
-        recipient_name: { type: 'text', description: 'Recipient name', sample: 'John Doe' },
-        building_name: { type: 'text', description: 'Building name', sample: 'Main Building' },
-        meter_id: { type: 'text', description: 'Meter ID', sample: 'MTR-001' },
-        current_date: { type: 'date', description: 'Current date', sample: new Date().toISOString() },
-        total_usage: { type: 'number', description: 'Total usage', sample: 1234.56 }
-      };
-      setAvailableVariables(mockVariables);
+      // Load variables from backend for the selected category
+      const vars = await templateService.getAvailableVariables(category);
+      setAvailableVariables(vars || {});
     } catch (err) {
       console.warn('Failed to load available variables:', err);
       setAvailableVariables({});
@@ -187,24 +181,11 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     try {
       setLoading(true);
       
-      // Generate sample variables for preview
+      // Use only backend-provided sample values when present; otherwise omit variable
       const sampleVariables: Record<string, any> = {};
       Object.entries(availableVariables).forEach(([key, info]: [string, any]) => {
-        switch (info.type) {
-          case 'text':
-            sampleVariables[key] = info.sample || `Sample ${key}`;
-            break;
-          case 'number':
-            sampleVariables[key] = info.sample || 123.45;
-            break;
-          case 'date':
-            sampleVariables[key] = info.sample || new Date().toISOString();
-            break;
-          case 'boolean':
-            sampleVariables[key] = info.sample !== undefined ? info.sample : true;
-            break;
-          default:
-            sampleVariables[key] = info.sample || `Sample ${key}`;
+        if (info && Object.prototype.hasOwnProperty.call(info, 'sample')) {
+          sampleVariables[key] = info.sample;
         }
       });
 

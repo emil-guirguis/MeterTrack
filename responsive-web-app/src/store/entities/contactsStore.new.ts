@@ -5,8 +5,40 @@ import { createEntityStore, createEntityHook } from '../slices/createEntitySlice
 import { withApiCall } from '../middleware/apiMiddleware';
 import { contactService } from '../../services/contactService';
 
-// Create contacts store with real service
-export const useContactsStore = createEntityStore(contactService, {
+// Create a wrapper service to match the EntityService interface
+const contactServiceWrapper = {
+  getAll: contactService.getAll.bind(contactService),
+  getById: contactService.getById.bind(contactService),
+  delete: contactService.delete.bind(contactService),
+  update: async (id: string, data: Partial<Contact>) => {
+    return contactService.update(id, {
+      id,
+      ...data
+    } as any);
+  },
+  create: async (data: Partial<Contact>) => {
+    // Ensure required fields are present for ContactCreateRequest
+    if (!data.type || !data.name || !data.email || !data.phone || !data.address) {
+      throw new Error('Missing required fields for contact creation');
+    }
+    return contactService.create({
+      type: data.type,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      company: data.contactPerson,
+      notes: data.notes,
+      businessInfo: {
+        industry: data.industry,
+        website: data.website
+      }
+    });
+  }
+};
+
+// Create contacts store with wrapped service
+export const useContactsStore = createEntityStore(contactServiceWrapper, {
   name: 'contacts',
   cache: {
     ttl: 10 * 60 * 1000, // 10 minutes
