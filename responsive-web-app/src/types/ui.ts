@@ -85,6 +85,13 @@ export interface HeaderProps {
   onLogout: () => void;
   onToggleSidebar: () => void;
   isMobile: boolean;
+  // New responsive sidebar header props
+  showSidebarElements?: boolean;
+  sidebarBrand?: {
+    icon: string;
+    text: string;
+  };
+  sidebarCollapsed?: boolean;
 }
 
 export interface SidebarProps {
@@ -383,6 +390,49 @@ export interface ActionButtonProps extends ButtonProps {
   confirmMessage?: string;
 }
 
+// Responsive Header Layout Types
+export interface HeaderLayout {
+  left: {
+    visible: boolean;
+    elements: ('menu-toggle' | 'brand' | 'breadcrumbs')[];
+  };
+  center: {
+    visible: boolean;
+    content: 'title' | 'search' | 'breadcrumbs' | null;
+  };
+  right: {
+    visible: boolean;
+    elements: ('notifications' | 'user-menu' | 'settings')[];
+  };
+}
+
+export interface TransitionState {
+  isTransitioning: boolean;
+  fromLayout: 'desktop' | 'tablet' | 'mobile';
+  toLayout: 'desktop' | 'tablet' | 'mobile';
+  duration: number;
+  easing: string;
+}
+
+export interface SidebarHeaderConfig {
+  brand: {
+    icon: string;
+    text: string;
+    showIcon: boolean;
+    showText: boolean;
+  };
+  toggle: {
+    position: 'left' | 'right';
+    style: 'hamburger' | 'arrow' | 'custom';
+    ariaLabel: string;
+  };
+  responsive: {
+    hideOnDesktop: boolean;
+    showInHeaderBelow: number;
+    animationDuration: number;
+  };
+}
+
 // Global UI State
 export interface UIState {
   sidebarCollapsed: boolean;
@@ -392,6 +442,12 @@ export interface UIState {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  // Responsive header state
+  headerLayout: HeaderLayout;
+  showSidebarInHeader: boolean;
+  isTransitioning: boolean;
+  lastBreakpoint: 'mobile' | 'tablet' | 'desktop';
+  sidebarHeaderConfig: SidebarHeaderConfig;
 }
 
 export interface ModalState {
@@ -415,6 +471,9 @@ export interface UseResponsiveResult {
   isDesktop: boolean;
   isLarge: boolean;
   breakpoint: 'mobile' | 'tablet' | 'desktop' | 'large';
+  showSidebarInHeader: boolean;
+  sidebarBreakpoint: number;
+  currentWidth: number;
 }
 
 export interface UseMediaQueryResult {

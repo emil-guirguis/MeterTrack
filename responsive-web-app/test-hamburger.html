@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamburger Menu Test</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .app-header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            grid-template-areas: "left center right";
+            align-items: center;
+            height: 64px;
+            padding: 0 1.5rem;
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .app-header__left {
+            grid-area: left;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .app-header__center {
+            grid-area: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .app-header__right {
+            grid-area: right;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .app-header__menu-toggle {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .app-header__menu-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .app-header__brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+        }
+        
+        .brand-icon {
+            font-size: 1.5rem;
+        }
+        
+        .brand-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        .hamburger-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .hamburger-line {
+            width: 20px;
+            height: 2px;
+            background-color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 100vh;
+            background-color: white;
+            z-index: 1999;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .mobile-nav.open {
+            transform: translateX(0);
+        }
+        
+        .mobile-nav-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1998;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .mobile-nav-backdrop.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .mobile-nav__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background-color: #3b82f6;
+            color: white;
+            height: 64px;
+        }
+        
+        .mobile-nav__close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .mobile-nav__menu {
+            padding: 1rem 0;
+        }
+        
+        .mobile-menu-item {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .mobile-menu-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        /* Hide sidebar elements on desktop by default */
+        @media (min-width: 1024px) {
+            .app-header:not(.show-sidebar-elements) .app-header__left {
+                display: none;
+            }
+            
+            .app-header:not(.show-sidebar-elements) {
+                grid-template-columns: 1fr auto;
+                grid-template-areas: "center right";
+            }
+        }
+        
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info">
+        <div><strong>Window Width:</strong> <span id="width">0</span>px</div>
+        <div><strong>Mobile Nav:</strong> <span id="nav-status">Closed</span></div>
+        <button onclick="toggleMobileNav()">Toggle Mobile Nav</button>
+    </div>
+
+    <header class="app-header show-sidebar-elements">
+        <div class="app-header__left">
+            <button class="app-header__menu-toggle" onclick="toggleMobileNav()">
+                <div class="hamburger-icon">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+            </button>
+            
+            <div class="app-header__brand">
+                <span class="brand-icon">🏢</span>
+                <span class="brand-text">MeterIt</span>
+            </div>
+        </div>
+
+        <div class="app-header__center">
+            <h1 style="margin: 0; color: white;">Test Page</h1>
+        </div>
+
+        <div class="app-header__right">
+            <button style="background: none; border: none; color: white; cursor: pointer;">
+                🔔
+            </button>
+            <button style="background: none; border: none; color: white; cursor: pointer;">
+                👤
+            </button>
+        </div>
+    </header>
+
+    <div class="mobile-nav-backdrop" id="backdrop" onclick="closeMobileNav()"></div>
+    
+    <nav class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav__header">
+            <div class="app-header__brand">
+                <span class="brand-icon">🏢</span>
+                <span class="brand-text">MeterIt</span>
+            </div>
+            <button class="mobile-nav__close" onclick="closeMobileNav()">✕</button>
+        </div>
+        
+        <div class="mobile-nav__menu">
+            <a href="#" class="mobile-menu-item">📊 Dashboard</a>
+            <a href="#" class="mobile-menu-item">👥 Users</a>
+            <a href="#" class="mobile-menu-item">🏢 Locations</a>
+            <a href="#" class="mobile-menu-item">📞 Contacts</a>
+            <a href="#" class="mobile-menu-item">📏 Meters</a>
+            <a href="#" class="mobile-menu-item">📧 Templates</a>
+            <a href="#" class="mobile-menu-item">⚙️ Settings</a>
+        </div>
+    </nav>
+
+    <main style="padding: 20px;">
+        <h2>Hamburger Menu Test</h2>
+        <p>This is a test page to verify the hamburger menu functionality.</p>
+        
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Resize your browser window to different sizes</li>
+            <li>Click the hamburger menu (☰) in the header</li>
+            <li>The mobile navigation should slide in from the left</li>
+            <li>Click the backdrop or close button to close it</li>
+        </ol>
+        
+        <h3>Expected Behavior:</h3>
+        <ul>
+            <li><strong>Desktop (≥ 1024px):</strong> Hamburger menu should be visible (for testing)</li>
+            <li><strong>Tablet (768px - 1023px):</strong> Hamburger menu should be visible</li>
+            <li><strong>Mobile (&lt; 768px):</strong> Hamburger menu should be visible</li>
+        </ul>
+    </main>
+
+    <script>
+        let mobileNavOpen = false;
+        
+        function updateWidth() {
+            document.getElementById('width').textContent = window.innerWidth;
+        }
+        
+        function toggleMobileNav() {
+            mobileNavOpen = !mobileNavOpen;
+            const nav = document.getElementById('mobileNav');
+            const backdrop = document.getElementById('backdrop');
+            const status = document.getElementById('nav-status');
+            
+            if (mobileNavOpen) {
+                nav.classList.add('open');
+                backdrop.classList.add('open');
+                status.textContent = 'Open';
+                console.log('Mobile nav opened');
+            } else {
+                nav.classList.remove('open');
+                backdrop.classList.remove('open');
+                status.textContent = 'Closed';
+                console.log('Mobile nav closed');
+            }
+        }
+        
+        function closeMobileNav() {
+            if (mobileNavOpen) {
+                toggleMobileNav();
+            }
+        }
+        
+        // Update width on resize
+        window.addEventListener('resize', updateWidth);
+        updateWidth();
+        
+        console.log('Test page loaded. Click the hamburger menu to test functionality.');
+    </script>
+</body>
+</html>

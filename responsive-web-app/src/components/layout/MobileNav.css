@@ -1,7 +1,7 @@
 /* Mobile Navigation Styles */
 .mobile-nav-backdrop {
   position: fixed;
-  top: 0;
+  top: 64px; /* Start below the header */
   left: 0;
   right: 0;
   bottom: 0;
@@ -19,11 +19,11 @@
 
 .mobile-nav {
   position: fixed;
-  top: 0;
+  top: 64px; /* Start below the header */
   left: 0;
   width: 320px;
   max-width: 85vw;
-  height: 100vh;
+  height: calc(100vh - 64px); /* Account for header height */
   background-color: var(--color-surface, #ffffff);
   z-index: 1999;
   display: flex;

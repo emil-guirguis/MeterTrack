@@ -13,6 +13,11 @@
   z-index: 1100;
   transition: width 0.25s ease, transform 0.25s ease;
   overflow: hidden;
+  /* Performance optimizations */
+  will-change: width, transform;
+  contain: layout style;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .sidebar.collapsed {
@@ -26,12 +31,14 @@
   top: 0;
   left: 0;
   width: var(--sidebar-width, 280px);
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0); /* Use 3D transform for hardware acceleration */
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  /* Performance optimizations */
+  will-change: transform;
 }
 
 .sidebar.mobile:not(.collapsed) {
-  transform: translateX(0);
+  transform: translate3d(0, 0, 0); /* Use 3D transform for hardware acceleration */
 }
 
 /* Sidebar Header */
@@ -137,16 +144,21 @@
   padding: 0.75rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
   position: relative;
   text-decoration: none;
   color: inherit;
   -webkit-user-select: none;
   user-select: none;
+  /* Performance optimizations */
+  will-change: background-color, color, transform;
+  contain: layout style;
+  transform: translateZ(0);
 }
 
 .sidebar-link:hover {
   background-color: var(--color-hover, rgba(0, 0, 0, 0.05));
+  transform: translateZ(0) translateX(2px);
 }
 
 .sidebar-link:focus {
@@ -226,7 +238,10 @@
   padding: 0;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  /* Performance optimizations */
+  will-change: max-height, opacity;
+  contain: layout style;
 }
 
 .sidebar-submenu.expanded {
@@ -249,7 +264,7 @@
   position: absolute;
   left: calc(100% + 8px);
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(0, -50%, 0);
   background-color: var(--color-text-primary, #333);
   color: white;
   padding: 0.5rem 0.75rem;
@@ -258,9 +273,13 @@
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
   z-index: 1000;
   pointer-events: none;
+  /* Performance optimizations */
+  will-change: opacity, visibility, transform;
+  contain: layout style;
+  backface-visibility: hidden;
 }
 
 .sidebar-tooltip::before {
@@ -390,6 +409,25 @@
 }
 
 /* Responsive Design */
+
+/* Hide sidebar header on mobile/tablet screens (below desktop 1024px) */
+@media (max-width: 1023px) {
+  .sidebar__header {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+}
+
+/* Desktop: Show sidebar header */
+@media (min-width: 1024px) {
+  .sidebar__header {
+    display: flex;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 280px;

@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { UIStoreSlice, Notification } from '../types';
+import type { UIStoreSlice, Notification, HeaderLayout, SidebarHeaderConfig } from '../types';
 import { generateId } from '../utils';
 
 // Initial state
@@ -16,6 +16,42 @@ const initialState = {
   isMobile: false,
   isTablet: false,
   isDesktop: true,
+  // Responsive header initial state
+  headerLayout: {
+    left: {
+      visible: false,
+      elements: ['menu-toggle', 'brand'],
+    },
+    center: {
+      visible: true,
+      content: 'title',
+    },
+    right: {
+      visible: true,
+      elements: ['notifications', 'user-menu'],
+    },
+  } as HeaderLayout,
+  showSidebarInHeader: false,
+  isTransitioning: false,
+  lastBreakpoint: 'desktop' as 'mobile' | 'tablet' | 'desktop',
+  sidebarHeaderConfig: {
+    brand: {
+      icon: '🏢',
+      text: 'MeterIt',
+      showIcon: true,
+      showText: true,
+    },
+    toggle: {
+      position: 'left',
+      style: 'hamburger',
+      ariaLabel: 'Toggle navigation menu',
+    },
+    responsive: {
+      hideOnDesktop: true,
+      showInHeaderBelow: 1024,
+      animationDuration: 300,
+    },
+  } as SidebarHeaderConfig,
 };
 
 export const useUIStore = create<UIStoreSlice>()(
@@ -171,6 +207,70 @@ export const useUIStore = create<UIStoreSlice>()(
           }
         });
       },
+
+      // Responsive header actions
+      setHeaderLayout: (layout) => {
+        set((state) => {
+          state.headerLayout = layout;
+        });
+      },
+
+      setShowSidebarInHeader: (show) => {
+        set((state) => {
+          state.showSidebarInHeader = show;
+          
+          // Update header layout based on sidebar visibility
+          if (show) {
+            state.headerLayout.left.visible = true;
+            state.headerLayout.left.elements = ['menu-toggle', 'brand'];
+          } else {
+            state.headerLayout.left.visible = false;
+            state.headerLayout.left.elements = [];
+          }
+        });
+      },
+
+      setTransitioning: (transitioning) => {
+        set((state) => {
+          state.isTransitioning = transitioning;
+        });
+      },
+
+      updateBreakpoint: (breakpoint) => {
+        set((state) => {
+          state.lastBreakpoint = breakpoint;
+          
+          // Update header layout based on breakpoint
+          const shouldShowInHeader = breakpoint !== 'desktop';
+          if (shouldShowInHeader !== state.showSidebarInHeader) {
+            state.showSidebarInHeader = shouldShowInHeader;
+            
+            if (shouldShowInHeader) {
+              state.headerLayout.left.visible = true;
+              state.headerLayout.left.elements = ['menu-toggle', 'brand'];
+              state.headerLayout.center.visible = true;
+              state.headerLayout.center.content = 'title';
+            } else {
+              state.headerLayout.left.visible = false;
+              state.headerLayout.left.elements = [];
+              state.headerLayout.center.visible = true;
+              state.headerLayout.center.content = null;
+            }
+          }
+        });
+      },
+
+      setSidebarHeaderConfig: (config) => {
+        set((state) => {
+          state.sidebarHeaderConfig = {
+            ...state.sidebarHeaderConfig,
+            ...config,
+            brand: config.brand ? { ...state.sidebarHeaderConfig.brand, ...config.brand } : state.sidebarHeaderConfig.brand,
+            toggle: config.toggle ? { ...state.sidebarHeaderConfig.toggle, ...config.toggle } : state.sidebarHeaderConfig.toggle,
+            responsive: config.responsive ? { ...state.sidebarHeaderConfig.responsive, ...config.responsive } : state.sidebarHeaderConfig.responsive,
+          };
+        });
+      },
     })),
     {
       name: 'ui-store',
@@ -196,6 +296,13 @@ export const uiSelectors = {
     isDesktop: state.isDesktop,
   }),
   
+  // Responsive header selectors
+  headerLayout: (state: UIStoreSlice) => state.headerLayout,
+  showSidebarInHeader: (state: UIStoreSlice) => state.showSidebarInHeader,
+  isTransitioning: (state: UIStoreSlice) => state.isTransitioning,
+  lastBreakpoint: (state: UIStoreSlice) => state.lastBreakpoint,
+  sidebarHeaderConfig: (state: UIStoreSlice) => state.sidebarHeaderConfig,
+  
   // Computed selectors
   unreadNotifications: (state: UIStoreSlice) => 
     state.notifications.filter(n => !n.read),
@@ -220,6 +327,19 @@ export const uiSelectors = {
   
   getLoadingKeys: (state: UIStoreSlice) => 
     Object.keys(state.loading),
+  
+  // Responsive header computed selectors
+  shouldShowSidebarInHeader: (state: UIStoreSlice) => 
+    !state.isDesktop && state.showSidebarInHeader,
+  
+  headerLeftElements: (state: UIStoreSlice) => 
+    state.headerLayout.left.visible ? state.headerLayout.left.elements : [],
+  
+  headerCenterContent: (state: UIStoreSlice) => 
+    state.headerLayout.center.visible ? state.headerLayout.center.content : null,
+  
+  headerRightElements: (state: UIStoreSlice) => 
+    state.headerLayout.right.visible ? state.headerLayout.right.elements : [],
 };
 
 // Notification helpers
@@ -264,6 +384,13 @@ export const useUI = () => {
     notifications: store.notifications,
     screenSize: uiSelectors.screenSize(store),
     
+    // Responsive header state
+    headerLayout: store.headerLayout,
+    showSidebarInHeader: store.showSidebarInHeader,
+    isTransitioning: store.isTransitioning,
+    lastBreakpoint: store.lastBreakpoint,
+    sidebarHeaderConfig: store.sidebarHeaderConfig,
+    
     // Actions
     toggleSidebar: store.toggleSidebar,
     setSidebarCollapsed: store.setSidebarCollapsed,
@@ -277,9 +404,20 @@ export const useUI = () => {
     setGlobalLoading: store.setGlobalLoading,
     setScreenSize: store.setScreenSize,
     
+    // Responsive header actions
+    setHeaderLayout: store.setHeaderLayout,
+    setShowSidebarInHeader: store.setShowSidebarInHeader,
+    setTransitioning: store.setTransitioning,
+    updateBreakpoint: store.updateBreakpoint,
+    setSidebarHeaderConfig: store.setSidebarHeaderConfig,
+    
     // Computed
     unreadCount: uiSelectors.unreadCount(store),
     isGlobalLoading: uiSelectors.isGlobalLoading(store),
+    shouldShowSidebarInHeader: uiSelectors.shouldShowSidebarInHeader(store),
+    headerLeftElements: uiSelectors.headerLeftElements(store),
+    headerCenterContent: uiSelectors.headerCenterContent(store),
+    headerRightElements: uiSelectors.headerRightElements(store),
     
     // Helpers
     notify: {

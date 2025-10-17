@@ -10,6 +10,11 @@ export {
   useIsTouchDevice 
 } from './useResponsive';
 export { 
+  useResponsiveSync,
+  useResponsiveTransition,
+  useResponsiveLayoutStability
+} from './useResponsiveSync';
+export { 
   usePageTitle, 
   useDocumentMeta, 
   useNavigationHistory, 

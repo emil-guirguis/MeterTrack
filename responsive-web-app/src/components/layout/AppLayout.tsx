@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+// import { useAuth } from '../../hooks/useAuth'; // Commented out - using mock user
 import { useResponsive } from '../../hooks/useResponsive';
 import { useUI } from '../../store/slices/uiSlice';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -71,9 +71,23 @@ const AppLayout: React.FC<LayoutProps> = ({
   breadcrumbs,
   loading = false
 }) => {
-  const { user, logout, checkPermission } = useAuth();
+  // Mock user for testing - replace with real useAuth when backend is available
+  const mockUser = {
+    id: '1',
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'admin' as const,
+    permissions: [],
+    status: 'active' as const,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  const user = mockUser;
+  const logout = () => console.log('Logout clicked');
+  const checkPermission = () => true;
   const location = useLocation();
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet, isDesktop, showSidebarInHeader } = useResponsive();
   // Use persisted UI store for sidebar state so preference is remembered
   const { sidebarCollapsed, setSidebarCollapsed, mobileNavOpen, setMobileNavOpen } = useUI();
 
@@ -97,16 +111,24 @@ const AppLayout: React.FC<LayoutProps> = ({
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter(item => {
     if (!item.requiredPermission) return true;
-    return checkPermission(item.requiredPermission as any);
+    return checkPermission(); // Mock always returns true
   });
 
+  // Sidebar brand configuration
+  const sidebarBrand = {
+    icon: '🏢',
+    text: 'MeterIt'
+  };
+
   const handleToggleSidebar = () => {
-    console.debug('[AppLayout] handleToggleSidebar called, isMobile=', isMobile, 'sidebarCollapsed=', sidebarCollapsed);
     if (isMobile) {
-      // On mobile, toggle mobile nav instead of sidebar
+      // On mobile, toggle mobile nav overlay
+      setMobileNavOpen(!mobileNavOpen);
+    } else if (isTablet) {
+      // On tablet, toggle mobile nav overlay (sidebar elements are in header)
       setMobileNavOpen(!mobileNavOpen);
     } else {
-      // On desktop/tablet, toggle sidebar collapse
+      // On desktop, toggle sidebar collapse (traditional sidebar behavior)
       setSidebarCollapsed(!sidebarCollapsed);
     }
   };
@@ -140,6 +162,9 @@ const AppLayout: React.FC<LayoutProps> = ({
         onLogout={logout}
         onToggleSidebar={handleToggleSidebar}
         isMobile={isMobile}
+        showSidebarElements={showSidebarInHeader}
+        sidebarBrand={sidebarBrand}
+        sidebarCollapsed={sidebarCollapsed || !isDesktop}
       />
 
       {/* Main Content Area */}

@@ -61,6 +61,47 @@ export interface UIStoreState {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  // Responsive header state
+  headerLayout: HeaderLayout;
+  showSidebarInHeader: boolean;
+  isTransitioning: boolean;
+  lastBreakpoint: 'mobile' | 'tablet' | 'desktop';
+  sidebarHeaderConfig: SidebarHeaderConfig;
+}
+
+// Import header layout types
+export interface HeaderLayout {
+  left: {
+    visible: boolean;
+    elements: ('menu-toggle' | 'brand' | 'breadcrumbs')[];
+  };
+  center: {
+    visible: boolean;
+    content: 'title' | 'search' | 'breadcrumbs' | null;
+  };
+  right: {
+    visible: boolean;
+    elements: ('notifications' | 'user-menu' | 'settings')[];
+  };
+}
+
+export interface SidebarHeaderConfig {
+  brand: {
+    icon: string;
+    text: string;
+    showIcon: boolean;
+    showText: boolean;
+  };
+  toggle: {
+    position: 'left' | 'right';
+    style: 'hamburger' | 'arrow' | 'custom';
+    ariaLabel: string;
+  };
+  responsive: {
+    hideOnDesktop: boolean;
+    showInHeaderBelow: number;
+    animationDuration: number;
+  };
 }
 
 export interface ModalState {
@@ -177,6 +218,12 @@ export interface UIStoreSlice extends UIStoreState {
   setModalError: (modalId: string, error: string | null) => void;
   setGlobalLoading: (key: string, loading: boolean) => void;
   setScreenSize: (isMobile: boolean, isTablet: boolean, isDesktop: boolean) => void;
+  // Responsive header actions
+  setHeaderLayout: (layout: HeaderLayout) => void;
+  setShowSidebarInHeader: (show: boolean) => void;
+  setTransitioning: (transitioning: boolean) => void;
+  updateBreakpoint: (breakpoint: 'mobile' | 'tablet' | 'desktop') => void;
+  setSidebarHeaderConfig: (config: Partial<SidebarHeaderConfig>) => void;
 }
 
 // Generic Entity Store Slice

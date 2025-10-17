@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { MenuItem } from '../../types/ui';
@@ -15,13 +15,31 @@ const MobileNav: React.FC<MobileNavProps> = ({
   onClose,
   menuItems
 }) => {
-  const { user, logout, checkPermission } = useAuth();
+  // Mock user for testing - replace with real useAuth when backend is available
+  const mockUser = {
+    id: '1',
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'admin' as const,
+    permissions: [],
+    status: 'active' as const,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+  
+  const user = mockUser;
+  const logout = () => console.log('Logout clicked');
+  const checkPermission = () => true;
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Close mobile nav when route changes
+  // Close mobile nav when route changes (but not on initial render)
+  const prevPathname = useRef(location.pathname);
   useEffect(() => {
-    onClose();
+    if (prevPathname.current !== location.pathname && prevPathname.current !== undefined) {
+      onClose();
+    }
+    prevPathname.current = location.pathname;
   }, [location.pathname, onClose]);
 
   // Prevent body scroll when mobile nav is open
@@ -94,38 +112,11 @@ const MobileNav: React.FC<MobileNavProps> = ({
         className={`mobile-nav ${isOpen ? 'open' : ''}`}
         aria-label="Mobile navigation"
         role="navigation"
+        id="main-navigation"
       >
-        {/* Header */}
-        <div className="mobile-nav__header">
-          <div className="mobile-nav__brand">
-            <span className="brand-icon">🏢</span>
-            <span className="brand-text">Business App</span>
-          </div>
-          <button
-            className="mobile-nav__close"
-            onClick={onClose}
-            aria-label="Close navigation"
-            type="button"
-          >
-            <span className="close-icon">✕</span>
-          </button>
-        </div>
 
-        {/* User Info */}
-        {user && (
-          <div className="mobile-nav__user">
-            <div className="user-avatar">
-              <span className="avatar-initials">
-                {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </span>
-            </div>
-            <div className="user-details">
-              <div className="user-name">{user.name}</div>
-              <div className="user-email">{user.email}</div>
-              <div className="user-role">{user.role}</div>
-            </div>
-          </div>
-        )}
+
+
 
         {/* Navigation Menu */}
         <div className="mobile-nav__menu">

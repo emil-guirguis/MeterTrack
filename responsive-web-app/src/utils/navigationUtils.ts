@@ -1,370 +1,326 @@
+// Navigation Utilities
+
 import type { BreadcrumbItem } from '../types/ui';
 
-// Route configuration for breadcrumb generation
-export interface RouteInfo {
-  path: string;
-  label: string;
-  icon?: string;
-  parent?: string;
-}
+// Route to title mapping
+const routeTitles: Record<string, string> = {
+  '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
+  '/users': 'Users',
+  '/users/new': 'New User',
+  '/users/edit': 'Edit User',
+  '/locations': 'Locations',
+  '/locations/new': 'New Location',
+  '/locations/edit': 'Edit Location',
+  '/contacts': 'Contacts',
+  '/contacts/new': 'New Contact',
+  '/contacts/edit': 'Edit Contact',
+  '/meters': 'Meters',
+  '/meters/new': 'New Meter',
+  '/meters/edit': 'Edit Meter',
+  '/templates': 'Email Templates',
+  '/templates/new': 'New Template',
+  '/templates/edit': 'Edit Template',
+  '/settings': 'Settings',
+  '/profile': 'Profile',
+  '/help': 'Help',
+};
 
-// Define route information for breadcrumb generation
-export const ROUTE_INFO: Record<string, RouteInfo> = {
-  '/dashboard': {
-    path: '/dashboard',
-    label: 'Dashboard',
-    icon: '📊'
-  },
-  '/users': {
-    path: '/users',
-    label: 'Users',
-    icon: '👥',
-    parent: '/dashboard'
-  },
-  '/users/create': {
-    path: '/users/create',
-    label: 'Create User',
-    icon: '➕',
-    parent: '/users'
-  },
-  '/users/:id': {
-    path: '/users/:id',
-    label: 'User Details',
-    icon: '👤',
-    parent: '/users'
-  },
-  '/users/:id/edit': {
-    path: '/users/:id/edit',
-    label: 'Edit User',
-    icon: '✏️',
-    parent: '/users/:id'
-  },
-  '/locations': {
-    path: '/locations',
-    label: 'Locations',
-    icon: '🏢',
-    parent: '/dashboard'
-  },
-  '/locations/create': {
-    path: '/locations/create',
-    label: 'Create Location',
-    icon: '➕',
-    parent: '/locations'
-  },
-  '/locations/:id': {
-    path: '/locations/:id',
-    label: 'Location Details',
-    icon: '🏢',
-    parent: '/locations'
-  },
-  '/locations/:id/edit': {
-    path: '/locations/:id/edit',
-    label: 'Edit Location',
-    icon: '✏️',
-    parent: '/locations/:id'
-  },
-  '/equipment': {
-    path: '/equipment',
-    label: 'Equipment',
-    icon: '⚙️',
-    parent: '/dashboard'
-  },
-  '/equipment/create': {
-    path: '/equipment/create',
-    label: 'Create Equipment',
-    icon: '➕',
-    parent: '/equipment'
-  },
-  '/equipment/:id': {
-    path: '/equipment/:id',
-    label: 'Equipment Details',
-    icon: '⚙️',
-    parent: '/equipment'
-  },
-  '/equipment/:id/edit': {
-    path: '/equipment/:id/edit',
-    label: 'Edit Equipment',
-    icon: '✏️',
-    parent: '/equipment/:id'
-  },
-  '/contacts': {
-    path: '/contacts',
-    label: 'Contacts',
-    icon: '📞',
-    parent: '/dashboard'
-  },
-  '/contacts/create': {
-    path: '/contacts/create',
-    label: 'Create Contact',
-    icon: '➕',
-    parent: '/contacts'
-  },
-  '/contacts/:id': {
-    path: '/contacts/:id',
-    label: 'Contact Details',
-    icon: '📞',
-    parent: '/contacts'
-  },
-  '/contacts/:id/edit': {
-    path: '/contacts/:id/edit',
-    label: 'Edit Contact',
-    icon: '✏️',
-    parent: '/contacts/:id'
-  },
-  '/meters': {
-    path: '/meters',
-    label: 'Meters',
-    icon: '📏',
-    parent: '/dashboard'
-  },
-  '/meters/create': {
-    path: '/meters/create',
-    label: 'Create Meter',
-    icon: '➕',
-    parent: '/meters'
-  },
-  '/meters/:id': {
-    path: '/meters/:id',
-    label: 'Meter Details',
-    icon: '📏',
-    parent: '/meters'
-  },
-  '/meters/:id/edit': {
-    path: '/meters/:id/edit',
-    label: 'Edit Meter',
-    icon: '✏️',
-    parent: '/meters/:id'
-  },
-  '/meter-readings': {
-    path: '/meter-readings',
-    label: 'Meter Readings',
-    icon: '📊',
-    parent: '/dashboard'
-  },
-  '/templates': {
-    path: '/templates',
-    label: 'Email Templates',
-    icon: '📧',
-    parent: '/dashboard'
-  },
-  '/templates/create': {
-    path: '/templates/create',
-    label: 'Create Template',
-    icon: '➕',
-    parent: '/templates'
-  },
-  '/templates/:id': {
-    path: '/templates/:id',
-    label: 'Template Details',
-    icon: '📧',
-    parent: '/templates'
-  },
-  '/templates/:id/edit': {
-    path: '/templates/:id/edit',
-    label: 'Edit Template',
-    icon: '✏️',
-    parent: '/templates/:id'
-  },
-  '/settings': {
-    path: '/settings',
-    label: 'Settings',
-    icon: '⚙️',
-    parent: '/dashboard'
-  },
-  '/settings/company': {
-    path: '/settings/company',
-    label: 'Company Settings',
-    icon: '🏢',
-    parent: '/settings'
-  },
-  '/settings/users': {
-    path: '/settings/users',
-    label: 'User Settings',
-    icon: '👥',
-    parent: '/settings'
-  },
-  '/settings/system': {
-    path: '/settings/system',
-    label: 'System Settings',
-    icon: '🔧',
-    parent: '/settings'
-  }
+// Route to breadcrumb mapping
+const routeBreadcrumbs: Record<string, BreadcrumbItem[]> = {
+  '/': [
+    { label: 'Dashboard', path: '/dashboard' }
+  ],
+  '/dashboard': [
+    { label: 'Dashboard', path: '/dashboard' }
+  ],
+  '/users': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Users', path: '/users' }
+  ],
+  '/users/new': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Users', path: '/users' },
+    { label: 'New User' }
+  ],
+  '/users/edit': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Users', path: '/users' },
+    { label: 'Edit User' }
+  ],
+  '/locations': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Locations', path: '/locations' }
+  ],
+  '/locations/new': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Locations', path: '/locations' },
+    { label: 'New Location' }
+  ],
+  '/locations/edit': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Locations', path: '/locations' },
+    { label: 'Edit Location' }
+  ],
+  '/contacts': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Contacts', path: '/contacts' }
+  ],
+  '/contacts/new': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Contacts', path: '/contacts' },
+    { label: 'New Contact' }
+  ],
+  '/contacts/edit': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Contacts', path: '/contacts' },
+    { label: 'Edit Contact' }
+  ],
+  '/meters': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Meters', path: '/meters' }
+  ],
+  '/meters/new': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Meters', path: '/meters' },
+    { label: 'New Meter' }
+  ],
+  '/meters/edit': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Meters', path: '/meters' },
+    { label: 'Edit Meter' }
+  ],
+  '/templates': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Email Templates', path: '/templates' }
+  ],
+  '/templates/new': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Email Templates', path: '/templates' },
+    { label: 'New Template' }
+  ],
+  '/templates/edit': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Email Templates', path: '/templates' },
+    { label: 'Edit Template' }
+  ],
+  '/settings': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Settings', path: '/settings' }
+  ],
+  '/profile': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Profile', path: '/profile' }
+  ],
+  '/help': [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Help', path: '/help' }
+  ],
 };
 
 /**
- * Match a dynamic route pattern with actual path
- * @param pattern - Route pattern with parameters (e.g., '/users/:id')
- * @param path - Actual path (e.g., '/users/123')
- * @returns Whether the path matches the pattern
+ * Get page title from route path
  */
-export const matchRoute = (pattern: string, path: string): boolean => {
-  const patternParts = pattern.split('/');
-  const pathParts = path.split('/');
-
-  if (patternParts.length !== pathParts.length) {
-    return false;
+export const getPageTitle = (pathname: string): string => {
+  // Try exact match first
+  if (routeTitles[pathname]) {
+    return routeTitles[pathname];
   }
+  
+  // Try to match dynamic routes
+  if (pathname.includes('/edit/')) {
+    const basePath = pathname.split('/edit/')[0];
+    const baseTitle = routeTitles[basePath];
+    if (baseTitle) {
+      return `Edit ${baseTitle.slice(0, -1)}`; // Remove 's' from plural
+    }
+  }
+  
+  if (pathname.includes('/view/')) {
+    const basePath = pathname.split('/view/')[0];
+    const baseTitle = routeTitles[basePath];
+    if (baseTitle) {
+      return `View ${baseTitle.slice(0, -1)}`; // Remove 's' from plural
+    }
+  }
+  
+  // Fallback to path-based title
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return 'Dashboard';
+  }
+  
+  const lastSegment = segments[segments.length - 1];
+  return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+};
 
-  return patternParts.every((part, index) => {
-    return part.startsWith(':') || part === pathParts[index];
+/**
+ * Generate breadcrumbs from route path
+ */
+export const generateBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
+  // Try exact match first
+  if (routeBreadcrumbs[pathname]) {
+    return routeBreadcrumbs[pathname];
+  }
+  
+  // Try to match dynamic routes
+  if (pathname.includes('/edit/')) {
+    const basePath = pathname.split('/edit/')[0];
+    const baseBreadcrumbs = routeBreadcrumbs[basePath];
+    if (baseBreadcrumbs) {
+      return [
+        ...baseBreadcrumbs,
+        { label: `Edit ${baseBreadcrumbs[baseBreadcrumbs.length - 1].label.slice(0, -1)}` }
+      ];
+    }
+  }
+  
+  if (pathname.includes('/view/')) {
+    const basePath = pathname.split('/view/')[0];
+    const baseBreadcrumbs = routeBreadcrumbs[basePath];
+    if (baseBreadcrumbs) {
+      return [
+        ...baseBreadcrumbs,
+        { label: `View ${baseBreadcrumbs[baseBreadcrumbs.length - 1].label.slice(0, -1)}` }
+      ];
+    }
+  }
+  
+  // Generate breadcrumbs from path segments
+  const segments = pathname.split('/').filter(Boolean);
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: 'Dashboard', path: '/dashboard' }
+  ];
+  
+  let currentPath = '';
+  segments.forEach((segment, index) => {
+    currentPath += `/${segment}`;
+    const title = segment.charAt(0).toUpperCase() + segment.slice(1);
+    
+    if (index === segments.length - 1) {
+      // Last segment - no link
+      breadcrumbs.push({ label: title });
+    } else {
+      // Intermediate segments - with link
+      breadcrumbs.push({ label: title, path: currentPath });
+    }
   });
-};
-
-/**
- * Find route info for a given path
- * @param path - Current path
- * @returns Route info or null if not found
- */
-export const findRouteInfo = (path: string): RouteInfo | null => {
-  // First try exact match
-  if (ROUTE_INFO[path]) {
-    return ROUTE_INFO[path];
-  }
-
-  // Then try pattern matching
-  for (const [pattern, info] of Object.entries(ROUTE_INFO)) {
-    if (matchRoute(pattern, path)) {
-      return info;
-    }
-  }
-
-  return null;
-};
-
-/**
- * Generate breadcrumbs for a given path
- * @param currentPath - Current route path
- * @param customLabels - Custom labels for dynamic segments
- * @returns Array of breadcrumb items
- */
-export const generateBreadcrumbs = (
-  currentPath: string,
-  customLabels: Record<string, string> = {}
-): BreadcrumbItem[] => {
-  const breadcrumbs: BreadcrumbItem[] = [];
-  const visited = new Set<string>();
-
-  const buildBreadcrumb = (path: string): void => {
-    if (visited.has(path)) return; // Prevent infinite loops
-    visited.add(path);
-
-    const routeInfo = findRouteInfo(path);
-    if (!routeInfo) return;
-
-    // Recursively build parent breadcrumbs
-    if (routeInfo.parent) {
-      buildBreadcrumb(routeInfo.parent);
-    }
-
-    // Create breadcrumb item
-    let label = routeInfo.label;
-
-    // Apply custom labels for dynamic segments
-    if (path.includes(':')) {
-      const pathParts = currentPath.split('/');
-      const patternParts = routeInfo.path.split('/');
-
-      patternParts.forEach((part, index) => {
-        if (part.startsWith(':')) {
-          const paramName = part.substring(1);
-          const paramValue = pathParts[index];
-
-          if (customLabels[paramName]) {
-            label = customLabels[paramName];
-          } else if (paramValue) {
-            // Use the actual value if no custom label provided
-            label = paramValue;
-          }
-        }
-      });
-    }
-
-    breadcrumbs.push({
-      label,
-      path: path === currentPath ? undefined : path, // Current page has no link
-      icon: routeInfo.icon
-    });
-  };
-
-  buildBreadcrumb(currentPath);
+  
   return breadcrumbs;
 };
 
 /**
- * Get page title from route
- * @param path - Current route path
- * @param customLabels - Custom labels for dynamic segments
- * @returns Page title
+ * Check if a route is active
  */
-export const getPageTitle = (
-  path: string,
-  customLabels: Record<string, string> = {}
-): string => {
-  const routeInfo = findRouteInfo(path);
-  if (!routeInfo) {
-    // Fallback: generate title from path
-    const segments = path.split('/').filter(Boolean);
-    const lastSegment = segments[segments.length - 1];
-    return lastSegment
-      ? lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1)
-      : 'Page';
+export const isRouteActive = (currentPath: string, routePath: string): boolean => {
+  if (routePath === currentPath) {
+    return true;
   }
-
-  let title = routeInfo.label;
-
-  // Apply custom labels for dynamic segments
-  if (path.includes(':')) {
-    const pathParts = path.split('/');
-    const patternParts = routeInfo.path.split('/');
-
-    patternParts.forEach((part, index) => {
-      if (part.startsWith(':')) {
-        const paramName = part.substring(1);
-        const paramValue = pathParts[index];
-
-        if (customLabels[paramName]) {
-          title = customLabels[paramName];
-        } else if (paramValue) {
-          title = paramValue;
-        }
-      }
-    });
+  
+  // Check for parent route match
+  if (currentPath.startsWith(routePath) && routePath !== '/') {
+    return true;
   }
-
-  return title;
+  
+  return false;
 };
 
 /**
- * Check if user can go back in browser history
- * @returns Whether back navigation is possible
+ * Get parent route from current path
  */
-export const canGoBack = (): boolean => {
-  return window.history.length > 1;
+export const getParentRoute = (pathname: string): string => {
+  const segments = pathname.split('/').filter(Boolean);
+  
+  if (segments.length <= 1) {
+    return '/dashboard';
+  }
+  
+  // Remove last segment
+  segments.pop();
+  return '/' + segments.join('/');
 };
 
 /**
- * Navigate back in browser history
+ * Format route path for display
  */
-export const goBack = (): void => {
-  if (canGoBack()) {
-    window.history.back();
+export const formatRoutePath = (path: string): string => {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' > ');
+};
+
+/**
+ * Check if route requires authentication
+ */
+export const isProtectedRoute = (pathname: string): boolean => {
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  return !publicRoutes.includes(pathname);
+};
+
+/**
+ * Get default route for user role
+ */
+export const getDefaultRoute = (userRole?: string): string => {
+  switch (userRole) {
+    case 'admin':
+      return '/dashboard';
+    case 'manager':
+      return '/dashboard';
+    case 'technician':
+      return '/meters';
+    case 'viewer':
+      return '/dashboard';
+    default:
+      return '/dashboard';
   }
 };
 
 /**
- * Get navigation state for current location
- * @param currentPath - Current route path
- * @param customLabels - Custom labels for dynamic segments
- * @returns Navigation state object
+ * Validate route access for user
  */
-export const getNavigationState = (
-  currentPath: string,
-  customLabels: Record<string, string> = {}
-) => {
-  return {
-    currentPath,
-    breadcrumbs: generateBreadcrumbs(currentPath, customLabels),
-    title: getPageTitle(currentPath, customLabels),
-    canGoBack: canGoBack()
+export const canAccessRoute = (pathname: string, userRole?: string, userPermissions?: string[]): boolean => {
+  // Public routes are always accessible
+  if (!isProtectedRoute(pathname)) {
+    return true;
+  }
+  
+  // Must be authenticated for protected routes
+  if (!userRole) {
+    return false;
+  }
+  
+  // Admin can access everything
+  if (userRole === 'admin') {
+    return true;
+  }
+  
+  // Route-specific access control
+  const routePermissions: Record<string, string[]> = {
+    '/users': ['user:read'],
+    '/users/new': ['user:create'],
+    '/users/edit': ['user:update'],
+    '/locations': ['location:read'],
+    '/locations/new': ['location:create'],
+    '/locations/edit': ['location:update'],
+    '/contacts': ['contact:read'],
+    '/contacts/new': ['contact:create'],
+    '/contacts/edit': ['contact:update'],
+    '/meters': ['meter:read'],
+    '/meters/new': ['meter:create'],
+    '/meters/edit': ['meter:update'],
+    '/templates': ['template:read'],
+    '/templates/new': ['template:create'],
+    '/templates/edit': ['template:update'],
+    '/settings': ['settings:read'],
   };
+  
+  const requiredPermissions = routePermissions[pathname];
+  if (!requiredPermissions || !userPermissions) {
+    return true; // No specific permissions required
+  }
+  
+  // Check if user has any of the required permissions
+  return requiredPermissions.some(permission => userPermissions.includes(permission));
 };

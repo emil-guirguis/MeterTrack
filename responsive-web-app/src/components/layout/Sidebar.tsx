@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../../types/ui';
+import { useResponsive } from '../../hooks/useResponsive';
 import './Sidebar.css';
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -14,6 +15,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const asideRef = useRef<HTMLElement | null>(null);
+  
+  // Get responsive state for coordinated behavior
+  const { showSidebarInHeader, isDesktop } = useResponsive();
 
   const handleItemClick = (item: any) => {
     const hasChildren = item.children && item.children.length > 0;
@@ -152,7 +156,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           
-          {!isMobile && (
+          {/* Only show toggle button on desktop when sidebar header is visible */}
+          {isDesktop && !showSidebarInHeader && (
             <button
               className="sidebar__toggle"
               onClick={onToggle}
@@ -167,7 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        <nav className="sidebar__nav">
+        <nav className="sidebar__nav" id="main-navigation">
           <ul className="sidebar-menu">
             {menuItems.map(item => renderMenuItem(item))}
           </ul>

@@ -1,125 +1,49 @@
-import { useEffect, useRef } from 'react';
+// Page Title Hook
 
-interface UsePageTitleOptions {
-  suffix?: string;
-  separator?: string;
-  restoreOnUnmount?: boolean;
-}
+import { useEffect } from 'react';
 
 /**
- * Hook to manage document title
- * @param title - The page title to set
- * @param options - Configuration options
+ * Hook to set the document title
  */
-export const usePageTitle = (
-  title: string, 
-  options: UsePageTitleOptions = {}
-): void => {
-  const {
-    suffix = 'Business Management',
-    separator = ' | ',
-    restoreOnUnmount = true
-  } = options;
-
-  const prevTitleRef = useRef<string | undefined>(undefined);
-
+export const usePageTitle = (title: string, appName = 'MeterIt'): void => {
   useEffect(() => {
-    // Store the previous title on first run
-    if (prevTitleRef.current === undefined) {
-      prevTitleRef.current = document?.title || '';
-    }
-
-    // Set the new title
-    const newTitle = title ? `${title}${separator}${suffix}` : suffix;
-    document.title = newTitle;
-
+    const previousTitle = document.title;
+    
+    // Set new title
+    document.title = title ? `${title} - ${appName}` : appName;
+    
     // Cleanup function to restore previous title
     return () => {
-      if (restoreOnUnmount && prevTitleRef.current !== undefined) {
-        document.title = prevTitleRef.current;
-      }
+      document.title = previousTitle;
     };
-  }, [title, suffix, separator, restoreOnUnmount]);
+  }, [title, appName]);
 };
 
 /**
- * Hook to manage document meta tags
- * @param meta - Object containing meta tag key-value pairs
+ * Hook to dynamically update page title based on route and data
  */
-export const useDocumentMeta = (meta: Record<string, string>): void => {
+export const useDynamicPageTitle = (
+  baseTitle: string,
+  data?: { name?: string; title?: string; label?: string },
+  appName = 'MeterIt'
+): void => {
   useEffect(() => {
-    const metaElements: HTMLMetaElement[] = [];
-
-    // Set meta tags
-    Object.entries(meta).forEach(([name, content]) => {
-      let metaElement = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
-      
-      if (!metaElement) {
-        metaElement = document.createElement('meta');
-        metaElement.name = name;
-        document.head.appendChild(metaElement);
-        metaElements.push(metaElement);
+    let title = baseTitle;
+    
+    // If we have data with a name/title/label, append it
+    if (data) {
+      const identifier = data.name || data.title || data.label;
+      if (identifier) {
+        title = `${identifier} - ${baseTitle}`;
       }
-      
-      metaElement.content = content;
-    });
-
-    // Cleanup function to remove created meta tags
-    return () => {
-      metaElements.forEach(element => {
-        if (element.parentNode) {
-          element.parentNode.removeChild(element);
-        }
-      });
-    };
-  }, [meta]);
-};
-
-/**
- * Hook to manage browser history navigation
- */
-export const useNavigationHistory = () => {
-  const canGoBack = window.history.length > 1;
-
-  const goBack = () => {
-    if (canGoBack) {
-      window.history.back();
     }
-  };
-
-  const goForward = () => {
-    window.history.forward();
-  };
-
-  const go = (delta: number) => {
-    window.history.go(delta);
-  };
-
-  return {
-    canGoBack,
-    goBack,
-    goForward,
-    go
-  };
-};
-
-/**
- * Combined hook for page management
- * @param title - Page title
- * @param meta - Meta tags object
- * @param options - Title options
- */
-export const usePage = (
-  title: string,
-  meta: Record<string, string> = {},
-  options: UsePageTitleOptions = {}
-) => {
-  usePageTitle(title, options);
-  useDocumentMeta(meta);
-  
-  const navigation = useNavigationHistory();
-  
-  return navigation;
+    
+    document.title = `${title} - ${appName}`;
+    
+    return () => {
+      document.title = appName;
+    };
+  }, [baseTitle, data, appName]);
 };
 
 export default usePageTitle;
