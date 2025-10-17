@@ -1733,25 +1733,25 @@ class NotificationScheduler {
             // Get meter data for the past 30 days
             const meterData = <span class="cstat-no" title="statement not covered" >await this.getMeterDataForPeriod(30);</span>
             
-            // Group by building and generate reports
-            const buildingReports = <span class="cstat-no" title="statement not covered" >this.groupMeterDataByBuilding(meterData);</span>
+            // Group by location and generate reports
+            const locationReports = <span class="cstat-no" title="statement not covered" >this.groupMeterDataByLocation(meterData);</span>
 &nbsp;
             let successCount = <span class="cstat-no" title="statement not covered" >0;</span>
             let errorCount = <span class="cstat-no" title="statement not covered" >0;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >            for (const [buildingId, data] of Object.entries(buildingReports)) {</span>
+<span class="cstat-no" title="statement not covered" >            for (const [locationId, data] of Object.entries(locationReports)) {</span>
 <span class="cstat-no" title="statement not covered" >                try {</span>
-                    // Get building contacts
-                    const contacts = <span class="cstat-no" title="statement not covered" >await this.getBuildingContacts(buildingId);</span>
+                    // Get location contacts
+                    const contacts = <span class="cstat-no" title="statement not covered" >await this.getLocationContacts(locationId);</span>
                     
 <span class="cstat-no" title="statement not covered" >                    if (contacts.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >                        console.warn(`No contacts found for building ${buildingId}`);</span>
+<span class="cstat-no" title="statement not covered" >                        console.warn(`No contacts found for location ${locationId}`);</span>
 <span class="cstat-no" title="statement not covered" >                        continue;</span>
                     }
 &nbsp;
                     // Prepare template variables
                     const variables = <span class="cstat-no" title="statement not covered" >{</span>
-                        building_name: data.buildingName,
+                        location_name: data.locationName,
                         recipient_name: contacts[0].name,
                         start_date: this.formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
                         end_date: this.formatDate(new Date()),
@@ -1770,24 +1770,24 @@ class NotificationScheduler {
                         template.id,
                         recipients,
                         variables,
-                        { trackingId: `monthly-${buildingId}-${Date.now()}` }
+                        { trackingId: `monthly-${locationId}-${Date.now()}` }
                     );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >                    if (result.success) {</span>
 <span class="cstat-no" title="statement not covered" >                        successCount++;</span>
-<span class="cstat-no" title="statement not covered" >                        console.log(`✅ Monthly report sent for building ${data.buildingName}`);</span>
+<span class="cstat-no" title="statement not covered" >                        console.log(`✅ Monthly report sent for location ${data.locationName}`);</span>
                     } else {
 <span class="cstat-no" title="statement not covered" >                        throw new Error(result.error);</span>
                     }
 &nbsp;
                 } catch (error) {
 <span class="cstat-no" title="statement not covered" >                    errorCount++;</span>
-<span class="cstat-no" title="statement not covered" >                    console.error(`❌ Failed to send monthly report for building ${buildingId}:`, error.message);</span>
+<span class="cstat-no" title="statement not covered" >                    console.error(`❌ Failed to send monthly report for location ${locationId}:`, error.message);</span>
                     
                     // Add to retry queue
 <span class="cstat-no" title="statement not covered" >                    this.addToRetryQueue({</span>
                         type: 'monthlyReport',
-                        buildingId,
+                        locationId,
                         data,
                         templateId: template.id,
                         error: error.message,
@@ -1824,11 +1824,11 @@ class NotificationScheduler {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >            for (const meter of dueMeters) {</span>
 <span class="cstat-no" title="statement not covered" >                try {</span>
-                    // Get building contacts
-                    const contacts = <span class="cstat-no" title="statement not covered" >await this.getBuildingContacts(meter.building_id);</span>
+                    // Get location contacts
+                    const contacts = <span class="cstat-no" title="statement not covered" >await this.getLocationContacts(meter.location_id);</span>
                     
 <span class="cstat-no" title="statement not covered" >                    if (contacts.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >                        console.warn(`No contacts found for building ${meter.building_name}`);</span>
+<span class="cstat-no" title="statement not covered" >                        console.warn(`No contacts found for location ${meter.location_name}`);</span>
 <span class="cstat-no" title="statement not covered" >                        continue;</span>
                     }
 &nbsp;
@@ -1836,7 +1836,7 @@ class NotificationScheduler {
                     const variables = <span class="cstat-no" title="statement not covered" >{</span>
                         recipient_name: contacts[0].name,
                         meter_id: meter.meter_id,
-                        building_name: meter.building_name,
+                        location_name: meter.location_name,
                         equipment_location: meter.location || 'Not specified',
                         maintenance_type: meter.maintenance_type || 'Routine Maintenance',
                         due_date: this.formatDate(meter.due_date),
@@ -1911,11 +1911,11 @@ class NotificationScheduler {
 <span class="cstat-no" title="statement not covered" >                throw new Error('Meter error template not found');</span>
             }
 &nbsp;
-            // Get building contacts
-            const contacts = <span class="cstat-no" title="statement not covered" >await this.getBuildingContacts(meterData.building_id);</span>
+            // Get location contacts
+            const contacts = <span class="cstat-no" title="statement not covered" >await this.getLocationContacts(meterData.location_id);</span>
             
 <span class="cstat-no" title="statement not covered" >            if (contacts.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >                console.warn(`No contacts found for building ${meterData.building_name}`);</span>
+<span class="cstat-no" title="statement not covered" >                console.warn(`No contacts found for location ${meterData.location_name}`);</span>
 <span class="cstat-no" title="statement not covered" >                return { success: false, error: 'No contacts found' };</span>
             }
 &nbsp;
@@ -1923,7 +1923,7 @@ class NotificationScheduler {
             const variables = <span class="cstat-no" title="statement not covered" >{</span>
                 recipient_name: contacts[0].name,
                 meter_id: meterData.meter_id,
-                building_name: meterData.building_name,
+                location_name: meterData.location_name,
                 equipment_location: meterData.location || 'Not specified',
                 meter_type: meterData.meter_type || 'Electric Meter',
                 last_communication: this.formatDateTime(meterData.last_communication),
@@ -1954,7 +1954,7 @@ class NotificationScheduler {
 <span class="cstat-no" title="statement not covered" >                await this.logNotification({</span>
                     type: 'error',
                     meter_id: meterData.meter_id,
-                    building_id: meterData.building_id,
+                    location_id: meterData.location_id,
                     template_id: template.id,
                     recipients: recipients.join(', '),
                     status: 'sent'
@@ -2071,19 +2071,19 @@ class NotificationScheduler {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
             SELECT 
                 m.id as meter_id,
-                m.building_id,
-                b.name as building_name,
+                m.location_id,
+                b.name as location_name,
                 m.location,
                 m.meter_type,
                 COALESCE(SUM(mr.reading_value), 0) as total_consumption,
                 COUNT(mr.id) as reading_count,
                 MAX(mr.reading_date) as last_reading
             FROM meters m
-            LEFT JOIN buildings b ON m.building_id = b.id
+            LEFT JOIN locations b ON m.location_id = b.id
             LEFT JOIN meterreadings mr ON m.id = mr.meterid 
                 AND mr.reading_date &gt;= CURRENT_DATE - INTERVAL '${days} days'
             WHERE m.is_active = true
-            GROUP BY m.id, m.building_id, b.name, m.location, m.meter_type
+            GROUP BY m.id, m.location_id, b.name, m.location, m.meter_type
             ORDER BY b.name, m.id
         `;
 &nbsp;
@@ -2097,24 +2097,24 @@ class NotificationScheduler {
     }
 &nbsp;
     /**
-     * Group meter data by building
+     * Group meter data by location
      */
-<span class="fstat-no" title="function not covered" >    gr</span>oupMeterDataByBuilding(meterData) {
-        const buildings = <span class="cstat-no" title="statement not covered" >{};</span>
+<span class="fstat-no" title="function not covered" >    gr</span>oupMeterDataByLocation(meterData) {
+        const locations = <span class="cstat-no" title="statement not covered" >{};</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        meterData.forEach(<span class="fstat-no" title="function not covered" >me</span>ter =&gt; {</span>
-            const buildingId = <span class="cstat-no" title="statement not covered" >meter.building_id;</span>
+            const locationId = <span class="cstat-no" title="statement not covered" >meter.location_id;</span>
             
-<span class="cstat-no" title="statement not covered" >            if (!buildings[buildingId]) {</span>
-<span class="cstat-no" title="statement not covered" >                buildings[buildingId] = {</span>
-                    buildingName: meter.building_name,
+<span class="cstat-no" title="statement not covered" >            if (!locations[locationId]) {</span>
+<span class="cstat-no" title="statement not covered" >                locations[locationId] = {</span>
+                    locationName: meter.location_name,
                     meters: [],
                     totalConsumption: 0,
                     monthlyChange: 0 // TODO: Calculate actual change
                 };
             }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >            buildings[buildingId].meters.push({</span>
+<span class="cstat-no" title="statement not covered" >            locations[locationId].meters.push({</span>
                 meter_id: meter.meter_id,
                 meter_type: meter.meter_type,
                 total_usage: parseFloat(meter.total_consumption),
@@ -2124,28 +2124,28 @@ class NotificationScheduler {
                 units: 'kWh'
             });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >            buildings[buildingId].totalConsumption += parseFloat(meter.total_consumption);</span>
+<span class="cstat-no" title="statement not covered" >            locations[locationId].totalConsumption += parseFloat(meter.total_consumption);</span>
         });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        return buildings;</span>
+<span class="cstat-no" title="statement not covered" >        return locations;</span>
     }
 &nbsp;
     /**
-     * Get building contacts
+     * Get location contacts
      */
-<span class="fstat-no" title="function not covered" >    as</span>ync getBuildingContacts(buildingId) {
+<span class="fstat-no" title="function not covered" >    as</span>ync getLocationContacts(locationId) {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
             SELECT name, email, phone, role
             FROM contacts 
-            WHERE building_id = $1 AND is_active = true
+            WHERE location_id = $1 AND is_active = true
             ORDER BY role, name
         `;
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        try {</span>
-            const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [buildingId]);</span>
+            const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [locationId]);</span>
 <span class="cstat-no" title="statement not covered" >            return result.rows;</span>
         } catch (error) {
-<span class="cstat-no" title="statement not covered" >            console.error('Error fetching building contacts:', error);</span>
+<span class="cstat-no" title="statement not covered" >            console.error('Error fetching location contacts:', error);</span>
 <span class="cstat-no" title="statement not covered" >            return [];</span>
         }
     }
@@ -2159,8 +2159,8 @@ class NotificationScheduler {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
             SELECT 
                 m.id as meter_id,
-                m.building_id,
-                b.name as building_name,
+                m.location_id,
+                b.name as location_name,
                 m.location,
                 m.meter_type,
                 m.last_maintenance,
@@ -2168,7 +2168,7 @@ class NotificationScheduler {
                 m.next_maintenance as due_date,
                 m.maintenance_notes as notes
             FROM meters m
-            LEFT JOIN buildings b ON m.building_id = b.id
+            LEFT JOIN locations b ON m.location_id = b.id
             WHERE m.is_active = true 
                 AND m.next_maintenance IS NOT NULL
                 AND m.next_maintenance &lt;= CURRENT_DATE + INTERVAL '${daysAhead} days'
@@ -2209,7 +2209,7 @@ class NotificationScheduler {
      */
 <span class="fstat-no" title="function not covered" >    as</span>ync logNotification(logData) {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            INSERT INTO notification_logs (type, meter_id, building_id, template_id, recipients, status, created_at)
+            INSERT INTO notification_logs (type, meter_id, location_id, template_id, recipients, status, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         `;
 &nbsp;
@@ -2217,7 +2217,7 @@ class NotificationScheduler {
 <span class="cstat-no" title="statement not covered" >            await db.query(query, [</span>
                 logData.type,
                 logData.meter_id,
-                logData.building_id,
+                logData.location_id,
                 logData.template_id,
                 logData.recipients,
                 logData.status
@@ -2234,7 +2234,7 @@ class NotificationScheduler {
 <span class="cstat-no" title="statement not covered" >        await this.logNotification({</span>
             type: notification.type,
             meter_id: notification.meterData?.meter_id || notification.meter?.meter_id,
-            building_id: notification.meterData?.building_id || notification.meter?.building_id,
+            location_id: notification.meterData?.location_id || notification.meter?.location_id,
             template_id: notification.templateId,
             recipients: 'failed',
             status: 'failed_max_retries'

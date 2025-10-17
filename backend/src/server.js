@@ -10,7 +10,7 @@ const db = require('./config/database');
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const buildingRoutes = require('./routes/buildings');
+const locationRoutes = require('./routes/locations');
 const equipmentRoutes = require('./routes/equipment');
 const contactRoutes = require('./routes/contacts');
 const meterRoutes = require('./routes/meters');
@@ -19,9 +19,10 @@ const templateRoutes = require('./routes/templates');
 const emailRoutes = require('./routes/emails');
 const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
-const modbusRoutes = require('./routes/modbus');
-const directMeterRoutes = require('./routes/directMeter');
+// const modbusRoutes = require('./routes/modbus'); // Temporarily disabled
+// const directMeterRoutes = require('./routes/directMeter'); // Temporarily disabled
 const devicesRoutes = require('./routes/devices');
+const autoCollectionRoutes = require('./routes/autoCollection');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 const app = express();
@@ -108,9 +109,12 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     // Initialize meter monitoring service
     await initializeMeterMonitoringService();
 
-    // Initialize threading service after successful database connection
-    // await initializeThreadingSystem(); // TEMPORARILY DISABLED
-    console.log('✅ Threading system disabled for debugging');
+    // Initialize threading service first (required for auto collection)
+    await initializeThreadingSystem();
+    console.log('✅ Threading system initialization completed');
+
+    // Initialize auto meter collection service (requires threading service)
+    await initializeAutoMeterCollection();
   } catch (error) {
     console.error('❌ Database connection error:', error.message);
     process.exit(1);
@@ -251,6 +255,70 @@ async function initializeMeterMonitoringService() {
 }
 
 /**
+ * Initialize auto meter collection service (threaded mode only)
+ */
+async function initializeAutoMeterCollection() {
+  try {
+    // Import AutoMeterCollectionService
+    const autoMeterCollectionService = require('./services/AutoMeterCollectionService');
+    
+    // Simple configuration - threaded mode only, 30-second interval
+    const config = {
+      collection: {
+        enabled: true,
+        interval: 30000, // Fixed 30 seconds
+        batchSize: 10,
+        timeout: 10000,
+        retryAttempts: 2
+      },
+      meters: {
+        defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.11',
+        defaultPort: parseInt(process.env.DEFAULT_METER_PORT) || 502,
+        defaultSlaveId: parseInt(process.env.DEFAULT_METER_SLAVE_ID) || 1,
+        registers: {
+          voltage: { address: 5, count: 1, scale: 200, unit: 'V' },
+          current: { address: 6, count: 1, scale: 100, unit: 'A' },
+          power: { address: 7, count: 1, scale: 1, unit: 'W' },
+          energy: { address: 8, count: 1, scale: 1, unit: 'Wh' },
+          frequency: { address: 0, count: 1, scale: 10, unit: 'Hz' },
+          powerFactor: { address: 9, count: 1, scale: 1000, unit: 'pf' }
+        }
+      },
+      database: {
+        batchInsert: false, // Use individual inserts for better error handling
+        maxBatchSize: 100
+      },
+      logging: {
+        logSuccessfulReads: true, // Show detailed collection logs
+        logFailedReads: true,
+        logInterval: 300000 // Log stats every 5 minutes
+      }
+    };
+    
+    // Initialize with threading service (required)
+    const result = await autoMeterCollectionService.initialize(config, threadingService);
+    
+    if (result.success) {
+      console.log('🔄 Auto meter collection service initialized (threaded mode)');
+      
+      // Auto-start collection immediately
+      const startResult = autoMeterCollectionService.startCollection();
+      
+      if (startResult.success) {
+        console.log('🔄 Auto meter collection started (30-second interval)');
+      } else {
+        console.log('⚠️ Failed to start auto meter collection:', startResult.message);
+      }
+    } else {
+      console.log('⚠️ Auto meter collection service initialization failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize auto meter collection service:', error.message);
+    // Don't exit the process - the server can still run without auto collection
+  }
+}
+
+/**
  * Initialize the threading system
  */
 async function initializeThreadingSystem() {
@@ -293,7 +361,7 @@ async function initializeThreadingSystem() {
     threadingService = new ThreadingService(threadingConfig);
     
     // Initialize the threading routes with the service
-    initializeThreadingService(threadingService);
+    // initializeThreadingService(threadingService); // Function not available yet
     
     // Setup threading service event handlers
     setupThreadingEventHandlers();
@@ -349,7 +417,7 @@ function setupThreadingEventHandlers() {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/buildings', buildingRoutes);
+app.use('/api/locations', locationRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/meters', meterRoutes);
@@ -360,9 +428,10 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/modbus', modbusRoutes);
-app.use('/api', directMeterRoutes);
+// app.use('/api/modbus', modbusRoutes); // Temporarily disabled
+// app.use('/api', directMeterRoutes); // Temporarily disabled
 app.use('/api/devices', devicesRoutes);
+app.use('/api/auto-collection', autoCollectionRoutes);
 // app.use('/api/threading', threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint
@@ -406,6 +475,15 @@ app.get('/api/health', async (req, res) => {
     } catch (error) {
       analyzerHealth = { isHealthy: false, error: error.message };
     }
+
+    // Get auto meter collection health status
+    let autoCollectionHealth = null;
+    try {
+      const autoMeterCollectionService = require('./services/AutoMeterCollectionService');
+      autoCollectionHealth = await autoMeterCollectionService.getHealthStatus();
+    } catch (error) {
+      autoCollectionHealth = { isHealthy: false, error: error.message };
+    }
     
     const healthData = {
       status: 'OK',
@@ -416,6 +494,7 @@ app.get('/api/health', async (req, res) => {
       email: emailHealth,
       scheduler: schedulerHealth,
       analyzer: analyzerHealth,
+      autoCollection: autoCollectionHealth,
       threading: null
     };
 
@@ -451,7 +530,8 @@ app.get('/api/health', async (req, res) => {
                      (templatesHealth && templatesHealth.isHealthy) &&
                      (emailHealth && emailHealth.isHealthy) &&
                      (schedulerHealth && schedulerHealth.isHealthy) &&
-                     (analyzerHealth && analyzerHealth.isHealthy);
+                     (analyzerHealth && analyzerHealth.isHealthy) &&
+                     (autoCollectionHealth && autoCollectionHealth.isHealthy);
     
     healthData.status = isHealthy ? 'OK' : 'Degraded';
 
@@ -529,7 +609,7 @@ app.post('/api/test/create-user', async (req, res) => {
       role: 'admin',
       permissions: [
         'user:create', 'user:read', 'user:update', 'user:delete',
-        'building:create', 'building:read', 'building:update', 'building:delete',
+        'location:create', 'location:read', 'location:update', 'location:delete',
         'equipment:create', 'equipment:read', 'equipment:update', 'equipment:delete',
         'contact:create', 'contact:read', 'contact:update', 'contact:delete',
         'meter:create', 'meter:read', 'meter:update', 'meter:delete',

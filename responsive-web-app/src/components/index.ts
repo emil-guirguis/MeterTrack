@@ -17,10 +17,10 @@ export { FormModal } from './common/FormModal';
 export { FormField } from './common/FormField';
 export { SearchFilter } from './common/SearchFilter';
 
-// Building Components
-export { BuildingList } from './buildings/BuildingList';
-export { BuildingForm } from './buildings/BuildingForm';
-export { BuildingDetail } from './buildings/BuildingDetail';
+// Location Components
+export { LocationList } from './locations/LocationsList';
+export { LocationForm } from './locations/LocationsForm';
+export { LocationDetail } from './locations/LocationsDetail';
 
 // Meter Components
 export { MeterList, MeterForm } from './meters';

@@ -16,11 +16,11 @@ export const Permission = {
   USER_UPDATE: 'user:update',
   USER_DELETE: 'user:delete',
   
-  // Building Management
-  BUILDING_CREATE: 'building:create',
-  BUILDING_READ: 'building:read',
-  BUILDING_UPDATE: 'building:update',
-  BUILDING_DELETE: 'building:delete',
+  // Location Management
+  LOCATION_CREATE: 'location:create',
+  LOCATION_READ: 'location:read',
+  LOCATION_UPDATE: 'location:update',
+  LOCATION_DELETE: 'location:delete',
   
   // Equipment Management
   EQUIPMENT_CREATE: 'equipment:create',
@@ -104,11 +104,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.USER_READ,
     Permission.USER_UPDATE,
     
-    // Full building management
-    Permission.BUILDING_CREATE,
-    Permission.BUILDING_READ,
-    Permission.BUILDING_UPDATE,
-    Permission.BUILDING_DELETE,
+    // Full location management
+    Permission.LOCATION_CREATE,
+    Permission.LOCATION_READ,
+    Permission.LOCATION_UPDATE,
+    Permission.LOCATION_DELETE,
     
     // Full equipment management
     Permission.EQUIPMENT_CREATE,
@@ -142,8 +142,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Read-only user access
     Permission.USER_READ,
     
-    // Read-only building access
-    Permission.BUILDING_READ,
+    // Read-only location access
+    Permission.LOCATION_READ,
     
     // Full equipment management
     Permission.EQUIPMENT_CREATE,
@@ -169,7 +169,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   [UserRole.VIEWER]: [
     // Read-only access to most entities
     Permission.USER_READ,
-    Permission.BUILDING_READ,
+    Permission.LOCATION_READ,
     Permission.EQUIPMENT_READ,
     Permission.CONTACT_READ,
     Permission.METER_READ,

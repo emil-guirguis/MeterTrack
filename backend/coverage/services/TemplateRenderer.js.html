@@ -2742,7 +2742,7 @@ class TemplateRenderer {
         // Category-specific sample data
         const categoryDefaults = <span class="cstat-no" title="statement not covered" >{</span>
             meter_readings: {
-                building_name: 'Main Office Building',
+                location_name: 'Main Office Location',
                 recipient_name: 'John Smith',
                 start_date: '2024-01-01',
                 end_date: '2024-01-31',
@@ -2752,7 +2752,7 @@ class TemplateRenderer {
             },
             meter_errors: {
                 meter_id: 'MTR-001',
-                building_name: 'Main Office Building',
+                location_name: 'Main Office Location',
                 recipient_name: 'Jane Doe',
                 error_code: 'COMM_TIMEOUT',
                 error_description: 'Communication timeout after 30 seconds',
@@ -2760,7 +2760,7 @@ class TemplateRenderer {
             },
             maintenance: {
                 meter_id: 'MTR-002',
-                building_name: 'Warehouse A',
+                location_name: 'Warehouse A',
                 recipient_name: 'Mike Johnson',
                 due_date: '2024-02-15',
                 maintenance_type: 'Quarterly Calibration',
@@ -2802,7 +2802,7 @@ class TemplateRenderer {
             email: 'john.smith@example.com',
             phone: '(555) 123-4567',
             address: '123 Main St, City, State 12345',
-            building: 'Main Office Building',
+            location: 'Main Office Location',
             location: 'Floor 2, Room 201',
             company: 'Facility Management Co.',
             contact: 'support@example.com',

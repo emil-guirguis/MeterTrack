@@ -129,7 +129,7 @@ const router = <span class="cstat-no" title="statement not covered" >express.Rou
 // Get all equipment
 <span class="cstat-no" title="statement not covered" >router.get('/', requirePermission('equipment:read'), <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const equipment = <span class="cstat-no" title="statement not covered" >await Equipment.find().populate('buildingId', 'name');</span>
+    const equipment = <span class="cstat-no" title="statement not covered" >await Equipment.find().populate('locationId', 'name');</span>
 <span class="cstat-no" title="statement not covered" >    res.json({ success: true, data: { items: equipment, total: equipment.length } });</span>
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    res.status(500).json({ success: false, message: 'Failed to fetch equipment' });</span>

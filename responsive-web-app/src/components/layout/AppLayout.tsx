@@ -29,11 +29,11 @@ const menuItems: MenuItem[] = [
     requiredPermission: Permission.USER_READ
   },
   {
-    id: 'buildings',
-    label: 'Buildings',
-    icon: 'building',
-    path: '/buildings',
-    requiredPermission: Permission.BUILDING_READ
+    id: 'locations',
+    label: 'Locations',
+    icon: 'location',
+    path: '/locations',
+    requiredPermission: Permission.LOCATION_READ
   },
   {
     id: 'contacts',
@@ -65,11 +65,11 @@ const menuItems: MenuItem[] = [
   }
 ];
 
-const AppLayout: React.FC<LayoutProps> = ({ 
-  children, 
-  title, 
-  breadcrumbs, 
-  loading = false 
+const AppLayout: React.FC<LayoutProps> = ({
+  children,
+  title,
+  breadcrumbs,
+  loading = false
 }) => {
   const { user, logout, checkPermission } = useAuth();
   const location = useLocation();

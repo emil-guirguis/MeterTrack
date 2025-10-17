@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS meter_triggers;
 CREATE TABLE meter_triggers (
     id SERIAL PRIMARY KEY,
     meter_id INTEGER NOT NULL,
-    building_id INTEGER,
+    location_id INTEGER,
     trigger_type VARCHAR(50) NOT NULL,
     severity VARCHAR(20) NOT NULL DEFAULT 'medium',
     message TEXT NOT NULL,
@@ -34,7 +34,7 @@ CHECK (severity IN ('low', 'medium', 'high', 'critical'));
 
 -- Create indexes for better performance
 CREATE INDEX idx_meter_triggers_meter_id ON meter_triggers(meter_id);
-CREATE INDEX idx_meter_triggers_building_id ON meter_triggers(building_id);
+CREATE INDEX idx_meter_triggers_location_id ON meter_triggers(location_id);
 CREATE INDEX idx_meter_triggers_type ON meter_triggers(trigger_type);
 CREATE INDEX idx_meter_triggers_severity ON meter_triggers(severity);
 CREATE INDEX idx_meter_triggers_resolved ON meter_triggers(resolved);

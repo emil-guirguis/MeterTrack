@@ -3,8 +3,8 @@ const { authenticateToken, requirePermission } = require('../middleware/auth');
 const router = express.Router();
 router.use(authenticateToken);
 
-// Direct Modbus meter read (live)
-const modbusService = require('../services/modbusService');
+// Direct Modbus meter read (live) - temporarily disabled
+// const modbusService = require('../services/modbusService');
 
 // GET /api/meterreadings/direct - fetch live data from Modbus meter
 router.get('/direct', requirePermission('meter:read'), async (req, res) => {
@@ -14,7 +14,8 @@ router.get('/direct', requirePermission('meter:read'), async (req, res) => {
     const slaveId = req.query.slaveId ? parseInt(req.query.slaveId) : 1;
     console.log(`[Modbus API] /direct called with deviceIP=${deviceIP}, port=${port}, slaveId=${slaveId}`);
 
-    const result = await modbusService.readMeterData(deviceIP, { port, slaveId });
+    // const result = await modbusService.readMeterData(deviceIP, { port, slaveId });
+    const result = { success: false, error: 'Modbus service temporarily disabled' };
     console.log(`[Modbus API] Result:`, result);
     if (!result.success) {
       console.error(`[Modbus API] Error:`, result.error);
@@ -29,7 +30,7 @@ router.get('/direct', requirePermission('meter:read'), async (req, res) => {
 // Minimal mapper to align PG readings to frontend's expected fields,
 // then fill any remaining fields with nulls for robust rendering.
 const expectedFields = [
-  'timestamp','deviceIP','ip','port','meterId','energy','voltage','kWh','kW','V','A','dPF','dPFchannel','quality','slaveId','source','current','power','frequency','powerFactor','phaseAVoltage','phaseBVoltage','phaseCVoltage','phaseACurrent','phaseBCurrent','phaseCCurrent','phaseAPower','phaseBPower','phaseCPower','lineToLineVoltageAB','lineToLineVoltageBC','lineToLineVoltageCA','totalActivePower','totalReactivePower','totalApparentPower','totalActiveEnergyWh','totalReactiveEnergyVARh','totalApparentEnergyVAh','frequencyHz','temperatureC','humidity','neutralCurrent','phaseAPowerFactor','phaseBPowerFactor','phaseCPowerFactor','voltageThd','currentThd','maxDemandKW','maxDemandKVAR','maxDemandKVA','voltageUnbalance','currentUnbalance','communicationStatus','deviceModel','firmwareVersion','serialNumber','alarmStatus'
+  'timestamp', 'deviceIP', 'ip', 'port', 'meterId', 'energy', 'voltage', 'kWh', 'kW', 'V', 'A', 'dPF', 'dPFchannel', 'quality', 'slaveId', 'source', 'current', 'power', 'frequency', 'powerFactor', 'phaseAVoltage', 'phaseBVoltage', 'phaseCVoltage', 'phaseACurrent', 'phaseBCurrent', 'phaseCCurrent', 'phaseAPower', 'phaseBPower', 'phaseCPower', 'lineToLineVoltageAB', 'lineToLineVoltageBC', 'lineToLineVoltageCA', 'totalActivePower', 'totalReactivePower', 'totalApparentPower', 'totalActiveEnergyWh', 'totalReactiveEnergyVARh', 'totalApparentEnergyVAh', 'frequencyHz', 'temperatureC', 'humidity', 'neutralCurrent', 'phaseAPowerFactor', 'phaseBPowerFactor', 'phaseCPowerFactor', 'voltageThd', 'currentThd', 'maxDemandKW', 'maxDemandKVAR', 'maxDemandKVA', 'voltageUnbalance', 'currentUnbalance', 'communicationStatus', 'deviceModel', 'firmwareVersion', 'serialNumber', 'alarmStatus'
 ];
 
 function toFrontendReading(pg) {
@@ -41,15 +42,15 @@ function toFrontendReading(pg) {
     // Core identifiers/time
     id: pg.id,
     meterId: pg.meterid,
-  // Prefer explicit reading_date; fall back to createdat or timestamp (if present from legacy imports)
-  timestamp: pg.reading_date || pg.createdat || pg.timestamp || null,
+    // Prefer explicit reading_date; fall back to createdat or timestamp (if present from legacy imports)
+    timestamp: pg.reading_date || pg.createdat || pg.timestamp || null,
 
     // Connection/device meta
     ip: pg.ip ?? null,
-  deviceIP: (pg.device_ip ?? pg.deviceip ?? null),
-  port: pg.port ?? null,
-  slaveId: (pg.slave_id ?? pg.slaveid ?? null),
-  source: pg.source ?? null,
+    deviceIP: (pg.device_ip ?? pg.deviceip ?? null),
+    port: pg.port ?? null,
+    slaveId: (pg.slave_id ?? pg.slaveid ?? null),
+    source: pg.source ?? null,
 
     // Shorthand UI metrics (direct columns if present)
     V: pg.v ?? null,
@@ -68,18 +69,18 @@ function toFrontendReading(pg) {
     current: pg.current ?? null,
     power: pg.power ?? null,
     frequency: pg.frequency ?? null,
-  powerFactor: (pg.power_factor ?? pg.powerfactor ?? null),
+    powerFactor: (pg.power_factor ?? pg.powerfactor ?? null),
 
     // Phase and line metrics
-  phaseAVoltage: (pg.phase_a_voltage ?? pg.phaseavoltage ?? null),
-  phaseBVoltage: (pg.phase_b_voltage ?? pg.phasebvoltage ?? null),
-  phaseCVoltage: (pg.phase_c_voltage ?? pg.phasecvoltage ?? null),
-  phaseACurrent: (pg.phase_a_current ?? pg.phaseacurrent ?? null),
-  phaseBCurrent: (pg.phase_b_current ?? pg.phasebcurrent ?? null),
-  phaseCCurrent: (pg.phase_c_current ?? pg.phaseccurrent ?? null),
-  phaseAPower: (pg.phase_a_power ?? pg.phaseapower ?? null),
-  phaseBPower: (pg.phase_b_power ?? pg.phasebpower ?? null),
-  phaseCPower: (pg.phase_c_power ?? pg.phasecpower ?? null),
+    phaseAVoltage: (pg.phase_a_voltage ?? pg.phaseavoltage ?? null),
+    phaseBVoltage: (pg.phase_b_voltage ?? pg.phasebvoltage ?? null),
+    phaseCVoltage: (pg.phase_c_voltage ?? pg.phasecvoltage ?? null),
+    phaseACurrent: (pg.phase_a_current ?? pg.phaseacurrent ?? null),
+    phaseBCurrent: (pg.phase_b_current ?? pg.phasebcurrent ?? null),
+    phaseCCurrent: (pg.phase_c_current ?? pg.phaseccurrent ?? null),
+    phaseAPower: (pg.phase_a_power ?? pg.phaseapower ?? null),
+    phaseBPower: (pg.phase_b_power ?? pg.phasebpower ?? null),
+    phaseCPower: (pg.phase_c_power ?? pg.phasecpower ?? null),
     lineToLineVoltageAB: pg.line_to_line_voltage_ab ?? null,
     lineToLineVoltageBC: pg.line_to_line_voltage_bc ?? null,
     lineToLineVoltageCA: pg.line_to_line_voltage_ca ?? null,
@@ -265,7 +266,7 @@ router.get('/:id', requirePermission('meter:read'), async (req, res, next) => {
       return next();
     }
     const reading = await MeterReading.findById(req.params.id);
-    
+
     if (!reading) {
       return res.status(404).json({
         success: false,

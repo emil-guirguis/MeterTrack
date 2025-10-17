@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const modbusService = require('../services/modbusService');
+// const modbusService = require('../services/modbusService'); // Temporarily disabled
 const { requirePermission } = require('../middleware/auth');
 
 /**
@@ -27,7 +27,8 @@ router.post('/test', requirePermission('meter:read'), async (req, res) => {
       });
     }
 
-    const isConnected = await modbusService.testConnection(deviceIP, port, slaveId);
+    // const isConnected = await modbusService.testConnection(deviceIP, port, slaveId);
+    const isConnected = false; // Temporarily disabled
 
     res.json({
       success: true,
@@ -103,7 +104,8 @@ router.post('/read-meter', requirePermission('meter:read'), async (req, res) => 
       registers: customRegisters || meterConfigs[meterType] || meterConfigs.generic
     };
 
-    const result = await modbusService.readMeterData(deviceIP, config);
+    // const result = await modbusService.readMeterData(deviceIP, config);
+    const result = { success: false, error: 'Modbus service temporarily disabled' };
 
     if (result.success) {
       // Transform data for database storage
@@ -172,10 +174,12 @@ router.post('/read-registers', requirePermission('meter:read'), async (req, res)
 
     let result;
     if (registerType === 'input') {
-      result = await modbusService.readInputRegisters(deviceIP, startAddress, count, { port, slaveId });
+      // result = await modbusService.readInputRegisters(deviceIP, startAddress, count, { port, slaveId });
+      result = { success: false, error: 'Modbus service temporarily disabled' };
     } else {
       // Default to holding registers
-      result = await modbusService.readHoldingRegisters(deviceIP, startAddress, count, { port, slaveId });
+      // result = await modbusService.readHoldingRegisters(deviceIP, startAddress, count, { port, slaveId });
+      result = { success: false, error: 'Modbus service temporarily disabled' };
     }
 
     res.json({

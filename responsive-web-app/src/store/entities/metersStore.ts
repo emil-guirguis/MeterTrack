@@ -293,8 +293,8 @@ export const useMetersEnhanced = () => {
       meters.fetchItems();
     },
     
-    filterByBuilding: (buildingId: string) => {
-      meters.setFilters({ ...meters.list.filters, buildingId });
+    filterByLocation: (locationId: string) => {
+      meters.setFilters({ ...meters.list.filters, locationId });
       meters.fetchItems();
     },
     
@@ -318,8 +318,8 @@ export const useMetersEnhanced = () => {
     },
     
     // Specialized queries
-    getMetersByBuilding: (buildingId: string) =>
-      meters.items.filter(m => m.buildingId === buildingId),
+    getMetersByLocation: (locationId: string) =>
+      meters.items.filter(m => m.locationId === locationId),
     
     getMetersByEquipment: (equipmentId: string) =>
       meters.items.filter(m => m.equipmentId === equipmentId),

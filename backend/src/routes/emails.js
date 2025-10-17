@@ -418,26 +418,26 @@ router.post('/notifications/trigger',
   [
     body('type').isIn(['monthly_report', 'maintenance_reminder', 'error_notification']).withMessage('Invalid notification type'),
     body('meterId').optional().isInt().withMessage('Meter ID must be an integer'),
-    body('buildingId').optional().isInt().withMessage('Building ID must be an integer'),
+    body('locationId').optional().isInt().withMessage('Location ID must be an integer'),
     body('data').optional().isObject().withMessage('Data must be an object')
   ],
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { type, meterId, buildingId, data = {} } = req.body;
+      const { type, meterId, locationId, data = {} } = req.body;
 
       let result;
 
       switch (type) {
         case 'monthly_report':
-          if (!buildingId) {
+          if (!locationId) {
             return res.status(400).json({
               success: false,
-              message: 'Building ID is required for monthly reports'
+              message: 'Location ID is required for monthly reports'
             });
           }
           
-          // Trigger monthly report for specific building
+          // Trigger monthly report for specific location
           result = await notificationScheduler.sendMonthlyReports();
           break;
 
@@ -464,7 +464,7 @@ router.post('/notifications/trigger',
           // Prepare meter data for error notification
           const meterData = {
             meter_id: meterId,
-            building_id: buildingId,
+            location_id: locationId,
             ...data
           };
           
@@ -551,11 +551,11 @@ router.get('/notifications/logs',
           nl.*,
           et.name as template_name,
           m.id as meter_name,
-          b.name as building_name
+          b.name as location_name
         FROM notification_logs nl
         LEFT JOIN email_templates et ON nl.template_id = et.id
         LEFT JOIN meters m ON nl.meter_id = m.id
-        LEFT JOIN buildings b ON nl.building_id = b.id
+        LEFT JOIN locations b ON nl.location_id = b.id
         WHERE 1=1
       `;
 
@@ -588,7 +588,7 @@ router.get('/notifications/logs',
 
       // Get total count
       const countQuery = query.replace(
-        'SELECT nl.*, et.name as template_name, m.id as meter_name, b.name as building_name',
+        'SELECT nl.*, et.name as template_name, m.id as meter_name, b.name as location_name',
         'SELECT COUNT(*)'
       );
       const countResult = await db.query(countQuery, values);

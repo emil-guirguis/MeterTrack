@@ -166,7 +166,7 @@ export interface FilterOption {
 }
 
 export interface BulkAction<T> {
-  key: string;
+  id: string;
   label: string;
   icon?: string;
   color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';

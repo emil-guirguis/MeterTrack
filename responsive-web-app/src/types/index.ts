@@ -19,7 +19,7 @@ export type {
 } from './auth';
 
 export type {
-  Building,
+  Location,
   Equipment,
   Contact,
   Meter,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useBuildingsEnhanced } from '../../store/entities/buildingsStore';
+import { useLocationsEnhanced } from '../../store/entities/locationsStore';
 import type { Equipment, EquipmentCreateRequest, EquipmentUpdateRequest } from '../../types/entities';
 import './EquipmentForm.css';
 
@@ -13,7 +13,7 @@ interface EquipmentFormProps {
 interface FormData {
   name: string;
   type: string;
-  buildingId: string;
+  locationId: string;
   specifications: Record<string, any>;
   installDate: string;
   serialNumber?: string;
@@ -26,7 +26,7 @@ interface FormData {
 interface FormErrors {
   name?: string;
   type?: string;
-  buildingId?: string;
+  locationId?: string;
   installDate?: string;
   serialNumber?: string;
 }
@@ -37,12 +37,12 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   onCancel,
   loading = false,
 }) => {
-  const buildings = useBuildingsEnhanced();
+  const locations = useLocationsEnhanced();
   
   const [formData, setFormData] = useState<FormData>({
     name: '',
     type: '',
-    buildingId: '',
+    locationId: '',
     specifications: {},
     installDate: new Date().toISOString().split('T')[0],
   });
@@ -50,9 +50,9 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load buildings for dropdown
+  // Load locations for dropdown
   useEffect(() => {
-    buildings.fetchItems();
+    locations.fetchItems();
   }, []);
 
   // Initialize form with equipment data if editing
@@ -61,7 +61,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       setFormData({
         name: equipment.name,
         type: equipment.type,
-        buildingId: equipment.buildingId,
+        locationId: equipment.locationId,
         specifications: equipment.specifications || {},
         installDate: new Date(equipment.installDate).toISOString().split('T')[0],
         serialNumber: equipment.serialNumber,
@@ -86,8 +86,8 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       newErrors.type = 'Equipment type is required';
     }
 
-    if (!formData.buildingId) {
-      newErrors.buildingId = 'Building assignment is required';
+    if (!formData.locationId) {
+      newErrors.locationId = 'Location assignment is required';
     }
 
     if (!formData.installDate) {
@@ -236,24 +236,24 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         </div>
 
         <div className="equipment-form__field">
-          <label htmlFor="buildingId" className="equipment-form__label">
-            Building Assignment <span className="equipment-form__required">*</span>
+          <label htmlFor="locationId" className="equipment-form__label">
+            Location Assignment <span className="equipment-form__required">*</span>
           </label>
           <select
-            id="buildingId"
-            value={formData.buildingId}
-            onChange={(e) => handleInputChange('buildingId', e.target.value)}
+            id="locationId"
+            value={formData.locationId}
+            onChange={(e) => handleInputChange('locationId', e.target.value)}
             disabled={isFormDisabled}
-            className={`equipment-form__select ${errors.buildingId ? 'equipment-form__select--error' : ''}`}
+            className={`equipment-form__select ${errors.locationId ? 'equipment-form__select--error' : ''}`}
           >
-            <option value="">Select building</option>
-            {buildings.items.map(building => (
-              <option key={building.id} value={building.id}>
-                {building.name} - {building.address.city}
+            <option value="">Select location</option>
+            {locations.items.map(location => (
+              <option key={location.id} value={location.id}>
+                {location.name} - {location.address.city}
               </option>
             ))}
           </select>
-          {errors.buildingId && <span className="equipment-form__error">{errors.buildingId}</span>}
+          {errors.locationId && <span className="equipment-form__error">{errors.locationId}</span>}
         </div>
       </div>
 
@@ -328,7 +328,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             value={formData.location || ''}
             onChange={(e) => handleInputChange('location', e.target.value)}
             disabled={isFormDisabled}
-            placeholder="Enter specific location within building"
+            placeholder="Enter specific location within location"
             className="equipment-form__input"
           />
         </div>

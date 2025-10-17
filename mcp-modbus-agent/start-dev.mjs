@@ -14,7 +14,7 @@ console.log('🔧 Starting MCP Modbus Agent in development mode...\n');
 // Check if dist directory exists
 const distPath = join(__dirname, 'dist');
 if (!fs.existsSync(distPath)) {
-  console.log('📦 Building project first...');
+  console.log('📦 Location project first...');
   try {
     execSync('npm run build', { stdio: 'inherit' });
     console.log('✅ Build completed\n');

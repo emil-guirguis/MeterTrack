@@ -391,9 +391,9 @@ class MeterMonitoringService {
         const query = `
             SELECT 
                 id, meterid, name, type, status, 
-                last_reading_date, location_building,
+                last_reading_date, location_location,
                 location_floor, location_room, location_description,
-                building_id
+                location_id
             FROM meters 
             WHERE (is_active = true OR is_active IS NULL)
                 AND status != 'inactive'

@@ -10,8 +10,8 @@ class Equipment {
         this.id = equipmentData.id;
         this.name = equipmentData.name;
         this.type = equipmentData.type;
-        this.buildingid = equipmentData.buildingid;
-        this.buildingname = equipmentData.buildingname;
+        this.locationid = equipmentData.locationid;
+        this.locationname = equipmentData.locationname;
         this.specifications = equipmentData.specifications;
         this.status = equipmentData.status || 'active';
         this.installdate = equipmentData.installdate;
@@ -31,14 +31,14 @@ class Equipment {
      */
     static async create(equipmentData) {
         const {
-            name, type, buildingid, buildingname, specifications, status,
+            name, type, locationid, locationname, specifications, status,
             installdate, lastmaintenance, nextmaintenance, serialnumber,
             manufacturer, model, location, notes
         } = equipmentData;
 
         const query = `
             INSERT INTO equipment (
-                name, type, buildingid, buildingname, specifications, status,
+                name, type, locationid, locationname, specifications, status,
                 installdate, lastmaintenance, nextmaintenance, serialnumber,
                 manufacturer, model, location, notes, createdat, updatedat
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -46,7 +46,7 @@ class Equipment {
         `;
 
         const values = [
-            name, type, buildingid, buildingname, 
+            name, type, locationid, locationname, 
             JSON.stringify(specifications || {}), status || 'active',
             installdate, lastmaintenance, nextmaintenance, serialnumber,
             manufacturer, model, location, notes
@@ -104,10 +104,10 @@ class Equipment {
             values.push(filters.status);
         }
 
-        if (filters.buildingid) {
+        if (filters.locationid) {
             paramCount++;
-            query += ` AND buildingid = $${paramCount}`;
-            values.push(filters.buildingid);
+            query += ` AND locationid = $${paramCount}`;
+            values.push(filters.locationid);
         }
 
         if (filters.search) {
@@ -141,7 +141,7 @@ class Equipment {
      */
     async update(updateData) {
         const allowedFields = [
-            'name', 'type', 'buildingid', 'buildingname', 'specifications', 'status',
+            'name', 'type', 'locationid', 'locationname', 'specifications', 'status',
             'installdate', 'lastmaintenance', 'nextmaintenance', 'serialnumber',
             'manufacturer', 'model', 'location', 'notes'
         ];
@@ -228,7 +228,7 @@ class Equipment {
                 COUNT(CASE WHEN status = 'maintenance' THEN 1 END) as maintenance_equipment,
                 COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_equipment,
                 COUNT(DISTINCT type) as equipment_types,
-                COUNT(DISTINCT buildingid) as buildings_with_equipment
+                COUNT(DISTINCT locationid) as locations_with_equipment
             FROM equipment
         `;
 
@@ -237,11 +237,11 @@ class Equipment {
     }
 
     /**
-     * Get equipment by building
+     * Get equipment by location
      */
-    static async findByBuilding(buildingId) {
-        const query = 'SELECT * FROM equipment WHERE buildingid = $1 ORDER BY name ASC';
-        const result = await db.query(query, [buildingId]);
+    static async findByLocation(locationId) {
+        const query = 'SELECT * FROM equipment WHERE locationid = $1 ORDER BY name ASC';
+        const result = await db.query(query, [locationId]);
         
         return result.rows.map(data => {
             const equipment = new Equipment(data);

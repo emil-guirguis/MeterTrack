@@ -7,7 +7,7 @@ import LoginPage from '../pages/LoginPage';
 import { Dashboard } from '../pages/Dashboard';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../pages/users';
-import { BuildingManagementPage } from '../pages/buildings';
+import { LocationManagementPage } from '../pages/locations';
 import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
 import { Permission, UserRole } from '../types/auth';
 import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
@@ -23,7 +23,7 @@ const EquipmentPage = () => (
   <AppLayout title="Equipment">
     <div className="placeholder-page">
       <h2>Equipment Management</h2>
-      <p>Track and manage equipment across all your buildings.</p>
+      <p>Track and manage equipment across all your locations.</p>
     </div>
   </AppLayout>
 );
@@ -67,15 +67,12 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Manager and Above Routes */}
+        {/* Location Management Routes */}
         <Route
-          path="/buildings"
+          path="/locations"
           element={
-            <AuthGuard
-              requiredRoles={[UserRole.ADMIN, UserRole.MANAGER]}
-              requireAll={false}
-            >
-              <BuildingManagementPage />
+            <AuthGuard requiredPermissions={[Permission.LOCATION_READ]}>
+              <LocationManagementPage />
             </AuthGuard>
           }
         />
@@ -142,9 +139,7 @@ const AppRoutes: React.FC = () => {
           path="/templates"
           element={
             <AuthGuard requiredPermissions={[Permission.TEMPLATE_READ]}>
-              <AppLayout title="Email Templates">
-                <TemplatesPage />
-              </AppLayout>
+              <TemplatesPage />
             </AuthGuard>
           }
         />

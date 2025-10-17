@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 
 async function buildAndStart() {
   try {
-    console.log('🔨 Building TypeScript...');
+    console.log('🔨 Location TypeScript...');
     
     // Change to the MCP agent directory
     process.chdir(__dirname);

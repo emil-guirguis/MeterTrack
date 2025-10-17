@@ -2,7 +2,7 @@
 
 import type { User } from '../types/auth';
 import type { 
-  Building, 
+  Location, 
   Equipment, 
   Contact, 
   Meter, 
@@ -86,7 +86,7 @@ export interface UsersStoreState extends EntityState<User> {
   list: ListState;
 }
 
-export interface BuildingsStoreState extends EntityState<Building> {
+export interface LocationsStoreState extends EntityState<Location> {
   list: ListState;
 }
 
@@ -118,7 +118,7 @@ export interface RootStoreState {
   auth: AuthStoreState;
   ui: UIStoreState;
   users: UsersStoreState;
-  buildings: BuildingsStoreState;
+  locations: LocationsStoreState;
   equipment: EquipmentStoreState;
   contacts: ContactsStoreState;
   meters: MetersStoreState;

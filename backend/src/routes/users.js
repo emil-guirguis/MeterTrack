@@ -38,11 +38,11 @@ router.get('/', [
 
     // Build PostgreSQL query filters
     const filters = {};
-    
+
     // Apply filters
     if (filterRole) filters.role = filterRole;
     if (filterStatus) filters.status = filterStatus;
-    
+
     // Apply search - PostgreSQL version with ILIKE
     if (search) {
       // Pass search directly to the model
@@ -85,7 +85,7 @@ router.get('/', [
 router.get('/:id', requirePermission('user:read'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -165,7 +165,7 @@ router.put('/:id', [
 
     // First find the user
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,

@@ -135,7 +135,7 @@ class EmailTemplateSeeder {
         return [
             {
                 name: 'Total Meter Reading (30 Days)',
-                subject: 'Monthly Meter Reading Summary - {{building_name}}',
+                subject: 'Monthly Meter Reading Summary - {{location_name}}',
                 content: `
 <!DOCTYPE html>
 <html>
@@ -164,7 +164,7 @@ class EmailTemplateSeeder {
             <p>Dear {{recipient_name}},</p>
         </div>
 
-        <p>Here is the meter reading summary for <strong>{{building_name}}</strong> for the period from {{start_date}} to {{end_date}}:</p>
+        <p>Here is the meter reading summary for <strong>{{location_name}}</strong> for the period from {{start_date}} to {{end_date}}:</p>
 
         <table class="summary-table">
             <thead>
@@ -210,7 +210,7 @@ class EmailTemplateSeeder {
                 category: 'meter_readings',
                 variables: [
                     { name: 'recipient_name', description: 'Name of the email recipient', type: 'text', required: true },
-                    { name: 'building_name', description: 'Name of the building', type: 'text', required: true },
+                    { name: 'location_name', description: 'Name of the location', type: 'text', required: true },
                     { name: 'start_date', description: 'Start date of the reporting period', type: 'date', required: true },
                     { name: 'end_date', description: 'End date of the reporting period', type: 'date', required: true },
                     { name: 'meters', description: 'Array of meter data objects', type: 'array', required: true },
@@ -224,7 +224,7 @@ class EmailTemplateSeeder {
             },
             {
                 name: 'Meter Not Responding',
-                subject: 'ALERT: Meter Not Responding - {{meter_id}} at {{building_name}}',
+                subject: 'ALERT: Meter Not Responding - {{meter_id}} at {{location_name}}',
                 content: `
 <!DOCTYPE html>
 <html>
@@ -252,13 +252,13 @@ class EmailTemplateSeeder {
             <p>Dear {{recipient_name}},</p>
         </div>
 
-        <p><strong>Alert:</strong> Meter {{meter_id}} at {{building_name}} has stopped responding.</p>
+        <p><strong>Alert:</strong> Meter {{meter_id}} at {{location_name}} has stopped responding.</p>
 
         <div class="meter-details">
             <h3>Meter Details:</h3>
             <ul>
                 <li><strong>Meter ID:</strong> {{meter_id}}</li>
-                <li><strong>Location:</strong> {{building_name}} - {{equipment_location}}</li>
+                <li><strong>Location:</strong> {{location_name}} - {{equipment_location}}</li>
                 <li><strong>Type:</strong> {{meter_type}}</li>
                 <li><strong>Last Communication:</strong> {{last_communication}}</li>
                 <li><strong>Error Duration:</strong> {{error_duration}}</li>
@@ -296,7 +296,7 @@ class EmailTemplateSeeder {
                 variables: [
                     { name: 'recipient_name', description: 'Name of the email recipient', type: 'text', required: true },
                     { name: 'meter_id', description: 'ID of the problematic meter', type: 'text', required: true },
-                    { name: 'building_name', description: 'Name of the building', type: 'text', required: true },
+                    { name: 'location_name', description: 'Name of the location', type: 'text', required: true },
                     { name: 'equipment_location', description: 'Specific location of the equipment', type: 'text', required: true },
                     { name: 'meter_type', description: 'Type of meter', type: 'text', required: true },
                     { name: 'last_communication', description: 'Last successful communication timestamp', type: 'date', required: true },
@@ -338,13 +338,13 @@ class EmailTemplateSeeder {
             <p>Dear {{recipient_name}},</p>
         </div>
 
-        <p>This is a reminder that maintenance is due for meter {{meter_id}} at {{building_name}}.</p>
+        <p>This is a reminder that maintenance is due for meter {{meter_id}} at {{location_name}}.</p>
 
         <div class="maintenance-details">
             <h3>Maintenance Details:</h3>
             <ul>
                 <li><strong>Meter ID:</strong> {{meter_id}}</li>
-                <li><strong>Location:</strong> {{building_name}} - {{equipment_location}}</li>
+                <li><strong>Location:</strong> {{location_name}} - {{equipment_location}}</li>
                 <li><strong>Maintenance Type:</strong> {{maintenance_type}}</li>
                 <li><strong>Due Date:</strong> {{due_date}}</li>
                 <li><strong>Last Maintenance:</strong> {{last_maintenance_date}}</li>
@@ -388,7 +388,7 @@ class EmailTemplateSeeder {
                 variables: [
                     { name: 'recipient_name', description: 'Name of the email recipient', type: 'text', required: true },
                     { name: 'meter_id', description: 'ID of the meter requiring maintenance', type: 'text', required: true },
-                    { name: 'building_name', description: 'Name of the building', type: 'text', required: true },
+                    { name: 'location_name', description: 'Name of the location', type: 'text', required: true },
                     { name: 'equipment_location', description: 'Specific location of the equipment', type: 'text', required: true },
                     { name: 'maintenance_type', description: 'Type of maintenance required', type: 'text', required: true },
                     { name: 'due_date', description: 'Maintenance due date', type: 'date', required: true },

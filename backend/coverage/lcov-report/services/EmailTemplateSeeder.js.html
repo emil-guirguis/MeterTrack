@@ -1242,7 +1242,7 @@ class EmailTemplateSeeder {
 <span class="cstat-no" title="statement not covered" >        return [</span>
             {
                 name: 'Total Meter Reading (30 Days)',
-                subject: 'Monthly Meter Reading Summary - {{building_name}}',
+                subject: 'Monthly Meter Reading Summary - {{location_name}}',
                 content: `
 &lt;!DOCTYPE html&gt;
 &lt;html&gt;
@@ -1271,7 +1271,7 @@ class EmailTemplateSeeder {
             &lt;p&gt;Dear {{recipient_name}},&lt;/p&gt;
         &lt;/div&gt;
 &nbsp;
-        &lt;p&gt;Here is the meter reading summary for &lt;strong&gt;{{building_name}}&lt;/strong&gt; for the period from {{start_date}} to {{end_date}}:&lt;/p&gt;
+        &lt;p&gt;Here is the meter reading summary for &lt;strong&gt;{{location_name}}&lt;/strong&gt; for the period from {{start_date}} to {{end_date}}:&lt;/p&gt;
 &nbsp;
         &lt;table class="summary-table"&gt;
             &lt;thead&gt;
@@ -1317,7 +1317,7 @@ class EmailTemplateSeeder {
                 category: 'meter_readings',
                 variables: [
                     { name: 'recipient_name', description: 'Name of the email recipient', type: 'text', required: true },
-                    { name: 'building_name', description: 'Name of the building', type: 'text', required: true },
+                    { name: 'location_name', description: 'Name of the location', type: 'text', required: true },
                     { name: 'start_date', description: 'Start date of the reporting period', type: 'date', required: true },
                     { name: 'end_date', description: 'End date of the reporting period', type: 'date', required: true },
                     { name: 'meters', description: 'Array of meter data objects', type: 'array', required: true },
@@ -1331,7 +1331,7 @@ class EmailTemplateSeeder {
             },
             {
                 name: 'Meter Not Responding',
-                subject: 'ALERT: Meter Not Responding - {{meter_id}} at {{building_name}}',
+                subject: 'ALERT: Meter Not Responding - {{meter_id}} at {{location_name}}',
                 content: `
 &lt;!DOCTYPE html&gt;
 &lt;html&gt;
@@ -1359,13 +1359,13 @@ class EmailTemplateSeeder {
             &lt;p&gt;Dear {{recipient_name}},&lt;/p&gt;
         &lt;/div&gt;
 &nbsp;
-        &lt;p&gt;&lt;strong&gt;Alert:&lt;/strong&gt; Meter {{meter_id}} at {{building_name}} has stopped responding.&lt;/p&gt;
+        &lt;p&gt;&lt;strong&gt;Alert:&lt;/strong&gt; Meter {{meter_id}} at {{location_name}} has stopped responding.&lt;/p&gt;
 &nbsp;
         &lt;div class="meter-details"&gt;
             &lt;h3&gt;Meter Details:&lt;/h3&gt;
             &lt;ul&gt;
                 &lt;li&gt;&lt;strong&gt;Meter ID:&lt;/strong&gt; {{meter_id}}&lt;/li&gt;
-                &lt;li&gt;&lt;strong&gt;Location:&lt;/strong&gt; {{building_name}} - {{equipment_location}}&lt;/li&gt;
+                &lt;li&gt;&lt;strong&gt;Location:&lt;/strong&gt; {{location_name}} - {{equipment_location}}&lt;/li&gt;
                 &lt;li&gt;&lt;strong&gt;Type:&lt;/strong&gt; {{meter_type}}&lt;/li&gt;
                 &lt;li&gt;&lt;strong&gt;Last Communication:&lt;/strong&gt; {{last_communication}}&lt;/li&gt;
                 &lt;li&gt;&lt;strong&gt;Error Duration:&lt;/strong&gt; {{error_duration}}&lt;/li&gt;
@@ -1403,7 +1403,7 @@ class EmailTemplateSeeder {
                 variables: [
                     { name: 'recipient_name', description: 'Name of the email recipient', type: 'text', required: true },
                     { name: 'meter_id', description: 'ID of the problematic meter', type: 'text', required: true },
-                    { name: 'building_name', description: 'Name of the building', type: 'text', required: true },
+                    { name: 'location_name', description: 'Name of the location', type: 'text', required: true },
                     { name: 'equipment_location', description: 'Specific location of the equipment', type: 'text', required: true },
                     { name: 'meter_type', description: 'Type of meter', type: 'text', required: true },
                     { name: 'last_communication', description: 'Last successful communication timestamp', type: 'date', required: true },
@@ -1445,13 +1445,13 @@ class EmailTemplateSeeder {
             &lt;p&gt;Dear {{recipient_name}},&lt;/p&gt;
         &lt;/div&gt;
 &nbsp;
-        &lt;p&gt;This is a reminder that maintenance is due for meter {{meter_id}} at {{building_name}}.&lt;/p&gt;
+        &lt;p&gt;This is a reminder that maintenance is due for meter {{meter_id}} at {{location_name}}.&lt;/p&gt;
 &nbsp;
         &lt;div class="maintenance-details"&gt;
             &lt;h3&gt;Maintenance Details:&lt;/h3&gt;
             &lt;ul&gt;
                 &lt;li&gt;&lt;strong&gt;Meter ID:&lt;/strong&gt; {{meter_id}}&lt;/li&gt;
-                &lt;li&gt;&lt;strong&gt;Location:&lt;/strong&gt; {{building_name}} - {{equipment_location}}&lt;/li&gt;
+                &lt;li&gt;&lt;strong&gt;Location:&lt;/strong&gt; {{location_name}} - {{equipment_location}}&lt;/li&gt;
                 &lt;li&gt;&lt;strong&gt;Maintenance Type:&lt;/strong&gt; {{maintenance_type}}&lt;/li&gt;
                 &lt;li&gt;&lt;strong&gt;Due Date:&lt;/strong&gt; {{due_date}}&lt;/li&gt;
                 &lt;li&gt;&lt;strong&gt;Last Maintenance:&lt;/strong&gt; {{last_maintenance_date}}&lt;/li&gt;
@@ -1495,7 +1495,7 @@ class EmailTemplateSeeder {
                 variables: [
                     { name: 'recipient_name', description: 'Name of the email recipient', type: 'text', required: true },
                     { name: 'meter_id', description: 'ID of the meter requiring maintenance', type: 'text', required: true },
-                    { name: 'building_name', description: 'Name of the building', type: 'text', required: true },
+                    { name: 'location_name', description: 'Name of the location', type: 'text', required: true },
                     { name: 'equipment_location', description: 'Specific location of the equipment', type: 'text', required: true },
                     { name: 'maintenance_type', description: 'Type of maintenance required', type: 'text', required: true },
                     { name: 'due_date', description: 'Maintenance due date', type: 'date', required: true },

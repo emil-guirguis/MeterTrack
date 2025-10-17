@@ -530,7 +530,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
           </Typography>
           <Box component="ul" sx={{ pl: 2 }}>
             <li><code>{'{{recipient_name}}'}</code> - Recipient's name</li>
-            <li><code>{'{{building_name}}'}</code> - Building name</li>
+            <li><code>{'{{location_name}}'}</code> - Location name</li>
             <li><code>{'{{meter_id}}'}</code> - Meter identifier</li>
             <li><code>{'{{current_date}}'}</code> - Current date</li>
           </Box>

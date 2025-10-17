@@ -39,29 +39,29 @@ export const ROUTE_INFO: Record<string, RouteInfo> = {
     icon: '✏️',
     parent: '/users/:id'
   },
-  '/buildings': {
-    path: '/buildings',
-    label: 'Buildings',
+  '/locations': {
+    path: '/locations',
+    label: 'Locations',
     icon: '🏢',
     parent: '/dashboard'
   },
-  '/buildings/create': {
-    path: '/buildings/create',
-    label: 'Create Building',
+  '/locations/create': {
+    path: '/locations/create',
+    label: 'Create Location',
     icon: '➕',
-    parent: '/buildings'
+    parent: '/locations'
   },
-  '/buildings/:id': {
-    path: '/buildings/:id',
-    label: 'Building Details',
+  '/locations/:id': {
+    path: '/locations/:id',
+    label: 'Location Details',
     icon: '🏢',
-    parent: '/buildings'
+    parent: '/locations'
   },
-  '/buildings/:id/edit': {
-    path: '/buildings/:id/edit',
-    label: 'Edit Building',
+  '/locations/:id/edit': {
+    path: '/locations/:id/edit',
+    label: 'Edit Location',
     icon: '✏️',
-    parent: '/buildings/:id'
+    parent: '/locations/:id'
   },
   '/equipment': {
     path: '/equipment',
@@ -258,17 +258,17 @@ export const generateBreadcrumbs = (
 
     // Create breadcrumb item
     let label = routeInfo.label;
-    
+
     // Apply custom labels for dynamic segments
     if (path.includes(':')) {
       const pathParts = currentPath.split('/');
       const patternParts = routeInfo.path.split('/');
-      
+
       patternParts.forEach((part, index) => {
         if (part.startsWith(':')) {
           const paramName = part.substring(1);
           const paramValue = pathParts[index];
-          
+
           if (customLabels[paramName]) {
             label = customLabels[paramName];
           } else if (paramValue) {
@@ -316,12 +316,12 @@ export const getPageTitle = (
   if (path.includes(':')) {
     const pathParts = path.split('/');
     const patternParts = routeInfo.path.split('/');
-    
+
     patternParts.forEach((part, index) => {
       if (part.startsWith(':')) {
         const paramName = part.substring(1);
         const paramValue = pathParts[index];
-        
+
         if (customLabels[paramName]) {
           title = customLabels[paramName];
         } else if (paramValue) {

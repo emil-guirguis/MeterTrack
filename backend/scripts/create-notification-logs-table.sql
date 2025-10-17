@@ -9,7 +9,7 @@ CREATE TABLE notification_logs (
     id SERIAL PRIMARY KEY,
     type VARCHAR(50) NOT NULL,
     meter_id INTEGER,
-    building_id INTEGER,
+    location_id INTEGER,
     template_id INTEGER REFERENCES email_templates(id),
     recipients TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
@@ -34,7 +34,7 @@ CREATE INDEX idx_notification_logs_type ON notification_logs(type);
 CREATE INDEX idx_notification_logs_status ON notification_logs(status);
 CREATE INDEX idx_notification_logs_created_at ON notification_logs(created_at);
 CREATE INDEX idx_notification_logs_meter_id ON notification_logs(meter_id);
-CREATE INDEX idx_notification_logs_building_id ON notification_logs(building_id);
+CREATE INDEX idx_notification_logs_location_id ON notification_logs(location_id);
 CREATE INDEX idx_notification_logs_template_id ON notification_logs(template_id);
 CREATE INDEX idx_notification_logs_scheduled_at ON notification_logs(scheduled_at);
 

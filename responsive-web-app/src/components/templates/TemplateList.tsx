@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Box, 
-  Button, 
-  Chip, 
-  IconButton, 
-  Menu, 
-  MenuItem, 
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Menu,
+  MenuItem,
   Typography,
   Dialog,
   DialogTitle,
@@ -30,6 +30,8 @@ import { SearchFilter } from '../common/SearchFilter';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import Toast from '../common/Toast';
 import { templateService } from '../../services/templateService';
+import { useAuth } from '../../hooks/useAuth';
+import { Permission } from '../../types/auth';
 import type { EmailTemplate, ListParams } from '../../types/entities';
 import './TemplateList.css';
 
@@ -44,6 +46,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   onCreateTemplate,
   onPreviewTemplate
 }) => {
+  const { checkPermission } = useAuth();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,16 +57,23 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   const [sortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [searchQuery, setSearchQuery] = useState('');
-  
+
+  // Check permissions
+  const canCreate = checkPermission(Permission.TEMPLATE_CREATE);
+  const canUpdate = checkPermission(Permission.TEMPLATE_UPDATE);
+  const canDelete = checkPermission(Permission.TEMPLATE_DELETE);
+  const canExport = checkPermission(Permission.TEMPLATE_READ); // Assuming export requires read permission
+  const canImport = checkPermission(Permission.TEMPLATE_CREATE); // Assuming import requires create permission
+
   // Menu state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
-  
+
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicateName, setDuplicateName] = useState('');
-  
+
   // Toast state
   const [toast, setToast] = useState<{ message: string; severity: 'success' | 'error' | 'info' | 'warning' } | null>(null);
 
@@ -80,18 +90,20 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         search: searchQuery,
       };
       const result = await templateService.getTemplates(params);
-      setTemplates(result.items);
-      setTotal(result.total);
+      setTemplates(result?.items || []);
+      setTotal(result?.total || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load templates');
+      setTemplates([]); // Ensure templates is always an array
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, pageSize, sortBy, sortOrder, filters, searchQuery]);
 
   useEffect(() => {
     loadTemplates();
-  }, [loadTemplates, page, pageSize, sortBy, sortOrder, JSON.stringify(filters), searchQuery]);
+  }, [page, pageSize, sortBy, sortOrder, searchQuery, JSON.stringify(filters)]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -143,16 +155,16 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   };
 
   const confirmDuplicate = async () => {
-    if (!selectedTemplate || !duplicateName.trim()) return;
-    
+    if (!selectedTemplate || !duplicateName.trim() || !canCreate) return;
+
     try {
       await templateService.duplicateTemplate(selectedTemplate.id, duplicateName.trim());
       setToast({ message: 'Template duplicated successfully', severity: 'success' });
       loadTemplates();
     } catch (err) {
-      setToast({ 
-        message: err instanceof Error ? err.message : 'Failed to duplicate template', 
-        severity: 'error' 
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to duplicate template',
+        severity: 'error'
       });
     } finally {
       setDuplicateDialogOpen(false);
@@ -161,16 +173,16 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   };
 
   const confirmDelete = async () => {
-    if (!selectedTemplate) return;
-    
+    if (!selectedTemplate || !canDelete) return;
+
     try {
       await templateService.deleteTemplate(selectedTemplate.id);
       setToast({ message: 'Template deleted successfully', severity: 'success' });
       loadTemplates();
     } catch (err) {
-      setToast({ 
-        message: err instanceof Error ? err.message : 'Failed to delete template', 
-        severity: 'error' 
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to delete template',
+        severity: 'error'
       });
     } finally {
       setDeleteDialogOpen(false);
@@ -178,6 +190,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   };
 
   const handleExport = async () => {
+    if (!canExport) return;
+
     try {
       const blob = await templateService.exportTemplates();
       const url = window.URL.createObjectURL(blob);
@@ -190,9 +204,9 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       document.body.removeChild(a);
       setToast({ message: 'Templates exported successfully', severity: 'success' });
     } catch (err) {
-      setToast({ 
-        message: err instanceof Error ? err.message : 'Failed to export templates', 
-        severity: 'error' 
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to export templates',
+        severity: 'error'
       });
     }
   };
@@ -203,21 +217,21 @@ export const TemplateList: React.FC<TemplateListProps> = ({
 
     try {
       const result = await templateService.importTemplates(file);
-      setToast({ 
-        message: `Imported ${result.imported} templates successfully`, 
-        severity: 'success' 
+      setToast({
+        message: `Imported ${result.imported} templates successfully`,
+        severity: 'success'
       });
       if (result.errors.length > 0) {
         console.warn('Import errors:', result.errors);
       }
       loadTemplates();
     } catch (err) {
-      setToast({ 
-        message: err instanceof Error ? err.message : 'Failed to import templates', 
-        severity: 'error' 
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to import templates',
+        severity: 'error'
       });
     }
-    
+
     // Reset file input
     event.target.value = '';
   };
@@ -272,8 +286,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       label: 'Status',
       sortable: true,
       render: (template: EmailTemplate) => (
-        <Chip 
-          label={template.status} 
+        <Chip
+          label={template.status}
           color={getStatusColor(template.status) as any}
           size="small"
         />
@@ -315,23 +329,23 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       render: (template: EmailTemplate) => (
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Preview">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={() => onPreviewTemplate?.(template)}
             >
               <PreviewIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Edit">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={() => onEditTemplate?.(template)}
             >
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <IconButton 
-            size="small" 
+          <IconButton
+            size="small"
             onClick={(e) => handleMenuOpen(e, template)}
           >
             <MoreIcon fontSize="small" />
@@ -428,9 +442,11 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         placeholder="Search templates..."
       />
 
+
+
       <DataTable
         columns={columns}
-        data={templates}
+        data={templates || []}
         loading={loading}
         emptyMessage="No templates found"
         pagination={{
@@ -500,8 +516,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDuplicateDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={confirmDuplicate} 
+          <Button
+            onClick={confirmDuplicate}
             variant="contained"
             disabled={!duplicateName.trim()}
           >

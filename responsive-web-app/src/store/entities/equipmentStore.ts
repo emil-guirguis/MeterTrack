@@ -129,8 +129,8 @@ export const useEquipmentEnhanced = () => {
       equipment.fetchItems();
     },
     
-    filterByBuilding: (buildingId: string) => {
-      equipment.setFilters({ ...equipment.list.filters, buildingId });
+    filterByLocation: (locationId: string) => {
+      equipment.setFilters({ ...equipment.list.filters, locationId });
       equipment.fetchItems();
     },
     

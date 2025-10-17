@@ -165,7 +165,7 @@ BRF:15
 BRH:0
 end_of_record
 TN:
-SF:src\models\Building.js
+SF:src\models\Location.js
 FN:9,(anonymous_0)
 FN:38,(anonymous_1)
 FN:70,(anonymous_2)
@@ -1816,8 +1816,8 @@ BRF:20
 BRH:0
 end_of_record
 TN:
-SF:src\routes\buildings.js
-FN:14,mapBuildingToResponse
+SF:src\routes\locations.js
+FN:14,mapLocationToResponse
 FN:61,(anonymous_1)
 FN:106,(anonymous_2)
 FN:141,(anonymous_3)
@@ -1835,7 +1835,7 @@ FN:404,(anonymous_14)
 FN:405,(anonymous_15)
 FNF:16
 FNH:0
-FNDA:0,mapBuildingToResponse
+FNDA:0,mapLocationToResponse
 FNDA:0,(anonymous_1)
 FNDA:0,(anonymous_2)
 FNDA:0,(anonymous_3)

@@ -1,249 +1,64 @@
-const ModbusRTU = require("modbus-serial");
+// CommonJS wrapper for the TypeScript ModbusService
+// This allows JavaScript files to require the TypeScript service
 
-class ModbusService {
-  constructor() {
-    this.clients = new Map(); // Store multiple client connections
-  }
+const path = require('path');
 
-  /**
-   * Connect to a Modbus TCP device
-   * @param {string} deviceIP - IP address of the device
-   * @param {number} port - Modbus TCP port (default 502)
-   * @param {number} slaveId - Slave ID of the device
-   * @returns {Promise<ModbusRTU>} - Modbus client instance
-   */
-  async connectDevice(deviceIP, port = 502, slaveId = 1) {
-    const clientKey = `${deviceIP}:${port}:${slaveId}`;
-    console.log(`[ModbusService] Attempting connection to ${deviceIP}:${port} (slaveId=${slaveId})`);
-    if (this.clients.has(clientKey)) {
-      console.log(`[ModbusService] Reusing existing client for ${clientKey}`);
-      return this.clients.get(clientKey);
-    }
+// Cache for the imported service
+let modbusService = null;
 
-    const client = new ModbusRTU();
+async function getModbusService() {
+  if (!modbusService) {
     try {
-      await client.connectTCP(deviceIP, { port });
-      client.setID(slaveId);
-      client.setTimeout(5000); // 5 second timeout
-      this.clients.set(clientKey, client);
-      console.log(`[ModbusService] Connected to ${clientKey}`);
-      return client;
+      // Dynamic import for ES6 module from the compiled dist folder
+      const distPath = path.resolve(__dirname, '../../dist/services/modbusService.js');
+      const module = await import(distPath);
+      modbusService = module.default;
     } catch (error) {
-      console.error(`[ModbusService] Connection failed for ${clientKey}:`, error);
-      throw new Error(`Failed to connect to Modbus device at ${deviceIP}:${port} - ${error.message}`);
+      console.error('Failed to import ModbusService:', error);
+      throw new Error('ModbusService not available. Make sure TypeScript is compiled.');
     }
   }
-
-  /**
-   * Read energy meter data from a Modbus device
-   * @param {string} deviceIP - IP address of the meter
-   * @param {object} config - Configuration object
-   * @returns {Promise<object>} - Meter reading data
-   */
-  async readMeterData(deviceIP, config = {}) {
-    const {
-      port = 502,
-      slaveId = 1,
-      registers = {
-        // REAL METER MAPPING - Based on actual device at 10.10.10.11:502
-        voltage: { address: 5, count: 1, scale: 200 },    // Register 5, scale by 200
-        current: { address: 6, count: 1, scale: 100 },    // Register 6, scale by 100  
-        power: { address: 7, count: 1, scale: 1 },        // Register 7, direct watts
-        energy: { address: 8, count: 1, scale: 1 },       // Register 8 estimate
-        frequency: { address: 0, count: 1, scale: 10 },   // Register 0, scale by 10
-        powerFactor: { address: 9, count: 1, scale: 1000 }, // Register 9 estimate
-        
-        // Phase voltages
-        phaseAVoltage: { address: 12, count: 1, scale: 10 },
-        phaseBVoltage: { address: 14, count: 1, scale: 10 },
-        phaseCVoltage: { address: 16, count: 1, scale: 10 },
-        
-        // Phase currents
-        phaseACurrent: { address: 18, count: 1, scale: 100 },
-        phaseBCurrent: { address: 20, count: 1, scale: 100 },
-        phaseCCurrent: { address: 22, count: 1, scale: 100 },
-        
-        // Phase powers
-        phaseAPower: { address: 24, count: 1, scale: 1 },
-        phaseBPower: { address: 26, count: 1, scale: 1 },
-        phaseCPower: { address: 28, count: 1, scale: 1 },
-        
-        // Line-to-line voltages
-        lineToLineVoltageAB: { address: 30, count: 1, scale: 10 },
-        lineToLineVoltageBC: { address: 32, count: 1, scale: 10 },
-        lineToLineVoltageCA: { address: 34, count: 1, scale: 10 },
-        
-        // Power measurements
-        totalReactivePower: { address: 36, count: 1, scale: 1 },
-        totalApparentPower: { address: 38, count: 1, scale: 1 },
-        
-        // Energy measurements
-        totalActiveEnergyWh: { address: 40, count: 2, scale: 1 },
-        totalReactiveEnergyVARh: { address: 42, count: 2, scale: 1 },
-        totalApparentEnergyVAh: { address: 44, count: 2, scale: 1 },
-        
-        // Additional measurements
-        temperatureC: { address: 46, count: 1, scale: 10 },
-        neutralCurrent: { address: 48, count: 1, scale: 100 },
-        
-        // Power factor per phase
-        phaseAPowerFactor: { address: 50, count: 1, scale: 1000 },
-        phaseBPowerFactor: { address: 52, count: 1, scale: 1000 },
-        phaseCPowerFactor: { address: 54, count: 1, scale: 1000 },
-        
-        // Harmonic distortion
-        voltageThd: { address: 56, count: 1, scale: 100 },
-        currentThd: { address: 58, count: 1, scale: 100 },
-        
-        // Demand measurements
-        maxDemandKW: { address: 60, count: 1, scale: 1 },
-        maxDemandKVAR: { address: 62, count: 1, scale: 1 },
-        maxDemandKVA: { address: 64, count: 1, scale: 1 }
-      }
-    } = config;
-
-    let client;
-    try {
-      client = await this.connectDevice(deviceIP, port, slaveId);
-      console.log(`[ModbusService] Connected, starting register reads for ${deviceIP}`);
-      const readings = {};
-      // Read each register type
-      for (const [key, regConfig] of Object.entries(registers)) {
-        try {
-          console.log(`[ModbusService] Reading ${key}: address=${regConfig.address}, count=${regConfig.count}`);
-          const result = await client.readHoldingRegisters(regConfig.address, regConfig.count);
-          console.log(`[ModbusService] ${key} raw data:`, result.data);
-          if (regConfig.count === 1) {
-            readings[key] = result.data[0] / regConfig.scale;
-          } else if (regConfig.count === 2) {
-            readings[key] = ((result.data[0] << 16) + result.data[1]) / regConfig.scale;
-          } else {
-            readings[key] = result.data.map(val => val / regConfig.scale);
-          }
-        } catch (regError) {
-          console.warn(`[ModbusService] Failed to read ${key} from ${deviceIP}: ${regError.message}`);
-          readings[key] = null;
-        }
-      }
-      console.log(`[ModbusService] Final readings:`, readings);
-      return {
-        deviceIP,
-        timestamp: new Date(),
-        success: true,
-        data: readings
-      };
-    } catch (error) {
-      console.error(`[ModbusService] Error during meter read:`, error);
-      return {
-        deviceIP,
-        timestamp: new Date(),
-        success: false,
-        error: error.message,
-        data: null
-      };
-    }
-  }
-
-  /**
-   * Read input registers (for some meter types)
-   * @param {string} deviceIP - IP address of the device
-   * @param {number} startAddress - Starting register address
-   * @param {number} count - Number of registers to read
-   * @param {object} options - Connection options
-   * @returns {Promise<object>} - Register data
-   */
-  async readInputRegisters(deviceIP, startAddress, count, options = {}) {
-    const { port = 502, slaveId = 1 } = options;
-    
-    let client;
-    try {
-      client = await this.connectDevice(deviceIP, port, slaveId);
-      const result = await client.readInputRegisters(startAddress, count);
-      
-      return {
-        deviceIP,
-        timestamp: new Date(),
-        success: true,
-        data: result.data
-      };
-    } catch (error) {
-      return {
-        deviceIP,
-        timestamp: new Date(),
-        success: false,
-        error: error.message,
-        data: null
-      };
-    }
-  }
-
-  /**
-   * Test connection to a Modbus device
-   * @param {string} deviceIP - IP address of the device
-   * @param {number} port - Modbus TCP port
-   * @param {number} slaveId - Slave ID
-   * @returns {Promise<boolean>} - Connection status
-   */
-  async testConnection(deviceIP, port = 502, slaveId = 1) {
-    let client;
-    try {
-      client = await this.connectDevice(deviceIP, port, slaveId);
-      // Try to read a single register to test connection
-      await client.readHoldingRegisters(0, 1);
-      return true;
-    } catch (error) {
-      console.error(`Connection test failed for ${deviceIP}:${port} - ${error.message}`);
-      return false;
-    }
-  }
-
-  /**
-   * Close all Modbus connections
-   */
-  closeAllConnections() {
-    for (const [key, client] of this.clients) {
-      try {
-        client.close();
-      } catch (error) {
-        console.warn(`Error closing connection ${key}: ${error.message}`);
-      }
-    }
-    this.clients.clear();
-  }
-
-  /**
-   * Close specific connection
-   * @param {string} deviceIP - IP address
-   * @param {number} port - Port number
-   * @param {number} slaveId - Slave ID
-   */
-  closeConnection(deviceIP, port = 502, slaveId = 1) {
-    const clientKey = `${deviceIP}:${port}:${slaveId}`;
-    if (this.clients.has(clientKey)) {
-      try {
-        this.clients.get(clientKey).close();
-        this.clients.delete(clientKey);
-      } catch (error) {
-        console.warn(`Error closing connection ${clientKey}: ${error.message}`);
-      }
-    }
-  }
+  return modbusService;
 }
 
-// Singleton instance
-const modbusService = new ModbusService();
+// Export CommonJS-compatible interface
+module.exports = {
+  async readMeterData(deviceIP, config = {}) {
+    const service = await getModbusService();
+    return service.readMeterData(deviceIP, config);
+  },
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Closing Modbus connections...');
-  modbusService.closeAllConnections();
-  process.exit(0);
-});
+  async readInputRegisters(deviceIP, startAddress, count, options = {}) {
+    const service = await getModbusService();
+    return service.readInputRegisters(deviceIP, startAddress, count, options);
+  },
 
-process.on('SIGTERM', () => {
-  console.log('Closing Modbus connections...');
-  modbusService.closeAllConnections();
-  process.exit(0);
-});
+  async testConnection(deviceIP, port = 502, slaveId = 1) {
+    const service = await getModbusService();
+    return service.testConnection(deviceIP, port, slaveId);
+  },
 
-module.exports = modbusService;
+  async connectDevice(deviceIP, port = 502, slaveId = 1) {
+    const service = await getModbusService();
+    return service.connectDevice(deviceIP, port, slaveId);
+  },
+
+  closeAllConnections() {
+    if (modbusService) {
+      modbusService.closeAllConnections();
+    }
+  },
+
+  closeConnection(deviceIP, port = 502, slaveId = 1) {
+    if (modbusService) {
+      modbusService.closeConnection(deviceIP, port, slaveId);
+    }
+  },
+
+  getPoolStats() {
+    if (modbusService) {
+      return modbusService.getPoolStats();
+    }
+    return { totalConnections: 0, activeConnections: 0, idleConnections: 0 };
+  }
+};

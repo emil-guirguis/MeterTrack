@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { config as dotenvConfig } from 'dotenv';
-import ModbusRTU from 'modbus-serial';
+import { createLogger } from './dist/logger.js';
+import { EnhancedModbusClient } from './dist/enhanced-modbus-client.js';
 
 // Load env (backend first, then local overrides)
 (() => {
@@ -58,11 +59,15 @@ async function readRange(client, fn, start, count) {
     const addr = start + offset;
     const c = Math.min(CHUNK_SIZE, count - offset);
     try {
-      const res = fn === 'input'
-        ? await client.readInputRegisters(addr, c)
-        : await client.readHoldingRegisters(addr, c);
+      let result;
+      if (fn === 'input') {
+        result = await client.client.readInputRegisters(addr, c);
+      } else {
+        result = await client.client.readHoldingRegisters(addr, c);
+      }
+      const values = result.response.body.values;
       for (let i = 0; i < c; i++) {
-        out[offset + i] = res.data[i];
+        out[offset + i] = values[i];
       }
     } catch (e) {
       // If the device rejects this block, leave these addresses as undefined
@@ -93,11 +98,22 @@ function toCsvRow(idx, space, raw, nameInfo) {
 }
 
 (async () => {
-  const client = new ModbusRTU();
+  const logger = createLogger();
+  const clientConfig = {
+    host: ip,
+    port: port,
+    unitId: slaveId,
+    timeout: timeout,
+    maxRetries: 3,
+    reconnectDelay: 5000
+  };
+  
+  const client = new EnhancedModbusClient(clientConfig, logger);
   try {
-    await client.connectTCP(ip, { port });
-    client.setID(slaveId);
-    client.setTimeout(timeout);
+    const connected = await client.connect();
+    if (!connected) {
+      throw new Error('Failed to connect to Modbus device');
+    }
 
     const holding = await readRange(client, 'holding', SCAN_START, SCAN_COUNT);
     let input = [];
@@ -127,6 +143,9 @@ function toCsvRow(idx, space, raw, nameInfo) {
   } catch (e) {
     console.error('❌ Failed to export CSV:', e?.message || e);
   } finally {
-    try { client.close(); } catch {}
+    try { 
+      client.disconnect(); 
+      client.destroy();
+    } catch {}
   }
 })();

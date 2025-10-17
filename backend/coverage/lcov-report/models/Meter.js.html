@@ -684,7 +684,7 @@ class Meter {
 <span class="cstat-no" title="statement not covered" >        this.installation_date = meterData.installation_date;</span>
 <span class="cstat-no" title="statement not covered" >        this.last_reading_date = meterData.last_reading_date;</span>
 <span class="cstat-no" title="statement not covered" >        this.status = meterData.status || 'active';</span>
-<span class="cstat-no" title="statement not covered" >        this.location_building = meterData.location_building;</span>
+<span class="cstat-no" title="statement not covered" >        this.location_location = meterData.location_location;</span>
 <span class="cstat-no" title="statement not covered" >        this.location_floor = meterData.location_floor;</span>
 <span class="cstat-no" title="statement not covered" >        this.location_room = meterData.location_room;</span>
 <span class="cstat-no" title="statement not covered" >        this.location_description = meterData.location_description;</span>
@@ -702,7 +702,7 @@ class Meter {
 <span class="fstat-no" title="function not covered" >    st</span>atic async create(meterData) {
         const {
             meterid, name, type, device_id, serialnumber,
-            installation_date, last_reading_date, status, location_building,
+            installation_date, last_reading_date, status, location_location,
             location_floor, location_room, location_description,
             unit_of_measurement, multiplier, notes
         } = <span class="cstat-no" title="statement not covered" >meterData;</span>
@@ -710,7 +710,7 @@ class Meter {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
             INSERT INTO meters (
                 meterid, name, type, device_id, serialnumber,
-                installation_date, last_reading_date, status, location_building,
+                installation_date, last_reading_date, status, location_location,
                 location_floor, location_room, location_description,
                 unit_of_measurement, multiplier, notes, register_map, createdat, updatedat
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -719,7 +719,7 @@ class Meter {
 &nbsp;
         const values = <span class="cstat-no" title="statement not covered" >[</span>
             meterid, name, type, device_id, serialnumber,
-            installation_date, last_reading_date, status || 'active', location_building,
+            installation_date, last_reading_date, status || 'active', location_location,
             location_floor, location_room, location_description,
             unit_of_measurement, multiplier || 1, notes, meterData.register_map || null
         ];
@@ -786,10 +786,10 @@ class Meter {
 <span class="cstat-no" title="statement not covered" >            values.push(filters.status);</span>
         }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        if (filters.location_building) {</span>
+<span class="cstat-no" title="statement not covered" >        if (filters.location_location) {</span>
 <span class="cstat-no" title="statement not covered" >            paramCount++;</span>
-<span class="cstat-no" title="statement not covered" >            query += ` AND m.location_building = ${paramCount}`;</span>
-<span class="cstat-no" title="statement not covered" >            values.push(filters.location_building);</span>
+<span class="cstat-no" title="statement not covered" >            query += ` AND m.location_location = ${paramCount}`;</span>
+<span class="cstat-no" title="statement not covered" >            values.push(filters.location_location);</span>
         }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (filters.search) {</span>
@@ -816,7 +816,7 @@ class Meter {
 <span class="fstat-no" title="function not covered" >    as</span>ync update(updateData) {
         const allowedFields = <span class="cstat-no" title="statement not covered" >[</span>
             'meterid', 'name', 'type', 'device_id', 'serialnumber',
-            'installation_date', 'last_reading_date', 'status', 'location_building',
+            'installation_date', 'last_reading_date', 'status', 'location_location',
             'location_floor', 'location_room', 'location_description',
             'unit_of_measurement', 'multiplier', 'notes', 'register_map'
         ];
@@ -921,7 +921,7 @@ class Meter {
                 COUNT(CASE WHEN type = 'electric' THEN 1 END) as electric_meters,
                 COUNT(CASE WHEN type = 'gas' THEN 1 END) as gas_meters,
                 COUNT(CASE WHEN type = 'water' THEN 1 END) as water_meters,
-                COUNT(DISTINCT location_building) as buildings_with_meters
+                COUNT(DISTINCT location_location) as locations_with_meters
             FROM meters
         `;
 &nbsp;
@@ -930,11 +930,11 @@ class Meter {
     }
 &nbsp;
     /**
-     * Get meters by building
+     * Get meters by location
      */
-<span class="fstat-no" title="function not covered" >    st</span>atic async findByBuilding(building) {
-        const query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM meters WHERE location_building = $1 ORDER BY meterid ASC';</span>
-        const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [building]);</span>
+<span class="fstat-no" title="function not covered" >    st</span>atic async findByLocation(location) {
+        const query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM meters WHERE location_location = $1 ORDER BY meterid ASC';</span>
+        const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [location]);</span>
 <span class="cstat-no" title="statement not covered" >        return result.rows.map(<span class="fstat-no" title="function not covered" >da</span>ta =&gt; <span class="cstat-no" title="statement not covered" >new Meter(data))</span>;</span>
     }
 &nbsp;
@@ -943,7 +943,7 @@ class Meter {
      */
 <span class="fstat-no" title="function not covered" >    ge</span>t fullLocation() {
         const parts = <span class="cstat-no" title="statement not covered" >[</span>
-            this.location_building,
+            this.location_location,
             this.location_floor &amp;&amp; `Floor ${this.location_floor}`,
             this.location_room &amp;&amp; `Room ${this.location_room}`,
             this.location_description

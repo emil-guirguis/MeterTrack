@@ -92,45 +92,45 @@ CREATE TRIGGER update_meter_monitoring_alerts_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_meter_usage_alerts_updated_at();
 
--- Add building_id column to meters table if it doesn't exist
+-- Add location_id column to meters table if it doesn't exist
 DO $$ 
 BEGIN
-    -- Add building_id column if it doesn't exist
+    -- Add location_id column if it doesn't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'meters' AND column_name = 'building_id') THEN
+                   WHERE table_name = 'meters' AND column_name = 'location_id') THEN
         
-        -- Check if buildings table exists and determine the ID type
-        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'buildings') THEN
-            -- Check if buildings.id is UUID type
+        -- Check if locations table exists and determine the ID type
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'locations') THEN
+            -- Check if locations.id is UUID type
             IF EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name = 'buildings' AND column_name = 'id' AND data_type = 'uuid') THEN
-                -- Add UUID column for building_id
-                ALTER TABLE meters ADD COLUMN building_id UUID;
+                      WHERE table_name = 'locations' AND column_name = 'id' AND data_type = 'uuid') THEN
+                -- Add UUID column for location_id
+                ALTER TABLE meters ADD COLUMN location_id UUID;
                 
-                -- Try to populate building_id from location_building
+                -- Try to populate location_id from location_location
                 UPDATE meters 
-                SET building_id = b.id
-                FROM buildings b 
-                WHERE meters.location_building = b.name 
-                    AND meters.building_id IS NULL;
+                SET location_id = b.id
+                FROM locations b 
+                WHERE meters.location_location = b.name 
+                    AND meters.location_id IS NULL;
             ELSE
-                -- Add INTEGER column for building_id
-                ALTER TABLE meters ADD COLUMN building_id INTEGER;
+                -- Add INTEGER column for location_id
+                ALTER TABLE meters ADD COLUMN location_id INTEGER;
                 
-                -- Try to populate building_id from location_building
+                -- Try to populate location_id from location_location
                 UPDATE meters 
-                SET building_id = b.id 
-                FROM buildings b 
-                WHERE meters.location_building = b.name 
-                    AND meters.building_id IS NULL;
+                SET location_id = b.id 
+                FROM locations b 
+                WHERE meters.location_location = b.name 
+                    AND meters.location_id IS NULL;
             END IF;
         ELSE
-            -- Default to INTEGER if buildings table doesn't exist
-            ALTER TABLE meters ADD COLUMN building_id INTEGER;
+            -- Default to INTEGER if locations table doesn't exist
+            ALTER TABLE meters ADD COLUMN location_id INTEGER;
         END IF;
         
-        -- Create index for building_id
-        CREATE INDEX idx_meters_building_id ON meters(building_id);
+        -- Create index for location_id
+        CREATE INDEX idx_meters_location_id ON meters(location_id);
     END IF;
     
     -- Add is_active column if it doesn't exist (for compatibility)

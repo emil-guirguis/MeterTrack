@@ -48,10 +48,10 @@ async function testConnection() {
         }
         
         try {
-            const buildingCount = await client.query('SELECT COUNT(*) as count FROM buildings');
-            console.log(`  Buildings: ${buildingCount.rows[0].count}`);
+            const locationCount = await client.query('SELECT COUNT(*) as count FROM locations');
+            console.log(`  Locations: ${locationCount.rows[0].count}`);
         } catch (err) {
-            console.log(`  Buildings table: Error - ${err.message}`);
+            console.log(`  Locations table: Error - ${err.message}`);
         }
         
         try {

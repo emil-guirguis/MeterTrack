@@ -7,8 +7,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { config as dotenvConfig } from 'dotenv';
-import ModbusRTU from 'modbus-serial';
 import { createLogger } from './dist/logger.js';
+import { EnhancedModbusClient } from './dist/enhanced-modbus-client.js';
 
 // Load env (backend first, then local overrides)
 (() => {
@@ -69,19 +69,43 @@ async function readRange(client, fn, start, count) {
   for (let offset = 0; offset < count; offset += CHUNK_SIZE) {
     const addr = start + offset;
     const c = Math.min(CHUNK_SIZE, count - offset);
-    const res = fn === 'input' ? await client.readInputRegisters(addr, c) : await client.readHoldingRegisters(addr, c);
-    out.push(...res.data);
+    
+    try {
+      let values;
+      if (fn === 'input') {
+        const result = await client.client.readInputRegisters(addr, c);
+        values = result.response.body.values;
+      } else {
+        const result = await client.client.readHoldingRegisters(addr, c);
+        values = result.response.body.values;
+      }
+      out.push(...values);
+    } catch (error) {
+      logger.warn(`Failed to read ${fn} registers at ${addr}:`, error.message);
+      // Fill with zeros for failed reads to maintain array structure
+      out.push(...new Array(c).fill(0));
+    }
   }
   return out;
 }
 
 (async () => {
-  const client = new ModbusRTU();
+  const clientConfig = {
+    host: ip,
+    port: port,
+    unitId: slaveId,
+    timeout: timeout,
+    maxRetries: 3,
+    reconnectDelay: 5000
+  };
+  
+  const client = new EnhancedModbusClient(clientConfig, logger);
   try {
-    await client.connectTCP(ip, { port });
-    client.setID(slaveId);
-    client.setTimeout(timeout);
-    logger.info('Scan: connected');
+    const connected = await client.connect();
+    if (!connected) {
+      throw new Error('Failed to connect to Modbus device');
+    }
+    logger.info('Scan: connected with enhanced client');
 
     // Read Input Registers (FC4)
     let inputRegs = [];
@@ -133,6 +157,10 @@ async function readRange(client, fn, start, count) {
     logger.error('Scan failed', { error: e?.message || e });
     console.error('❌ Scan failed:', e?.message || e);
   } finally {
-    try { client.close(); logger.info('Scan: disconnected'); } catch {}
+    try { 
+      client.disconnect(); 
+      client.destroy();
+      logger.info('Scan: disconnected'); 
+    } catch {}
   }
 })();

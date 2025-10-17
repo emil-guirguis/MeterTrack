@@ -19,7 +19,7 @@ class Meter {
         this.installation_date = meterData.installation_date;
         this.last_reading_date = meterData.last_reading_date;
         this.status = meterData.status || 'active';
-        this.location_building = meterData.location_building;
+        this.location_location = meterData.location_location;
         this.location_floor = meterData.location_floor;
         this.location_room = meterData.location_room;
         this.location_description = meterData.location_description;
@@ -37,7 +37,7 @@ class Meter {
     static async create(meterData) {
         const {
             meterid, name, type, device_id, serialnumber,
-            installation_date, last_reading_date, status, location_building,
+            installation_date, last_reading_date, status, location_location,
             location_floor, location_room, location_description,
             unit_of_measurement, multiplier, notes
         } = meterData;
@@ -45,7 +45,7 @@ class Meter {
         const query = `
             INSERT INTO meters (
                 meterid, name, type, device_id, serialnumber,
-                installation_date, last_reading_date, status, location_building,
+                installation_date, last_reading_date, status, location_location,
                 location_floor, location_room, location_description,
                 unit_of_measurement, multiplier, notes, register_map, createdat, updatedat
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -54,7 +54,7 @@ class Meter {
 
         const values = [
             meterid, name, type, device_id, serialnumber,
-            installation_date, last_reading_date, status || 'active', location_building,
+            installation_date, last_reading_date, status || 'active', location_location,
             location_floor, location_room, location_description,
             unit_of_measurement, multiplier || 1, notes, meterData.register_map || null
         ];
@@ -121,10 +121,10 @@ class Meter {
             values.push(filters.status);
         }
 
-        if (filters.location_building) {
+        if (filters.location_location) {
             paramCount++;
-            query += ` AND m.location_building = ${paramCount}`;
-            values.push(filters.location_building);
+            query += ` AND m.location_location = ${paramCount}`;
+            values.push(filters.location_location);
         }
 
         if (filters.search) {
@@ -151,7 +151,7 @@ class Meter {
     async update(updateData) {
         const allowedFields = [
             'meterid', 'name', 'type', 'device_id', 'serialnumber',
-            'installation_date', 'last_reading_date', 'status', 'location_building',
+            'installation_date', 'last_reading_date', 'status', 'location_location',
             'location_floor', 'location_room', 'location_description',
             'unit_of_measurement', 'multiplier', 'notes', 'register_map'
         ];
@@ -256,7 +256,7 @@ class Meter {
                 COUNT(CASE WHEN type = 'electric' THEN 1 END) as electric_meters,
                 COUNT(CASE WHEN type = 'gas' THEN 1 END) as gas_meters,
                 COUNT(CASE WHEN type = 'water' THEN 1 END) as water_meters,
-                COUNT(DISTINCT location_building) as buildings_with_meters
+                COUNT(DISTINCT location_location) as locations_with_meters
             FROM meters
         `;
 
@@ -265,11 +265,11 @@ class Meter {
     }
 
     /**
-     * Get meters by building
+     * Get meters by location
      */
-    static async findByBuilding(building) {
-        const query = 'SELECT * FROM meters WHERE location_building = $1 ORDER BY meterid ASC';
-        const result = await db.query(query, [building]);
+    static async findByLocation(location) {
+        const query = 'SELECT * FROM meters WHERE location_location = $1 ORDER BY meterid ASC';
+        const result = await db.query(query, [location]);
         return result.rows.map(data => new Meter(data));
     }
 
@@ -278,7 +278,7 @@ class Meter {
      */
     get fullLocation() {
         const parts = [
-            this.location_building,
+            this.location_location,
             this.location_floor && `Floor ${this.location_floor}`,
             this.location_room && `Room ${this.location_room}`,
             this.location_description

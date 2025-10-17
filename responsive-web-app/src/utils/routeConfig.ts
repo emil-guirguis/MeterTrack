@@ -63,10 +63,10 @@ export const RouteAccessPatterns = {
     requiredPermissions: ['user:read' as Permission],
   },
 
-  // Building management routes
-  BUILDING_MANAGEMENT: {
+  // Location management routes
+  LOCATION_MANAGEMENT: {
     requireAuth: true,
-    requiredPermissions: ['building:read' as Permission],
+    requiredPermissions: ['location:read' as Permission],
   },
 
   // Equipment management routes

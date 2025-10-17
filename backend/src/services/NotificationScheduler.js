@@ -172,25 +172,25 @@ class NotificationScheduler {
             // Get meter data for the past 30 days
             const meterData = await this.getMeterDataForPeriod(30);
             
-            // Group by building and generate reports
-            const buildingReports = this.groupMeterDataByBuilding(meterData);
+            // Group by location and generate reports
+            const locationReports = this.groupMeterDataByLocation(meterData);
 
             let successCount = 0;
             let errorCount = 0;
 
-            for (const [buildingId, data] of Object.entries(buildingReports)) {
+            for (const [locationId, data] of Object.entries(locationReports)) {
                 try {
-                    // Get building contacts
-                    const contacts = await this.getBuildingContacts(buildingId);
+                    // Get location contacts
+                    const contacts = await this.getLocationContacts(locationId);
                     
                     if (contacts.length === 0) {
-                        console.warn(`No contacts found for building ${buildingId}`);
+                        console.warn(`No contacts found for location ${locationId}`);
                         continue;
                     }
 
                     // Prepare template variables
                     const variables = {
-                        building_name: data.buildingName,
+                        location_name: data.locationName,
                         recipient_name: contacts[0].name,
                         start_date: this.formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
                         end_date: this.formatDate(new Date()),
@@ -209,24 +209,24 @@ class NotificationScheduler {
                         template.id,
                         recipients,
                         variables,
-                        { trackingId: `monthly-${buildingId}-${Date.now()}` }
+                        { trackingId: `monthly-${locationId}-${Date.now()}` }
                     );
 
                     if (result.success) {
                         successCount++;
-                        console.log(`✅ Monthly report sent for building ${data.buildingName}`);
+                        console.log(`✅ Monthly report sent for location ${data.locationName}`);
                     } else {
                         throw new Error(result.error);
                     }
 
                 } catch (error) {
                     errorCount++;
-                    console.error(`❌ Failed to send monthly report for building ${buildingId}:`, error.message);
+                    console.error(`❌ Failed to send monthly report for location ${locationId}:`, error.message);
                     
                     // Add to retry queue
                     this.addToRetryQueue({
                         type: 'monthlyReport',
-                        buildingId,
+                        locationId,
                         data,
                         templateId: template.id,
                         error: error.message,
@@ -263,11 +263,11 @@ class NotificationScheduler {
 
             for (const meter of dueMeters) {
                 try {
-                    // Get building contacts
-                    const contacts = await this.getBuildingContacts(meter.building_id);
+                    // Get location contacts
+                    const contacts = await this.getLocationContacts(meter.location_id);
                     
                     if (contacts.length === 0) {
-                        console.warn(`No contacts found for building ${meter.building_name}`);
+                        console.warn(`No contacts found for location ${meter.location_name}`);
                         continue;
                     }
 
@@ -275,7 +275,7 @@ class NotificationScheduler {
                     const variables = {
                         recipient_name: contacts[0].name,
                         meter_id: meter.meter_id,
-                        building_name: meter.building_name,
+                        location_name: meter.location_name,
                         equipment_location: meter.location || 'Not specified',
                         maintenance_type: meter.maintenance_type || 'Routine Maintenance',
                         due_date: this.formatDate(meter.due_date),
@@ -350,11 +350,11 @@ class NotificationScheduler {
                 throw new Error('Meter error template not found');
             }
 
-            // Get building contacts
-            const contacts = await this.getBuildingContacts(meterData.building_id);
+            // Get location contacts
+            const contacts = await this.getLocationContacts(meterData.location_id);
             
             if (contacts.length === 0) {
-                console.warn(`No contacts found for building ${meterData.building_name}`);
+                console.warn(`No contacts found for location ${meterData.location_name}`);
                 return { success: false, error: 'No contacts found' };
             }
 
@@ -362,7 +362,7 @@ class NotificationScheduler {
             const variables = {
                 recipient_name: contacts[0].name,
                 meter_id: meterData.meter_id,
-                building_name: meterData.building_name,
+                location_name: meterData.location_name,
                 equipment_location: meterData.location || 'Not specified',
                 meter_type: meterData.meter_type || 'Electric Meter',
                 last_communication: this.formatDateTime(meterData.last_communication),
@@ -393,7 +393,7 @@ class NotificationScheduler {
                 await this.logNotification({
                     type: 'error',
                     meter_id: meterData.meter_id,
-                    building_id: meterData.building_id,
+                    location_id: meterData.location_id,
                     template_id: template.id,
                     recipients: recipients.join(', '),
                     status: 'sent'
@@ -510,19 +510,19 @@ class NotificationScheduler {
         const query = `
             SELECT 
                 m.id as meter_id,
-                m.building_id,
-                b.name as building_name,
+                m.location_id,
+                b.name as location_name,
                 m.location,
                 m.meter_type,
                 COALESCE(SUM(mr.reading_value), 0) as total_consumption,
                 COUNT(mr.id) as reading_count,
                 MAX(mr.reading_date) as last_reading
             FROM meters m
-            LEFT JOIN buildings b ON m.building_id = b.id
+            LEFT JOIN locations b ON m.location_id = b.id
             LEFT JOIN meterreadings mr ON m.id = mr.meterid 
                 AND mr.reading_date >= CURRENT_DATE - INTERVAL '${days} days'
             WHERE m.is_active = true
-            GROUP BY m.id, m.building_id, b.name, m.location, m.meter_type
+            GROUP BY m.id, m.location_id, b.name, m.location, m.meter_type
             ORDER BY b.name, m.id
         `;
 
@@ -536,24 +536,24 @@ class NotificationScheduler {
     }
 
     /**
-     * Group meter data by building
+     * Group meter data by location
      */
-    groupMeterDataByBuilding(meterData) {
-        const buildings = {};
+    groupMeterDataByLocation(meterData) {
+        const locations = {};
 
         meterData.forEach(meter => {
-            const buildingId = meter.building_id;
+            const locationId = meter.location_id;
             
-            if (!buildings[buildingId]) {
-                buildings[buildingId] = {
-                    buildingName: meter.building_name,
+            if (!locations[locationId]) {
+                locations[locationId] = {
+                    locationName: meter.location_name,
                     meters: [],
                     totalConsumption: 0,
                     monthlyChange: 0 // TODO: Calculate actual change
                 };
             }
 
-            buildings[buildingId].meters.push({
+            locations[locationId].meters.push({
                 meter_id: meter.meter_id,
                 meter_type: meter.meter_type,
                 total_usage: parseFloat(meter.total_consumption),
@@ -563,28 +563,28 @@ class NotificationScheduler {
                 units: 'kWh'
             });
 
-            buildings[buildingId].totalConsumption += parseFloat(meter.total_consumption);
+            locations[locationId].totalConsumption += parseFloat(meter.total_consumption);
         });
 
-        return buildings;
+        return locations;
     }
 
     /**
-     * Get building contacts
+     * Get location contacts
      */
-    async getBuildingContacts(buildingId) {
+    async getLocationContacts(locationId) {
         const query = `
             SELECT name, email, phone, role
             FROM contacts 
-            WHERE building_id = $1 AND is_active = true
+            WHERE location_id = $1 AND is_active = true
             ORDER BY role, name
         `;
 
         try {
-            const result = await db.query(query, [buildingId]);
+            const result = await db.query(query, [locationId]);
             return result.rows;
         } catch (error) {
-            console.error('Error fetching building contacts:', error);
+            console.error('Error fetching location contacts:', error);
             return [];
         }
     }
@@ -598,8 +598,8 @@ class NotificationScheduler {
         const query = `
             SELECT 
                 m.id as meter_id,
-                m.building_id,
-                b.name as building_name,
+                m.location_id,
+                b.name as location_name,
                 m.location,
                 m.meter_type,
                 m.last_maintenance,
@@ -607,7 +607,7 @@ class NotificationScheduler {
                 m.next_maintenance as due_date,
                 m.maintenance_notes as notes
             FROM meters m
-            LEFT JOIN buildings b ON m.building_id = b.id
+            LEFT JOIN locations b ON m.location_id = b.id
             WHERE m.is_active = true 
                 AND m.next_maintenance IS NOT NULL
                 AND m.next_maintenance <= CURRENT_DATE + INTERVAL '${daysAhead} days'
@@ -648,7 +648,7 @@ class NotificationScheduler {
      */
     async logNotification(logData) {
         const query = `
-            INSERT INTO notification_logs (type, meter_id, building_id, template_id, recipients, status, created_at)
+            INSERT INTO notification_logs (type, meter_id, location_id, template_id, recipients, status, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         `;
 
@@ -656,7 +656,7 @@ class NotificationScheduler {
             await db.query(query, [
                 logData.type,
                 logData.meter_id,
-                logData.building_id,
+                logData.location_id,
                 logData.template_id,
                 logData.recipients,
                 logData.status
@@ -673,7 +673,7 @@ class NotificationScheduler {
         await this.logNotification({
             type: notification.type,
             meter_id: notification.meterData?.meter_id || notification.meter?.meter_id,
-            building_id: notification.meterData?.building_id || notification.meter?.building_id,
+            location_id: notification.meterData?.location_id || notification.meter?.location_id,
             template_id: notification.templateId,
             recipients: 'failed',
             status: 'failed_max_retries'

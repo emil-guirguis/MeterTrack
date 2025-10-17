@@ -209,11 +209,11 @@ export const UserForm: React.FC<UserFormProps> = ({
       Permission.USER_UPDATE,
       Permission.USER_DELETE,
     ],
-    'Building Management': [
-      Permission.BUILDING_CREATE,
-      Permission.BUILDING_READ,
-      Permission.BUILDING_UPDATE,
-      Permission.BUILDING_DELETE,
+    'Location Management': [
+      Permission.LOCATION_CREATE,
+      Permission.LOCATION_READ,
+      Permission.LOCATION_UPDATE,
+      Permission.LOCATION_DELETE,
     ],
     'Equipment Management': [
       Permission.EQUIPMENT_CREATE,

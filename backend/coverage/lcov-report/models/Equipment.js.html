@@ -665,8 +665,8 @@ class Equipment {
 <span class="cstat-no" title="statement not covered" >        this.id = equipmentData.id;</span>
 <span class="cstat-no" title="statement not covered" >        this.name = equipmentData.name;</span>
 <span class="cstat-no" title="statement not covered" >        this.type = equipmentData.type;</span>
-<span class="cstat-no" title="statement not covered" >        this.buildingid = equipmentData.buildingid;</span>
-<span class="cstat-no" title="statement not covered" >        this.buildingname = equipmentData.buildingname;</span>
+<span class="cstat-no" title="statement not covered" >        this.locationid = equipmentData.locationid;</span>
+<span class="cstat-no" title="statement not covered" >        this.locationname = equipmentData.locationname;</span>
 <span class="cstat-no" title="statement not covered" >        this.specifications = equipmentData.specifications;</span>
 <span class="cstat-no" title="statement not covered" >        this.status = equipmentData.status || 'active';</span>
 <span class="cstat-no" title="statement not covered" >        this.installdate = equipmentData.installdate;</span>
@@ -686,14 +686,14 @@ class Equipment {
      */
 <span class="fstat-no" title="function not covered" >    st</span>atic async create(equipmentData) {
         const {
-            name, type, buildingid, buildingname, specifications, status,
+            name, type, locationid, locationname, specifications, status,
             installdate, lastmaintenance, nextmaintenance, serialnumber,
             manufacturer, model, location, notes
         } = <span class="cstat-no" title="statement not covered" >equipmentData;</span>
 &nbsp;
         const query = <span class="cstat-no" title="statement not covered" >`</span>
             INSERT INTO equipment (
-                name, type, buildingid, buildingname, specifications, status,
+                name, type, locationid, locationname, specifications, status,
                 installdate, lastmaintenance, nextmaintenance, serialnumber,
                 manufacturer, model, location, notes, createdat, updatedat
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -701,7 +701,7 @@ class Equipment {
         `;
 &nbsp;
         const values = <span class="cstat-no" title="statement not covered" >[</span>
-            name, type, buildingid, buildingname, 
+            name, type, locationid, locationname, 
             JSON.stringify(specifications || {}), status || 'active',
             installdate, lastmaintenance, nextmaintenance, serialnumber,
             manufacturer, model, location, notes
@@ -759,10 +759,10 @@ class Equipment {
 <span class="cstat-no" title="statement not covered" >            values.push(filters.status);</span>
         }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        if (filters.buildingid) {</span>
+<span class="cstat-no" title="statement not covered" >        if (filters.locationid) {</span>
 <span class="cstat-no" title="statement not covered" >            paramCount++;</span>
-<span class="cstat-no" title="statement not covered" >            query += ` AND buildingid = ${paramCount}`;</span>
-<span class="cstat-no" title="statement not covered" >            values.push(filters.buildingid);</span>
+<span class="cstat-no" title="statement not covered" >            query += ` AND locationid = ${paramCount}`;</span>
+<span class="cstat-no" title="statement not covered" >            values.push(filters.locationid);</span>
         }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (filters.search) {</span>
@@ -796,7 +796,7 @@ class Equipment {
      */
 <span class="fstat-no" title="function not covered" >    as</span>ync update(updateData) {
         const allowedFields = <span class="cstat-no" title="statement not covered" >[</span>
-            'name', 'type', 'buildingid', 'buildingname', 'specifications', 'status',
+            'name', 'type', 'locationid', 'locationname', 'specifications', 'status',
             'installdate', 'lastmaintenance', 'nextmaintenance', 'serialnumber',
             'manufacturer', 'model', 'location', 'notes'
         ];
@@ -883,7 +883,7 @@ class Equipment {
                 COUNT(CASE WHEN status = 'maintenance' THEN 1 END) as maintenance_equipment,
                 COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_equipment,
                 COUNT(DISTINCT type) as equipment_types,
-                COUNT(DISTINCT buildingid) as buildings_with_equipment
+                COUNT(DISTINCT locationid) as locations_with_equipment
             FROM equipment
         `;
 &nbsp;
@@ -892,11 +892,11 @@ class Equipment {
     }
 &nbsp;
     /**
-     * Get equipment by building
+     * Get equipment by location
      */
-<span class="fstat-no" title="function not covered" >    st</span>atic async findByBuilding(buildingId) {
-        const query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM equipment WHERE buildingid = $1 ORDER BY name ASC';</span>
-        const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [buildingId]);</span>
+<span class="fstat-no" title="function not covered" >    st</span>atic async findByLocation(locationId) {
+        const query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM equipment WHERE locationid = $1 ORDER BY name ASC';</span>
+        const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [locationId]);</span>
         
 <span class="cstat-no" title="statement not covered" >        return result.rows.map(<span class="fstat-no" title="function not covered" >da</span>ta =&gt; {</span>
             const equipment = <span class="cstat-no" title="statement not covered" >new Equipment(data);</span>

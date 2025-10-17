@@ -19,7 +19,7 @@ function log(...args) { console.log(new Date().toISOString(), ...args); }
 function mapBoolean(b) { if (b === undefined || b === null) return null; return b ? 1 : 0; }
 
 // Mapping helpers per collection
-function mapBuilding(doc) {
+function mapLocation(doc) {
   const a = doc.address || {};
   const c = doc.contactInfo || {};
   return {
@@ -52,8 +52,8 @@ function mapEquipment(doc) {
     mongo_id: String(doc._id || ''),
     name: doc.name || null,
     type: doc.type || null,
-    buildingid: doc.buildingId ? null : null, // optional: resolve to SQL guid if available
-    buildingname: doc.buildingName || null,
+    locationid: doc.locationId ? null : null, // optional: resolve to SQL guid if available
+    locationname: doc.locationName || null,
     specifications: doc.specifications ? JSON.stringify(doc.specifications) : null,
     status: doc.status || null,
     installdate: doc.installDate || null,
@@ -74,8 +74,8 @@ function mapMeter(doc) {
     mongo_id: String(doc._id || ''),
     serialnumber: doc.serialNumber || null,
     type: doc.type || null,
-    buildingid: doc.buildingId ? null : null,
-    buildingname: doc.buildingName || null,
+    locationid: doc.locationId ? null : null,
+    locationname: doc.locationName || null,
     equipmentid: doc.equipmentId ? null : null,
     equipmentname: doc.equipmentName || null,
     config_readinginterval: cfg.readingInterval ?? null,
@@ -211,7 +211,7 @@ function mapMeterReading(doc) {
 }
 
 const collections = [
-  { name: 'buildings', mongo: 'buildings', table: 'dbo.buildings', map: mapBuilding, cols: Object.keys(mapBuilding({address:{},contactInfo:{},name:''})) },
+  { name: 'locations', mongo: 'locations', table: 'dbo.locations', map: mapLocation, cols: Object.keys(mapLocation({address:{},contactInfo:{},name:''})) },
   { name: 'equipment', mongo: 'equipment', table: 'dbo.equipment', map: mapEquipment },
   { name: 'meters', mongo: 'meters', table: 'dbo.meters', map: mapMeter },
   { name: 'contacts', mongo: 'contacts', table: 'dbo.contacts', map: mapContact },

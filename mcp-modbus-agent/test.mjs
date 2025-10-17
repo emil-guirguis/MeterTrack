@@ -25,7 +25,7 @@ console.log('✅ Created test .env file');
 
 try {
   // Build the project
-  console.log('📦 Building project...');
+  console.log('📦 Location project...');
   execSync('npm run build', { stdio: 'inherit' });
   console.log('✅ Build completed');
 

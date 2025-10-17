@@ -19,7 +19,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   loading = false,
 }) => {
   const { checkPermission } = useAuth();
-  
+
   const [formData, setFormData] = useState<CreateMeterRequest & { device_id?: string }>({
     meterId: meter?.meterId || '',
     serialNumber: meter?.serialNumber || '',
@@ -85,7 +85,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -124,7 +124,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
       <form onSubmit={handleSubmit}>
         <div className="form-section">
           <h3>Basic Information</h3>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="brand">Brand *</label>
@@ -210,7 +210,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
         <div className="form-section">
           <h3>Connection Settings</h3>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="ip">IP Address *</label>
@@ -262,7 +262,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
         <div className="form-section">
           <h3>Location & Description</h3>
-          
+
           <div className="form-group">
             <label htmlFor="description">Description</label>
             <textarea

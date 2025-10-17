@@ -1749,26 +1749,26 @@ const handleValidationErrors = <span class="cstat-no" title="statement not cover
   [
     body('type').isIn(['monthly_report', 'maintenance_reminder', 'error_notification']).withMessage('Invalid notification type'),
     body('meterId').optional().isInt().withMessage('Meter ID must be an integer'),
-    body('buildingId').optional().isInt().withMessage('Building ID must be an integer'),
+    body('locationId').optional().isInt().withMessage('Location ID must be an integer'),
     body('data').optional().isObject().withMessage('Data must be an object')
   ],
   handleValidationErrors,
 <span class="fstat-no" title="function not covered" >  as</span>ync (req, res) =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const { type, meterId, buildingId, data = <span class="branch-0 cbranch-no" title="branch not covered" >{} </span>} = <span class="cstat-no" title="statement not covered" >req.body;</span>
+      const { type, meterId, locationId, data = <span class="branch-0 cbranch-no" title="branch not covered" >{} </span>} = <span class="cstat-no" title="statement not covered" >req.body;</span>
 &nbsp;
       let result;
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      switch (type) {</span>
         case 'monthly_report':
-<span class="cstat-no" title="statement not covered" >          if (!buildingId) {</span>
+<span class="cstat-no" title="statement not covered" >          if (!locationId) {</span>
 <span class="cstat-no" title="statement not covered" >            return res.status(400).json({</span>
               success: false,
-              message: 'Building ID is required for monthly reports'
+              message: 'Location ID is required for monthly reports'
             });
           }
           
-          // Trigger monthly report for specific building
+          // Trigger monthly report for specific location
 <span class="cstat-no" title="statement not covered" >          result = await notificationScheduler.sendMonthlyReports();</span>
 <span class="cstat-no" title="statement not covered" >          break;</span>
 &nbsp;
@@ -1795,7 +1795,7 @@ const handleValidationErrors = <span class="cstat-no" title="statement not cover
           // Prepare meter data for error notification
           const meterData = <span class="cstat-no" title="statement not covered" >{</span>
             meter_id: meterId,
-            building_id: buildingId,
+            location_id: locationId,
             ...data
           };
           
@@ -1882,11 +1882,11 @@ const handleValidationErrors = <span class="cstat-no" title="statement not cover
           nl.*,
           et.name as template_name,
           m.id as meter_name,
-          b.name as building_name
+          b.name as location_name
         FROM notification_logs nl
         LEFT JOIN email_templates et ON nl.template_id = et.id
         LEFT JOIN meters m ON nl.meter_id = m.id
-        LEFT JOIN buildings b ON nl.building_id = b.id
+        LEFT JOIN locations b ON nl.location_id = b.id
         WHERE 1=1
       `;
 &nbsp;
@@ -1919,7 +1919,7 @@ const handleValidationErrors = <span class="cstat-no" title="statement not cover
 &nbsp;
       // Get total count
       const countQuery = <span class="cstat-no" title="statement not covered" >query.replace(</span>
-        'SELECT nl.*, et.name as template_name, m.id as meter_name, b.name as building_name',
+        'SELECT nl.*, et.name as template_name, m.id as meter_name, b.name as location_name',
         'SELECT COUNT(*)'
       );
       const countResult = <span class="cstat-no" title="statement not covered" >await db.query(countQuery, values);</span>

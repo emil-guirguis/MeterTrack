@@ -8,7 +8,7 @@ router.use(authenticateToken);
 // Get all equipment
 router.get('/', requirePermission('equipment:read'), async (req, res) => {
   try {
-    const equipment = await Equipment.find().populate('buildingId', 'name');
+    const equipment = await Equipment.find().populate('locationId', 'name');
     res.json({ success: true, data: { items: equipment, total: equipment.length } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch equipment' });

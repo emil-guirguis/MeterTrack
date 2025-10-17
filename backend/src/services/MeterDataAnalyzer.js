@@ -399,8 +399,8 @@ class MeterDataAnalyzer {
         // Prepare meter data for notification
         const meterData = {
             meter_id: meter.id,
-            building_id: meter.building_id,
-            building_name: meter.building_name,
+            location_id: meter.location_id,
+            location_name: meter.location_name,
             location: meter.location,
             meter_type: meter.meter_type,
             last_communication: trigger.data.last_communication,
@@ -437,15 +437,15 @@ class MeterDataAnalyzer {
         const query = `
             SELECT 
                 m.id,
-                m.building_id,
-                b.name as building_name,
+                m.location_id,
+                b.name as location_name,
                 m.location,
                 m.meter_type,
                 m.next_maintenance,
                 m.maintenance_interval,
                 m.last_maintenance
             FROM meters m
-            LEFT JOIN buildings b ON m.building_id = b.id
+            LEFT JOIN locations b ON m.location_id = b.id
             WHERE m.is_active = true
             ORDER BY m.id
         `;
@@ -504,14 +504,14 @@ class MeterDataAnalyzer {
 
     async logTrigger(meter, trigger) {
         const query = `
-            INSERT INTO meter_triggers (meter_id, building_id, trigger_type, severity, message, trigger_data, created_at)
+            INSERT INTO meter_triggers (meter_id, location_id, trigger_type, severity, message, trigger_data, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         `;
 
         try {
             await db.query(query, [
                 meter.id,
-                meter.building_id,
+                meter.location_id,
                 trigger.type,
                 trigger.severity,
                 trigger.message,

@@ -80,7 +80,7 @@ goto :eof
 
 REM Build and deploy
 :deploy
-call :print_info "Building and deploying services..."
+call :print_info "Location and deploying services..."
 
 REM Pull latest images
 docker-compose -f "%COMPOSE_FILE%" pull

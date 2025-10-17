@@ -16,8 +16,8 @@ export interface ContactInfo {
   website?: string;
 }
 
-// Building Management
-export interface Building {
+// Location Management
+export interface Location {
   id: string;
   name: string;
   address: Address;
@@ -36,7 +36,7 @@ export interface Building {
   updatedAt: Date;
 }
 
-export interface BuildingCreateRequest {
+export interface LocationCreateRequest {
   name: string;
   address: Address;
   contactInfo: ContactInfo;
@@ -50,7 +50,7 @@ export interface BuildingCreateRequest {
   notes?: string;
 }
 
-export interface BuildingUpdateRequest extends Partial<BuildingCreateRequest> {
+export interface LocationUpdateRequest extends Partial<LocationCreateRequest> {
   id: string;
 }
 
@@ -59,8 +59,8 @@ export interface Equipment {
   id: string;
   name: string;
   type: string;
-  buildingId: string;
-  buildingName?: string; // For display purposes
+  locationId: string;
+  locationName?: string; // For display purposes
   specifications: Record<string, any>;
   status: 'operational' | 'maintenance' | 'offline';
   installDate: Date;
@@ -78,7 +78,7 @@ export interface Equipment {
 export interface EquipmentCreateRequest {
   name: string;
   type: string;
-  buildingId: string;
+  locationId: string;
   specifications: Record<string, any>;
   installDate: Date;
   serialNumber?: string;
@@ -351,8 +351,8 @@ export interface Meter {
   portNumber: number; // Port number for connection
   slaveId?: number; // Modbus slave ID
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
-  buildingId?: string;
-  buildingName?: string; // For display purposes
+  locationId?: string;
+  locationName?: string; // For display purposes
   equipmentId?: string;
   equipmentName?: string; // For display purposes
   configuration: MeterConfig;
@@ -385,7 +385,7 @@ export interface MeterCreateRequest {
   portNumber: number;
   slaveId?: number;
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
-  buildingId?: string;
+  locationId?: string;
   equipmentId?: string;
   configuration: MeterConfig;
   installDate: Date;
@@ -486,7 +486,7 @@ export interface CompanySettings {
   systemConfig: SystemConfig;
   features: {
     userManagement: boolean;
-    buildingManagement: boolean;
+    locationManagement: boolean;
     equipmentManagement: boolean;
     meterManagement: boolean;
     contactManagement: boolean;

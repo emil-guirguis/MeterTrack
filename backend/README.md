@@ -40,13 +40,13 @@ The server will start on `http://localhost:3001`
 - `GET /api/auth/verify` - Verify current token
 - `POST /api/auth/logout` - User logout
 
-### Buildings
-- `GET /api/buildings` - Get all buildings (with filtering/pagination)
-- `GET /api/buildings/:id` - Get building by ID
-- `POST /api/buildings` - Create new building
-- `PUT /api/buildings/:id` - Update building
-- `DELETE /api/buildings/:id` - Delete building
-- `PATCH /api/buildings/bulk-status` - Bulk update building status
+### Locations
+- `GET /api/locations` - Get all locations (with filtering/pagination)
+- `GET /api/locations/:id` - Get location by ID
+- `POST /api/locations` - Create new location
+- `PUT /api/locations/:id` - Update location
+- `DELETE /api/locations/:id` - Delete location
+- `PATCH /api/locations/bulk-status` - Bulk update location status
 
 ### Equipment
 - `GET /api/equipment` - Get all equipment
@@ -76,7 +76,7 @@ After running the database setup script, you can login with:
 
 The API connects to the following collections in your `meterdb` database:
 - `users` - User accounts and authentication
-- `buildings` - Building information and management
+- `locations` - Location information and management
 - `equipment` - Equipment inventory and maintenance
 - `contacts` - Customer and vendor contacts
 - `meters` - Meter configurations and readings

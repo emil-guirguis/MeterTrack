@@ -27,7 +27,7 @@ class EmailTemplate {
      */
     static async create(templateData) {
         const { name, subject, content, category, variables, isDefault, createdBy } = templateData;
-        
+
         const query = `
             INSERT INTO email_templates (name, subject, content, category, variables, isdefault, isactive, usagecount, createdby, createdat, updatedat)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -63,7 +63,7 @@ class EmailTemplate {
     static async findById(id) {
         const query = 'SELECT * FROM email_templates WHERE id = $1';
         const result = await db.query(query, [id]);
-        
+
         if (result.rows.length === 0) {
             return null;
         }
@@ -73,7 +73,7 @@ class EmailTemplate {
         if (templateData.variables && typeof templateData.variables === 'string') {
             templateData.variables = JSON.parse(templateData.variables);
         }
-        
+
         return new EmailTemplate(templateData);
     }
 
@@ -83,7 +83,7 @@ class EmailTemplate {
     static async findByName(name) {
         const query = 'SELECT * FROM email_templates WHERE name = $1';
         const result = await db.query(query, [name]);
-        
+
         if (result.rows.length === 0) {
             return null;
         }
@@ -93,7 +93,7 @@ class EmailTemplate {
         if (templateData.variables && typeof templateData.variables === 'string') {
             templateData.variables = JSON.parse(templateData.variables);
         }
-        
+
         return new EmailTemplate(templateData);
     }
 
@@ -102,7 +102,7 @@ class EmailTemplate {
      */
     static async findAll(options = {}) {
         const { filters = {}, sortBy = 'createdat', sortOrder = 'desc', limit, offset, search } = options;
-        
+
         let query = 'SELECT * FROM email_templates WHERE 1=1';
         let countQuery = 'SELECT COUNT(*) FROM email_templates WHERE 1=1';
         const values = [];
@@ -210,7 +210,7 @@ class EmailTemplate {
             if (allowedFields.includes(key) && value !== undefined) {
                 paramCount++;
                 updates.push(`${key} = $${paramCount}`);
-                
+
                 if (key === 'variables') {
                     values.push(JSON.stringify(value));
                 } else {
@@ -235,7 +235,7 @@ class EmailTemplate {
         `;
 
         const result = await db.query(query, values);
-        
+
         if (result.rows.length === 0) {
             throw new Error('Template not found');
         }
@@ -263,7 +263,7 @@ class EmailTemplate {
         `;
 
         const result = await db.query(query, [this.id]);
-        
+
         if (result.rows.length > 0) {
             this.usagecount = result.rows[0].usagecount;
             this.lastused = result.rows[0].lastused;
@@ -289,7 +289,7 @@ class EmailTemplate {
         `;
 
         const result = await db.query(query, [this.id]);
-        
+
         if (result.rows.length === 0) {
             throw new Error('Template not found');
         }
@@ -310,7 +310,7 @@ class EmailTemplate {
 
         const query = 'DELETE FROM email_templates WHERE id = $1 RETURNING id';
         const result = await db.query(query, [this.id]);
-        
+
         if (result.rows.length === 0) {
             throw new Error('Template not found');
         }
@@ -346,7 +346,7 @@ class EmailTemplate {
     static async findByCategory(category) {
         const query = 'SELECT * FROM email_templates WHERE category = $1 AND isactive = true ORDER BY name';
         const result = await db.query(query, [category]);
-        
+
         return result.rows.map(templateData => {
             // Parse JSON fields
             if (templateData.variables && typeof templateData.variables === 'string') {

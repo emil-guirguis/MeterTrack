@@ -1,24 +1,37 @@
 #!/usr/bin/env node
-import ModbusRTU from 'modbus-serial';
+import { createLogger } from './dist/logger.js';
+import { EnhancedModbusClient } from './dist/enhanced-modbus-client.js';
 
-console.log('🔍 Reading REAL meter data from 10.10.10.11:502...');
+console.log('🔍 Reading REAL meter data from 10.10.10.11:502 with enhanced client...');
 
-const client = new ModbusRTU();
+const logger = createLogger();
+const clientConfig = {
+  host: '10.10.10.11',
+  port: 502,
+  unitId: 1, // Slave ID 1 had data
+  timeout: 5000,
+  maxRetries: 3,
+  reconnectDelay: 5000
+};
+
+const client = new EnhancedModbusClient(clientConfig, logger);
 
 try {
-  await client.connectTCP('10.10.10.11', { port: 502 });
-  console.log('✅ Connected to real meter!');
-  
-  client.setID(1); // Slave ID 1 had data
+  const connected = await client.connect();
+  if (!connected) {
+    throw new Error('Failed to connect to real meter');
+  }
+  console.log('✅ Connected to real meter with enhanced client!');
   
   // Read the registers that had data
-  const result = await client.readHoldingRegisters(0, 20);
-  console.log('📊 Raw register data:', result.data);
+  const result = await client.client.readHoldingRegisters(0, 20);
+  const data = result.response.body.values;
+  console.log('📊 Raw register data:', data);
   
   // Interpret the data - common scaling factors
   console.log('\n🔍 Analyzing data for voltage/current/power patterns:');
   
-  result.data.forEach((value, index) => {
+  data.forEach((value, index) => {
     if (value > 0) {
       console.log(`Register ${index}: ${value}`);
       
@@ -54,10 +67,11 @@ try {
   const ranges = [100, 200, 300, 1000, 3000];
   for (const start of ranges) {
     try {
-      const data = await client.readHoldingRegisters(start, 10);
-      const nonZero = data.data.filter(v => v > 0);
+      const result = await client.client.readHoldingRegisters(start, 10);
+      const rangeData = result.response.body.values;
+      const nonZero = rangeData.filter(v => v > 0);
       if (nonZero.length > 0) {
-        console.log(`📊 Registers ${start}-${start+9}:`, data.data);
+        console.log(`📊 Registers ${start}-${start+9}:`, rangeData);
       }
     } catch (e) {
       // Skip ranges that don't work
@@ -67,5 +81,7 @@ try {
 } catch (error) {
   console.log('❌ Error:', error.message);
 } finally {
-  client.close();
+  client.disconnect();
+  client.destroy();
+  console.log('🔌 Enhanced client disconnected and cleaned up');
 }

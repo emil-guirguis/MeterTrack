@@ -92,7 +92,7 @@ setup_environment() {
 
 # Build and deploy
 deploy() {
-    print_info "Building and deploying services..."
+    print_info "Location and deploying services..."
     
     # Pull latest images
     docker-compose -f "$COMPOSE_FILE" pull

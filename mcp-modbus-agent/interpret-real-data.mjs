@@ -1,26 +1,40 @@
 #!/usr/bin/env node
-import ModbusRTU from 'modbus-serial';
+import { createLogger } from './dist/logger.js';
+import { EnhancedModbusClient } from './dist/enhanced-modbus-client.js';
 
-console.log('⚡ Reading REAL meter data - interpreting voltage patterns...');
+console.log('⚡ Reading REAL meter data - interpreting voltage patterns with enhanced client...');
 
-const client = new ModbusRTU();
+const logger = createLogger();
+const clientConfig = {
+  host: '10.10.10.11',
+  port: 502,
+  unitId: 1,
+  timeout: 5000,
+  maxRetries: 3,
+  reconnectDelay: 5000
+};
+
+const client = new EnhancedModbusClient(clientConfig, logger);
 
 try {
-  await client.connectTCP('10.10.10.11', { port: 502 });
-  client.setID(1);
+  const connected = await client.connect();
+  if (!connected) {
+    throw new Error('Failed to connect to real meter');
+  }
   
-  const result = await client.readHoldingRegisters(0, 20);
+  const result = await client.client.readHoldingRegisters(0, 20);
+  const data = result.response.body.values;
   
   console.log('📊 REAL METER DATA INTERPRETATION:');
   console.log('=====================================');
   
   // Based on the patterns observed:
-  const voltage1 = result.data[5] / 200;   // 23191 / 200 = 115.96V
-  const voltage2 = result.data[12] / 200;  // 23191 / 200 = 115.96V (duplicate)
-  const current1 = result.data[6] / 100;   // 3791 / 100 = 37.91A
-  const current2 = result.data[15] / 100;  // 3791 / 100 = 37.91A (duplicate)
-  const power1 = result.data[7];           // 7582W
-  const power2 = result.data[18];          // 7582W (duplicate)
+  const voltage1 = data[5] / 200;   // 23191 / 200 = 115.96V
+  const voltage2 = data[12] / 200;  // 23191 / 200 = 115.96V (duplicate)
+  const current1 = data[6] / 100;   // 3791 / 100 = 37.91A
+  const current2 = data[15] / 100;  // 3791 / 100 = 37.91A (duplicate)
+  const power1 = data[7];           // 7582W
+  const power2 = data[18];          // 7582W (duplicate)
   
   console.log(`🔋 Voltage (Reg 5):  ${voltage1.toFixed(2)}V`);
   console.log(`🔋 Voltage (Reg 12): ${voltage2.toFixed(2)}V`);
@@ -42,7 +56,7 @@ try {
   // Check more registers for frequency and other data
   console.log('');
   console.log('🔍 Additional registers:');
-  result.data.forEach((value, index) => {
+  data.forEach((value, index) => {
     if (value > 0 && ![5,6,7,12,15,18].includes(index)) {
       // Check for frequency
       if (value > 590 && value < 610) {
@@ -58,6 +72,7 @@ try {
 } catch (error) {
   console.log('❌ Error:', error.message);
 } finally {
-  client.close();
-  console.log('\n✅ Real meter connection closed');
+  client.disconnect();
+  client.destroy();
+  console.log('\n✅ Enhanced client disconnected and cleaned up');
 }

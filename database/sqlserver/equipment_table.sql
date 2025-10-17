@@ -8,8 +8,8 @@ create table dbo.equipment (
   name            nvarchar(200) not null,
   type            nvarchar(100) not null,
 
-  buildingid      uniqueidentifier not null,
-  buildingname    nvarchar(200) null,
+  locationid      uniqueidentifier not null,
+  locationname    nvarchar(200) null,
 
   specifications  nvarchar(max) null, -- json blob
   status          nvarchar(20) not null constraint ck_equipment_status check (status in ('operational','maintenance','offline')) default 'operational',
@@ -32,7 +32,7 @@ go
 create index ix_equipment_name on dbo.equipment(name);
 create index ix_equipment_type on dbo.equipment(type);
 create index ix_equipment_status on dbo.equipment(status);
-create index ix_equipment_buildingid on dbo.equipment(buildingid);
+create index ix_equipment_locationid on dbo.equipment(locationid);
 create index ix_equipment_serialnumber on dbo.equipment(serialnumber);
 create index ix_equipment_nextmaintenance on dbo.equipment(nextmaintenance);
 go

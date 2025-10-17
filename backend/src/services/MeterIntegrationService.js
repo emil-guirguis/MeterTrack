@@ -289,13 +289,13 @@ class MeterIntegrationService {
      */
     async sendMeterOfflineNotification(meter, reason) {
         try {
-            // Get building information
-            const building = await this.getBuildingInfo(meter.location_building);
+            // Get location information
+            const location = await this.getLocationInfo(meter.location_location);
             
             const meterData = {
                 meter_id: meter.meterid,
-                building_id: building?.id,
-                building_name: building?.name || meter.location_building || 'Unknown Building',
+                location_id: location?.id,
+                location_name: location?.name || meter.location_location || 'Unknown Location',
                 location: this.formatMeterLocation(meter),
                 meter_type: meter.type || 'Electric Meter',
                 last_communication: meter.last_reading_date || meter.updatedat,
@@ -421,20 +421,20 @@ class MeterIntegrationService {
         }
     }
 
-    async getBuildingInfo(buildingIdentifier) {
-        if (!buildingIdentifier) return null;
+    async getLocationInfo(locationIdentifier) {
+        if (!locationIdentifier) return null;
         
         const query = `
-            SELECT id, name FROM buildings 
+            SELECT id, name FROM locations 
             WHERE id = $1 OR name = $1
             LIMIT 1
         `;
         
         try {
-            const result = await db.query(query, [buildingIdentifier]);
+            const result = await db.query(query, [locationIdentifier]);
             return result.rows[0] || null;
         } catch (error) {
-            console.error('Error fetching building info:', error);
+            console.error('Error fetching location info:', error);
             return null;
         }
     }
@@ -491,7 +491,7 @@ class MeterIntegrationService {
 
     formatMeterLocation(meter) {
         const parts = [
-            meter.location_building,
+            meter.location_location,
             meter.location_floor ? `Floor ${meter.location_floor}` : null,
             meter.location_room ? `Room ${meter.location_room}` : null,
             meter.location_description

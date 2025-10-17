@@ -1598,13 +1598,13 @@ class MeterIntegrationService {
      */
 <span class="fstat-no" title="function not covered" >    as</span>ync sendMeterOfflineNotification(meter, reason) {
 <span class="cstat-no" title="statement not covered" >        try {</span>
-            // Get building information
-            const building = <span class="cstat-no" title="statement not covered" >await this.getBuildingInfo(meter.location_building);</span>
+            // Get location information
+            const location = <span class="cstat-no" title="statement not covered" >await this.getLocationInfo(meter.location_location);</span>
             
             const meterData = <span class="cstat-no" title="statement not covered" >{</span>
                 meter_id: meter.meterid,
-                building_id: building?.id,
-                building_name: building?.name || meter.location_building || 'Unknown Building',
+                location_id: location?.id,
+                location_name: location?.name || meter.location_location || 'Unknown Location',
                 location: this.formatMeterLocation(meter),
                 meter_type: meter.type || 'Electric Meter',
                 last_communication: meter.last_reading_date || meter.updatedat,
@@ -1730,20 +1730,20 @@ class MeterIntegrationService {
         }
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    as</span>ync getBuildingInfo(buildingIdentifier) {
-<span class="cstat-no" title="statement not covered" >        if (!buildingIdentifier) <span class="cstat-no" title="statement not covered" >return null;</span></span>
+<span class="fstat-no" title="function not covered" >    as</span>ync getLocationInfo(locationIdentifier) {
+<span class="cstat-no" title="statement not covered" >        if (!locationIdentifier) <span class="cstat-no" title="statement not covered" >return null;</span></span>
         
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            SELECT id, name FROM buildings 
+            SELECT id, name FROM locations 
             WHERE id = $1 OR name = $1
             LIMIT 1
         `;
         
 <span class="cstat-no" title="statement not covered" >        try {</span>
-            const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [buildingIdentifier]);</span>
+            const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [locationIdentifier]);</span>
 <span class="cstat-no" title="statement not covered" >            return result.rows[0] || null;</span>
         } catch (error) {
-<span class="cstat-no" title="statement not covered" >            console.error('Error fetching building info:', error);</span>
+<span class="cstat-no" title="statement not covered" >            console.error('Error fetching location info:', error);</span>
 <span class="cstat-no" title="statement not covered" >            return null;</span>
         }
     }
@@ -1800,7 +1800,7 @@ class MeterIntegrationService {
 &nbsp;
 <span class="fstat-no" title="function not covered" >    fo</span>rmatMeterLocation(meter) {
         const parts = <span class="cstat-no" title="statement not covered" >[</span>
-            meter.location_building,
+            meter.location_location,
             meter.location_floor ? `Floor ${meter.location_floor}` : null,
             meter.location_room ? `Room ${meter.location_room}` : null,
             meter.location_description

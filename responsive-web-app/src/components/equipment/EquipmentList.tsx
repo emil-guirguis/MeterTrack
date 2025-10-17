@@ -27,7 +27,7 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [buildingFilter, setBuildingFilter] = useState<string>('');
+  const [locationFilter, setLocationFilter] = useState<string>('');
   const [showExportModal, setShowExportModal] = useState(false);
 
   // Check permissions
@@ -46,12 +46,12 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
     
     if (typeFilter) filters.type = typeFilter;
     if (statusFilter) filters.status = statusFilter;
-    if (buildingFilter) filters.buildingId = buildingFilter;
+    if (locationFilter) filters.locationId = locationFilter;
     
     equipment.setFilters(filters);
     equipment.setSearch(searchQuery);
     equipment.fetchItems();
-  }, [searchQuery, typeFilter, statusFilter, buildingFilter]);
+  }, [searchQuery, typeFilter, statusFilter, locationFilter]);
 
   // Define table columns
   const columns: ColumnDefinition<Equipment>[] = useMemo(() => [
@@ -79,8 +79,8 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
       ),
     },
     {
-      key: 'buildingName',
-      label: 'Building',
+      key: 'locationName',
+      label: 'Location',
       sortable: true,
       render: (value) => value || 'Unassigned',
       responsive: 'hide-mobile',
@@ -198,7 +198,7 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
   // Export functionality
   const exportEquipmentToCSV = useCallback((equipmentToExport: Equipment[]) => {
     const headers = [
-      'Name', 'Type', 'Status', 'Building', 'Manufacturer', 'Model', 
+      'Name', 'Type', 'Status', 'Location', 'Manufacturer', 'Model', 
       'Serial Number', 'Install Date', 'Last Maintenance', 'Location', 'Created'
     ];
     const csvContent = [
@@ -207,7 +207,7 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
         `"${item.name}"`,
         item.type,
         item.status,
-        `"${item.buildingName || 'Unassigned'}"`,
+        `"${item.locationName || 'Unassigned'}"`,
         item.manufacturer || '',
         item.model || '',
         item.serialNumber || '',
@@ -234,20 +234,20 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
     setShowExportModal(false);
   }, [equipment.items, exportEquipmentToCSV]);
 
-  // Get unique types and buildings for filters
+  // Get unique types and locations for filters
   const uniqueTypes = useMemo(() => {
     const types = equipment.items.map(e => e.type);
     return [...new Set(types)].sort();
   }, [equipment.items]);
 
-  const uniqueBuildings = useMemo(() => {
-    const buildings = equipment.items
-      .filter(e => e.buildingName)
-      .map(e => ({ id: e.buildingId, name: e.buildingName! }));
-    const uniqueBuildings = buildings.filter((building, index, self) => 
-      index === self.findIndex(b => b.id === building.id)
+  const uniqueLocations = useMemo(() => {
+    const locations = equipment.items
+      .filter(e => e.locationName)
+      .map(e => ({ id: e.locationId, name: e.locationName! }));
+    const uniqueLocations = locations.filter((location, index, self) => 
+      index === self.findIndex(b => b.id === location.id)
     );
-    return uniqueBuildings.sort((a, b) => a.name.localeCompare(b.name));
+    return uniqueLocations.sort((a, b) => a.name.localeCompare(b.name));
   }, [equipment.items]);
 
   const filters = (
@@ -288,25 +288,25 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
         </select>
 
         <select
-          value={buildingFilter}
-          onChange={(e) => setBuildingFilter(e.target.value)}
+          value={locationFilter}
+          onChange={(e) => setLocationFilter(e.target.value)}
           className="equipment-list__filter-select"
-          aria-label="Filter by building"
+          aria-label="Filter by location"
         >
-          <option value="">All Buildings</option>
-          {uniqueBuildings.map(building => (
-            <option key={building.id} value={building.id}>{building.name}</option>
+          <option value="">All Locations</option>
+          {uniqueLocations.map(location => (
+            <option key={location.id} value={location.id}>{location.name}</option>
           ))}
         </select>
 
-        {(typeFilter || statusFilter || buildingFilter || searchQuery) && (
+        {(typeFilter || statusFilter || locationFilter || searchQuery) && (
           <button
             type="button"
             className="equipment-list__clear-filters"
             onClick={() => {
               setTypeFilter('');
               setStatusFilter('');
-              setBuildingFilter('');
+              setLocationFilter('');
               setSearchQuery('');
             }}
           >
@@ -406,7 +406,7 @@ export const EquipmentList: React.FC<EquipmentListProps> = ({
         <div className="equipment-list__export-content">
           <p>Export all equipment to CSV format?</p>
           <p className="equipment-list__export-info">
-            This will include: Name, Type, Status, Building, Manufacturer, Model, Serial Number, Install Date, and Last Maintenance
+            This will include: Name, Type, Status, Location, Manufacturer, Model, Serial Number, Install Date, and Last Maintenance
           </p>
           <p className="equipment-list__export-count">
             <strong>{equipment.items.length} equipment items</strong> will be exported.

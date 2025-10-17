@@ -41,8 +41,13 @@ router.get('/',
       if (result.success) {
         res.json({
           success: true,
-          data: result.data.templates,
-          pagination: result.data.pagination
+          data: {
+            items: result.data.templates,
+            total: result.data.pagination.totalItems,
+            page: result.data.pagination.currentPage,
+            pageSize: result.data.pagination.itemsPerPage,
+            totalPages: result.data.pagination.totalPages
+          }
         });
       } else {
         res.status(400).json({

@@ -34,7 +34,7 @@ function Start-MCPAgent {
     Write-Host "Starting MCP Modbus Agent..." -ForegroundColor Green
     
     # Build first
-    Write-Host "Building project..." -ForegroundColor Yellow
+    Write-Host "Location project..." -ForegroundColor Yellow
     npm run build
     
     if ($LASTEXITCODE -ne 0) {
