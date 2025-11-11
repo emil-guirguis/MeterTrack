@@ -17,15 +17,16 @@ class MeterMonitoringService {
      * Initialize meter monitoring service
      */
     async initialize(config = null) {
-        try {
-            this.config = config || this.getDefaultConfig();
-            console.log('✅ Meter monitoring service initialized successfully');
-            return { success: true };
-        }
-        catch (error) {
-            console.error('❌ Failed to initialize meter monitoring service:', error.message);
-            return { success: false, error: error.message };
-        }
+        //emilmodbus
+        // try {
+        //     this.config = config || this.getDefaultConfig();
+        //     console.log('✅ Meter monitoring service initialized successfully');
+        //     return { success: true };
+        // }
+        // catch (error) {
+        //     console.error('❌ Failed to initialize meter monitoring service:', error.message);
+        //     return { success: false, error: error.message };
+        // }
     }
     /**
      * Get default configuration
@@ -82,62 +83,62 @@ class MeterMonitoringService {
     /**
      * Perform monitoring check
      */
-    async performMonitoringCheck() {
-        try {
-            const startTime = new Date();
-            console.log('🔍 Performing meter monitoring check...');
-            // Get all active meters
-            const meters = await this.getActiveMeters();
-            if (meters.length === 0) {
-                console.log('📊 No active meters found for monitoring');
-                return;
-            }
-            let offlineCount = 0;
-            let alertsTriggered = 0;
-            const batchSize = this.config.monitoring.batchSize;
-            // Process meters in batches
-            for (let i = 0; i < meters.length; i += batchSize) {
-                const batch = meters.slice(i, i + batchSize);
-                for (const meter of batch) {
-                    try {
-                        const status = await this.checkMeterStatus(meter);
-                        if (status.isOffline) {
-                            offlineCount++;
-                            if (status.shouldAlert) {
-                                await this.triggerOfflineAlert(meter, status);
-                                alertsTriggered++;
-                            }
-                        }
-                        // Check for communication gaps
-                        const gapStatus = await this.checkCommunicationGaps(meter);
-                        if (gapStatus.hasGaps && gapStatus.shouldAlert) {
-                            await this.triggerCommunicationGapAlert(meter, gapStatus);
-                            alertsTriggered++;
-                        }
-                        // Check for reading patterns
-                        const patternStatus = await this.checkReadingPatterns(meter);
-                        if (patternStatus.hasAnomalies && patternStatus.shouldAlert) {
-                            await this.triggerPatternAlert(meter, patternStatus);
-                            alertsTriggered++;
-                        }
-                    }
-                    catch (error) {
-                        console.error(`❌ Error checking meter ${meter.meterid}:`, error.message);
-                    }
-                }
-                // Small delay between batches
-                if (i + batchSize < meters.length) {
-                    await this.delay(100);
-                }
-            }
-            const duration = new Date() - startTime;
-            this.lastCheckTime = new Date();
-            console.log(`🔍 Monitoring check completed: ${meters.length} meters checked, ${offlineCount} offline, ${alertsTriggered} alerts triggered (${duration}ms)`);
-        }
-        catch (error) {
-            console.error('❌ Error during monitoring check:', error.message);
-        }
-    }
+    // emilmodbus async performMonitoringCheck() {
+    //     try {
+    //         const startTime = new Date();
+    //         console.log('🔍 Performing meter monitoring check...');
+    //         // Get all active meters
+    //         const meters = await this.getActiveMeters();
+    //         if (meters.length === 0) {
+    //             console.log('📊 No active meters found for monitoring');
+    //             return;
+    //         }
+    //         let offlineCount = 0;
+    //         let alertsTriggered = 0;
+    //         const batchSize = this.config.monitoring.batchSize;
+    //         // Process meters in batches
+    //         for (let i = 0; i < meters.length; i += batchSize) {
+    //             const batch = meters.slice(i, i + batchSize);
+    //             for (const meter of batch) {
+    //                 try {
+    //                     const status = await this.checkMeterStatus(meter);
+    //                     if (status.isOffline) {
+    //                         offlineCount++;
+    //                         if (status.shouldAlert) {
+    //                             await this.triggerOfflineAlert(meter, status);
+    //                             alertsTriggered++;
+    //                         }
+    //                     }
+    //                     // Check for communication gaps
+    //                     const gapStatus = await this.checkCommunicationGaps(meter);
+    //                     if (gapStatus.hasGaps && gapStatus.shouldAlert) {
+    //                         await this.triggerCommunicationGapAlert(meter, gapStatus);
+    //                         alertsTriggered++;
+    //                     }
+    //                     // Check for reading patterns
+    //                     const patternStatus = await this.checkReadingPatterns(meter);
+    //                     if (patternStatus.hasAnomalies && patternStatus.shouldAlert) {
+    //                         await this.triggerPatternAlert(meter, patternStatus);
+    //                         alertsTriggered++;
+    //                     }
+    //                 }
+    //                 catch (error) {
+    //                     console.error(`❌ Error checking meter ${meter.meterid}:`, error.message);
+    //                 }
+    //             }
+    //             // Small delay between batches
+    //             if (i + batchSize < meters.length) {
+    //                 await this.delay(100);
+    //             }
+    //         }
+    //         const duration = new Date() - startTime;
+    //         this.lastCheckTime = new Date();
+    //         console.log(`🔍 Monitoring check completed: ${meters.length} meters checked, ${offlineCount} offline, ${alertsTriggered} alerts triggered (${duration}ms)`);
+    //     }
+    //     catch (error) {
+    //         console.error('❌ Error during monitoring check:', error.message);
+    //     }
+    // }
     /**
      * Check meter status (online/offline)
      */
@@ -336,12 +337,12 @@ class MeterMonitoringService {
      */
     async getActiveMeters() {
         const query = `
-            SELECT 
-                id, meterid, name, type, status, 
+            SELECT
+                id, meterid, name, type, status,
                 last_reading_date, location_location,
                 location_floor, location_room, location_description,
                 location_id
-            FROM meters 
+            FROM meters
             WHERE (is_active = true OR is_active IS NULL)
                 AND status != 'inactive'
             ORDER BY meterid
@@ -374,7 +375,7 @@ class MeterMonitoringService {
     }
     async updateMeterStatus(meterId, status, reason) {
         const query = `
-            UPDATE meters 
+            UPDATE meters
             SET status = $1, updatedat = CURRENT_TIMESTAMP
             WHERE id = $2
         `;
@@ -416,8 +417,8 @@ class MeterMonitoringService {
         const query = `
             SELECT COUNT(*) as count
             FROM meter_monitoring_alerts
-            WHERE meter_id = $1 
-                AND alert_type = $2 
+            WHERE meter_id = $1
+                AND alert_type = $2
                 AND created_at > NOW() - INTERVAL '1 hour'
         `;
         try {

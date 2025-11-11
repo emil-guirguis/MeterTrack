@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getDevices, deleteDevice } from '../../services/deviceService';
+import { deviceService } from '../../services/deviceService';
 import type { Device } from '../../types/device';
 import { Button, List, ListItem, ListItemText, IconButton, Typography, Box, CircularProgress } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -17,7 +17,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onEdit }) => {
 
   const fetchDevices = () => {
     setLoading(true);
-    getDevices()
+    deviceService.getAll()
       .then(setDevices)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -31,7 +31,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onEdit }) => {
     if (!window.confirm('Delete this device?')) return;
     setDeletingId(id);
     try {
-      await deleteDevice(id);
+      await deviceService.delete(id);
       setDevices(devices.filter(d => d._id !== id));
     } catch (err: any) {
       setError(err.message);

@@ -10,7 +10,18 @@
             "name": "MeterIt",
             "database": "postgres",
             "username": "postgres.uueumbslimaecposqsdf",
-            "password": "meteritpassword2468"
+            "password": "ZfyUDh!_#4bSYXm"
+        },
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "local",
+            "database": "meterit",
+            "username": "meterituser",
+            "password": "ZfyUDh!_#4bSYXm"
         }
     ]
 }

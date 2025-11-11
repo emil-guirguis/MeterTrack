@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, TextField, Box, Typography, Paper, Alert } from '@mui/material';
-import { createDevice } from '../../services/deviceService';
+import { deviceService } from '../../services/deviceService';
 import type { Device } from '../../types/device';
 
 interface DeviceEditFormProps {
@@ -23,7 +23,7 @@ const DeviceEditForm: React.FC<DeviceEditFormProps> = ({ device, onSaved, onCanc
     setSuccess(null);
     try {
       // For now, just create (could be updated to use updateDevice)
-      const saved = await createDevice({ name, description });
+      const saved = await deviceService.create({ name, description });
       setSuccess('Device saved successfully!');
       onSaved?.(saved);
     } catch (err: any) {

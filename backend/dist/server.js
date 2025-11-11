@@ -20,7 +20,7 @@ const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const modbusRoutes = require('./routes/modbus');
 const directMeterRoutes = require('./routes/directMeter');
-const devicesRoutes = require('./routes/devices');
+const devicesRoutes = require('./routes/device');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -326,7 +326,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/modbus', modbusRoutes);
 app.use('/api', directMeterRoutes);
-app.use('/api/devices', devicesRoutes);
+app.use('/api/device', devicesRoutes);
 // app.use('/api/threading', threadingRoutes); // TEMPORARILY DISABLED
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

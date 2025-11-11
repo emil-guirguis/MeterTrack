@@ -1,5 +1,6 @@
 param(
-  [int[]]$Ports = @(3001, 5173, 5174, 5175, 5176, 4173)
+  # [int[]]$Ports = @(3001, 5173, 5174, 5175, 5176, 4173)
+  [int[]]$Ports = @()
 )
 
 Write-Host "[stop-dev] Attempting to stop dev servers on ports: $($Ports -join ', ')" -ForegroundColor Cyan

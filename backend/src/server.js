@@ -21,7 +21,7 @@ const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 // const modbusRoutes = require('./routes/modbus'); // Temporarily disabled
 // const directMeterRoutes = require('./routes/directMeter'); // Temporarily disabled
-const devicesRoutes = require('./routes/devices');
+const devicesRoutes = require('./routes/device');
 const autoCollectionRoutes = require('./routes/autoCollection');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
@@ -430,7 +430,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
 // app.use('/api/modbus', modbusRoutes); // Temporarily disabled
 // app.use('/api', directMeterRoutes); // Temporarily disabled
-app.use('/api/devices', devicesRoutes);
+app.use('/api/device', devicesRoutes);
 app.use('/api/auto-collection', autoCollectionRoutes);
 // app.use('/api/threading', threadingRoutes); // TEMPORARILY DISABLED
 

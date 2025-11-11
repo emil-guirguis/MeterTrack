@@ -19,24 +19,24 @@ class MeterIntegrationService {
      * Initialize meter integration service
      */
     async initialize(config = null) {
-        try {
-            this.config = config || this.getDefaultConfig();
+        // try {
+        //     this.config = config || this.getDefaultConfig();
             
-            // Set up event listeners for meter data changes
-            await this.setupEventListeners();
+        //     // Set up event listeners for meter data changes
+        //     await this.setupEventListeners();
             
-            // Initialize maintenance scheduling
-            await this.initializeMaintenanceScheduling();
+        //     // Initialize maintenance scheduling
+        //     await this.initializeMaintenanceScheduling();
             
-            this.isInitialized = true;
-            console.log('✅ Meter integration service initialized successfully');
+        //     this.isInitialized = true;
+        //     console.log('✅ Meter integration service initialized successfully');
             
-            return { success: true };
-        } catch (error) {
-            console.error('❌ Failed to initialize meter integration service:', error.message);
-            this.isInitialized = false;
-            return { success: false, error: error.message };
-        }
+        //     return { success: true };
+        // } catch (error) {
+        //     console.error('❌ Failed to initialize meter integration service:', error.message);
+        //     this.isInitialized = false;
+        //     return { success: false, error: error.message };
+        // }
     }
 
     /**

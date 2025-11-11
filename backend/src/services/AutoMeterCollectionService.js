@@ -9,133 +9,134 @@ const Meter = require('../models/Meter');
 
 class AutoMeterCollectionService {
     constructor() {
-        this.isCollecting = false;
-        this.collectionInterval = null;
-        this.config = null;
-        this.lastCollectionTime = null;
-        this.collectionStats = {
-            totalAttempts: 0,
-            successfulReads: 0,
-            failedReads: 0,
-            lastError: null
-        };
+    // emilmosbus
+    //     this.isCollecting = false;
+    //     this.collectionInterval = null;
+    //     this.config = null;
+    //     this.lastCollectionTime = null;
+    //     this.collectionStats = {
+    //         totalAttempts: 0,
+    //         successfulReads: 0,
+    //         failedReads: 0,
+    //         lastError: null
+    //     };
         
-        // Threading system reference (required for threaded collection)
-        this.threadingService = null;
-    }
+    //     // Threading system reference (required for threaded collection)
+    //     this.threadingService = null;
+    // }
 
-    /**
-     * Initialize auto meter collection service (threaded mode only)
-     */
-    async initialize(config = null, threadingService = null) {
-        try {
-            this.config = config || this.getDefaultConfig();
-            this.threadingService = threadingService;
+    // /**
+    //  * Initialize auto meter collection service (threaded mode only)
+    //  */
+    // async initialize(config = null, threadingService = null) {
+    //     try {
+    //         this.config = config || this.getDefaultConfig();
+    //         this.threadingService = threadingService;
             
-            if (!this.threadingService) {
-                throw new Error('Threading service is required for auto meter collection');
-            }
+    //         if (!this.threadingService) {
+    //             throw new Error('Threading service is required for auto meter collection');
+    //         }
             
-            console.log('✅ Auto meter collection service initialized successfully (threaded mode)');
-            console.log(`📊 Collection interval: ${this.config.collection.interval}ms (${this.config.collection.interval / 1000}s)`);
+    //         console.log('✅ Auto meter collection service initialized successfully (threaded mode)');
+    //         console.log(`📊 Collection interval: ${this.config.collection.interval}ms (${this.config.collection.interval / 1000}s)`);
             
-            return { success: true };
-        } catch (error) {
-            console.error('❌ Failed to initialize auto meter collection service:', error.message);
-            return { success: false, error: error.message };
-        }
-    }
+    //         return { success: true };
+    //     } catch (error) {
+    //         console.error('❌ Failed to initialize auto meter collection service:', error.message);
+    //         return { success: false, error: error.message };
+    //     }
+    // }
 
-    /**
-     * Get default configuration
-     */
-    getDefaultConfig() {
-        return {
-            collection: {
-                enabled: true, // Always enabled
-                interval: 30000, // Fixed 30 seconds
-                batchSize: parseInt(process.env.METER_COLLECTION_BATCH_SIZE) || 10,
-                timeout: parseInt(process.env.METER_COLLECTION_TIMEOUT) || 10000, // 10 seconds per meter
-                retryAttempts: parseInt(process.env.METER_COLLECTION_RETRIES) || 2
-            },
-            meters: {
-                // Default meter configuration - can be overridden per meter
-                defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.11',
-                defaultPort: parseInt(process.env.DEFAULT_METER_PORT) || 502,
-                defaultSlaveId: parseInt(process.env.DEFAULT_METER_SLAVE_ID) || 1,
-                // Register mapping for energy meters
-                registers: {
-                    voltage: { address: 5, count: 1, scale: 200, unit: 'V' },
-                    current: { address: 6, count: 1, scale: 100, unit: 'A' },
-                    power: { address: 7, count: 1, scale: 1, unit: 'W' },
-                    energy: { address: 8, count: 1, scale: 1, unit: 'Wh' },
-                    frequency: { address: 0, count: 1, scale: 10, unit: 'Hz' },
-                    powerFactor: { address: 9, count: 1, scale: 1000, unit: 'pf' },
+    // /**
+    //  * Get default configuration
+    //  */
+    // getDefaultConfig() {
+    //     return {
+    //         collection: {
+    //             enabled: true, // Always enabled
+    //             interval: 30000, // Fixed 30 seconds
+    //             batchSize: parseInt(process.env.METER_COLLECTION_BATCH_SIZE) || 10,
+    //             timeout: parseInt(process.env.METER_COLLECTION_TIMEOUT) || 10000, // 10 seconds per meter
+    //             retryAttempts: parseInt(process.env.METER_COLLECTION_RETRIES) || 2
+    //         },
+    //         meters: {
+    //             // Default meter configuration - can be overridden per meter
+    //             defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.11',
+    //             defaultPort: parseInt(process.env.DEFAULT_METER_PORT) || 502,
+    //             defaultSlaveId: parseInt(process.env.DEFAULT_METER_SLAVE_ID) || 1,
+    //             // Register mapping for energy meters
+    //             registers: {
+    //                 voltage: { address: 5, count: 1, scale: 200, unit: 'V' },
+    //                 current: { address: 6, count: 1, scale: 100, unit: 'A' },
+    //                 power: { address: 7, count: 1, scale: 1, unit: 'W' },
+    //                 energy: { address: 8, count: 1, scale: 1, unit: 'Wh' },
+    //                 frequency: { address: 0, count: 1, scale: 10, unit: 'Hz' },
+    //                 powerFactor: { address: 9, count: 1, scale: 1000, unit: 'pf' },
                     
-                    // Phase measurements
-                    phaseAVoltage: { address: 12, count: 1, scale: 10, unit: 'V' },
-                    phaseBVoltage: { address: 14, count: 1, scale: 10, unit: 'V' },
-                    phaseCVoltage: { address: 16, count: 1, scale: 10, unit: 'V' },
+    //                 // Phase measurements
+    //                 phaseAVoltage: { address: 12, count: 1, scale: 10, unit: 'V' },
+    //                 phaseBVoltage: { address: 14, count: 1, scale: 10, unit: 'V' },
+    //                 phaseCVoltage: { address: 16, count: 1, scale: 10, unit: 'V' },
                     
-                    phaseACurrent: { address: 18, count: 1, scale: 100, unit: 'A' },
-                    phaseBCurrent: { address: 20, count: 1, scale: 100, unit: 'A' },
-                    phaseCCurrent: { address: 22, count: 1, scale: 100, unit: 'A' },
+    //                 phaseACurrent: { address: 18, count: 1, scale: 100, unit: 'A' },
+    //                 phaseBCurrent: { address: 20, count: 1, scale: 100, unit: 'A' },
+    //                 phaseCCurrent: { address: 22, count: 1, scale: 100, unit: 'A' },
                     
-                    // Total energy measurements
-                    totalActiveEnergyWh: { address: 40, count: 2, scale: 1, unit: 'Wh' },
-                    totalReactiveEnergyVARh: { address: 42, count: 2, scale: 1, unit: 'VARh' },
-                    totalApparentEnergyVAh: { address: 44, count: 2, scale: 1, unit: 'VAh' }
-                }
-            },
-            database: {
-                batchInsert: process.env.BATCH_INSERT_ENABLED !== 'false',
-                maxBatchSize: parseInt(process.env.MAX_BATCH_SIZE) || 100
-            },
-            logging: {
-                logSuccessfulReads: process.env.LOG_SUCCESSFUL_READS === 'true',
-                logFailedReads: process.env.LOG_FAILED_READS !== 'false',
-                logInterval: parseInt(process.env.LOG_STATS_INTERVAL) || 300000 // 5 minutes
-            }
-        };
+    //                 // Total energy measurements
+    //                 totalActiveEnergyWh: { address: 40, count: 2, scale: 1, unit: 'Wh' },
+    //                 totalReactiveEnergyVARh: { address: 42, count: 2, scale: 1, unit: 'VARh' },
+    //                 totalApparentEnergyVAh: { address: 44, count: 2, scale: 1, unit: 'VAh' }
+    //             }
+    //         },
+    //         database: {
+    //             batchInsert: process.env.BATCH_INSERT_ENABLED !== 'false',
+    //             maxBatchSize: parseInt(process.env.MAX_BATCH_SIZE) || 100
+    //         },
+    //         logging: {
+    //             logSuccessfulReads: process.env.LOG_SUCCESSFUL_READS === 'true',
+    //             logFailedReads: process.env.LOG_FAILED_READS !== 'false',
+    //             logInterval: parseInt(process.env.LOG_STATS_INTERVAL) || 300000 // 5 minutes
+    //         }
+    //     };
     }
 
     /**
      * Start automatic meter data collection
      */
-    startCollection() {
-        if (this.isCollecting) {
-            console.log('⚠️ Auto meter collection is already running');
-            return { success: false, message: 'Collection already running' };
-        }
+    // emilmodbus startCollection() {
+    //     if (this.isCollecting) {
+    //         console.log('⚠️ Auto meter collection is already running');
+    //         return { success: false, message: 'Collection already running' };
+    //     }
 
-        if (!this.config.collection.enabled) {
-            console.log('📊 Auto meter collection is disabled in configuration');
-            return { success: false, message: 'Collection disabled in config' };
-        }
+    //     if (!this.config.collection.enabled) {
+    //         console.log('📊 Auto meter collection is disabled in configuration');
+    //         return { success: false, message: 'Collection disabled in config' };
+    //     }
 
-        this.isCollecting = true;
-        this.lastCollectionTime = new Date();
+    //     this.isCollecting = true;
+    //     this.lastCollectionTime = new Date();
         
-        // Start the collection interval
-        this.collectionInterval = setInterval(async () => {
-            await this.performCollection();
-        }, this.config.collection.interval);
+    //     // Start the collection interval
+    //     this.collectionInterval = setInterval(async () => {
+    //         await this.performCollection();
+    //     }, this.config.collection.interval);
 
-        // Start stats logging interval
-        if (this.config.logging.logInterval > 0) {
-            this.statsInterval = setInterval(() => {
-                this.logCollectionStats();
-            }, this.config.logging.logInterval);
-        }
+    //     // Start stats logging interval
+    //     if (this.config.logging.logInterval > 0) {
+    //         this.statsInterval = setInterval(() => {
+    //             this.logCollectionStats();
+    //         }, this.config.logging.logInterval);
+    //     }
 
-        console.log(`🔄 Started auto meter collection (interval: ${this.config.collection.interval}ms)`);
-        console.log(`📊 Will collect data from meters every ${this.config.collection.interval / 1000} seconds`);
+    //     console.log(`🔄 Started auto meter collection (interval: ${this.config.collection.interval}ms)`);
+    //     console.log(`📊 Will collect data from meters every ${this.config.collection.interval / 1000} seconds`);
         
-        // Perform initial collection
-        setTimeout(() => this.performCollection(), 5000); // Start after 5 seconds
+    //     // Perform initial collection
+    //     setTimeout(() => this.performCollection(), 5000); // Start after 5 seconds
         
-        return { success: true, message: 'Collection started successfully' };
-    }
+    //     return { success: true, message: 'Collection started successfully' };
+    // }
 
     /**
      * Stop automatic meter data collection
@@ -160,154 +161,154 @@ class AutoMeterCollectionService {
     /**
      * Perform meter data collection
      */
-    async performCollection() {
-        const startTime = Date.now();
-        console.log('🔄 Starting meter data collection cycle...');
+    // emilmodbus async performCollection() {
+    //     const startTime = Date.now();
+    //     console.log('🔄 Starting meter data collection cycle...');
         
-        try {
-            // Get all active meters that should be collected
-            const meters = await this.getActiveMeters();
+    //     try {
+    //         // Get all active meters that should be collected
+    //         const meters = await this.getActiveMeters();
             
-            if (meters.length === 0) {
-                console.log('📊 No active meters found for collection');
-                return;
-            }
+    //         if (meters.length === 0) {
+    //             console.log('📊 No active meters found for collection');
+    //             return;
+    //         }
 
-            console.log(`📊 Found ${meters.length} active meters for collection`);
+    //         console.log(`📊 Found ${meters.length} active meters for collection`);
             
-            let successCount = 0;
-            let failureCount = 0;
-            const readings = [];
+    //         let successCount = 0;
+    //         let failureCount = 0;
+    //         const readings = [];
             
-            // Process meters in batches to avoid overwhelming the system
-            const batchSize = this.config.collection.batchSize;
+    //         // Process meters in batches to avoid overwhelming the system
+    //         const batchSize = this.config.collection.batchSize;
             
-            for (let i = 0; i < meters.length; i += batchSize) {
-                const batch = meters.slice(i, i + batchSize);
+    //         for (let i = 0; i < meters.length; i += batchSize) {
+    //             const batch = meters.slice(i, i + batchSize);
                 
-                // Process batch concurrently but with timeout
-                const batchPromises = batch.map(meter => 
-                    this.collectMeterData(meter).catch(error => {
-                        console.error(`❌ Failed to collect data from meter ${meter.meterid}:`, error.message);
-                        return null;
-                    })
-                );
+    //             // Process batch concurrently but with timeout
+    //             const batchPromises = batch.map(meter => 
+    //                 this.collectMeterData(meter).catch(error => {
+    //                     console.error(`❌ Failed to collect data from meter ${meter.meterid}:`, error.message);
+    //                     return null;
+    //                 })
+    //             );
                 
-                const batchResults = await Promise.all(batchPromises);
+    //             const batchResults = await Promise.all(batchPromises);
                 
-                // Process results
-                for (const result of batchResults) {
-                    if (result && result.success) {
-                        readings.push(result.reading);
-                        successCount++;
+    //             // Process results
+    //             for (const result of batchResults) {
+    //                 if (result && result.success) {
+    //                     readings.push(result.reading);
+    //                     successCount++;
                         
-                        if (this.config.logging.logSuccessfulReads) {
-                            console.log(`✅ Collected data from meter ${result.reading.meterid}`);
-                        }
-                    } else {
-                        failureCount++;
-                    }
-                }
+    //                     if (this.config.logging.logSuccessfulReads) {
+    //                         console.log(`✅ Collected data from meter ${result.reading.meterid}`);
+    //                     }
+    //                 } else {
+    //                     failureCount++;
+    //                 }
+    //             }
                 
-                // Small delay between batches to prevent overwhelming the network
-                if (i + batchSize < meters.length) {
-                    await this.delay(500);
-                }
-            }
+    //             // Small delay between batches to prevent overwhelming the network
+    //             if (i + batchSize < meters.length) {
+    //                 await this.delay(500);
+    //             }
+    //         }
             
-            // Save all readings to database
-            if (readings.length > 0) {
-                await this.saveReadings(readings);
-            }
+    //         // Save all readings to database
+    //         if (readings.length > 0) {
+    //             await this.saveReadings(readings);
+    //         }
             
-            // Update statistics
-            this.collectionStats.totalAttempts += meters.length;
-            this.collectionStats.successfulReads += successCount;
-            this.collectionStats.failedReads += failureCount;
-            this.lastCollectionTime = new Date();
+    //         // Update statistics
+    //         this.collectionStats.totalAttempts += meters.length;
+    //         this.collectionStats.successfulReads += successCount;
+    //         this.collectionStats.failedReads += failureCount;
+    //         this.lastCollectionTime = new Date();
             
-            const duration = Date.now() - startTime;
-            console.log(`🔄 Collection cycle completed: ${successCount}/${meters.length} successful (${duration}ms)`);
+    //         const duration = Date.now() - startTime;
+    //         console.log(`🔄 Collection cycle completed: ${successCount}/${meters.length} successful (${duration}ms)`);
             
-        } catch (error) {
-            console.error('❌ Error during meter collection cycle:', error.message);
-            this.collectionStats.lastError = error.message;
-        }
-    }
+    //     } catch (error) {
+    //         console.error('❌ Error during meter collection cycle:', error.message);
+    //         this.collectionStats.lastError = error.message;
+    //     }
+    // }
 
     /**
      * Collect data from a single meter using threaded MCP system
      */
-    async collectMeterData(meter) {
-        try {
-            if (!this.threadingService) {
-                throw new Error('Threading service not available');
-            }
+    // emilmodbus async collectMeterData(meter) {
+    //     try {
+    //         if (!this.threadingService) {
+    //             throw new Error('Threading service not available');
+    //         }
 
-            // Get meter connection details
-            const meterConfig = this.getMeterConfig(meter);
+    //         // Get meter connection details
+    //         const meterConfig = this.getMeterConfig(meter);
             
-            console.log(`📊 Collecting data from meter ${meter.meterid} at ${meterConfig.ip}:${meterConfig.port}`);
+    //         console.log(`📊 Collecting data from meter ${meter.meterid} at ${meterConfig.ip}:${meterConfig.port}`);
             
-            // Send message to worker thread to collect meter data
-            const message = {
-                type: 'collectMeterData',
-                payload: {
-                    meter: {
-                        meterid: meter.meterid,
-                        name: meter.name,
-                        type: meter.type
-                    },
-                    config: meterConfig,
-                    registers: this.config.meters.registers
-                },
-                priority: 'normal',
-                timeout: this.config.collection.timeout
-            };
+    //         // Send message to worker thread to collect meter data
+    //         const message = {
+    //             type: 'collectMeterData',
+    //             payload: {
+    //                 meter: {
+    //                     meterid: meter.meterid,
+    //                     name: meter.name,
+    //                     type: meter.type
+    //                 },
+    //                 config: meterConfig,
+    //                 registers: this.config.meters.registers
+    //             },
+    //             priority: 'normal',
+    //             timeout: this.config.collection.timeout
+    //         };
             
-            const result = await this.threadingService.sendMessage(message);
+    //         const result = await this.threadingService.sendMessage(message);
             
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to collect meter data via threading system');
-            }
+    //         if (!result.success) {
+    //             throw new Error(result.error || 'Failed to collect meter data via threading system');
+    //         }
             
-            // Display collected data in console
-            console.log(`📈 Data collected from meter ${meter.meterid}:`, JSON.stringify(result.data, null, 2));
+    //         // Display collected data in console
+    //         console.log(`📈 Data collected from meter ${meter.meterid}:`, JSON.stringify(result.data, null, 2));
             
-            // Create meter reading record from threaded result
-            const reading = await this.createMeterReading(meter, result.data, meterConfig);
+    //         // Create meter reading record from threaded result
+    //         const reading = await this.createMeterReading(meter, result.data, meterConfig);
             
-            // Display the reading that will be saved
-            console.log(`💾 Meter reading prepared for ${meter.meterid}:`, {
-                meterid: reading.meterid,
-                reading_value: reading.reading_value,
-                voltage: reading.voltage,
-                current: reading.current,
-                power: reading.power,
-                energy: reading.energy,
-                frequency: reading.frequency,
-                power_factor: reading.power_factor,
-                timestamp: reading.timestamp
-            });
+    //         // Display the reading that will be saved
+    //         console.log(`💾 Meter reading prepared for ${meter.meterid}:`, {
+    //             meterid: reading.meterid,
+    //             reading_value: reading.reading_value,
+    //             voltage: reading.voltage,
+    //             current: reading.current,
+    //             power: reading.power,
+    //             energy: reading.energy,
+    //             frequency: reading.frequency,
+    //             power_factor: reading.power_factor,
+    //             timestamp: reading.timestamp
+    //         });
             
-            return {
-                success: true,
-                reading,
-                meter: meter.meterid
-            };
+    //         return {
+    //             success: true,
+    //             reading,
+    //             meter: meter.meterid
+    //         };
             
-        } catch (error) {
-            if (this.config.logging.logFailedReads) {
-                console.error(`❌ Failed to collect data from meter ${meter.meterid}:`, error.message);
-            }
+    //     } catch (error) {
+    //         if (this.config.logging.logFailedReads) {
+    //             console.error(`❌ Failed to collect data from meter ${meter.meterid}:`, error.message);
+    //         }
             
-            return {
-                success: false,
-                error: error.message,
-                meter: meter.meterid
-            };
-        }
-    }
+    //         return {
+    //             success: false,
+    //             error: error.message,
+    //             meter: meter.meterid
+    //         };
+    //     }
+    // }
 
     /**
      * Get meter configuration (IP, port, etc.)
@@ -327,96 +328,96 @@ class AutoMeterCollectionService {
     /**
      * Create a meter reading record from collected data
      */
-    async createMeterReading(meter, data, meterConfig) {
-        const timestamp = new Date();
+    // emilmodbus async createMeterReading(meter, data, meterConfig) {
+    //     const timestamp = new Date();
         
-        // Extract key values from the collected data
-        const voltage = data.voltage || data.phaseAVoltage || 0;
-        const current = data.current || data.phaseACurrent || 0;
-        const power = data.power || 0;
-        const energy = data.energy || data.totalActiveEnergyWh || 0;
-        const frequency = data.frequency || 0;
-        const powerFactor = data.powerFactor || 0;
+    //     // Extract key values from the collected data
+    //     const voltage = data.voltage || data.phaseAVoltage || 0;
+    //     const current = data.current || data.phaseACurrent || 0;
+    //     const power = data.power || 0;
+    //     const energy = data.energy || data.totalActiveEnergyWh || 0;
+    //     const frequency = data.frequency || 0;
+    //     const powerFactor = data.powerFactor || 0;
         
-        // Create reading record with all available data (matching database schema)
-        const reading = {
-            meterid: meter.meterid,
-            timestamp: timestamp, // Database uses 'timestamp' not 'reading_date'
-            reading_value: energy, // Primary reading value for logging
-            unit_of_measurement: 'Wh',
-            data_quality: 'good',
-            source: 'modbus_auto_collection',
-            quality: 'good', // Database has both 'data_quality' and 'quality'
-            device_ip: meterConfig.ip,
-            deviceip: meterConfig.ip, // Database has both 'device_ip' and 'deviceip'
-            port: meterConfig.port,
-            slave_id: meterConfig.slaveId,
-            slaveid: meterConfig.slaveId, // Database has both 'slave_id' and 'slaveid'
+    //     // Create reading record with all available data (matching database schema)
+    //     const reading = {
+    //         meterid: meter.meterid,
+    //         timestamp: timestamp, // Database uses 'timestamp' not 'reading_date'
+    //         reading_value: energy, // Primary reading value for logging
+    //         unit_of_measurement: 'Wh',
+    //         data_quality: 'good',
+    //         source: 'modbus_auto_collection',
+    //         quality: 'good', // Database has both 'data_quality' and 'quality'
+    //         device_ip: meterConfig.ip,
+    //         deviceip: meterConfig.ip, // Database has both 'device_ip' and 'deviceip'
+    //         port: meterConfig.port,
+    //         slave_id: meterConfig.slaveId,
+    //         slaveid: meterConfig.slaveId, // Database has both 'slave_id' and 'slaveid'
             
-            // Store all collected values
-            voltage: voltage,
-            current: current,
-            power: power,
-            energy: energy,
-            frequency: frequency,
-            power_factor: powerFactor,
-            powerfactor: powerFactor, // Database has both versions
+    //         // Store all collected values
+    //         voltage: voltage,
+    //         current: current,
+    //         power: power,
+    //         energy: energy,
+    //         frequency: frequency,
+    //         power_factor: powerFactor,
+    //         powerfactor: powerFactor, // Database has both versions
             
-            // Phase measurements if available
-            phase_a_voltage: data.phaseAVoltage || null,
-            phase_b_voltage: data.phaseBVoltage || null,
-            phase_c_voltage: data.phaseCVoltage || null,
-            phase_a_current: data.phaseACurrent || null,
-            phase_b_current: data.phaseBCurrent || null,
-            phase_c_current: data.phaseCCurrent || null,
+    //         // Phase measurements if available
+    //         phase_a_voltage: data.phaseAVoltage || null,
+    //         phase_b_voltage: data.phaseBVoltage || null,
+    //         phase_c_voltage: data.phaseCVoltage || null,
+    //         phase_a_current: data.phaseACurrent || null,
+    //         phase_b_current: data.phaseBCurrent || null,
+    //         phase_c_current: data.phaseCCurrent || null,
             
-            // Energy measurements
-            total_active_energy_wh: data.totalActiveEnergyWh || null,
-            total_reactive_energy_varh: data.totalReactiveEnergyVARh || null,
-            total_apparent_energy_vah: data.totalApparentEnergyVAh || null,
+    //         // Energy measurements
+    //         total_active_energy_wh: data.totalActiveEnergyWh || null,
+    //         total_reactive_energy_varh: data.totalReactiveEnergyVARh || null,
+    //         total_apparent_energy_vah: data.totalApparentEnergyVAh || null,
             
-            // Shorthand columns for UI compatibility
-            v: voltage,
-            a: current,
-            kw: power / 1000, // Convert W to kW
-            kwh: energy / 1000, // Convert Wh to kWh
+    //         // Shorthand columns for UI compatibility
+    //         v: voltage,
+    //         a: current,
+    //         kw: power / 1000, // Convert W to kW
+    //         kwh: energy / 1000, // Convert Wh to kWh
             
-            // Metadata
-            status: 'active'
-        };
+    //         // Metadata
+    //         status: 'active'
+    //     };
         
-        return reading;
-    }
+    //     return reading;
+    // }
 
     /**
      * Save readings to database
      */
-    async saveReadings(readings) {
-        try {
-            console.log(`💾 Saving ${readings.length} meter readings to database...`);
+    // emilmodbus async saveReadings(readings) {
+    //     try {
+    //         console.log(`💾 Saving ${readings.length} meter readings to database...`);
             
-            if (this.config.database.batchInsert && readings.length > 1) {
-                // Use batch insert for better performance
-                await this.batchInsertReadings(readings);
-            } else {
-                // Insert readings individually using direct database query
-                for (const reading of readings) {
-                    await this.insertSingleReading(reading);
-                }
-            }
+    //         if (this.config.database.batchInsert && readings.length > 1) {
+    //             // Use batch insert for better performance
+    //             await this.batchInsertReadings(readings);
+    //         } else {
+    //             // Insert readings individually using direct database query
+    //             for (const reading of readings) {
+    //                 await this.insertSingleReading(reading);
+    //             }
+    //         }
             
-            console.log(`✅ Successfully saved ${readings.length} meter readings to database`);
+    //         console.log(`✅ Successfully saved ${readings.length} meter readings to database`);
             
-            // Log each saved reading
-            readings.forEach(reading => {
-                console.log(`💾 ✅ Saved reading for meter ${reading.meterid}: ${reading.reading_value} ${reading.unit_of_measurement} at ${reading.timestamp}`);
-            });
+    //         // Log each saved reading
+    //         readings.forEach(reading => {
+    //             console.log(`💾 ✅ Saved reading for meter ${reading.meterid}: ${reading.reading_value} ${reading.unit_of_measurement} at ${reading.timestamp}`);
+    //         });
             
-        } catch (error) {
-            console.error('❌ Failed to save meter readings:', error.message);
-            throw error;
-        }
-    }
+    //     } catch (error) {
+    //         console.error('❌ Failed to save meter readings:', error.message);
+    //         throw error;
+    //     }
+    // }
 
     /**
      * Batch insert readings for better performance
@@ -512,12 +513,10 @@ class AutoMeterCollectionService {
         const query = `
             SELECT 
                 id, meterid, name, type, status,
-                location_location, location_floor, location_room,
-                last_reading_date, installation_date, device_id
+                location_building, location_floor, location_room,
+                last_reading_date, installation_date
             FROM meters 
-            WHERE (is_active = true OR is_active IS NULL)
-                AND status != 'inactive'
-                AND status != 'maintenance'
+            WHERE status = 'active'
             ORDER BY meterid
         `;
 

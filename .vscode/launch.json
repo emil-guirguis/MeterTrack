@@ -12,10 +12,40 @@
       },
       "console": "integratedTerminal",
       "restart": true,
-      "runtimeArgs": ["--inspect"],
+      "runtimeArgs": [
+        "--inspect"
+      ],
       "skipFiles": [
         "<node_internals>/**"
       ]
+    },
+    {
+      "name": "Port Scanner",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/modbus-register-scanner/dist/index.js",
+      "args": [
+        "scan",
+        "--host",
+        "10.10.10.11",
+        "--start-address",
+        "4000",
+        "--end-address",
+        "4021",
+        "--function-codes",
+        "3,4",
+        "--timeout",
+        "3000",
+        "--format",
+        "both",
+        "--output",
+        "device-10-10-10-11-scan"
+      ],
+      "cwd": "${workspaceFolder}/modbus-register-scanner",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal"
     },
     {
       "name": "Attach to Backend",

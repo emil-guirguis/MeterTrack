@@ -36,8 +36,17 @@ class DeviceService {
       }
     }
 
+    // Validate model field (optional)
+    if (deviceData.hasOwnProperty('model') && deviceData.model !== null) {
+      if (typeof deviceData.model !== 'string') {
+        errors.push('Device model must be a string');
+      } else if (deviceData.model.length > 255) {
+        errors.push('Device model cannot exceed 255 characters');
+      }
+    }
+
     // Check for unexpected fields
-    const allowedFields = ['name', 'description'];
+    const allowedFields = ['tyoe', 'description', 'brand', 'model_number'];
     const unexpectedFields = Object.keys(deviceData).filter(field => !allowedFields.includes(field));
     if (unexpectedFields.length > 0) {
       errors.push(`Unexpected fields: ${unexpectedFields.join(', ')}`);
@@ -83,16 +92,17 @@ class DeviceService {
     error.originalError = originalError;
     return error;
   }
+
   /**
    * Get all devices
    */
   static async getAllDevices() {
     try {
-      const result = await db.query('SELECT * FROM devices ORDER BY name ASC');
+      const result = await db.query('SELECT * FROM device ORDER BY brand ASC');
       return result.rows.map(this.formatDevice);
     } catch (error) {
-      console.error('Error fetching devices:', error);
-      throw error;
+      console.error('Error fetching device:', error);
+      throw this.createDatabaseError(error, 'device retrieval');
     }
   }
 
@@ -106,7 +116,7 @@ class DeviceService {
     }
 
     try {
-      const result = await db.query('SELECT * FROM devices WHERE id = $1', [id]);
+      const result = await db.query('SELECT * FROM device WHERE id = $1', [id]);
       if (result.rows.length === 0) {
         return null;
       }
@@ -128,10 +138,10 @@ class DeviceService {
     }
 
     try {
-      const { name, description } = deviceData;
+      const { name, description, model } = deviceData;
       const result = await db.query(
-        'INSERT INTO devices (name, description) VALUES ($1, $2) RETURNING *',
-        [name.trim(), description || null]
+        'INSERT INTO device (type, description, brand,model_number) VALUES ($1, $2, $3, $4) RETURNING *',
+        [name.trim(), description || null, model || null]
       );
       return this.formatDevice(result.rows[0]);
     } catch (error) {
@@ -161,8 +171,8 @@ class DeviceService {
       const values = [];
       let paramIndex = 1;
 
-      if (updateData.hasOwnProperty('name')) {
-        updateFields.push(`name = $${paramIndex}`);
+      if (updateData.hasOwnProperty('type')) {
+        updateFields.push(`type = $${paramIndex}`);
         values.push(updateData.name.trim());
         paramIndex++;
       }
@@ -170,6 +180,19 @@ class DeviceService {
       if (updateData.hasOwnProperty('description')) {
         updateFields.push(`description = $${paramIndex}`);
         values.push(updateData.description || null);
+        paramIndex++;
+      }
+
+            if (updateData.hasOwnProperty('brand')) {
+        updateFields.push(`brand = $${paramIndex}`);
+        values.push(updateData.description || null);
+        paramIndex++;
+      }
+
+
+      if (updateData.hasOwnProperty('model_number')) {
+        updateFields.push(`model_number = $${paramIndex}`);
+        values.push(updateData.model || null);
         paramIndex++;
       }
 
@@ -182,7 +205,7 @@ class DeviceService {
       
       // Add ID parameter
       values.push(id);
-      const query = `UPDATE devices SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+      const query = `UPDATE device SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
 
       const result = await db.query(query, values);
       
@@ -210,7 +233,7 @@ class DeviceService {
     }
 
     try {
-      const result = await db.query('DELETE FROM devices WHERE id = $1 RETURNING *', [id]);
+      const result = await db.query('DELETE FROM device WHERE id = $1 RETURNING *', [id]);
       return result.rows.length > 0;
     } catch (error) {
       console.error('Error deleting device:', error);
@@ -228,6 +251,7 @@ class DeviceService {
       id: dbRow.id,
       name: dbRow.name,
       description: dbRow.description,
+      model: dbRow.model,
       createdAt: dbRow.createdat,
       updatedAt: dbRow.updatedat
     };

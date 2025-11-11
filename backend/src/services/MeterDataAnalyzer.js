@@ -17,15 +17,16 @@ class MeterDataAnalyzer {
      * Initialize meter data analyzer
      */
     async initialize(config = null) {
-        try {
-            this.config = config || this.getDefaultConfig();
+        //emilmodbus
+        // try {
+        //     this.config = config || this.getDefaultConfig();
             
-            console.log('✅ Meter data analyzer initialized successfully');
-            return { success: true };
-        } catch (error) {
-            console.error('❌ Failed to initialize meter data analyzer:', error.message);
-            return { success: false, error: error.message };
-        }
+        //     console.log('✅ Meter data analyzer initialized successfully');
+        //     return { success: true };
+        // } catch (error) {
+        //     console.error('❌ Failed to initialize meter data analyzer:', error.message);
+        //     return { success: false, error: error.message };
+        // }
     }
 
     /**

@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const Meter = require('../models/Meter');
-const DeviceService = require('../services/deviceService');
+const DeviceService = require('../services/DeviceService');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();

@@ -21,30 +21,31 @@ class NotificationScheduler {
      * Initialize notification scheduler
      */
     async initialize(config = null) {
-        try {
-            this.config = config || this.getDefaultConfig();
+        //emilmodbus
+        // try {
+        //     this.config = config || this.getDefaultConfig();
             
-            // Validate configuration
-            const validation = this.validateConfig(this.config);
-            if (!validation.isValid) {
-                throw new Error(`Invalid scheduler configuration: ${validation.errors.join(', ')}`);
-            }
+        //     // Validate configuration
+        //     const validation = this.validateConfig(this.config);
+        //     if (!validation.isValid) {
+        //         throw new Error(`Invalid scheduler configuration: ${validation.errors.join(', ')}`);
+        //     }
 
-            // Initialize scheduled jobs
-            await this.initializeScheduledJobs();
+        //     // Initialize scheduled jobs
+        //     await this.initializeScheduledJobs();
 
-            // Start retry processor
-            this.startRetryProcessor();
+        //     // Start retry processor
+        //     this.startRetryProcessor();
 
-            this.isInitialized = true;
-            console.log('✅ Notification scheduler initialized successfully');
+        //     this.isInitialized = true;
+        //     console.log('✅ Notification scheduler initialized successfully');
             
-            return { success: true };
-        } catch (error) {
-            console.error('❌ Failed to initialize notification scheduler:', error.message);
-            this.isInitialized = false;
-            return { success: false, error: error.message };
-        }
+        //     return { success: true };
+        // } catch (error) {
+        //     console.error('❌ Failed to initialize notification scheduler:', error.message);
+        //     this.isInitialized = false;
+        //     return { success: false, error: error.message };
+        // }
     }
 
     /**

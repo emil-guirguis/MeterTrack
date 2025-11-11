@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, TextField, Box, Typography, Paper, Alert } from '@mui/material';
-import { createDevice } from '../../services/deviceService';
+import { deviceService } from '../../services/deviceService';
 import type { Device } from '../../types/device';
 
 interface DeviceFormProps {
@@ -21,7 +21,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ onCreated, onCancel }) => {
     setError(null);
     setSuccess(null);
     try {
-      const device = await createDevice({ name, description });
+      const device = await deviceService.create({ name, description });
       setSuccess('Device created successfully!');
       setName('');
       setDescription('');

@@ -1,4 +1,4 @@
-const DeviceService = require('../services/deviceService');
+const DeviceService = require('../services/DeviceService');
 const db = require('../config/database');
 
 // Mock the database module

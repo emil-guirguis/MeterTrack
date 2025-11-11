@@ -19,26 +19,27 @@ class NotificationScheduler {
      * Initialize notification scheduler
      */
     async initialize(config = null) {
-        try {
-            this.config = config || this.getDefaultConfig();
-            // Validate configuration
-            const validation = this.validateConfig(this.config);
-            if (!validation.isValid) {
-                throw new Error(`Invalid scheduler configuration: ${validation.errors.join(', ')}`);
-            }
-            // Initialize scheduled jobs
-            await this.initializeScheduledJobs();
-            // Start retry processor
-            this.startRetryProcessor();
-            this.isInitialized = true;
-            console.log('✅ Notification scheduler initialized successfully');
-            return { success: true };
-        }
-        catch (error) {
-            console.error('❌ Failed to initialize notification scheduler:', error.message);
-            this.isInitialized = false;
-            return { success: false, error: error.message };
-        }
+        //emilmodbus
+        // try {
+        //     this.config = config || this.getDefaultConfig();
+        //     // Validate configuration
+        //     const validation = this.validateConfig(this.config);
+        //     if (!validation.isValid) {
+        //         throw new Error(`Invalid scheduler configuration: ${validation.errors.join(', ')}`);
+        //     }
+        //     // Initialize scheduled jobs
+        //     await this.initializeScheduledJobs();
+        //     // Start retry processor
+        //     this.startRetryProcessor();
+        //     this.isInitialized = true;
+        //     console.log('✅ Notification scheduler initialized successfully');
+        //     return { success: true };
+        // }
+        // catch (error) {
+        //     console.error('❌ Failed to initialize notification scheduler:', error.message);
+        //     this.isInitialized = false;
+        //     return { success: false, error: error.message };
+        // }
     }
     /**
      * Get default scheduler configuration
