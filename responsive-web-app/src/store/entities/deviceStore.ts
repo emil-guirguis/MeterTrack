@@ -59,21 +59,24 @@ export const useDevice = createEntityHook(useDeviceStore);
 // Enhanced device hook with additional functionality
 export const useDevicesEnhanced = () => {
   const device = useDevice();
-  
+
   return {
     ...device,
-    
+
     // Additional computed values
-    devicesByManufacturer : (manufacturer: string) => 
+    devicesByType: (type: string) =>
+      device.items.filter(d => d.type.toLowerCase().includes(type.toLowerCase())),
+
+    devicesByManufacturer: (manufacturer: string) =>
       device.items.filter(d => d.manufacturer.toLowerCase().includes(manufacturer.toLowerCase())),
-    
-    devicesByModel: (model: string) => 
+
+    devicesByModel: (model: string) =>
       device.items.filter(d => d.model_number?.toLowerCase().includes(model.toLowerCase())),
-    
+
     // Statistics
     totalDevices: device.items.length,
     uniqueManufacturers: [...new Set(device.items.map(d => d.manufacturer))].length,
-    
+
     // Enhanced actions with notifications
     createDevice: async (data: Partial<Device>) => {
       return withApiCall(
@@ -85,7 +88,7 @@ export const useDevicesEnhanced = () => {
         }
       );
     },
-    
+
     updateDevice: async (id: string, data: Partial<Device>) => {
       return withApiCall(
         () => device.updateItem(id, data),
@@ -96,7 +99,7 @@ export const useDevicesEnhanced = () => {
         }
       );
     },
-    
+
     deleteDevice: async (id: string) => {
       return withApiCall(
         () => device.deleteItem(id),
@@ -107,7 +110,7 @@ export const useDevicesEnhanced = () => {
         }
       );
     },
-    
+
     // Bulk operations
     bulkDelete: async (deviceIds: string[]) => {
       return withApiCall(
@@ -122,13 +125,13 @@ export const useDevicesEnhanced = () => {
         }
       );
     },
-    
+
     // Search and filter helpers
     searchDevices: (query: string) => {
       device.setSearch(query);
       device.fetchItems();
     },
-    
+
     filterBymanufacturer: (manufacturer: string) => {
       device.setFilters({ ...device.list.filters, manufacturer });
       device.fetchItems();

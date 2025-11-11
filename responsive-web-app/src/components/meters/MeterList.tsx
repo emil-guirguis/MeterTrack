@@ -65,28 +65,12 @@ export const MeterList: React.FC<MeterListProps> = ({
 
   // Define table columns - use the actual meter fields that exist
   const columns: ColumnDefinition<Meter>[] = useMemo(() => [
-    {
-      key: 'serialNumber',
-      label: 'Meter ID',
+      {
+      key: 'location',
+      label: 'Location',
       sortable: true,
-      render: (value, meter) => (
-        <div className="table-cell--two-line">
-          <div className="table-cell__primary">
-            {meter.device || 'Unknown'} {meter.model || ''}
-          </div>
-          <div className="table-cell__secondary">{value}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'type',
-      label: 'Type',
-      sortable: true,
-      render: (value) => (
-        <span className={`badge badge--${value === 'electric' ? 'primary' : value === 'gas' ? 'warning' : 'info'} badge--uppercase`}>
-          {value}
-        </span>
-      ),
+      render: (value) => value || 'Not specified',
+      responsive: 'hide-mobile',
     },
     {
       key: 'configuration',
@@ -115,13 +99,7 @@ export const MeterList: React.FC<MeterListProps> = ({
       ),
       responsive: 'hide-mobile',
     },
-    {
-      key: 'location',
-      label: 'Location',
-      sortable: true,
-      render: (value) => value || 'Not specified',
-      responsive: 'hide-mobile',
-    },
+
     {
       key: 'status',
       label: 'Status',

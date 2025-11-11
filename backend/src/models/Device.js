@@ -16,17 +16,17 @@ class Device {
      */
     static async create(deviceData) {
         const {
-            manufacturer,model_number,type, description,  createdat, updatedat
+            type, manufacturer,model_number,description,  createdat, updatedat
         } = deviceData;
 
         const query = `
             INSERT INTO device (
-                manufacturer,model_number,type, description, createdat, updatedat
+                type, manufacturer,model_number,description, createdat, updatedat
             ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *
         `;
 
-        const values = [manufacturer,model_number,type, description];
+        const values = [type, manufacturer,model_number,description];
 
         try {
             const result = await db.query(query, values);
@@ -65,7 +65,7 @@ class Device {
             values.push(`%${filters.search}%`);
         }
 
-        query += ' ORDER BY name ASC';
+        query += ' ORDER BY type ASC';
 
         if (filters.limit) {
             paramCount++;
@@ -81,7 +81,7 @@ class Device {
      * Update device
      */
     async update(updateData) {
-        const allowedFields = ['name', 'description', 'model'];
+        const allowedFields = ['type', 'name', 'description', 'model'];
         const updates = [];
         const values = [];
         let paramCount = 0;
@@ -147,9 +147,9 @@ class Device {
     toJSON() {
         return {
             id: this.id,
+            type: this.type, 
             manufacturer: this.manufacturer,
             model_number: this.model_number,
-            type: this.type, 
             description: this.description,
             createdAt: this.createdat,
             updatedAt: this.updatedat

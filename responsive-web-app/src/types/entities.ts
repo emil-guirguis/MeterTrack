@@ -379,6 +379,7 @@ export interface Meter {
 
 export interface Device {
   id: string;
+  type: string;
   brand: string;
   model_number: string;
   description: string;

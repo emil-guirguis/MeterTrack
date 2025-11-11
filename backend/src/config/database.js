@@ -73,8 +73,20 @@ class PostgresDB {
         }
         const client = await this.pool.connect();
         try {
+            console.log('=== SQL QUERY ===');
+            console.log('Query:', text);
+            console.log('Params:', params);
+            console.log('=================');
             const result = await client.query(text, params);
+            console.log('Result rows:', result.rows.length);
             return result;
+        } catch (error) {
+            console.error('=== SQL ERROR ===');
+            console.error('Query:', text);
+            console.error('Params:', params);
+            console.error('Error:', error.message);
+            console.error('=================');
+            throw error;
         } finally {
             client.release();
         }

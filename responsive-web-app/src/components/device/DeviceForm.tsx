@@ -13,12 +13,14 @@ interface DeviceFormProps {
 
 
 interface FormData {
+  type: string;
   manufacturer: string;
   model_number: string;
   description: string;
 }
 
 interface FormErrors {
+  type?: string;
   manufacturer?: string;
   model_number?: string;
   description?: string;
@@ -42,6 +44,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   };
 
   const [formData, setFormData] = useState<FormData>({
+    type: '',
     manufacturer: '',
     model_number: '',
     description: '',
@@ -54,6 +57,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   useEffect(() => {
     if (device) {
       setFormData({
+        type: device.type || '',
         manufacturer: device.manufacturer || '',
         model_number: device.model_number || '',
         description: device.description || '',
@@ -65,6 +69,9 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
     const newErrors: FormErrors = {};
 
     // Required fields
+    if (!formData.type.trim()) {
+      newErrors.type = 'Device type is required';
+    }
     if (!formData.manufacturer.trim()) {
       newErrors.manufacturer = 'Device manufacturer is required';
     }
@@ -110,6 +117,28 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
     <form className="device-form" onSubmit={handleSubmit}>
       <div className="device-form__section">
         <h3 className="device-form__section-title">Device Information</h3>
+
+        <div className="device-form__field">
+          <label htmlFor="type" className="device-form__label">
+            Type <span className="device-form__required">*</span>
+          </label>
+          <select
+            id="type"
+            value={formData.type}
+            onChange={(e) => handleInputChange('type', e.target.value)}
+            disabled={isFormDisabled}
+            className={`device-form__select ${errors.type ? 'device-form__select--error' : ''}`}
+            required
+          >
+            <option value="">Select a device type</option>
+            <option value="Meter">Meter</option>
+            <option value="HVAC Controller">HVAC Controller</option>
+            <option value="Thermostat">Thermostats</option>
+            <option value="HVAC Sensor">HVAC Sensor</option>
+            <option value="Lighting Controller">Lighting Control</option>
+          </select>
+          {errors.manufacturer && <span className="device-form__error">{errors.manufacturer}</span>}
+        </div>
 
         <div className="device-form__field">
           <label htmlFor="manufacturer" className="device-form__label">

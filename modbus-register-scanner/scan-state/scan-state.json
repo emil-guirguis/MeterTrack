@@ -29,13 +29,13 @@
     "totalFunctionCodes": 4,
     "scannedAddresses": 0,
     "discoveredRegisters": 0,
-    "startTime": "2025-11-11T02:36:27.503Z",
-    "lastUpdateTime": "2025-11-11T02:36:56.543Z",
+    "startTime": "2025-11-11T22:59:09.616Z",
+    "lastUpdateTime": "2025-11-11T23:02:08.910Z",
     "isRunning": true,
     "isPaused": false,
     "errors": []
   },
   "discoveredRegisters": [],
-  "lastSavedTime": "2025-11-11T02:36:57.506Z",
+  "lastSavedTime": "2025-11-11T23:02:09.641Z",
   "version": "1.0.0"
 }

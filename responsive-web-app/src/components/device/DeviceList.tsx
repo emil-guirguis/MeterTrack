@@ -66,6 +66,12 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   // Column definitions
   const columns: ColumnDefinition<Device>[] = useMemo(() => [
     {
+      key: 'type',
+      label: 'Type',
+      sortable: true,
+      render: (_value, device) => device.type,
+    },
+    {
       key: 'manufacturer',
       label: 'Manufacturer',
       sortable: true,
@@ -146,7 +152,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   // Handle form submit
   const handleFormSubmit = useCallback(async (data: Partial<Device>) => {
     if (formDevice) {
-      await deviceService.update(formDevice.id, data);
+      await deviceService.update(formDevice.id, data as any);
     } else {
       await deviceService.create(data as any);
     }
@@ -173,7 +179,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
           ➕ Add Device
         </button>
       </div>
-      
+
       <DataList
         data={paginatedDevices as any[]}
         columns={columns as any[]}

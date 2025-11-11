@@ -25,6 +25,28 @@ class DeviceService {
       }
     }
 
+    // Validate type field
+    if (!isUpdate || deviceData.hasOwnProperty('type')) {
+      if (!deviceData.type) {
+        errors.push('Device type is required');
+      } else if (typeof deviceData.type !== 'string') {
+        errors.push('Device type must be a string');
+      } else if (deviceData.type.trim().length === 0) {
+        errors.push('Device type cannot be empty');
+      } else if (deviceData.type.length > 255) {
+        errors.push('Device type cannot exceed 255 characters');
+      }
+    }
+
+    // Validate manufacturer field
+    if (!isUpdate || deviceData.hasOwnProperty('manufacturer')) {
+      if (deviceData.manufacturer && typeof deviceData.manufacturer !== 'string') {
+        errors.push('Device model number must be a string');
+      } else if (deviceData.manufacturer && deviceData.manufacturer.length > 255) {
+        errors.push('Device model number cannot exceed 255 characters');
+      }
+    }
+
     // Validate model_number field
     if (!isUpdate || deviceData.hasOwnProperty('model_number')) {
       if (deviceData.model_number && typeof deviceData.model_number !== 'string') {
@@ -59,7 +81,7 @@ class DeviceService {
    */
   static createDatabaseError(originalError, operation) {
     let error;
-    
+
     if (originalError.code === '23505') {
       // Unique constraint violation
       error = new Error('Device manufacturer already exists');
@@ -77,7 +99,7 @@ class DeviceService {
       error = new Error(`Database error during ${operation}`);
       error.code = 'DATABASE_ERROR';
     }
-    
+
     error.originalError = originalError;
     return error;
   }
@@ -122,6 +144,7 @@ class DeviceService {
   static async createDevice(deviceData) {
     // Map frontend fields (manufacturer, model_number) to database fields
     const mappedData = {
+      type: deviceData.type,
       manufacturer: deviceData.manufacturer,
       model_number: deviceData.model_number,
       description: deviceData.description
@@ -134,10 +157,10 @@ class DeviceService {
     }
 
     try {
-      const { manufacturer, description, model_number } = mappedData;
+      const { type, manufacturer, description, model_number } = mappedData;
       const result = await db.query(
-        'INSERT INTO device (manufacturer, description, model_number) VALUES ($1, $2, $3) RETURNING *',
-        [manufacturer.trim(), description || null, model_number || null]
+        'INSERT INTO device (type, manufacturer, description, model_number) VALUES ($1, $2, $3, $4) RETURNING *',
+        [type.trim(), manufacturer.trim(), description || null, model_number || null]
       );
       return this.formatDevice(result.rows[0]);
     } catch (error) {
@@ -157,6 +180,9 @@ class DeviceService {
 
     // Map frontend fields to database fields
     const mappedData = {};
+    if (updateData.hasOwnProperty('type')) {
+      mappedData.type = updateData.type;
+    }
     if (updateData.hasOwnProperty('manufacturer')) {
       mappedData.manufacturer = updateData.manufacturer;
     }
@@ -179,6 +205,11 @@ class DeviceService {
       const values = [];
       let paramIndex = 1;
 
+      if (mappedData.hasOwnProperty('type')) {
+        updateFields.push(`type = $${paramIndex}`);
+        values.push(mappedData.type.trim());
+        paramIndex++;
+      }
       if (mappedData.hasOwnProperty('manufacturer')) {
         updateFields.push(`manufacturer = $${paramIndex}`);
         values.push(mappedData.manufacturer.trim());
@@ -203,17 +234,17 @@ class DeviceService {
 
       // Add updated timestamp
       updateFields.push(`updatedat = CURRENT_TIMESTAMP`);
-      
+
       // Add ID parameter
       values.push(id);
       const query = `UPDATE device SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
 
       const result = await db.query(query, values);
-      
+
       if (result.rows.length === 0) {
         return null;
       }
-      
+
       return this.formatDevice(result.rows[0]);
     } catch (error) {
       console.error('Error updating device:', error);
@@ -251,6 +282,7 @@ class DeviceService {
 
     return {
       id: dbRow.id,
+      type: dbRow.type,
       manufacturer: dbRow.manufacturer,
       model_number: dbRow.model_number,
       description: dbRow.description,

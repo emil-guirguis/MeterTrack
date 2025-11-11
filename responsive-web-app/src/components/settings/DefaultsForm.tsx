@@ -15,13 +15,13 @@ export interface DefaultsFormProps {
   error?: string | null;
 }
 
-const DefaultsForm: React.FC<DefaultsFormProps> = ({ 
-  values: _values, 
-  onChange: _onChange, 
-  onSubmit, 
-  onCancel, 
-  loading, 
-  error 
+const DefaultsForm: React.FC<DefaultsFormProps> = ({
+  values: _values,
+  onChange: _onChange,
+  onSubmit,
+  onCancel,
+  loading,
+  error
 }) => {
   const { getMeterTypes } = useModbus();
   const [meterTypes, setMeterTypes] = useState<any>({});
@@ -56,7 +56,7 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
       exportDate: new Date().toISOString(),
       meterTypes: meterTypes
     };
-    
+
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -71,25 +71,10 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
   return (
     <form className="settings-form" onSubmit={e => { e.preventDefault(); onSubmit?.(); }}>
       {error && <div className="settings-form__error">{error}</div>}
-      
+
       <div className="settings-form__section">
-        <h3 className="settings-form__section-title">Default Settings</h3>
-        
         <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Meter Maps Configuration
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Manage default meter register maps and configurations for different meter types.
-          </Typography>
-          
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
-              <strong>Meter Maps</strong> define how to read data from different types of energy meters using Modbus protocol. 
-              Each map specifies which registers to read for voltage, current, power, and other measurements.
-            </Typography>
-          </Alert>
+
 
           {meterTypesError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -99,38 +84,18 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
 
 
           {/* Devices Section */}
-          <Card sx={{ mb: 3, p: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>Device Management</Typography>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={() => setShowDeviceModal(true)}
-              sx={{ minWidth: '160px' }}
-            >
-              Devices
-            </Button>
-          </Card>
-          <Divider sx={{ mb: 3 }} />
-          {/* Meter Maps Section */}
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-            <Button
-              variant="contained"
-              onClick={handleLoadMeterMaps}
-              disabled={loadingMeterTypes || loading}
-              sx={{ minWidth: '160px' }}
-            >
-              {loadingMeterTypes ? 'Loading...' : 'Load Meter Maps'}
-            </Button>
-            
-            <Button
-              variant="outlined"
-              onClick={handleExportMeterMaps}
-              disabled={!meterTypes || Object.keys(meterTypes).length === 0 || loading}
-              sx={{ minWidth: '160px' }}
-            >
-              Export Maps
-            </Button>
-          </Box>
+          <Typography variant="h6" sx={{ mb: 1 }}>Device Management</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Manage devices and mapping configurations.
+          </Typography>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => setShowDeviceModal(true)}
+            sx={{ minWidth: '160px' }}
+          >
+            Devices
+          </Button>
 
           {/* Display loaded meter types */}
           {meterTypes && Object.keys(meterTypes).length > 0 && (
@@ -146,7 +111,7 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
             </Box>
           )}
         </Paper>
-        
+
         <div className="settings-form__actions">
           <button type="button" className="settings-form__btn settings-form__btn--secondary" onClick={onCancel} disabled={loading}>
             Cancel
@@ -158,10 +123,10 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
       </div>
 
       {/* Device Management Modal */}
-      <Dialog 
-        open={showDeviceModal} 
-        onClose={() => setShowDeviceModal(false)} 
-        maxWidth="xl" 
+      <Dialog
+        open={showDeviceModal}
+        onClose={() => setShowDeviceModal(false)}
+        maxWidth="xl"
         fullWidth
         PaperProps={{
           sx: {
@@ -171,7 +136,7 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
         }}
       >
         <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Device Management</Typography>
+          Device Management
           <IconButton
             aria-label="close"
             onClick={() => setShowDeviceModal(false)}

@@ -8,9 +8,7 @@ router.use(authenticateToken);
 // Get company settings
 router.get('/company', requirePermission('settings:read'), async (req, res) => {
   try {
-    console.log('Fetching company settings...');
     const settings = await SettingsService.getCompanySettings();
-    console.log('Found settings:', settings ? 'Yes' : 'No');
     
     res.json({ 
       success: true, 
