@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-// import { useAuth } from '../../hooks/useAuth'; // Commented out - using mock user
+import { useAuth } from '../../store/slices/authSlice';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useUI } from '../../store/slices/uiSlice';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -84,7 +84,11 @@ const AppLayout: React.FC<LayoutProps> = ({
   };
 
   const user = mockUser;
-  const logout = () => console.log('Logout clicked');
+  const { logout: authLogout } = useAuth();
+  const logout = () => {
+    authLogout();
+    window.location.href = '/login';
+  };
   const checkPermission = () => true;
   const location = useLocation();
   const { isMobile, isTablet, isDesktop, showSidebarInHeader } = useResponsive();
