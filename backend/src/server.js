@@ -10,7 +10,7 @@ const db = require('./config/database');
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const locationRoutes = require('./routes/locations');
+const locationRoutes = require('./routes/location');
 const equipmentRoutes = require('./routes/equipment');
 const contactRoutes = require('./routes/contacts');
 const meterRoutes = require('./routes/meters');
@@ -417,7 +417,7 @@ function setupThreadingEventHandlers() {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/locations', locationRoutes);
+app.use('/api/location', locationRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/meters', meterRoutes);

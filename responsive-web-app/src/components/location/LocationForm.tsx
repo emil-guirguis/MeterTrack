@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Location, LocationCreateRequest, LocationUpdateRequest, Address, ContactInfo } from '../../types/entities';
-import './LocationsForm.css';
+import './LocationForm.css';
 
 interface LocationFormProps {
   location?: Location;

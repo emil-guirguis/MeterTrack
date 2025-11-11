@@ -445,7 +445,7 @@ router.get('/notifications/logs', requirePermission('notification:read'), [
         FROM notification_logs nl
         LEFT JOIN email_templates et ON nl.template_id = et.id
         LEFT JOIN meters m ON nl.meter_id = m.id
-        LEFT JOIN locations b ON nl.location_id = b.id
+        LEFT JOIN location b ON nl.location_id = b.id
         WHERE 1=1
       `;
         const values = [];

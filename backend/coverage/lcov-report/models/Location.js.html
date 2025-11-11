@@ -667,7 +667,7 @@ class Location {
         } = <span class="cstat-no" title="statement not covered" >locationData;</span>
 &nbsp;
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            INSERT INTO locations (
+            INSERT INTO location (
                 name, address_street, address_city, address_state, address_zip_code, address_country,
                 contact_primarycontact, contact_email, contact_phone, contact_website,
                 type, status, totalfloors, totalunits, yearbuilt, squarefootage,
@@ -691,7 +691,7 @@ class Location {
      * Find location by ID
      */
 <span class="fstat-no" title="function not covered" >    st</span>atic async findById(id) {
-        const query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM locations WHERE id = $1';</span>
+        const query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM location WHERE id = $1';</span>
         const result = <span class="cstat-no" title="statement not covered" >await db.query(query, [id]);</span>
         
 <span class="cstat-no" title="statement not covered" >        if (result.rows.length === 0) {</span>
@@ -702,10 +702,10 @@ class Location {
     }
 &nbsp;
     /**
-     * Find all locations with optional filters
+     * Find all location with optional filters
      */
 <span class="fstat-no" title="function not covered" >    st</span>atic async findAll(filters = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
-        let query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM locations WHERE 1=1';</span>
+        let query = <span class="cstat-no" title="statement not covered" >'SELECT * FROM location WHERE 1=1';</span>
         const values = <span class="cstat-no" title="statement not covered" >[];</span>
         let paramCount = <span class="cstat-no" title="statement not covered" >0;</span>
 &nbsp;
@@ -771,7 +771,7 @@ class Location {
 <span class="cstat-no" title="statement not covered" >        values.push(this.id);</span>
 &nbsp;
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            UPDATE locations 
+            UPDATE location 
             SET ${updates.join(', ')}
             WHERE id = ${paramCount}
             RETURNING *
@@ -793,7 +793,7 @@ class Location {
      */
 <span class="fstat-no" title="function not covered" >    as</span>ync delete() {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            UPDATE locations 
+            UPDATE location 
             SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
@@ -816,16 +816,16 @@ class Location {
 <span class="fstat-no" title="function not covered" >    st</span>atic async getStats() {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
             SELECT 
-                COUNT(*) as total_locations,
-                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_locations,
-                COUNT(CASE WHEN type = 'office' THEN 1 END) as office_locations,
-                COUNT(CASE WHEN type = 'warehouse' THEN 1 END) as warehouse_locations,
-                COUNT(CASE WHEN type = 'retail' THEN 1 END) as retail_locations,
-                COUNT(CASE WHEN type = 'residential' THEN 1 END) as residential_locations,
-                COUNT(CASE WHEN type = 'industrial' THEN 1 END) as industrial_locations,
+                COUNT(*) as total_location,
+                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_location,
+                COUNT(CASE WHEN type = 'office' THEN 1 END) as office_location,
+                COUNT(CASE WHEN type = 'warehouse' THEN 1 END) as warehouse_location,
+                COUNT(CASE WHEN type = 'retail' THEN 1 END) as retail_location,
+                COUNT(CASE WHEN type = 'residential' THEN 1 END) as residential_location,
+                COUNT(CASE WHEN type = 'industrial' THEN 1 END) as industrial_location,
                 SUM(equipmentcount) as total_equipment,
                 SUM(metercount) as total_meters
-            FROM locations
+            FROM location
         `;
 &nbsp;
         const result = <span class="cstat-no" title="statement not covered" >await db.query(query);</span>
@@ -837,7 +837,7 @@ class Location {
      */
 <span class="fstat-no" title="function not covered" >    as</span>ync updateEquipmentCount() {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            UPDATE locations 
+            UPDATE location 
             SET equipmentcount = (
                 SELECT COUNT(*) FROM equipment WHERE locationid = $1
             ),
@@ -858,7 +858,7 @@ class Location {
      */
 <span class="fstat-no" title="function not covered" >    as</span>ync updateMeterCount() {
         const query = <span class="cstat-no" title="statement not covered" >`</span>
-            UPDATE locations 
+            UPDATE location 
             SET metercount = (
                 SELECT COUNT(*) FROM meters WHERE location_location = $1
             ),

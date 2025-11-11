@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
-import { LocationList } from '../../components/locations/LocationsList';
-import { LocationForm } from '../../components/locations/LocationsForm';
-import { LocationDetail } from '../../components/locations/LocationsDetail';
+import { LocationList } from '../../components/location/LocationList';
+import { LocationForm } from '../../components/location/LocationForm';
+import { LocationDetail } from '../../components/location/LocationDetail';
 import { FormModal } from '../../components/common/FormModal';
-import { useLocationsEnhanced } from '../../store/entities/locationsStore';
+import { useLocationsEnhanced } from '../../store/entities/locationStore';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type { Location, LocationCreateRequest, LocationUpdateRequest } from '../../types/entities';
@@ -132,7 +132,7 @@ export const LocationManagementPage: React.FC = () => {
   // Breadcrumb configuration
   const breadcrumbs = [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Location Management', path: '/locations' },
+    { label: 'Location Management', path: '/location' },
   ];
 
   // Don't render if user doesn't have read permission

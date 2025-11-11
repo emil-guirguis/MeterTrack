@@ -3,7 +3,7 @@
 
 
 export { UserManagementPage } from './users/UserManagementPage';
-export { LocationManagementPage } from './locations/LocationManagementPage';
+export { LocationManagementPage } from './location/LocationManagementPage';
 export { ContactManagementPage } from './contacts/ContactManagementPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as MetersPage } from './MetersPage';

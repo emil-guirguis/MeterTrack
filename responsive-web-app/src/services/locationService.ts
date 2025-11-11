@@ -29,7 +29,7 @@ class LocationService {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return response.json();
@@ -57,7 +57,7 @@ class LocationService {
     }
 
     const queryString = searchParams.toString();
-    const endpoint = `/locations${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/location${queryString ? `?${queryString}` : ''}`;
     
     const response = await this.request<ApiResponse<ListResponse<Location>>>(endpoint);
     return response.data;
@@ -67,7 +67,7 @@ class LocationService {
    * Get a single location by ID
    */
   async getLocation(id: string): Promise<Location> {
-    const response = await this.request<ApiResponse<Location>>(`/locations/${id}`);
+    const response = await this.request<ApiResponse<Location>>(`/location/${id}`);
     return response.data;
   }
 
@@ -78,7 +78,7 @@ class LocationService {
     // Validate required fields
     this.validateLocationData(data);
     
-    const response = await this.request<ApiResponse<Location>>('/locations', {
+    const response = await this.request<ApiResponse<Location>>('/location', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -97,7 +97,7 @@ class LocationService {
     // Validate required fields if they are provided
     this.validateLocationData(data, true);
     
-    const response = await this.request<ApiResponse<Location>>(`/locations/${data.id}`, {
+    const response = await this.request<ApiResponse<Location>>(`/location/${data.id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -109,7 +109,7 @@ class LocationService {
    * Delete a location
    */
   async deleteLocation(id: string): Promise<void> {
-    await this.request<ApiResponse<void>>(`/locations/${id}`, {
+    await this.request<ApiResponse<void>>(`/location/${id}`, {
       method: 'DELETE',
     });
   }
@@ -121,7 +121,7 @@ class LocationService {
     locationIds: string[], 
     status: 'active' | 'inactive' | 'maintenance'
   ): Promise<void> {
-    await this.request<ApiResponse<void>>('/locations/bulk-status', {
+    await this.request<ApiResponse<void>>('/location/bulk-status', {
       method: 'PATCH',
       body: JSON.stringify({ locationIds, status }),
     });
@@ -183,7 +183,7 @@ class LocationService {
     };
   }> {
     try {
-      const response = await this.request<ApiResponse<any>>('/locations/validate-address', {
+      const response = await this.request<ApiResponse<any>>('/location/validate-address', {
         method: 'POST',
         body: JSON.stringify(address),
       });
@@ -209,7 +209,7 @@ class LocationService {
     totalSquareFootage: number;
     averageSquareFootage: number;
   }> {
-    const response = await this.request<ApiResponse<any>>('/locations/stats');
+    const response = await this.request<ApiResponse<any>>('/location/stats');
     return response.data;
   }
 
@@ -230,7 +230,7 @@ class LocationService {
     if (params?.search) searchParams.append('search', params.search);
 
     const queryString = searchParams.toString();
-    const endpoint = `/locations/export${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/location/export${queryString ? `?${queryString}` : ''}`;
     
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

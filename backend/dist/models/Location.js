@@ -36,7 +36,7 @@ class Building {
     static async create(locationData) {
         const { name, address_street, address_city, address_state, address_zip_code, address_country, contact_primarycontact, contact_email, contact_phone, contact_website, type, status, totalfloors, totalunits, yearbuilt, squarefootage, description, notes } = locationData;
         const query = `
-            INSERT INTO locations (
+            INSERT INTO location (
                 name, address_street, address_city, address_state, address_zip_code, address_country,
                 contact_primarycontact, contact_email, contact_phone, contact_website,
                 type, status, totalfloors, totalunits, yearbuilt, squarefootage,
@@ -57,7 +57,7 @@ class Building {
      * Find location by ID
      */
     static async findById(id) {
-        const query = 'SELECT * FROM locations WHERE id = $1';
+        const query = 'SELECT * FROM location WHERE id = $1';
         const result = await db.query(query, [id]);
         if (result.rows.length === 0) {
             return null;
@@ -65,10 +65,10 @@ class Building {
         return new Building(result.rows[0]);
     }
     /**
-     * Find all locations with optional filters
+     * Find all location with optional filters
      */
     static async findAll(filters = {}) {
-        let query = 'SELECT * FROM locations WHERE 1=1';
+        let query = 'SELECT * FROM location WHERE 1=1';
         const values = [];
         let paramCount = 0;
         if (filters.type) {
@@ -122,7 +122,7 @@ class Building {
         updates.push(`updatedat = CURRENT_TIMESTAMP`);
         values.push(this.id);
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET ${updates.join(', ')}
             WHERE id = ${paramCount}
             RETURNING *
@@ -140,7 +140,7 @@ class Building {
      */
     async delete() {
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
@@ -168,7 +168,7 @@ class Building {
                 COUNT(CASE WHEN type = 'industrial' THEN 1 END) as industrial_locations,
                 SUM(equipmentcount) as total_equipment,
                 SUM(metercount) as total_meters
-            FROM locations
+            FROM location
         `;
         const result = await db.query(query);
         return result.rows[0];
@@ -178,7 +178,7 @@ class Building {
      */
     async updateEquipmentCount() {
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET equipmentcount = (
                 SELECT COUNT(*) FROM equipment WHERE locationid = $1
             ),
@@ -197,7 +197,7 @@ class Building {
      */
     async updateMeterCount() {
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET metercount = (
                 SELECT COUNT(*) FROM meters WHERE location_location = $1
             ),

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const Location = require('../models/Locations');
+const Location = require('../models/Location');
 const Equipment = require('../models/Equipment');
 const Meter = require('../models/Meter');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
@@ -51,7 +51,7 @@ function mapLocationToResponse(b) {
   };
 }
 
-// Get all locations with filtering and pagination
+// Get all location with filtering and pagination
 router.get('/', [
   query('page').optional().isInt({ min: 1 }),
   query('pageSize').optional().isInt({ min: 1, max: 100 }),
@@ -112,12 +112,12 @@ router.get('/', [
     });
 
     const total = sorted.length;
-    const locations = sorted.slice(skip, skip + numericPageSize).map(mapLocationToResponse);
+    const location = sorted.slice(skip, skip + numericPageSize).map(mapLocationToResponse);
 
     res.json({
       success: true,
       data: {
-        items: locations,
+        items: location,
         pagination: {
           currentPage: numericPage,
           pageSize: numericPageSize,
@@ -129,10 +129,10 @@ router.get('/', [
       }
     });
   } catch (error) {
-    console.error('Get locations error:', error);
+    console.error('Get location error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch locations'
+      message: 'Failed to fetch location'
     });
   }
 });
@@ -375,13 +375,13 @@ router.patch('/bulk-status', [
       data: {
         modifiedCount
       },
-      message: `${modifiedCount} locations updated successfully`
+      message: `${modifiedCount} location updated successfully`
     });
   } catch (error) {
-    console.error('Bulk update locations error:', error);
+    console.error('Bulk update location error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update locations'
+      message: 'Failed to update location'
     });
   }
 });

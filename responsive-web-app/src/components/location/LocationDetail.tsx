@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import type { Location } from '../../types/entities';
 import { Permission } from '../../types/auth';
-import './LocationsDetail.css';
+import './LocationDetail.css';
 
 interface LocationDetailProps {
   location: Location;

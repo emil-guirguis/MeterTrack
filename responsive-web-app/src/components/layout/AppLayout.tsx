@@ -29,10 +29,10 @@ const menuItems: MenuItem[] = [
     requiredPermission: Permission.USER_READ
   },
   {
-    id: 'locations',
-    label: 'Locations',
+    id: 'location',
+    label: 'Location',
     icon: 'location',
-    path: '/locations',
+    path: '/location',
     requiredPermission: Permission.LOCATION_READ
   },
   {

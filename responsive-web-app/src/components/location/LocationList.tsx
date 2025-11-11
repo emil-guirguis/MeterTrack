@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DataList from '../common/DataList';
 import { FormModal } from '../common/FormModal';
-import { useLocationsEnhanced } from '../../store/entities/locationsStore';
+import { useLocationsEnhanced } from '../../store/entities/locationStore';
 import { useAuth } from '../../hooks/useAuth';
 import type { Location } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
-import './LocationsList.css';
+import './LocationList.css';
 import '../common/ListStats.css';
 import '../common/TableCellStyles.css';
 
@@ -154,7 +154,7 @@ export const LocationList: React.FC<LocationListProps> = ({
     if (canUpdate) {
       actions.push(
         {
-          key: 'activate',
+          id: 'activate',
           label: 'Activate',
           icon: '✅',
           color: 'success',
@@ -166,7 +166,7 @@ export const LocationList: React.FC<LocationListProps> = ({
           confirmMessage: 'Are you sure you want to activate the selected locations?',
         },
         {
-          key: 'deactivate',
+          id: 'deactivate',
           label: 'Deactivate',
           icon: '❌',
           color: 'warning',
@@ -178,7 +178,7 @@ export const LocationList: React.FC<LocationListProps> = ({
           confirmMessage: 'Are you sure you want to deactivate the selected locations?',
         },
         {
-          key: 'maintenance',
+          id: 'maintenance',
           label: 'Set Maintenance',
           icon: '🔧',
           color: 'warning',
@@ -193,7 +193,7 @@ export const LocationList: React.FC<LocationListProps> = ({
     }
 
     actions.push({
-      key: 'export',
+      id: 'export',
       label: 'Export CSV',
       icon: '📄',
       color: 'primary',
@@ -223,7 +223,12 @@ export const LocationList: React.FC<LocationListProps> = ({
     );
     
     if (confirmed) {
-      await locations.deleteLocation(location.id);
+      try {
+        await locations.deleteLocation(location.id);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete location';
+        alert(errorMessage);
+      }
     }
   }, [canDelete, locations]);
 

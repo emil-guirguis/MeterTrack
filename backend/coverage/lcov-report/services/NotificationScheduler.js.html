@@ -2079,7 +2079,7 @@ class NotificationScheduler {
                 COUNT(mr.id) as reading_count,
                 MAX(mr.reading_date) as last_reading
             FROM meters m
-            LEFT JOIN locations b ON m.location_id = b.id
+            LEFT JOIN location b ON m.location_id = b.id
             LEFT JOIN meterreadings mr ON m.id = mr.meterid 
                 AND mr.reading_date &gt;= CURRENT_DATE - INTERVAL '${days} days'
             WHERE m.is_active = true
@@ -2100,13 +2100,13 @@ class NotificationScheduler {
      * Group meter data by location
      */
 <span class="fstat-no" title="function not covered" >    gr</span>oupMeterDataByLocation(meterData) {
-        const locations = <span class="cstat-no" title="statement not covered" >{};</span>
+        const location = <span class="cstat-no" title="statement not covered" >{};</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        meterData.forEach(<span class="fstat-no" title="function not covered" >me</span>ter =&gt; {</span>
             const locationId = <span class="cstat-no" title="statement not covered" >meter.location_id;</span>
             
-<span class="cstat-no" title="statement not covered" >            if (!locations[locationId]) {</span>
-<span class="cstat-no" title="statement not covered" >                locations[locationId] = {</span>
+<span class="cstat-no" title="statement not covered" >            if (!location[locationId]) {</span>
+<span class="cstat-no" title="statement not covered" >                location[locationId] = {</span>
                     locationName: meter.location_name,
                     meters: [],
                     totalConsumption: 0,
@@ -2114,7 +2114,7 @@ class NotificationScheduler {
                 };
             }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >            locations[locationId].meters.push({</span>
+<span class="cstat-no" title="statement not covered" >            location[locationId].meters.push({</span>
                 meter_id: meter.meter_id,
                 meter_type: meter.meter_type,
                 total_usage: parseFloat(meter.total_consumption),
@@ -2124,10 +2124,10 @@ class NotificationScheduler {
                 units: 'kWh'
             });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >            locations[locationId].totalConsumption += parseFloat(meter.total_consumption);</span>
+<span class="cstat-no" title="statement not covered" >            location[locationId].totalConsumption += parseFloat(meter.total_consumption);</span>
         });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        return locations;</span>
+<span class="cstat-no" title="statement not covered" >        return location;</span>
     }
 &nbsp;
     /**
@@ -2168,7 +2168,7 @@ class NotificationScheduler {
                 m.next_maintenance as due_date,
                 m.maintenance_notes as notes
             FROM meters m
-            LEFT JOIN locations b ON m.location_id = b.id
+            LEFT JOIN location b ON m.location_id = b.id
             WHERE m.is_active = true 
                 AND m.next_maintenance IS NOT NULL
                 AND m.next_maintenance &lt;= CURRENT_DATE + INTERVAL '${daysAhead} days'

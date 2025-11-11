@@ -2,7 +2,7 @@
 
 // Export all entity stores
 export * from './usersStore';
-export * from './locationsStore';
+export * from './locationStore';
 export * from './equipmentStore';
 export * from './contactsStore';
 export * from './metersStore';
@@ -14,7 +14,7 @@ export * from '../patterns/crudOperations';
 
 // Create a centralized entity manager
 import { useUsersStore, useUsersEnhanced } from './usersStore';
-import { useLocationsStore, useLocationsEnhanced } from './locationsStore';
+import { useLocationsStore, useLocationsEnhanced } from './locationStore';
 import { useEquipmentStore, useEquipmentEnhanced } from './equipmentStore';
 import { useContactsStore, useContactsEnhanced } from './contactsStore';
 import { useMetersStore, useMetersEnhanced } from './metersStore';

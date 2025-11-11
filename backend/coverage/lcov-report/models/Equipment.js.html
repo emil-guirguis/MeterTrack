@@ -883,7 +883,7 @@ class Equipment {
                 COUNT(CASE WHEN status = 'maintenance' THEN 1 END) as maintenance_equipment,
                 COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_equipment,
                 COUNT(DISTINCT type) as equipment_types,
-                COUNT(DISTINCT locationid) as locations_with_equipment
+                COUNT(DISTINCT locationid) as location_with_equipment
             FROM equipment
         `;
 &nbsp;

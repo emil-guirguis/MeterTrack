@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for routes/locations.js</title>
+    <title>Code coverage report for routes/location.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,7 +19,7 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">routes</a> locations.js</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">routes</a> location.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
@@ -972,7 +972,7 @@ function <span class="fstat-no" title="function not covered" >mapLocationToRespo
   };
 }
 &nbsp;
-// Get all locations with filtering and pagination
+// Get all location with filtering and pagination
 <span class="cstat-no" title="statement not covered" >router.get('/', [</span>
   query('page').optional().isInt({ min: 1 }),
   query('pageSize').optional().isInt({ min: 1, max: 100 }),
@@ -1050,10 +1050,10 @@ function <span class="fstat-no" title="function not covered" >mapLocationToRespo
       }
     });
   } catch (error) {
-<span class="cstat-no" title="statement not covered" >    console.error('Get locations error:', error);</span>
+<span class="cstat-no" title="statement not covered" >    console.error('Get location error:', error);</span>
 <span class="cstat-no" title="statement not covered" >    res.status(500).json({</span>
       success: false,
-      message: 'Failed to fetch locations'
+      message: 'Failed to fetch location'
     });
   }
 });
@@ -1296,13 +1296,13 @@ function <span class="fstat-no" title="function not covered" >mapLocationToRespo
       data: {
         modifiedCount
       },
-      message: `${modifiedCount} locations updated successfully`
+      message: `${modifiedCount} location updated successfully`
     });
   } catch (error) {
-<span class="cstat-no" title="statement not covered" >    console.error('Bulk update locations error:', error);</span>
+<span class="cstat-no" title="statement not covered" >    console.error('Bulk update location error:', error);</span>
 <span class="cstat-no" title="statement not covered" >    res.status(500).json({</span>
       success: false,
-      message: 'Failed to update locations'
+      message: 'Failed to update location'
     });
   }
 });

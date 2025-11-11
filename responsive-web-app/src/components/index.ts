@@ -17,19 +17,9 @@ export { FormModal } from './common/FormModal';
 export { FormField } from './common/FormField';
 export { SearchFilter } from './common/SearchFilter';
 
-// Location Components
-export { LocationList } from './locations/LocationsList';
-export { LocationForm } from './locations/LocationsForm';
-export { LocationDetail } from './locations/LocationsDetail';
-
-// Meter Components
+// Components
+export { LocationList, LocationForm, LocationDetail } from './location';
 export { MeterList, MeterForm } from './meters';
-
-// Template Components
 export { TemplateList, TemplateForm, TemplatePreview, TemplateEditor, RichTextEditor, TemplateAnalytics, TemplateManagement } from './templates';
-
-// Settings Components
 export { BrandingForm, CompanyInfoForm, SystemConfigForm, DefaultsForm, EmailConfigForm } from './settings';
-
-// System Components
 export { SystemHealth } from './system';

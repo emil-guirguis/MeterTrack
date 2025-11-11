@@ -9,9 +9,9 @@ const routeTitles: Record<string, string> = {
   '/users': 'Users',
   '/users/new': 'New User',
   '/users/edit': 'Edit User',
-  '/locations': 'Locations',
-  '/locations/new': 'New Location',
-  '/locations/edit': 'Edit Location',
+  '/location': 'Location',
+  '/location/new': 'New Location',
+  '/location/edit': 'Edit Location',
   '/contacts': 'Contacts',
   '/contacts/new': 'New Contact',
   '/contacts/edit': 'Edit Contact',
@@ -48,18 +48,18 @@ const routeBreadcrumbs: Record<string, BreadcrumbItem[]> = {
     { label: 'Users', path: '/users' },
     { label: 'Edit User' }
   ],
-  '/locations': [
+  '/location': [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Locations', path: '/locations' }
+    { label: 'Location', path: '/location' }
   ],
-  '/locations/new': [
+  '/location/new': [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Locations', path: '/locations' },
+    { label: 'Location', path: '/location' },
     { label: 'New Location' }
   ],
-  '/locations/edit': [
+  '/location/edit': [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Locations', path: '/locations' },
+    { label: 'Locations', path: '/location' },
     { label: 'Edit Location' }
   ],
   '/contacts': [
@@ -301,9 +301,9 @@ export const canAccessRoute = (pathname: string, userRole?: string, userPermissi
     '/users': ['user:read'],
     '/users/new': ['user:create'],
     '/users/edit': ['user:update'],
-    '/locations': ['location:read'],
-    '/locations/new': ['location:create'],
-    '/locations/edit': ['location:update'],
+    '/location': ['location:read'],
+    '/location/new': ['location:create'],
+    '/location/edit': ['location:update'],
     '/contacts': ['contact:read'],
     '/contacts/new': ['contact:create'],
     '/contacts/edit': ['contact:update'],

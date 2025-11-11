@@ -921,7 +921,7 @@ class Meter {
                 COUNT(CASE WHEN type = 'electric' THEN 1 END) as electric_meters,
                 COUNT(CASE WHEN type = 'gas' THEN 1 END) as gas_meters,
                 COUNT(CASE WHEN type = 'water' THEN 1 END) as water_meters,
-                COUNT(DISTINCT location_location) as locations_with_meters
+                COUNT(DISTINCT location_location) as location_with_meters
             FROM meters
         `;
 &nbsp;

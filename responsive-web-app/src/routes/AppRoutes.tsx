@@ -7,7 +7,7 @@ import LoginPage from '../pages/LoginPage';
 import { Dashboard } from '../pages/Dashboard';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../pages/users';
-import { LocationManagementPage } from '../pages/locations';
+import { LocationManagementPage } from '../pages/location';
 import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
 import { Permission, UserRole } from '../types/auth';
 import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
@@ -69,7 +69,7 @@ const AppRoutes: React.FC = () => {
 
         {/* Location Management Routes */}
         <Route
-          path="/locations"
+          path="/location"
           element={
             <AuthGuard requiredPermissions={[Permission.LOCATION_READ]}>
               <LocationManagementPage />

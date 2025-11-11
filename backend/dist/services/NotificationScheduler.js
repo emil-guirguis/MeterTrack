@@ -448,7 +448,7 @@ class NotificationScheduler {
                 COUNT(mr.id) as reading_count,
                 MAX(mr.reading_date) as last_reading
             FROM meters m
-            LEFT JOIN locations b ON m.location_id = b.id
+            LEFT JOIN location b ON m.location_id = b.id
             LEFT JOIN meterreadings mr ON m.id = mr.meterid 
                 AND mr.reading_date >= CURRENT_DATE - INTERVAL '${days} days'
             WHERE m.is_active = true

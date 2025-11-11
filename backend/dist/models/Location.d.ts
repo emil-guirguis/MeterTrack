@@ -9,7 +9,7 @@ declare class Location {
      */
     static findById(id: any): Promise<Location | null>;
     /**
-     * Find all locations with optional filters
+     * Find all location with optional filters
      */
     static findAll(filters?: {}): Promise<Location[]>;
     /**

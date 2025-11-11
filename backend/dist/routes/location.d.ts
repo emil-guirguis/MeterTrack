@@ -1,3 +1,3 @@
 export = router;
 declare const router: any;
-//# sourceMappingURL=locations.d.ts.map
+//# sourceMappingURL=location.d.ts.map

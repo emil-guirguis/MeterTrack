@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocationsEnhanced } from '../../store/entities/locationsStore';
+import { useLocationsEnhanced } from '../../store/entities/locationStore';
 import type { Equipment, EquipmentCreateRequest, EquipmentUpdateRequest } from '../../types/entities';
 import './EquipmentForm.css';
 

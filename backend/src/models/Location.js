@@ -44,7 +44,7 @@ class Location {
         } = locationData;
 
         const query = `
-            INSERT INTO locations (
+            INSERT INTO location (
                 name, address_street, address_city, address_state, address_zip_code, address_country,
                 contact_primarycontact, contact_email, contact_phone, contact_website,
                 type, status, totalfloors, totalunits, yearbuilt, squarefootage,
@@ -68,7 +68,7 @@ class Location {
      * Find location by ID
      */
     static async findById(id) {
-        const query = 'SELECT * FROM locations WHERE id = $1';
+        const query = 'SELECT * FROM location WHERE id = $1';
         const result = await db.query(query, [id]);
         
         if (result.rows.length === 0) {
@@ -79,10 +79,10 @@ class Location {
     }
 
     /**
-     * Find all locations with optional filters
+     * Find all locations w     ith optional filters
      */
     static async findAll(filters = {}) {
-        let query = 'SELECT * FROM locations WHERE 1=1';
+        let query = 'SELECT * FROM location WHERE 1=1';
         const values = [];
         let paramCount = 0;
 
@@ -148,7 +148,7 @@ class Location {
         values.push(this.id);
 
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET ${updates.join(', ')}
             WHERE id = ${paramCount}
             RETURNING *
@@ -170,7 +170,7 @@ class Location {
      */
     async delete() {
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
@@ -202,7 +202,7 @@ class Location {
                 COUNT(CASE WHEN type = 'industrial' THEN 1 END) as industrial_locations,
                 SUM(equipmentcount) as total_equipment,
                 SUM(metercount) as total_meters
-            FROM locations
+            FROM location
         `;
 
         const result = await db.query(query);
@@ -214,7 +214,7 @@ class Location {
      */
     async updateEquipmentCount() {
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET equipmentcount = (
                 SELECT COUNT(*) FROM equipment WHERE locationid = $1
             ),
@@ -235,7 +235,7 @@ class Location {
      */
     async updateMeterCount() {
         const query = `
-            UPDATE locations 
+            UPDATE location 
             SET metercount = (
                 SELECT COUNT(*) FROM meters WHERE location_location = $1
             ),
