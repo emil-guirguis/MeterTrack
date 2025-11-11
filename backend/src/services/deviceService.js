@@ -12,9 +12,9 @@ class DeviceService {
   static validateDeviceInput(deviceData, isUpdate = false) {
     const errors = [];
 
-    // Validate name field (maps to brand in frontend)
-    if (!isUpdate || deviceData.hasOwnProperty('name')) {
-      if (!deviceData.name) {
+    // Validate brand field
+    if (!isUpdate || deviceData.hasOwnProperty('brand')) {
+      if (!deviceData.brand) {
         errors.push('Device brand is required');
       } else if (typeof deviceData.brand !== 'string') {
         errors.push('Device brand must be a string');
@@ -25,8 +25,8 @@ class DeviceService {
       }
     }
 
-    // Validate model field (maps to model_number in frontend)
-    if (!isUpdate || deviceData.hasOwnProperty('model')) {
+    // Validate model_number field
+    if (!isUpdate || deviceData.hasOwnProperty('model_number')) {
       if (deviceData.model_number && typeof deviceData.model_number !== 'string') {
         errors.push('Device model number must be a string');
       } else if (deviceData.model_number && deviceData.model_number.length > 255) {

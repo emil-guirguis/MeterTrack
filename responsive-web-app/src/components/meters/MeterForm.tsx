@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useDevice } from '../../store/entities/deviceStore';
 import type { Meter, CreateMeterRequest } from '../../types/meter';
 import { Permission } from '../../types/auth';
 import RegisterMapEditor from './RegisterMapEditor';
@@ -19,13 +20,14 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   loading = false,
 }) => {
   const { checkPermission } = useAuth();
+  const devices = useDevice();
 
-  const [formData, setFormData] = useState<CreateMeterRequest & { device_id?: string }>({
+  const [formData, setFormData] = useState<CreateMeterRequest>({
     meterId: meter?.meterId || '',
     serialNumber: meter?.serialNumber || '',
-    manufacture: meter?.manufacture || '',
+    device: meter?.device || '',
     model: meter?.model || '',
-    device_id: meter?.device_id || undefined,
+    device_id: meter?.device_id || '',
     ip: meter?.ip || '',
     portNumber: meter?.portNumber || 502,
     slaveId: meter?.slaveId || 1,
@@ -35,11 +37,64 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     register_map: meter?.register_map || null,
   });
 
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(
+    meter?.device_id
+  );
+
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deviceWarning, setDeviceWarning] = useState<string>('');
 
   const isEditing = !!meter;
   const canCreate = checkPermission(Permission.METER_CREATE);
   const canUpdate = checkPermission(Permission.METER_UPDATE);
+
+  // Fetch devices on component mount
+  useEffect(() => {
+    devices.fetchItems();
+  }, []);
+
+  // Handle device pre-selection and validation in edit mode
+  useEffect(() => {
+    if (!devices.loading && devices.items.length > 0 && meter) {
+      // Sub-task 6.1: Pre-select device in edit mode
+      if (meter.device_id) {
+        const deviceExists = devices.items.find(d => d.id === meter.device_id);
+        
+        if (deviceExists) {
+          // Device found - ensure it's selected
+          setSelectedDeviceId(meter.device_id);
+          setFormData(prev => ({
+            ...prev,
+            device: deviceExists.brand,
+            model: deviceExists.model_number,
+            device_id: deviceExists.id,
+          }));
+        } else {
+          // Sub-task 6.2: Handle orphaned device references
+          setDeviceWarning('The associated device is no longer available. Please select a new device.');
+          setSelectedDeviceId(undefined);
+          setFormData(prev => ({
+            ...prev,
+            device_id: '',
+          }));
+        }
+      } else if (meter.device && meter.model) {
+        // Sub-task 6.3: Support legacy meters without device_id
+        // Try to find matching device by brand and model
+        const matchingDevice = devices.items.find(
+          d => d.brand === meter.device && d.model_number === meter.model
+        );
+        
+        if (matchingDevice) {
+          // Found a match - suggest it but don't auto-select
+          setDeviceWarning(`Legacy meter detected. We found a matching device: ${matchingDevice.brand} - ${matchingDevice.model_number}. Please confirm or select a different device.`);
+        } else {
+          // No match found - require selection
+          setDeviceWarning('This meter was created before device management. Please select a device to continue.');
+        }
+      }
+    }
+  }, [devices.loading, devices.items, meter]);
 
   // Validation
   const validateForm = (): boolean => {
@@ -53,12 +108,14 @@ export const MeterForm: React.FC<MeterFormProps> = ({
       newErrors.serialNumber = 'Serial number is required';
     }
 
-    if (!formData.brand.trim()) {
-      newErrors.brand = 'Brand is required';
+    // Sub-task 7.2: Verify validation prevents submission without device
+    if (!selectedDeviceId) {
+      newErrors.device = 'Device selection is required';
     }
 
-    if (!formData.model.trim()) {
-      newErrors.model = 'Model is required';
+    // Sub-task 7.1: Verify device, model, and device_id are all populated
+    if (!formData.device || !formData.model || !formData.device_id) {
+      newErrors.device = 'Device selection is required';
     }
 
     if (!formData.ip.trim()) {
@@ -86,7 +143,19 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Sub-task 7.2: Ensure validation prevents submission without device
     if (!validateForm()) {
+      return;
+    }
+
+    // Sub-task 7.1: Ensure formData.device_id is included in onSubmit call
+    // Verify device, model, and device_id are all populated
+    if (!formData.device_id || !formData.device || !formData.model) {
+      console.error('Submission blocked: device information incomplete', {
+        device_id: formData.device_id,
+        device: formData.device,
+        model: formData.model,
+      });
       return;
     }
 
@@ -97,7 +166,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof (CreateMeterRequest & { device_id?: string }), value: any) => {
+  const handleInputChange = (field: keyof CreateMeterRequest, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -108,6 +177,36 @@ export const MeterForm: React.FC<MeterFormProps> = ({
         ...prev,
         [field as string]: '',
       }));
+    }
+  };
+
+  const handleDeviceChange = (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
+    
+    // Find selected device from devices.items array
+    const selectedDevice = devices.items.find(device => device.id === deviceId);
+    
+    if (selectedDevice) {
+      // Update formData with selected device's brand, model_number, and id
+      setFormData((prev) => ({
+        ...prev,
+        device: selectedDevice.brand,
+        model: selectedDevice.model_number,
+        device_id: selectedDevice.id,
+      }));
+    }
+    
+    // Clear error when user selects a device
+    if (errors.device) {
+      setErrors(prev => ({
+        ...prev,
+        device: '',
+      }));
+    }
+    
+    // Clear warning when user makes a selection
+    if (deviceWarning) {
+      setDeviceWarning('');
     }
   };
 
@@ -125,42 +224,53 @@ export const MeterForm: React.FC<MeterFormProps> = ({
         <div className="form-section">
           <h3>Basic Information</h3>
 
+          {/* Device load error banner */}
+          {devices.error && (
+            <div className="form-error-banner">
+              <span className="error-icon">⚠️</span>
+              <span>Unable to load devices. Please try again.</span>
+              <button 
+                type="button"
+                onClick={() => devices.fetchItems()} 
+                className="btn btn--small btn--secondary"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Empty device list info banner */}
+          {!devices.loading && !devices.error && devices.items.length === 0 && (
+            <div className="form-info-banner">
+              <span className="info-icon">ℹ️</span>
+              <span>No devices available. Please create a device first.</span>
+              <a href="/devices" className="link">Go to Device Management</a>
+            </div>
+          )}
+
+          {/* Device warning banner for edit mode issues */}
+          {deviceWarning && (
+            <div className="form-warning-banner">
+              <span className="warning-icon">⚠️</span>
+              <span>{deviceWarning}</span>
+            </div>
+          )}
+
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="brand">Brand *</label>
-              <select
-                id="brand"
-                value={formData.brand}
-                onChange={(e) => handleInputChange('brand', e.target.value)}
-                className={errors.brand ? 'form-control form-control--error' : 'form-control'}
-              >
-                <option value="">Select Brand</option>
-                <option value="Honeywell">Honeywell</option>
-                <option value="GE">GE</option>
-                <option value="ClearSign">ClearSign</option>
-                <option value="Powerside">Powerside</option>
-                <option value="Siemens">Siemens</option>
-                <option value="Other">Other</option>
-              </select>
-              {errors.brand && <div className="form-error">{errors.brand}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="model">Model *</label>
+              <label htmlFor="meterId">Meter ID *</label>
               <input
                 type="text"
-                id="model"
-                value={formData.model}
-                onChange={(e) => handleInputChange('model', e.target.value)}
-                className={errors.model ? 'form-control form-control--error' : 'form-control'}
-                placeholder="e.g., ION7650"
+                id="meterId"
+                value={formData.meterId}
+                onChange={(e) => handleInputChange('meterId', e.target.value)}
+                className={errors.meterId ? 'form-control form-control--error' : 'form-control'}
+                placeholder="e.g., METER-001"
                 maxLength={100}
               />
-              {errors.model && <div className="form-error">{errors.model}</div>}
+              {errors.meterId && <div className="form-error">{errors.meterId}</div>}
             </div>
-          </div>
 
-          <div className="form-row">
             <div className="form-group">
               <label htmlFor="serialNumber">Serial Number *</label>
               <input
@@ -173,6 +283,33 @@ export const MeterForm: React.FC<MeterFormProps> = ({
                 maxLength={100}
               />
               {errors.serialNumber && <div className="form-error">{errors.serialNumber}</div>}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="device">Device *</label>
+              {devices.loading && (
+                <div className="form-loading-message">Loading devices...</div>
+              )}
+              <select
+                id="device"
+                value={selectedDeviceId || ''}
+                onChange={(e) => handleDeviceChange(e.target.value)}
+                className={errors.device ? 'form-control form-control--error' : 'form-control'}
+                disabled={devices.loading}
+              >
+                <option value="">Select Device</option>
+                {devices.items.map(device => (
+                  <option key={device.id} value={device.id}>
+                    {device.brand} - {device.model_number}
+                  </option>
+                ))}
+              </select>
+              {errors.device && <div className="form-error">{errors.device}</div>}
+              <div className="form-helper-text">
+                Select a device from the list. Need to add a new device? <a href="/devices" className="form-helper-link">Manage Devices</a>
+              </div>
             </div>
           </div>
 
@@ -297,7 +434,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           <button
             type="submit"
             className={`btn btn--primary ${loading ? 'btn--loading' : ''}`}
-            disabled={loading}
+            disabled={loading || devices.loading}
           >
             {loading ? 'Saving...' : isEditing ? 'Update Meter' : 'Create Meter'}
           </button>

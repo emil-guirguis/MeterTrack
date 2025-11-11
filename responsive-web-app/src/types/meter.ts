@@ -78,6 +78,7 @@ export interface CreateMeterRequest {
   meterId: string;
   device: string;
   model: string;
+  device_id: string;
   ip: string;
   serialNumber: string;
   portNumber: number;
