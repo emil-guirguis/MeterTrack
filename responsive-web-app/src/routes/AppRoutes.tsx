@@ -9,6 +9,7 @@ import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../pages/users';
 import { LocationManagementPage } from '../pages/location';
 import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
+import { DeviceManagementPage } from '../pages/devices';
 import { Permission, UserRole } from '../types/auth';
 import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
 
@@ -74,6 +75,16 @@ const AppRoutes: React.FC = () => {
             <AuthGuard requiredPermissions={[Permission.LOCATION_READ]}>
               <LocationManagementPage />
             </AuthGuard>
+          }
+        />
+
+        {/* Device Management Routes */}
+        <Route
+          path="/devices"
+          element={
+            <ProtectedRoute>
+              <DeviceManagementPage />
+            </ProtectedRoute>
           }
         />
 

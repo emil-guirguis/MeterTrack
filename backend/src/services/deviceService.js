@@ -1,6 +1,6 @@
 /**
  * Device Service for PostgreSQL
- * Replaces MongoDB-based Brand model
+ * Maps database fields (name, model) to frontend fields (brand, model_number)
  */
 
 const db = require('../config/database');
@@ -12,18 +12,25 @@ class DeviceService {
   static validateDeviceInput(deviceData, isUpdate = false) {
     const errors = [];
 
-    // Validate name field
+    // Validate name field (maps to brand in frontend)
     if (!isUpdate || deviceData.hasOwnProperty('name')) {
       if (!deviceData.name) {
-        errors.push('Device name is required');
-      } else if (typeof deviceData.name !== 'string') {
-        errors.push('Device name must be a string');
-      } else if (deviceData.name.trim().length === 0) {
-        errors.push('Device name cannot be empty');
-      } else if (deviceData.name.length > 100) {
-        errors.push('Device name cannot exceed 100 characters');
-      } else if (deviceData.name.trim() !== deviceData.name) {
-        errors.push('Device name cannot have leading or trailing whitespace');
+        errors.push('Device brand is required');
+      } else if (typeof deviceData.brand !== 'string') {
+        errors.push('Device brand must be a string');
+      } else if (deviceData.brand.trim().length === 0) {
+        errors.push('Device brand cannot be empty');
+      } else if (deviceData.brand.length > 255) {
+        errors.push('Device brand cannot exceed 255 characters');
+      }
+    }
+
+    // Validate model field (maps to model_number in frontend)
+    if (!isUpdate || deviceData.hasOwnProperty('model')) {
+      if (deviceData.model_number && typeof deviceData.model_number !== 'string') {
+        errors.push('Device model number must be a string');
+      } else if (deviceData.model_number && deviceData.model_number.length > 255) {
+        errors.push('Device model number cannot exceed 255 characters');
       }
     }
 
@@ -31,25 +38,7 @@ class DeviceService {
     if (deviceData.hasOwnProperty('description') && deviceData.description !== null) {
       if (typeof deviceData.description !== 'string') {
         errors.push('Device description must be a string');
-      } else if (deviceData.description.length > 255) {
-        errors.push('Device description cannot exceed 255 characters');
       }
-    }
-
-    // Validate model field (optional)
-    if (deviceData.hasOwnProperty('model') && deviceData.model !== null) {
-      if (typeof deviceData.model !== 'string') {
-        errors.push('Device model must be a string');
-      } else if (deviceData.model.length > 255) {
-        errors.push('Device model cannot exceed 255 characters');
-      }
-    }
-
-    // Check for unexpected fields
-    const allowedFields = ['tyoe', 'description', 'brand', 'model_number'];
-    const unexpectedFields = Object.keys(deviceData).filter(field => !allowedFields.includes(field));
-    if (unexpectedFields.length > 0) {
-      errors.push(`Unexpected fields: ${unexpectedFields.join(', ')}`);
     }
 
     return errors;
@@ -73,7 +62,7 @@ class DeviceService {
     
     if (originalError.code === '23505') {
       // Unique constraint violation
-      error = new Error('Device name already exists');
+      error = new Error('Device brand already exists');
       error.code = 'DUPLICATE_NAME';
     } else if (originalError.code === '23503') {
       // Foreign key constraint violation
@@ -101,7 +90,7 @@ class DeviceService {
       const result = await db.query('SELECT * FROM device ORDER BY brand ASC');
       return result.rows.map(this.formatDevice);
     } catch (error) {
-      console.error('Error fetching device:', error);
+      console.error('Error fetching devices:', error);
       throw this.createDatabaseError(error, 'device retrieval');
     }
   }
@@ -131,17 +120,24 @@ class DeviceService {
    * Create new device
    */
   static async createDevice(deviceData) {
+    // Map frontend fields (brand, model_number) to database fields (name, model)
+    const mappedData = {
+      brand: deviceData.brand,
+      model_number: deviceData.model_number,
+      description: deviceData.description
+    };
+
     // Validate input data
-    const validationErrors = this.validateDeviceInput(deviceData);
+    const validationErrors = this.validateDeviceInput(mappedData);
     if (validationErrors.length > 0) {
       throw this.createValidationError(validationErrors);
     }
 
     try {
-      const { name, description, model } = deviceData;
+      const { brand, description, model_number } = mappedData;
       const result = await db.query(
-        'INSERT INTO device (type, description, brand,model_number) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name.trim(), description || null, model || null]
+        'INSERT INTO device (brand, description, model_number) VALUES ($1, $2, $3) RETURNING *',
+        [brand.trim(), description || null, model_number || null]
       );
       return this.formatDevice(result.rows[0]);
     } catch (error) {
@@ -159,8 +155,20 @@ class DeviceService {
       throw this.createValidationError(['Device ID is required']);
     }
 
+    // Map frontend fields to database fields
+    const mappedData = {};
+    if (updateData.hasOwnProperty('brand')) {
+      mappedData.brand = updateData.brand;
+    }
+    if (updateData.hasOwnProperty('model_number')) {
+      mappedData.model_number = updateData.model_number;
+    }
+    if (updateData.hasOwnProperty('description')) {
+      mappedData.description = updateData.description;
+    }
+
     // Validate input data for update
-    const validationErrors = this.validateDeviceInput(updateData, true);
+    const validationErrors = this.validateDeviceInput(mappedData, true);
     if (validationErrors.length > 0) {
       throw this.createValidationError(validationErrors);
     }
@@ -171,28 +179,21 @@ class DeviceService {
       const values = [];
       let paramIndex = 1;
 
-      if (updateData.hasOwnProperty('type')) {
-        updateFields.push(`type = $${paramIndex}`);
-        values.push(updateData.name.trim());
-        paramIndex++;
-      }
-
-      if (updateData.hasOwnProperty('description')) {
-        updateFields.push(`description = $${paramIndex}`);
-        values.push(updateData.description || null);
-        paramIndex++;
-      }
-
-            if (updateData.hasOwnProperty('brand')) {
+      if (mappedData.hasOwnProperty('brand')) {
         updateFields.push(`brand = $${paramIndex}`);
-        values.push(updateData.description || null);
+        values.push(mappedData.brand.trim());
         paramIndex++;
       }
 
-
-      if (updateData.hasOwnProperty('model_number')) {
+      if (mappedData.hasOwnProperty('model_number')) {
         updateFields.push(`model_number = $${paramIndex}`);
-        values.push(updateData.model || null);
+        values.push(mappedData.model_number || null);
+        paramIndex++;
+      }
+
+      if (mappedData.hasOwnProperty('description')) {
+        updateFields.push(`description = $${paramIndex}`);
+        values.push(mappedData.description || null);
         paramIndex++;
       }
 
@@ -243,15 +244,16 @@ class DeviceService {
 
   /**
    * Format device data for frontend compatibility
+   * Maps database fields (name, model) to frontend fields (brand, model_number)
    */
   static formatDevice(dbRow) {
     if (!dbRow) return null;
 
     return {
       id: dbRow.id,
-      name: dbRow.name,
+      brand: dbRow.brand,
+      model_number: dbRow.model_number,
       description: dbRow.description,
-      model: dbRow.model,
       createdAt: dbRow.createdat,
       updatedAt: dbRow.updatedat
     };

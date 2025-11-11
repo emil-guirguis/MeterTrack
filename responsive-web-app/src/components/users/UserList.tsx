@@ -120,7 +120,7 @@ export const UserList: React.FC<UserListProps> = ({
     if (canUpdate) {
       actions.push(
         {
-          key: 'activate',
+          id: 'activate',
           label: 'Activate',
           icon: '✅',
           color: 'success',
@@ -132,7 +132,7 @@ export const UserList: React.FC<UserListProps> = ({
           confirmMessage: 'Are you sure you want to activate the selected users?',
         },
         {
-          key: 'deactivate',
+          id: 'deactivate',
           label: 'Deactivate',
           icon: '❌',
           color: 'warning',
@@ -147,7 +147,7 @@ export const UserList: React.FC<UserListProps> = ({
     }
 
     actions.push({
-      key: 'export',
+      id: 'export',
       label: 'Export CSV',
       icon: '📄',
       color: 'primary',

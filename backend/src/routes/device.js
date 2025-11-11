@@ -65,11 +65,11 @@ function handleError(res, error) {
 // Get all devices
 router.get('/', async (req, res) => {
   try {
-    const devices = await DeviceService.getAllDevices();
+    const device = await DeviceService.getAllDevices();
     res.json({ 
       success: true, 
-      data: devices,
-      count: devices.length
+      data: device,
+      count: device.length
     });
   } catch (error) {
     handleError(res, error);

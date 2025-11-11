@@ -12,7 +12,7 @@ class Meter {
         this.name = meterData.name;
         this.type = meterData.type;
         this.device_id = meterData.device_id;
-        // Joined fields from devices table (when available)
+        // Joined fields from device table (when available)
         this.device_name = meterData.device_name;
         this.device_description = meterData.device_description;
         this.serialnumber = meterData.serialnumber;
@@ -75,9 +75,9 @@ class Meter {
      */
     static async findById(id) {
         const query = `
-            SELECT m.*, d.name as device_name, d.description as device_description
+            SELECT m.*, d.description as device_name, d.description as device_description
             FROM meters m
-            LEFT JOIN devices d ON m.device_id = d.id
+            LEFT JOIN device d ON m.device_id = d.id
             WHERE m.id = $1
         `;
         const result = await db.query(query, [id]);
@@ -105,7 +105,10 @@ class Meter {
      * Find all meters with optional filters
      */
     static async findAll(filters = {}) {
-        let query = `SELECT m.*, d.name as device_name, d.description as device_description FROM meters m LEFT JOIN devices d ON m.device_id = d.id WHERE 1=1`;
+        let query = `SELECT m.*, d.brand as device_name, d.description as device_description 
+                     FROM meters m 
+                        LEFT JOIN device d ON m.device_id = d.id 
+                     WHERE 1=1`;
         const values = [];
         let paramCount = 0;
 

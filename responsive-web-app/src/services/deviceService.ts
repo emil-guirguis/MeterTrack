@@ -3,15 +3,15 @@ import type { Device } from '../types/device';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 export interface DeviceCreateRequest {
-  name: string;
+  brand: string;
   description?: string;
-  model?: string;
+  model_number?: string;
 }
 
 export interface DeviceUpdateRequest {
-  name?: string;
+  brand?: string;
   description?: string;
-  model?: string;
+  model_number?: string;
 }
 
 export interface ApiResponse<T> {

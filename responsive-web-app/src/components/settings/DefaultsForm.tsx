@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import DeviceList from './DeviceList';
-import DeviceEditForm from './DeviceEditForm';
-import { Dialog, DialogTitle } from '@mui/material';
-import { Button, Typography, Box, Paper, Alert } from '@mui/material';
+import { Button, Typography, Box, Paper, Alert, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import { Card, Divider } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { DeviceList } from '../device/DeviceList';
 import { useModbus } from '../../services/modbusService';
 import './SettingsForm.css';
 
@@ -28,10 +27,7 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
   const [meterTypes, setMeterTypes] = useState<any>({});
   const [loadingMeterTypes, setLoadingMeterTypes] = useState(false);
   const [meterTypesError, setMeterTypesError] = useState<string | null>(null);
-  const [showDevices, setShowDevices] = useState(false);
-  const [editingDevice, setEditingDevice] = useState<any | null>(null);
-  const [showDeviceEdit, setShowDeviceEdit] = useState(false);
-  const [deviceSuccess, setDeviceSuccess] = useState<string | null>(null);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
 
   const handleLoadMeterMaps = async () => {
     setLoadingMeterTypes(true);
@@ -108,7 +104,7 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
             <Button
               variant="contained"
               color="secondary"
-              onClick={() => setShowDevices(true)}
+              onClick={() => setShowDeviceModal(true)}
               sx={{ minWidth: '160px' }}
             >
               Devices
@@ -149,12 +145,6 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
               </Box>
             </Box>
           )}
-
-          {deviceSuccess && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              {deviceSuccess}
-            </Alert>
-          )}
         </Paper>
         
         <div className="settings-form__actions">
@@ -167,34 +157,36 @@ const DefaultsForm: React.FC<DefaultsFormProps> = ({
         </div>
       </div>
 
-      {/* Device List Dialog */}
-      <Dialog open={showDevices} onClose={() => setShowDevices(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Device Management</DialogTitle>
-        <DeviceList 
-          onEdit={(device) => {
-            setEditingDevice(device);
-            setShowDeviceEdit(true);
-            setShowDevices(false);
-          }}
-        />
-      </Dialog>
-
-      {/* Device Edit Dialog */}
-      <Dialog open={showDeviceEdit} onClose={() => setShowDeviceEdit(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingDevice ? 'Edit Device' : 'Add Device'}</DialogTitle>
-        <DeviceEditForm 
-          device={editingDevice}
-          onSaved={(device) => {
-            setDeviceSuccess(`Device "${device.name}" saved successfully!`);
-            setShowDeviceEdit(false);
-            setEditingDevice(null);
-            setTimeout(() => setDeviceSuccess(null), 3000);
-          }}
-          onCancel={() => {
-            setShowDeviceEdit(false);
-            setEditingDevice(null);
-          }}
-        />
+      {/* Device Management Modal */}
+      <Dialog 
+        open={showDeviceModal} 
+        onClose={() => setShowDeviceModal(false)} 
+        maxWidth="xl" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            height: '90vh',
+            maxHeight: '90vh',
+          }
+        }}
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">Device Management</Typography>
+          <IconButton
+            aria-label="close"
+            onClick={() => setShowDeviceModal(false)}
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
+          <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
+            <DeviceList />
+          </Box>
+        </DialogContent>
       </Dialog>
     </form>
   );

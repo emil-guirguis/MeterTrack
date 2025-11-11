@@ -23,8 +23,8 @@ export interface RegisterMap {
 export interface Meter {
   id: string;
   meterId: string;
-  device: string; // From devices table
-  model: string; // From devices table
+  device: string; // From device table
+  model: string; // From device table
   device_id?: string; // For backend compatibility
   ip: string;
   serialNumber: string;

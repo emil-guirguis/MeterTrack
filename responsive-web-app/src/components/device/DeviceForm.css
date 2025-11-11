@@ -1,0 +1,136 @@
+.device-form {
+  padding: 20px;
+}
+
+.device-form__section {
+  margin-bottom: 24px;
+}
+
+.device-form__section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+  border-bottom: 2px solid #1976d2;
+  padding-bottom: 8px;
+}
+
+.device-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.device-form__field {
+  margin-bottom: 16px;
+}
+
+.device-form__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.device-form__value {
+  display: block;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.device-form__required {
+  color: #d32f2f;
+}
+
+.device-form__input,
+.device-form__select,
+.device-form__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.device-form__input:focus,
+.device-form__select:focus,
+.device-form__textarea:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.device-form__input--error,
+.device-form__select--error,
+.device-form__textarea--error {
+  border-color: #d32f2f;
+}
+
+.device-form__input:disabled,
+.device-form__select:disabled,
+.device-form__textarea:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.device-form__textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.device-form__error {
+  display: block;
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.device-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.device-form__btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.device-form__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.device-form__btn--primary {
+  background-color: #1976d2;
+  color: white;
+}
+
+.device-form__btn--primary:hover:not(:disabled) {
+  background-color: #1565c0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.device-form__btn--secondary {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.device-form__btn--secondary:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}

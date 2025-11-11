@@ -1,6 +1,8 @@
 export interface Device {
-  _id?: string;
-  name: string;
+  id: string;
+  brand: string;
+  model_number: string;
   description?: string;
   createdAt?: string;
+  updatedAt?: string;
 }

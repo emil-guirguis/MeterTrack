@@ -94,6 +94,7 @@ export interface EquipmentUpdateRequest extends Partial<EquipmentCreateRequest> 
   nextMaintenance?: Date;
 }
 
+
 // Contact Management (Customers and Vendors)
 export interface Contact {
   id: string;
@@ -376,6 +377,12 @@ export interface Meter {
   };
 }
 
+export interface Device {
+  id: string;
+  brand: string;
+  model_number: string;
+  description: string;
+} 
 export interface MeterCreateRequest {
   meterId: string;
   serialNumber: string;
