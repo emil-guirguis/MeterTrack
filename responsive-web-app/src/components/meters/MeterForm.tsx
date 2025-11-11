@@ -65,7 +65,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           setSelectedDeviceId(meter.device_id);
           setFormData(prev => ({
             ...prev,
-            device: deviceExists.brand,
+            device: deviceExists.manufacturer,
             model: deviceExists.model_number,
             device_id: deviceExists.id,
           }));
@@ -80,14 +80,14 @@ export const MeterForm: React.FC<MeterFormProps> = ({
         }
       } else if (meter.device && meter.model) {
         // Sub-task 6.3: Support legacy meters without device_id
-        // Try to find matching device by brand and model
+        // Try to find matching device by manufacturer and model
         const matchingDevice = devices.items.find(
-          d => d.brand === meter.device && d.model_number === meter.model
+          d => d.manufacturer === meter.device && d.model_number === meter.model
         );
         
         if (matchingDevice) {
           // Found a match - suggest it but don't auto-select
-          setDeviceWarning(`Legacy meter detected. We found a matching device: ${matchingDevice.brand} - ${matchingDevice.model_number}. Please confirm or select a different device.`);
+          setDeviceWarning(`Legacy meter detected. We found a matching device: ${matchingDevice.manufacturer} - ${matchingDevice.model_number}. Please confirm or select a different device.`);
         } else {
           // No match found - require selection
           setDeviceWarning('This meter was created before device management. Please select a device to continue.');
@@ -187,10 +187,10 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     const selectedDevice = devices.items.find(device => device.id === deviceId);
     
     if (selectedDevice) {
-      // Update formData with selected device's brand, model_number, and id
+      // Update formData with selected device's manufacturer, model_number, and id
       setFormData((prev) => ({
         ...prev,
-        device: selectedDevice.brand,
+        device: selectedDevice.manufacturer,
         model: selectedDevice.model_number,
         device_id: selectedDevice.id,
       }));
@@ -302,7 +302,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
                 <option value="">Select Device</option>
                 {devices.items.map(device => (
                   <option key={device.id} value={device.id}>
-                    {device.brand} - {device.model_number}
+                    {device.manufacturer} - {device.model_number}
                   </option>
                 ))}
               </select>

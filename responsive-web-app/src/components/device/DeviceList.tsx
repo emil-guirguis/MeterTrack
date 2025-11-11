@@ -66,10 +66,10 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   // Column definitions
   const columns: ColumnDefinition<Device>[] = useMemo(() => [
     {
-      key: 'brand',
-      label: 'Brand',
+      key: 'manufacturer',
+      label: 'Manufacturer',
       sortable: true,
-      render: (_value, device) => device.brand,
+      render: (_value, device) => device.manufacturer,
     },
     {
       key: 'model_number',

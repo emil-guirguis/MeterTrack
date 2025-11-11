@@ -5,7 +5,7 @@ class Device {
         this.id = deviceData.id;
         this.type = deviceData.type;
         this.description = deviceData.description;
-        this.brand = deviceData.brand;
+        this.manufacturer = deviceData.manufacturer;
         this.model_number = deviceData.model_number;
         this.createdat = deviceData.createdat;
         this.updatedat = deviceData.updatedat;
@@ -16,17 +16,17 @@ class Device {
      */
     static async create(deviceData) {
         const {
-            brand,model_number,type, description,  createdat, updatedat
+            manufacturer,model_number,type, description,  createdat, updatedat
         } = deviceData;
 
         const query = `
             INSERT INTO device (
-                brand,model_number,type, description, createdat, updatedat
+                manufacturer,model_number,type, description, createdat, updatedat
             ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *
         `;
 
-        const values = [brand,model_number,type, description];
+        const values = [manufacturer,model_number,type, description];
 
         try {
             const result = await db.query(query, values);
@@ -147,7 +147,7 @@ class Device {
     toJSON() {
         return {
             id: this.id,
-            brand: this.brand,
+            manufacturer: this.manufacturer,
             model_number: this.model_number,
             type: this.type, 
             description: this.description,

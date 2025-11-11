@@ -33,7 +33,7 @@ const deviceService = {
 
   async update(id: string, data: Partial<Device>): Promise<Device> {
     return withTokenRefresh(async () => {
-      return await apiDeviceService.update(id, data);
+      return await apiDeviceService.update(id, data as any);
     });
   },
 
@@ -64,15 +64,15 @@ export const useDevicesEnhanced = () => {
     ...device,
     
     // Additional computed values
-    devicesByBrand: (brand: string) => 
-      device.items.filter(d => d.brand.toLowerCase().includes(brand.toLowerCase())),
+    devicesByManufacturer : (manufacturer: string) => 
+      device.items.filter(d => d.manufacturer.toLowerCase().includes(manufacturer.toLowerCase())),
     
     devicesByModel: (model: string) => 
       device.items.filter(d => d.model_number?.toLowerCase().includes(model.toLowerCase())),
     
     // Statistics
     totalDevices: device.items.length,
-    uniqueBrands: [...new Set(device.items.map(d => d.brand))].length,
+    uniqueManufacturers: [...new Set(device.items.map(d => d.manufacturer))].length,
     
     // Enhanced actions with notifications
     createDevice: async (data: Partial<Device>) => {
@@ -129,8 +129,8 @@ export const useDevicesEnhanced = () => {
       device.fetchItems();
     },
     
-    filterByBrand: (brand: string) => {
-      device.setFilters({ ...device.list.filters, brand });
+    filterBymanufacturer: (manufacturer: string) => {
+      device.setFilters({ ...device.list.filters, manufacturer });
       device.fetchItems();
     },
   };

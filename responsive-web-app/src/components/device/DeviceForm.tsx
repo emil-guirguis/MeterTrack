@@ -13,13 +13,13 @@ interface DeviceFormProps {
 
 
 interface FormData {
-  brand: string;
+  manufacturer: string;
   model_number: string;
   description: string;
 }
 
 interface FormErrors {
-  brand?: string;
+  manufacturer?: string;
   model_number?: string;
   description?: string;
 }
@@ -42,7 +42,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   };
 
   const [formData, setFormData] = useState<FormData>({
-    brand: '',
+    manufacturer: '',
     model_number: '',
     description: '',
   });
@@ -54,7 +54,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   useEffect(() => {
     if (device) {
       setFormData({
-        brand: device.brand || '',
+        manufacturer: device.manufacturer || '',
         model_number: device.model_number || '',
         description: device.description || '',
       });
@@ -65,8 +65,8 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
     const newErrors: FormErrors = {};
 
     // Required fields
-    if (!formData.brand.trim()) {
-      newErrors.brand = 'Device brand is required';
+    if (!formData.manufacturer.trim()) {
+      newErrors.manufacturer = 'Device manufacturer is required';
     }
 
     if (!formData.model_number.trim()) {
@@ -112,18 +112,18 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
         <h3 className="device-form__section-title">Device Information</h3>
 
         <div className="device-form__field">
-          <label htmlFor="brand" className="device-form__label">
-            Brand <span className="device-form__required">*</span>
+          <label htmlFor="manufacturer" className="device-form__label">
+            Manufacturer <span className="device-form__required">*</span>
           </label>
           <select
-            id="brand"
-            value={formData.brand}
-            onChange={(e) => handleInputChange('brand', e.target.value)}
+            id="manufacturer"
+            value={formData.manufacturer}
+            onChange={(e) => handleInputChange('manufacturer', e.target.value)}
             disabled={isFormDisabled}
-            className={`device-form__select ${errors.brand ? 'device-form__select--error' : ''}`}
+            className={`device-form__select ${errors.manufacturer ? 'device-form__select--error' : ''}`}
             required
           >
-            <option value="">Select a brand</option>
+            <option value="">Select a manufacturer</option>
             <option value="DENT Instruments">DENT Instruments</option>
             <option value="Schneider Electric">Schneider Electric</option>
             <option value="ABB">ABB</option>
@@ -131,7 +131,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
             <option value="General Electric">General Electric</option>
             <option value="Honeywell">Honeywell</option>
           </select>
-          {errors.brand && <span className="device-form__error">{errors.brand}</span>}
+          {errors.manufacturer && <span className="device-form__error">{errors.manufacturer}</span>}
         </div>
 
         <div className="device-form__field">

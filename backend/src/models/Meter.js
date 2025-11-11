@@ -75,7 +75,7 @@ class Meter {
      */
     static async findById(id) {
         const query = `
-            SELECT m.*, d.description as device_name, d.description as device_description
+            SELECT m.*, d.manufacturer as device_name, d.description as device_description
             FROM meters m
             LEFT JOIN device d ON m.device_id = d.id
             WHERE m.id = $1
@@ -105,7 +105,7 @@ class Meter {
      * Find all meters with optional filters
      */
     static async findAll(filters = {}) {
-        let query = `SELECT m.*, d.brand as device_name, d.description as device_description 
+        let query = `SELECT m.*, d.manufacturer as device_name, d.description as device_description 
                      FROM meters m 
                         LEFT JOIN device d ON m.device_id = d.id 
                      WHERE 1=1`;
@@ -114,25 +114,25 @@ class Meter {
 
         if (filters.type) {
             paramCount++;
-            query += ` AND m.type = ${paramCount}`;
+            query += ` AND m.type = $${paramCount}`;
             values.push(filters.type);
         }
 
         if (filters.status) {
             paramCount++;
-            query += ` AND m.status = ${paramCount}`;
+            query += ` AND m.status = $${paramCount}`;
             values.push(filters.status);
         }
 
         if (filters.location_location) {
             paramCount++;
-            query += ` AND m.location_location = ${paramCount}`;
+            query += ` AND m.location_location = $${paramCount}`;
             values.push(filters.location_location);
         }
 
         if (filters.search) {
             paramCount++;
-            query += ` AND (m.meterid ILIKE ${paramCount} OR m.name ILIKE ${paramCount} OR d.name ILIKE ${paramCount})`;
+            query += ` AND (m.meterid ILIKE $${paramCount} OR m.name ILIKE $${paramCount} OR d.manufacturer ILIKE $${paramCount})`;
             values.push(`%${filters.search}%`);
         }
 
@@ -140,9 +140,14 @@ class Meter {
 
         if (filters.limit) {
             paramCount++;
-            query += ` LIMIT ${paramCount}`;
+            query += ` LIMIT $${paramCount}`;
             values.push(filters.limit);
         }
+
+        console.log('=== METER QUERY DEBUG ===');
+        console.log('Query:', query);
+        console.log('Values:', values);
+        console.log('========================');
 
         const result = await db.query(query, values);
         return result.rows.map(data => new Meter(data));
@@ -165,7 +170,7 @@ class Meter {
         for (const [key, value] of Object.entries(updateData)) {
             if (allowedFields.includes(key) && value !== undefined) {
                 paramCount++;
-                updates.push(`${key} = ${paramCount}`);
+                updates.push(`${key} = $${paramCount}`);
                 values.push(value);
             }
         }
@@ -181,7 +186,7 @@ class Meter {
         const query = `
             UPDATE meters 
             SET ${updates.join(', ')}
-            WHERE id = ${paramCount}
+            WHERE id = $${paramCount}
             RETURNING *
         `;
 

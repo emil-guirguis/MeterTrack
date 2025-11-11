@@ -76,8 +76,8 @@ const MetersPage: React.FC = () => {
           <h4>Basic Information</h4>
           <div className="detail-grid">
             <div className="detail-item">
-              <label>Brand:</label>
-              <span>{meter.brand}</span>
+              <label>Device:</label>
+              <span>{meter.device}</span>
             </div>
             <div className="detail-item">
               <label>Model:</label>

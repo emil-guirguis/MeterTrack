@@ -17,6 +17,14 @@ class PostgresDB {
      */
     async connect() {
         try {
+            console.log('=== DATABASE CONNECTION CONFIG ===');
+            console.log('Host:', process.env.POSTGRES_HOST);
+            console.log('Port:', process.env.POSTGRES_PORT);
+            console.log('Database:', process.env.POSTGRES_DB);
+            console.log('User:', process.env.POSTGRES_USER);
+            console.log('Password length:', process.env.POSTGRES_PASSWORD?.length);
+            console.log('==================================');
+            
             this.pool = new Pool({
                 host: process.env.POSTGRES_HOST,
                 port: process.env.POSTGRES_PORT,
@@ -26,7 +34,7 @@ class PostgresDB {
                 ssl: { rejectUnauthorized: false },
                 max: 20, // Maximum number of clients in the pool
                 idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-                connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+                connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
             });
 
             // Test the connection

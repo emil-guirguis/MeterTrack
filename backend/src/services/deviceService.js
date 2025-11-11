@@ -1,6 +1,6 @@
 /**
  * Device Service for PostgreSQL
- * Maps database fields (name, model) to frontend fields (brand, model_number)
+ * Maps database fields to frontend fields
  */
 
 const db = require('../config/database');
@@ -12,16 +12,16 @@ class DeviceService {
   static validateDeviceInput(deviceData, isUpdate = false) {
     const errors = [];
 
-    // Validate brand field
-    if (!isUpdate || deviceData.hasOwnProperty('brand')) {
-      if (!deviceData.brand) {
-        errors.push('Device brand is required');
-      } else if (typeof deviceData.brand !== 'string') {
-        errors.push('Device brand must be a string');
-      } else if (deviceData.brand.trim().length === 0) {
-        errors.push('Device brand cannot be empty');
-      } else if (deviceData.brand.length > 255) {
-        errors.push('Device brand cannot exceed 255 characters');
+    // Validate manufacturer field
+    if (!isUpdate || deviceData.hasOwnProperty('manufacturer')) {
+      if (!deviceData.manufacturer) {
+        errors.push('Device manufacturer is required');
+      } else if (typeof deviceData.manufacturer !== 'string') {
+        errors.push('Device manufacturer must be a string');
+      } else if (deviceData.manufacturer.trim().length === 0) {
+        errors.push('Device manufacturer cannot be empty');
+      } else if (deviceData.manufacturer.length > 255) {
+        errors.push('Device manufacturer cannot exceed 255 characters');
       }
     }
 
@@ -62,7 +62,7 @@ class DeviceService {
     
     if (originalError.code === '23505') {
       // Unique constraint violation
-      error = new Error('Device brand already exists');
+      error = new Error('Device manufacturer already exists');
       error.code = 'DUPLICATE_NAME';
     } else if (originalError.code === '23503') {
       // Foreign key constraint violation
@@ -87,7 +87,7 @@ class DeviceService {
    */
   static async getAllDevices() {
     try {
-      const result = await db.query('SELECT * FROM device ORDER BY brand ASC');
+      const result = await db.query('SELECT * FROM device ORDER BY manufacturer ASC');
       return result.rows.map(this.formatDevice);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -120,9 +120,9 @@ class DeviceService {
    * Create new device
    */
   static async createDevice(deviceData) {
-    // Map frontend fields (brand, model_number) to database fields (name, model)
+    // Map frontend fields (manufacturer, model_number) to database fields
     const mappedData = {
-      brand: deviceData.brand,
+      manufacturer: deviceData.manufacturer,
       model_number: deviceData.model_number,
       description: deviceData.description
     };
@@ -134,10 +134,10 @@ class DeviceService {
     }
 
     try {
-      const { brand, description, model_number } = mappedData;
+      const { manufacturer, description, model_number } = mappedData;
       const result = await db.query(
-        'INSERT INTO device (brand, description, model_number) VALUES ($1, $2, $3) RETURNING *',
-        [brand.trim(), description || null, model_number || null]
+        'INSERT INTO device (manufacturer, description, model_number) VALUES ($1, $2, $3) RETURNING *',
+        [manufacturer.trim(), description || null, model_number || null]
       );
       return this.formatDevice(result.rows[0]);
     } catch (error) {
@@ -157,8 +157,8 @@ class DeviceService {
 
     // Map frontend fields to database fields
     const mappedData = {};
-    if (updateData.hasOwnProperty('brand')) {
-      mappedData.brand = updateData.brand;
+    if (updateData.hasOwnProperty('manufacturer')) {
+      mappedData.manufacturer = updateData.manufacturer;
     }
     if (updateData.hasOwnProperty('model_number')) {
       mappedData.model_number = updateData.model_number;
@@ -179,9 +179,9 @@ class DeviceService {
       const values = [];
       let paramIndex = 1;
 
-      if (mappedData.hasOwnProperty('brand')) {
-        updateFields.push(`brand = $${paramIndex}`);
-        values.push(mappedData.brand.trim());
+      if (mappedData.hasOwnProperty('manufacturer')) {
+        updateFields.push(`manufacturer = $${paramIndex}`);
+        values.push(mappedData.manufacturer.trim());
         paramIndex++;
       }
 
@@ -244,14 +244,14 @@ class DeviceService {
 
   /**
    * Format device data for frontend compatibility
-   * Maps database fields (name, model) to frontend fields (brand, model_number)
+   * Maps database fields to frontend fields
    */
   static formatDevice(dbRow) {
     if (!dbRow) return null;
 
     return {
       id: dbRow.id,
-      brand: dbRow.brand,
+      manufacturer: dbRow.manufacturer,
       model_number: dbRow.model_number,
       description: dbRow.description,
       createdAt: dbRow.createdat,

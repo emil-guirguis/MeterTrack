@@ -41,7 +41,7 @@ async function login() {
 async function createTestDevice(suffix) {
   console.log(`\n📦 Creating test device ${suffix}...`);
   const deviceData = {
-    brand: `Test Brand ${suffix} ${Date.now()}`,
+    manufacturer: `Test Manufacturer ${suffix} ${Date.now()}`,
     model_number: `TEST-MODEL-${suffix}-${Date.now()}`,
     description: `Test device ${suffix} for meter edit flow`
   };
@@ -62,7 +62,7 @@ async function createTestDevice(suffix) {
 
   const data = await response.json();
   console.log(`✅ Test device ${suffix} created: ${data.data.id}`);
-  console.log(`   Brand: ${deviceData.brand}`);
+  console.log(`   Manufacturer: ${deviceData.manufacturer}`);
   console.log(`   Model: ${deviceData.model_number}`);
   return data.data;
 }
@@ -72,7 +72,7 @@ async function createTestMeter(device) {
   const meterData = {
     meterId: `TEST-METER-EDIT-${Date.now()}`,
     serialNumber: `SN-EDIT-${Date.now()}`,
-    brand: device.brand,
+    device: device.manufacturer,
     model: device.model_number,
     device_id: device.id,
     ip: '192.168.1.101',
@@ -128,7 +128,7 @@ async function verifyMeterDevice(meterId, expectedDeviceId, deviceBrand, deviceM
   console.log('✅ Meter retrieved successfully');
   console.log(`   Meter ID: ${meter.meterId}`);
   console.log(`   Device ID: ${meter.device_id || 'NOT SET'}`);
-  console.log(`   Brand: ${meter.brand}`);
+  console.log(`   Device: ${meter.device}`);
   console.log(`   Model: ${meter.model}`);
 
   // Verify device_id is set
@@ -140,8 +140,8 @@ async function verifyMeterDevice(meterId, expectedDeviceId, deviceBrand, deviceM
     throw new Error(`❌ FAILED: device_id mismatch. Expected: ${expectedDeviceId}, Got: ${meter.device_id}`);
   }
 
-  if (meter.brand !== deviceBrand) {
-    throw new Error(`❌ FAILED: brand mismatch. Expected: ${deviceBrand}, Got: ${meter.brand}`);
+  if (meter.device !== deviceBrand) {
+    throw new Error(`❌ FAILED: device mismatch. Expected: ${deviceBrand}, Got: ${meter.device}`);
   }
 
   if (meter.model !== deviceModel) {
@@ -155,7 +155,7 @@ async function verifyMeterDevice(meterId, expectedDeviceId, deviceBrand, deviceM
 async function updateMeter(meterId, device) {
   console.log('\n✏️  Updating meter with new device...');
   const updateData = {
-    brand: device.brand,
+    device: device.manufacturer,
     model: device.model_number,
     device_id: device.id
   };
@@ -177,7 +177,7 @@ async function updateMeter(meterId, device) {
   const data = await response.json();
   console.log(`✅ Meter updated successfully`);
   console.log(`   New Device ID: ${device.id}`);
-  console.log(`   New Brand: ${device.brand}`);
+  console.log(`   New Manufacturer: ${device.manufacturer}`);
   console.log(`   New Model: ${device.model_number}`);
   return data.data;
 }
@@ -239,13 +239,13 @@ async function runTest() {
     const meter = await createTestMeter(device1);
     
     // Verify meter has first device
-    await verifyMeterDevice(meter.id, device1.id, device1.brand, device1.model_number);
+    await verifyMeterDevice(meter.id, device1.id, device1.manufacturer, device1.model_number);
     
     // Update meter to use second device
     await updateMeter(meter.id, device2);
     
     // Verify meter now has second device
-    await verifyMeterDevice(meter.id, device2.id, device2.brand, device2.model_number);
+    await verifyMeterDevice(meter.id, device2.id, device2.manufacturer, device2.model_number);
     
     console.log('\n✅ ✅ ✅ ALL TESTS PASSED ✅ ✅ ✅');
     console.log('\nSummary:');

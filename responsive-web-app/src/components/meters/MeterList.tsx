@@ -72,7 +72,7 @@ export const MeterList: React.FC<MeterListProps> = ({
       render: (value, meter) => (
         <div className="table-cell--two-line">
           <div className="table-cell__primary">
-            {meter.brand || 'Unknown'} {meter.model || ''}
+            {meter.device || 'Unknown'} {meter.model || ''}
           </div>
           <div className="table-cell__secondary">{value}</div>
         </div>

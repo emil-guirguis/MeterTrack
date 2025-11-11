@@ -39,7 +39,7 @@ async function login() {
 async function createTestDevice() {
   console.log('\n📦 Creating test device...');
   const deviceData = {
-    brand: `Test Brand ${Date.now()}`,
+    manufacturer: `Test Manufacturer ${Date.now()}`,
     model_number: `TEST-MODEL-${Date.now()}`,
     description: 'Test device for meter creation flow'
   };
@@ -61,7 +61,7 @@ async function createTestDevice() {
   const data = await response.json();
   testDeviceId = data.data.id;
   console.log(`✅ Test device created: ${testDeviceId}`);
-  console.log(`   Brand: ${deviceData.brand}`);
+  console.log(`   Manufacturer: ${deviceData.manufacturer}`);
   console.log(`   Model: ${deviceData.model_number}`);
   return data.data;
 }
@@ -71,7 +71,7 @@ async function createTestMeter(device) {
   const meterData = {
     meterId: `TEST-METER-${Date.now()}`,
     serialNumber: `SN-${Date.now()}`,
-    brand: device.brand,
+    device: device.manufacturer,
     model: device.model_number,
     device_id: device.id,
     ip: '192.168.1.100',
@@ -123,7 +123,7 @@ async function verifyMeter(meterId) {
   console.log('✅ Meter retrieved successfully');
   console.log(`   Meter ID: ${meter.meterId}`);
   console.log(`   Device ID: ${meter.device_id || 'NOT SET'}`);
-  console.log(`   Brand: ${meter.brand}`);
+  console.log(`   Device: ${meter.device}`);
   console.log(`   Model: ${meter.model}`);
 
   // Verify device_id is set
