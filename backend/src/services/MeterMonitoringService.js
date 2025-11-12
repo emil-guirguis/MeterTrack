@@ -100,7 +100,7 @@ class MeterMonitoringService {
             console.log('🔍 Performing meter monitoring check...');
 
             // Get all active meters
-            const meters = await this.getActiveMeters();
+            const meters = await this.getAllMeters();
             
             if (meters.length === 0) {
                 console.log('📊 No active meters found for monitoring');
@@ -388,17 +388,12 @@ class MeterMonitoringService {
     /**
      * Database helper methods
      */
-    async getActiveMeters() {
+    async getAllMeters() {
         const query = `
-            SELECT 
-                id, meterid, name, type, status, 
-                last_reading_date, location_location,
-                location_floor, location_room, location_description,
-                location_id
-            FROM meters 
-            WHERE (is_active = true OR is_active IS NULL)
-                AND status != 'inactive'
-            ORDER BY meterid
+            SELECT *, l.location as location
+            FROM meters m 
+                   join location l on (l.id = m.location_id)
+            ORDER BY location 
         `;
 
         try {

@@ -3,6 +3,8 @@ import DataList from '../common/DataList';
 import { FormModal } from '../common/FormModal';
 import { DeviceForm } from './DeviceForm';
 import { deviceService } from '../../services/deviceService';
+import { useAuth } from '../../hooks/useAuth';
+import { Permission } from '../../types/auth';
 import type { Device } from '../../types/device';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
 import './DeviceList.css';
@@ -16,6 +18,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   onDeviceEdit,
   onDeviceCreate
 }) => {
+  // const { checkPermission } = useAuth();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

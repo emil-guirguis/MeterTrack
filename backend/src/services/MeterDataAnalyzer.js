@@ -97,7 +97,7 @@ class MeterDataAnalyzer {
             console.log('🔍 Analyzing meter data for triggers...');
 
             // Get all active meters
-            const meters = await this.getActiveMeters();
+            const meters = await this.getAllMeters();
             
             if (meters.length === 0) {
                 console.log('📊 No active meters found for analysis');
@@ -434,7 +434,7 @@ class MeterDataAnalyzer {
     /**
      * Database query methods
      */
-    async getActiveMeters() {
+    async getAllMeters() {
         const query = `
             SELECT 
                 m.id,

@@ -1,29 +1,33 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DataList from '../common/DataList';
 import { FormModal } from '../common/FormModal';
+// import { LocationForm } from './LocationForm';
+// import { locationService } from '../../services/locationService';
 import { useLocationsEnhanced } from '../../store/entities/locationStore';
 import { useAuth } from '../../hooks/useAuth';
 import type { Location } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
 import './LocationList.css';
-import '../common/ListStats.css';
-import '../common/TableCellStyles.css';
 
 interface LocationListProps {
-  onLocationSelect?: (location: Location) => void;
   onLocationEdit?: (location: Location) => void;
   onLocationCreate?: () => void;
 }
 
 export const LocationList: React.FC<LocationListProps> = ({
-  onLocationSelect,
   onLocationEdit,
   onLocationCreate,
 }) => {
   const { checkPermission } = useAuth();
   const locations = useLocationsEnhanced();
-  
+  const [error, setError] = useState<string | null>(null);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [formLocation, setFormLocation] = useState<Location | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -43,11 +47,11 @@ export const LocationList: React.FC<LocationListProps> = ({
   // Apply filters and search
   useEffect(() => {
     const filters: Record<string, any> = {};
-    
+
     if (typeFilter) filters.type = typeFilter;
     if (statusFilter) filters.status = statusFilter;
     if (cityFilter) filters.city = cityFilter;
-    
+
     locations.setFilters(filters);
     locations.setSearch(searchQuery);
     locations.fetchItems();
@@ -98,9 +102,9 @@ export const LocationList: React.FC<LocationListProps> = ({
       render: (value) => (
         <span className={`status-indicator status-indicator--${value}`}>
           <span className={`status-dot status-dot--${value}`}></span>
-          {value === 'active' ? 'Active' : 
-           value === 'inactive' ? 'Inactive' : 
-           'Maintenance'}
+          {value === 'active' ? 'Active' :
+            value === 'inactive' ? 'Inactive' :
+              'Maintenance'}
         </span>
       ),
     },
@@ -206,10 +210,6 @@ export const LocationList: React.FC<LocationListProps> = ({
   }, [canUpdate, locations]);
 
   // Handle location actions
-  const handleLocationView = useCallback((location: Location) => {
-    onLocationSelect?.(location);
-  }, [onLocationSelect]);
-
   const handleLocationEdit = useCallback((location: Location) => {
     if (!canUpdate) return;
     onLocationEdit?.(location);
@@ -217,11 +217,11 @@ export const LocationList: React.FC<LocationListProps> = ({
 
   const handleLocationDelete = useCallback(async (location: Location) => {
     if (!canDelete) return;
-    
+
     const confirmed = window.confirm(
       `Are you sure you want to delete location "${location.name}"? This action cannot be undone.`
     );
-    
+
     if (confirmed) {
       try {
         await locations.deleteLocation(location.id);
@@ -235,7 +235,7 @@ export const LocationList: React.FC<LocationListProps> = ({
   // Export functionality
   const exportLocationsToCSV = useCallback((locationsToExport: Location[]) => {
     const headers = [
-      'Name', 'Type', 'Status', 'Street', 'City', 'State', 'Zip Code', 
+      'Name', 'Type', 'Status', 'Street', 'City', 'State', 'Zip Code',
       'Square Footage', 'Equipment Count', 'Meter Count', 'Year Built', 'Created'
     ];
     const csvContent = [
@@ -404,10 +404,9 @@ export const LocationList: React.FC<LocationListProps> = ({
         loading={locations.list.loading}
         error={locations.list.error || undefined}
         emptyMessage="No locations found. Create your first location to get started."
-        onView={handleLocationView}
         onEdit={canUpdate ? handleLocationEdit : undefined}
         onDelete={canDelete ? handleLocationDelete : undefined}
-        onSelect={bulkActions.length > 0 ? () => {} : undefined}
+        onSelect={bulkActions.length > 0 ? () => { } : undefined}
         bulkActions={bulkActions}
         pagination={{
           currentPage: locations.list.page,

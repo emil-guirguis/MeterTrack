@@ -93,11 +93,11 @@ class Meter {
     static async findByMeterId(meterid) {
         const query = 'SELECT * FROM meters WHERE meterid = $1';
         const result = await db.query(query, [meterid]);
-        
+
         if (result.rows.length === 0) {
             return null;
         }
-        
+
         return new Meter(result.rows[0]);
     }
 
@@ -105,42 +105,44 @@ class Meter {
      * Find all meters with optional filters
      */
     static async findAll(filters = {}) {
-        let query = `SELECT m.*, d.manufacturer as device_name, d.description as device_description 
-                     FROM meters m 
-                        LEFT JOIN device d ON m.device_id = d.id 
-                     WHERE 1=1`;
+        let query = `SELECT m.*, d.manufacturer as device_name, d.description as device_description,
+                            l.name as location 
+                      FROM meters m
+                         LEFT JOIN device d ON m.device_id = d.id
+                         LEFT JOIN location l ON m.location_id = l.id
+                      WHERE 1=1`;
         const values = [];
         let paramCount = 0;
 
         if (filters.type) {
             paramCount++;
-            query += ` AND m.type = $${paramCount}`;
+            query += ` AND m.type = $${ paramCount }`;
             values.push(filters.type);
         }
 
         if (filters.status) {
             paramCount++;
-            query += ` AND m.status = $${paramCount}`;
+            query += ` AND m.status = $${ paramCount } `;
             values.push(filters.status);
         }
 
         if (filters.location_location) {
             paramCount++;
-            query += ` AND m.location_location = $${paramCount}`;
+            query += ` AND m.location_location = $${ paramCount } `;
             values.push(filters.location_location);
         }
 
         if (filters.search) {
             paramCount++;
-            query += ` AND (m.meterid ILIKE $${paramCount} OR m.name ILIKE $${paramCount} OR d.manufacturer ILIKE $${paramCount})`;
-            values.push(`%${filters.search}%`);
+            query += ` AND(m.meterid ILIKE $${ paramCount } OR m.name ILIKE $${ paramCount } OR d.manufacturer ILIKE $${ paramCount })`;
+            values.push(`% ${ filters.search }% `);
         }
 
         query += ' ORDER BY m.meterid ASC';
 
         if (filters.limit) {
             paramCount++;
-            query += ` LIMIT $${paramCount}`;
+            query += ` LIMIT $${ paramCount } `;
             values.push(filters.limit);
         }
 
@@ -170,7 +172,7 @@ class Meter {
         for (const [key, value] of Object.entries(updateData)) {
             if (allowedFields.includes(key) && value !== undefined) {
                 paramCount++;
-                updates.push(`${key} = $${paramCount}`);
+                updates.push(`${ key } = $${ paramCount } `);
                 values.push(value);
             }
         }
@@ -185,10 +187,10 @@ class Meter {
 
         const query = `
             UPDATE meters 
-            SET ${updates.join(', ')}
-            WHERE id = $${paramCount}
-            RETURNING *
-        `;
+            SET ${ updates.join(', ') }
+            WHERE id = $${ paramCount }
+        RETURNING *
+            `;
 
         try {
             const result = await db.query(query, values);
@@ -216,8 +218,8 @@ class Meter {
             UPDATE meters 
             SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
             WHERE id = $1
-            RETURNING *
-        `;
+        RETURNING *
+            `;
 
         const result = await db.query(query, [this.id]);
         
@@ -238,8 +240,8 @@ class Meter {
             UPDATE meters 
             SET last_reading_date = $1, updatedat = CURRENT_TIMESTAMP
             WHERE id = $2
-            RETURNING *
-        `;
+        RETURNING *
+            `;
 
         const result = await db.query(query, [readingDate, this.id]);
         
@@ -257,14 +259,14 @@ class Meter {
      */
     static async getStats() {
         const query = `
-            SELECT 
-                COUNT(*) as total_meters,
-                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_meters,
-                COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_meters,
-                COUNT(CASE WHEN type = 'electric' THEN 1 END) as electric_meters,
-                COUNT(CASE WHEN type = 'gas' THEN 1 END) as gas_meters,
-                COUNT(CASE WHEN type = 'water' THEN 1 END) as water_meters,
-                COUNT(DISTINCT location_location) as locations_with_meters
+        SELECT
+        COUNT(*) as total_meters,
+            COUNT(CASE WHEN status = 'active' THEN 1 END) as active_meters,
+            COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_meters,
+            COUNT(CASE WHEN type = 'electric' THEN 1 END) as electric_meters,
+            COUNT(CASE WHEN type = 'gas' THEN 1 END) as gas_meters,
+            COUNT(CASE WHEN type = 'water' THEN 1 END) as water_meters,
+            COUNT(DISTINCT location_location) as locations_with_meters
             FROM meters
         `;
 
@@ -287,8 +289,8 @@ class Meter {
     get fullLocation() {
         const parts = [
             this.location_location,
-            this.location_floor && `Floor ${this.location_floor}`,
-            this.location_room && `Room ${this.location_room}`,
+            this.location_floor && `Floor ${ this.location_floor } `,
+            this.location_room && `Room ${ this.location_room } `,
             this.location_description
         ].filter(part => part && part.trim());
         

@@ -85,13 +85,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           d => d.manufacturer === meter.device && d.model_number === meter.model
         );
         
-        if (matchingDevice) {
-          // Found a match - suggest it but don't auto-select
-          setDeviceWarning(`Legacy meter detected. We found a matching device: ${matchingDevice.manufacturer} - ${matchingDevice.model_number}. Please confirm or select a different device.`);
-        } else {
-          // No match found - require selection
-          setDeviceWarning('This meter was created before device management. Please select a device to continue.');
-        }
       }
     }
   }, [devices.loading, devices.items, meter]);
@@ -100,9 +93,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.meterId.trim()) {
-      newErrors.meterId = 'Meter ID is required';
-    }
 
     if (!formData.serialNumber.trim()) {
       newErrors.serialNumber = 'Serial number is required';
@@ -257,37 +247,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           )}
 
           <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="meterId">Meter ID *</label>
-              <input
-                type="text"
-                id="meterId"
-                value={formData.meterId}
-                onChange={(e) => handleInputChange('meterId', e.target.value)}
-                className={errors.meterId ? 'form-control form-control--error' : 'form-control'}
-                placeholder="e.g., METER-001"
-                maxLength={100}
-              />
-              {errors.meterId && <div className="form-error">{errors.meterId}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="serialNumber">Serial Number *</label>
-              <input
-                type="text"
-                id="serialNumber"
-                value={formData.serialNumber}
-                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                className={errors.serialNumber ? 'form-control form-control--error' : 'form-control'}
-                placeholder="e.g., SN123456789"
-                maxLength={100}
-              />
-              {errors.serialNumber && <div className="form-error">{errors.serialNumber}</div>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
+                        <div className="form-group">
               <label htmlFor="device">Device *</label>
               {devices.loading && (
                 <div className="form-loading-message">Loading devices...</div>
@@ -311,6 +271,23 @@ export const MeterForm: React.FC<MeterFormProps> = ({
                 Select a device from the list. Need to add a new device? <a href="/devices" className="form-helper-link">Manage Devices</a>
               </div>
             </div>
+            <div className="form-group">
+              <label htmlFor="serialNumber">Serial Number *</label>
+              <input
+                type="text"
+                id="serialNumber"
+                value={formData.serialNumber}
+                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                className={errors.serialNumber ? 'form-control form-control--error' : 'form-control'}
+                placeholder="e.g., SN123456789"
+                maxLength={100}
+              />
+              {errors.serialNumber && <div className="form-error">{errors.serialNumber}</div>}
+            </div>
+          </div>
+
+          <div className="form-row">
+
           </div>
 
 

@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
 import { LocationList } from '../../components/location/LocationList';
 import { LocationForm } from '../../components/location/LocationForm';
-import { LocationDetail } from '../../components/location/LocationDetail';
 import { FormModal } from '../../components/common/FormModal';
 import { useLocationsEnhanced } from '../../store/entities/locationStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -108,20 +107,11 @@ export const LocationManagementPage: React.FC = () => {
   // Render different views based on current mode
   const renderContent = () => {
     switch (viewMode) {
-      case 'detail':
-        return selectedLocation ? (
-          <LocationDetail
-            location={selectedLocation}
-            onEdit={canUpdate ? handleDetailEdit : undefined}
-            onBack={handleBackToList}
-          />
-        ) : null;
-
+      
       case 'list':
       default:
         return (
           <LocationList
-            onLocationSelect={handleLocationSelect}
             onLocationEdit={handleLocationEdit}
             onLocationCreate={handleLocationCreate}
           />

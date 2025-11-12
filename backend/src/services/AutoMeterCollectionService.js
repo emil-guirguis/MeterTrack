@@ -167,7 +167,7 @@ class AutoMeterCollectionService {
         
     //     try {
     //         // Get all active meters that should be collected
-    //         const meters = await this.getActiveMeters();
+    //         const meters = await this.getAllMeters();
             
     //         if (meters.length === 0) {
     //             console.log('📊 No active meters found for collection');
@@ -509,7 +509,7 @@ class AutoMeterCollectionService {
     /**
      * Get active meters for collection
      */
-    async getActiveMeters() {
+    async getAllMeters() {
         const query = `
             SELECT 
                 id, meterid, name, type, status,

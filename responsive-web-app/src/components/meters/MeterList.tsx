@@ -22,7 +22,7 @@ export const MeterList: React.FC<MeterListProps> = ({
 }) => {
   const { checkPermission } = useAuth();
   const meters = useMetersEnhanced();
-  
+
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
 
   // Check permissions
@@ -37,7 +37,7 @@ export const MeterList: React.FC<MeterListProps> = ({
   // Test meter connection
   const handleTestConnection = useCallback(async (meter: Meter) => {
     if (!canRead) return;
-    
+
     setTestingConnection(meter.id);
     try {
       const authToken = tokenStorage.getToken();
@@ -48,9 +48,9 @@ export const MeterList: React.FC<MeterListProps> = ({
         method: 'POST',
         headers
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success && result.data.connected) {
         alert('Connection successful!');
       } else {
@@ -65,12 +65,25 @@ export const MeterList: React.FC<MeterListProps> = ({
 
   // Define table columns - use the actual meter fields that exist
   const columns: ColumnDefinition<Meter>[] = useMemo(() => [
-      {
+    {
       key: 'location',
       label: 'Location',
       sortable: true,
       render: (value) => value || 'Not specified',
       responsive: 'hide-mobile',
+    },
+    {
+      key: 'ip',
+      label: 'Address',
+      sortable: true,
+      render: (value, meter) => (
+        <div className="table-cell--two-line">
+          <div className="table-cell__primary">
+            {meter.ip || 'Unknown'} {meter.serialNumber || ''}
+          </div>
+          <div className="table-cell__secondary">{value}</div>
+        </div>
+      ),
     },
     {
       key: 'configuration',
@@ -137,7 +150,7 @@ export const MeterList: React.FC<MeterListProps> = ({
     if (canUpdate) {
       actions.push(
         {
-          key: 'activate',
+          id: 'activate',
           label: 'Activate',
           icon: '✅',
           color: 'success',
@@ -149,7 +162,7 @@ export const MeterList: React.FC<MeterListProps> = ({
           confirmMessage: 'Are you sure you want to activate the selected meters?',
         },
         {
-          key: 'deactivate',
+          id: 'deactivate',
           label: 'Deactivate',
           icon: '❌',
           color: 'warning',
@@ -161,7 +174,7 @@ export const MeterList: React.FC<MeterListProps> = ({
           confirmMessage: 'Are you sure you want to deactivate the selected meters?',
         },
         {
-          key: 'maintenance',
+          id: 'maintenance',
           label: 'Set Maintenance',
           icon: '🔧',
           color: 'warning',
