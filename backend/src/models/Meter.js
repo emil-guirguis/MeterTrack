@@ -11,6 +11,8 @@ class Meter {
         this.meterid = meterData.meterid;
         this.name = meterData.name;
         this.type = meterData.type;
+        this.port = meterData.port;
+        this.protocal = meterData.protocal;
         this.device_id = meterData.device_id;
         // Joined fields from device table (when available)
         this.device_name = meterData.device_name;
@@ -44,16 +46,21 @@ class Meter {
 
         const query = `
             INSERT INTO meters (
-                meterid, name, type, device_id, serialnumber,
+                meterid, name, type, device_id, serialnumber,port, protocal,
                 installation_date, last_reading_date, status, location_location,
                 location_floor, location_room, location_description,
-                unit_of_measurement, multiplier, notes, register_map, createdat, updatedat
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                unit_of_measurement, multiplier, notes, register_map, 
+                createdat, updatedat
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, 
+                     $8, $9, $10, $11, 
+                     $12, $13, $14, 
+                     $15, $16, &17,$18,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *
         `;
 
         const values = [
-            meterid, name, type, device_id, serialnumber,
+            meterid, name, type, device_id, serialnumber,port, protocal,
             installation_date, last_reading_date, status || 'active', location_location,
             location_floor, location_room, location_description,
             unit_of_measurement, multiplier || 1, notes, meterData.register_map || null
@@ -160,7 +167,7 @@ class Meter {
      */
     async update(updateData) {
         const allowedFields = [
-            'meterid', 'name', 'type', 'device_id', 'serialnumber',
+            'meterid', 'name', 'type', 'device_id', 'serialnumber', 'port', 'protocal',
             'installation_date', 'last_reading_date', 'status', 'location_location',
             'location_floor', 'location_room', 'location_description',
             'unit_of_measurement', 'multiplier', 'notes', 'register_map'
@@ -278,7 +285,11 @@ class Meter {
      * Get meters by location
      */
     static async findByLocation(location) {
-        const query = 'SELECT * FROM meters WHERE location_location = $1 ORDER BY meterid ASC';
+        const query = `SELECT m.*, l.name as location_name 
+                       FROM meters m 
+                          join location l on m.location_id = l.id
+                       WHERE l.name like  $1 
+                       ORDER BY l.name ASC`;
         const result = await db.query(query, [location]);
         return result.rows.map(data => new Meter(data));
     }

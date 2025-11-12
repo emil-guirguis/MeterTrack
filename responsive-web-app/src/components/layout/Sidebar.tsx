@@ -56,10 +56,10 @@ const Sidebar: React.FC<SidebarProps> = ({
       dashboard: '📊',
       users: '👥',
       building: '🏢',
-      equipment: '⚙️',
       contacts: '📞',
       meter: '📏',
       template: '📧',
+      management: '🗂️',
       settings: '⚙️'
     };
     return iconMap[iconName] || '📄';

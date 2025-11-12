@@ -57,6 +57,13 @@ const menuItems: MenuItem[] = [
     requiredPermission: Permission.TEMPLATE_READ
   },
   {
+    id: 'management',
+    label: 'Management',
+    icon: 'management',
+    path: '/management',
+    requiredPermission: Permission.TEMPLATE_READ
+  },
+  {
     id: 'settings',
     label: 'Settings',
     icon: 'settings',

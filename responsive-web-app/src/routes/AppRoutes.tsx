@@ -12,6 +12,7 @@ import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
 import { DeviceManagementPage } from '../pages/devices';
 import { Permission, UserRole } from '../types/auth';
 import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
+import ManagementForm from '../components/management/ManagementForm';
 
 // Dashboard Page with Layout
 const DashboardPage = () => (
@@ -151,6 +152,18 @@ const AppRoutes: React.FC = () => {
           element={
             <AuthGuard requiredPermissions={[Permission.TEMPLATE_READ]}>
               <TemplatesPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Management Route */}
+        <Route
+          path="/management"
+          element={
+            <AuthGuard requiredPermissions={[Permission.TEMPLATE_READ]}>
+              <AppLayout title="Management">
+                <ManagementForm />
+              </AppLayout>
             </AuthGuard>
           }
         />
