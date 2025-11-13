@@ -21,13 +21,7 @@ const menuItems: MenuItem[] = [
     icon: 'dashboard',
     path: '/dashboard'
   },
-  {
-    id: 'users',
-    label: 'Users',
-    icon: 'users',
-    path: '/users',
-    requiredPermission: Permission.USER_READ
-  },
+
   {
     id: 'location',
     label: 'Location',
@@ -62,6 +56,13 @@ const menuItems: MenuItem[] = [
     icon: 'management',
     path: '/management',
     requiredPermission: Permission.TEMPLATE_READ
+  },
+  {
+    id: 'users',
+    label: 'Users',
+    icon: 'users',
+    path: '/users',
+    requiredPermission: Permission.USER_READ
   },
   {
     id: 'settings',

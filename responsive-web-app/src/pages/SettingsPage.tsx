@@ -4,7 +4,6 @@ import { Tabs, Tab } from '@mui/material';
 import CompanyInfoForm from '../components/settings/CompanyInfoForm';
 import BrandingForm from '../components/settings/BrandingForm';
 import SystemConfigForm from '../components/settings/SystemConfigForm';
-import DefaultsForm from '../components/settings/DefaultsForm';
 import './SettingsPage.css';
 import { useSettings } from '../store/entities/settingsStore';
 
@@ -38,11 +37,6 @@ const SettingsPage: React.FC = () => {
     if (!settings) return;
     updateSystemConfig({ ...settings.systemConfig, [field]: value });
   };
-  const handleDefaultsChange = (field: string, value: any) => {
-    if (!settings) return;
-    // For now, store defaults in systemConfig - could be moved to separate section later
-    updateSystemConfig({ ...settings.systemConfig, [field]: value });
-  };
 
   return (
     <div>
@@ -51,7 +45,6 @@ const SettingsPage: React.FC = () => {
         <Tab label="Company Info" />
         <Tab label="Branding" />
         <Tab label="System Config" />
-        <Tab label="Defaults" />
       </Tabs>
       <div className="settings-content">
         {tab === 0 && settings && (
@@ -78,16 +71,6 @@ const SettingsPage: React.FC = () => {
           <SystemConfigForm
             values={settings.systemConfig}
             onChange={handleSystemConfigChange}
-            onSubmit={() => {}}
-            onCancel={() => {}}
-            loading={loading}
-            error={error}
-          />
-        )}
-        {tab === 3 && settings && (
-          <DefaultsForm
-            values={settings.systemConfig}
-            onChange={handleDefaultsChange}
             onSubmit={() => {}}
             onCancel={() => {}}
             loading={loading}

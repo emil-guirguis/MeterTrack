@@ -1,1 +1,1 @@
-export { default as DefaultsForm } from './ManagementForm';
+export { default as ManagementForm } from './ManagementForm';

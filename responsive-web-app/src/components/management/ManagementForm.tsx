@@ -21,7 +21,7 @@ export interface ManagementFormProps {
   error?: string | null;
 }
 
-const DefaultsForm: React.FC<ManagementFormProps> = ({
+const ManagementForm: React.FC<ManagementFormProps> = ({
   values: _values,
   onChange: _onChange,
   onSubmit,
@@ -141,4 +141,4 @@ const DefaultsForm: React.FC<ManagementFormProps> = ({
   );
 };
 
-export default DefaultsForm;
+export default ManagementForm;
