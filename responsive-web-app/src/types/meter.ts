@@ -32,8 +32,11 @@ export interface Meter {
   slaveId?: number;
   location?: string;
   description?: string;
-  status: 'active' | 'inactive' | 'maintenance';
   type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
+  status: 'operational' | 'maintenance' | 'offline';
+  installDate: Date;
+  lastMaintenance?: Date;
+  nextMaintenance?: Date;
   register_map?: RegisterMap | null;
   createdAt: string;
   updatedAt: string;

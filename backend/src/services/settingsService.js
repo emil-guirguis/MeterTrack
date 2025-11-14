@@ -1,8 +1,3 @@
-/**
- * Settings Service for PostgreSQL
- * Replaces MongoDB-based CompanySettings model
- */
-
 const db = require('../config/database');
 
 class SettingsService {
@@ -11,7 +6,7 @@ class SettingsService {
    */
   static async getCompanySettings() {
     try {
-      const result = await db.query('SELECT * FROM companysettings LIMIT 1');
+      const result = await db.query('SELECT * FROM tenant LIMIT 1');
       
       if (result.rows.length === 0) {
         // Create default settings if none exist
@@ -31,7 +26,7 @@ class SettingsService {
   static async updateCompanySettings(updateData) {
     try {
       // Check if settings exist
-      const existingResult = await db.query('SELECT id FROM companysettings LIMIT 1');
+      const existingResult = await db.query('SELECT id FROM tenant LIMIT 1');
       
       if (existingResult.rows.length === 0) {
         // Create new settings
@@ -95,7 +90,7 @@ class SettingsService {
       const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
       
       const query = `
-        INSERT INTO companysettings (${fields.join(', ')})
+        INSERT INTO tenant (${fields.join(', ')})
         VALUES (${placeholders})
         RETURNING *
       `;
@@ -103,7 +98,7 @@ class SettingsService {
       const result = await db.query(query, values);
       return this.formatSettings(result.rows[0]);
     } catch (error) {
-      console.error('Error creating settings:', error);
+      console.error('Error creating company settings:', error);
       throw error;
     }
   }
@@ -118,7 +113,7 @@ class SettingsService {
       const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
       
       const query = `
-        UPDATE companysettings 
+        UPDATE tenant 
         SET ${setClause}
         WHERE id = $1
         RETURNING *
@@ -127,7 +122,7 @@ class SettingsService {
       const result = await db.query(query, [settingsId, ...values]);
       return this.formatSettings(result.rows[0]);
     } catch (error) {
-      console.error('Error updating settings:', error);
+      console.error('Error updating company settings:', error);
       throw error;
     }
   }

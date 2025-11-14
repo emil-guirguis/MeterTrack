@@ -121,17 +121,6 @@ export const LocationList: React.FC<LocationListProps> = ({
       responsive: 'hide-mobile',
     },
     {
-      key: 'equipmentCount',
-      label: 'Equipment',
-      sortable: true,
-      render: (value) => (
-        <span className="location-list__count">
-          {value} {value === 1 ? 'item' : 'items'}
-        </span>
-      ),
-      responsive: 'hide-tablet',
-    },
-    {
       key: 'meterCount',
       label: 'Meters',
       sortable: true,
@@ -236,7 +225,7 @@ export const LocationList: React.FC<LocationListProps> = ({
   const exportLocationsToCSV = useCallback((locationsToExport: Location[]) => {
     const headers = [
       'Name', 'Type', 'Status', 'Street', 'City', 'State', 'Zip Code',
-      'Square Footage', 'Equipment Count', 'Meter Count', 'Year Built', 'Created'
+      'Square Footage', 'Meter Count', 'Year Built', 'Created'
     ];
     const csvContent = [
       headers.join(','),
@@ -249,7 +238,6 @@ export const LocationList: React.FC<LocationListProps> = ({
         location.address.state,
         location.address.zipCode,
         location.squareFootage || 0,
-        location.equipmentCount,
         location.meterCount,
         location.yearBuilt || '',
         new Date(location.createdAt).toISOString(),
@@ -435,7 +423,7 @@ export const LocationList: React.FC<LocationListProps> = ({
         <div className="location-list__export-content">
           <p>Export all locations to CSV format?</p>
           <p className="location-list__export-info">
-            This will include: Name, Type, Status, Address, Square Footage, Equipment Count, Meter Count, and Created Date
+            This will include: Name, Type, Status, Address, Square Footage, Meter Count, and Created Date
           </p>
           <p className="location-list__export-count">
             <strong>{locations.items.length} locations</strong> will be exported.

@@ -11,7 +11,6 @@ const db = require('./config/database');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const locationRoutes = require('./routes/location');
-const equipmentRoutes = require('./routes/equipment');
 const contactRoutes = require('./routes/contacts');
 const meterRoutes = require('./routes/meters');
 const meterReadingRoutes = require('./routes/meterReadings');
@@ -418,7 +417,6 @@ function setupThreadingEventHandlers() {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/location', locationRoutes);
-app.use('/api/equipment', equipmentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/meters', meterRoutes);
 app.use('/api/meter-readings', meterReadingRoutes);
@@ -610,7 +608,6 @@ app.post('/api/test/create-user', async (req, res) => {
       permissions: [
         'user:create', 'user:read', 'user:update', 'user:delete',
         'location:create', 'location:read', 'location:update', 'location:delete',
-        'equipment:create', 'equipment:read', 'equipment:update', 'equipment:delete',
         'contact:create', 'contact:read', 'contact:update', 'contact:delete',
         'meter:create', 'meter:read', 'meter:update', 'meter:delete',
         'settings:read', 'settings:update',

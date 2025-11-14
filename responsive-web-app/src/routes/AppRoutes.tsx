@@ -21,16 +21,6 @@ const DashboardPage = () => (
   </AppLayout>
 );
 
-const EquipmentPage = () => (
-  <AppLayout title="Equipment">
-    <div className="placeholder-page">
-      <h2>Equipment Management</h2>
-      <p>Track and manage equipment across all your locations.</p>
-    </div>
-  </AppLayout>
-);
-
-
 
 const UnauthorizedPage = () => (
   <AppLayout title="Unauthorized">
@@ -90,14 +80,6 @@ const AppRoutes: React.FC = () => {
         />
 
         {/* Permission-based Routes */}
-        <Route
-          path="/equipment"
-          element={
-            <AuthGuard requiredPermissions={[Permission.EQUIPMENT_READ]}>
-              <EquipmentPage />
-            </AuthGuard>
-          }
-        />
 
         {/* Meter Readings Route */}
         <Route

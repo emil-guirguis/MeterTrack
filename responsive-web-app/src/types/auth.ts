@@ -22,12 +22,6 @@ export const Permission = {
   LOCATION_UPDATE: 'location:update',
   LOCATION_DELETE: 'location:delete',
   
-  // Equipment Management
-  EQUIPMENT_CREATE: 'equipment:create',
-  EQUIPMENT_READ: 'equipment:read',
-  EQUIPMENT_UPDATE: 'equipment:update',
-  EQUIPMENT_DELETE: 'equipment:delete',
-  
   // Contact Management
   CONTACT_CREATE: 'contact:create',
   CONTACT_READ: 'contact:read',
@@ -57,6 +51,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  client: string;
   role: UserRole;
   permissions: Permission[];
   status: 'active' | 'inactive';
@@ -110,12 +105,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.LOCATION_UPDATE,
     Permission.LOCATION_DELETE,
     
-    // Full equipment management
-    Permission.EQUIPMENT_CREATE,
-    Permission.EQUIPMENT_READ,
-    Permission.EQUIPMENT_UPDATE,
-    Permission.EQUIPMENT_DELETE,
-    
     // Full contact management
     Permission.CONTACT_CREATE,
     Permission.CONTACT_READ,
@@ -145,12 +134,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Read-only location access
     Permission.LOCATION_READ,
     
-    // Full equipment management
-    Permission.EQUIPMENT_CREATE,
-    Permission.EQUIPMENT_READ,
-    Permission.EQUIPMENT_UPDATE,
-    Permission.EQUIPMENT_DELETE,
-    
     // Read-only contact access
     Permission.CONTACT_READ,
     
@@ -170,7 +153,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Read-only access to most entities
     Permission.USER_READ,
     Permission.LOCATION_READ,
-    Permission.EQUIPMENT_READ,
     Permission.CONTACT_READ,
     Permission.METER_READ,
     Permission.SETTINGS_READ,

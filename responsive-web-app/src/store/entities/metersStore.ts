@@ -10,13 +10,13 @@ const metersService = {
   async getAll(params?: any) {
     return withTokenRefresh(async () => {
       const queryParams = new URLSearchParams();
-      
+
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
       if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
       if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
       if (params?.search) queryParams.append('search', params.search);
-      
+
       // Apply filters
       if (params?.filters) {
         Object.entries(params.filters).forEach(([key, value]) => {
@@ -39,7 +39,7 @@ const metersService = {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch meters');
       }
@@ -69,7 +69,7 @@ const metersService = {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch meter');
       }
@@ -96,7 +96,7 @@ const metersService = {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to create meter');
       }
@@ -123,7 +123,7 @@ const metersService = {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to update meter');
       }
@@ -149,7 +149,7 @@ const metersService = {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to delete meter');
       }
@@ -196,38 +196,38 @@ export const useMeters = createEntityHook(useMetersStore);
 // Enhanced meters hook with additional functionality
 export const useMetersEnhanced = () => {
   const meters = useMeters();
-  
+
   return {
     ...meters,
-    
+
     // Additional computed values
     activeMeters: meters.items.filter(meter => meter.status === 'active'),
     inactiveMeters: meters.items.filter(meter => meter.status === 'inactive'),
     maintenanceMeters: meters.items.filter(meter => meter.status === 'maintenance'),
-    
+
     // Meters by type
     electricMeters: meters.items.filter(meter => meter.type === 'electric'),
     gasMeters: meters.items.filter(meter => meter.type === 'gas'),
     waterMeters: meters.items.filter(meter => meter.type === 'water'),
-    
+
     // Reading quality analysis
-    metersWithGoodReadings: meters.items.filter(meter => 
+    metersWithGoodReadings: meters.items.filter(meter =>
       meter.lastReading?.quality === 'good'
     ),
-    metersWithQuestionableReadings: meters.items.filter(meter => 
+    metersWithQuestionableReadings: meters.items.filter(meter =>
       meter.lastReading?.quality === 'questionable'
     ),
-    metersWithEstimatedReadings: meters.items.filter(meter => 
+    metersWithEstimatedReadings: meters.items.filter(meter =>
       meter.lastReading?.quality === 'estimated'
     ),
-    
+
     // Communication status
     metersWithRecentReadings: meters.items.filter(meter => {
       if (!meter.lastReading?.timestamp) return false;
       const hoursSinceReading = (Date.now() - new Date(meter.lastReading.timestamp).getTime()) / (1000 * 60 * 60);
       return hoursSinceReading <= 24; // Within last 24 hours
     }),
-    
+
     // Enhanced actions with notifications
     createMeter: async (data: Partial<Meter>) => {
       return withApiCall(
@@ -239,7 +239,7 @@ export const useMetersEnhanced = () => {
         }
       );
     },
-    
+
     updateMeter: async (id: string, data: Partial<Meter>) => {
       return withApiCall(
         () => meters.updateItem(id, data),
@@ -250,7 +250,7 @@ export const useMetersEnhanced = () => {
         }
       );
     },
-    
+
     deleteMeter: async (id: string) => {
       return withApiCall(
         () => meters.deleteItem(id),
@@ -261,7 +261,7 @@ export const useMetersEnhanced = () => {
         }
       );
     },
-    
+
     // Bulk operations
     bulkUpdateStatus: async (meterIds: string[], status: Meter['status']) => {
       return withApiCall(
@@ -276,57 +276,49 @@ export const useMetersEnhanced = () => {
         }
       );
     },
-    
+
     // Search and filter helpers
     searchMeters: (query: string) => {
       meters.setSearch(query);
       meters.fetchItems();
     },
-    
+
     filterByType: (type: Meter['type']) => {
       meters.setFilters({ ...meters.list.filters, type });
       meters.fetchItems();
     },
-    
+
     filterByStatus: (status: string) => {
       meters.setFilters({ ...meters.list.filters, status });
       meters.fetchItems();
     },
-    
+
     filterByLocation: (locationId: string) => {
       meters.setFilters({ ...meters.list.filters, locationId });
       meters.fetchItems();
     },
-    
-    filterByEquipment: (equipmentId: string) => {
-      meters.setFilters({ ...meters.list.filters, equipmentId });
-      meters.fetchItems();
-    },
-    
+
     // Meter reading operations
     updateReading: async (id: string, reading: Meter['lastReading']) => {
       return meters.updateItem(id, { lastReading: reading });
     },
-    
+
     // Configuration operations
     updateConfiguration: async (id: string, configuration: Partial<Meter['configuration']>) => {
       const meter = meters.items.find(m => m.id === id);
       if (!meter) throw new Error('Meter not found');
-      
+
       const updatedConfig = { ...meter.configuration, ...configuration };
       return meters.updateItem(id, { configuration: updatedConfig });
     },
-    
+
     // Specialized queries
     getMetersByLocation: (locationId: string) =>
       meters.items.filter(m => m.locationId === locationId),
-    
-    getMetersByEquipment: (equipmentId: string) =>
-      meters.items.filter(m => m.equipmentId === equipmentId),
-    
+
     getMetersByType: (type: Meter['type']) =>
       meters.items.filter(m => m.type === type),
-    
+
     // Analytics helpers
     getTotalConsumption: (type?: Meter['type']) => {
       const filteredMeters = type ? meters.items.filter(m => m.type === type) : meters.items;
@@ -334,15 +326,15 @@ export const useMetersEnhanced = () => {
         return total + (meter.lastReading?.value || 0);
       }, 0);
     },
-    
+
     getAverageConsumption: (type?: Meter['type']) => {
       const filteredMeters = type ? meters.items.filter(m => m.type === type) : meters.items;
       if (filteredMeters.length === 0) return 0;
-      
+
       const total = filteredMeters.reduce((sum, meter) => {
         return sum + (meter.lastReading?.value || 0);
       }, 0);
-      
+
       return total / filteredMeters.length;
     },
   };

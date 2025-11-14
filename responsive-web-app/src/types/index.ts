@@ -20,7 +20,6 @@ export type {
 
 export type {
   Location,
-  Equipment,
   Contact,
   Meter,
   EmailTemplate,

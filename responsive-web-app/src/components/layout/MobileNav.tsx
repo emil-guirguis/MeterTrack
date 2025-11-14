@@ -82,7 +82,6 @@ const MobileNav: React.FC<MobileNavProps> = ({
       dashboard: '📊',
       users: '👥',
       building: '🏢',
-      equipment: '⚙️',
       contacts: '📞',
       meter: '📏',
       template: '📧',

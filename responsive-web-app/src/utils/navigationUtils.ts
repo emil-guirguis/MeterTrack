@@ -18,9 +18,6 @@ const routeTitles: Record<string, string> = {
   '/meters': 'Meters',
   '/meters/new': 'New Meter',
   '/meters/edit': 'Edit Meter',
-  '/templates': 'Email Templates',
-  '/templates/new': 'New Template',
-  '/templates/edit': 'Edit Template',
   '/settings': 'Settings',
   '/profile': 'Profile',
   '/help': 'Help',
@@ -89,20 +86,6 @@ const routeBreadcrumbs: Record<string, BreadcrumbItem[]> = {
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Meters', path: '/meters' },
     { label: 'Edit Meter' }
-  ],
-  '/templates': [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Email Templates', path: '/templates' }
-  ],
-  '/templates/new': [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Email Templates', path: '/templates' },
-    { label: 'New Template' }
-  ],
-  '/templates/edit': [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Email Templates', path: '/templates' },
-    { label: 'Edit Template' }
   ],
   '/settings': [
     { label: 'Dashboard', path: '/dashboard' },
@@ -310,9 +293,6 @@ export const canAccessRoute = (pathname: string, userRole?: string, userPermissi
     '/meters': ['meter:read'],
     '/meters/new': ['meter:create'],
     '/meters/edit': ['meter:update'],
-    '/templates': ['template:read'],
-    '/templates/new': ['template:create'],
-    '/templates/edit': ['template:update'],
     '/settings': ['settings:read'],
   };
   

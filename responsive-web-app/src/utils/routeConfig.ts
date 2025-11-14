@@ -69,12 +69,6 @@ export const RouteAccessPatterns = {
     requiredPermissions: ['location:read' as Permission],
   },
 
-  // Equipment management routes
-  EQUIPMENT_MANAGEMENT: {
-    requireAuth: true,
-    requiredPermissions: ['equipment:read' as Permission],
-  },
-
   // Contact management routes
   CONTACT_MANAGEMENT: {
     requireAuth: true,

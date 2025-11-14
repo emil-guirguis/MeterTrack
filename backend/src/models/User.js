@@ -9,6 +9,7 @@ const db = require('../config/database');
 class User {
     constructor(userData = {}) {
         this.id = userData.id;
+        this.tenant = userData.tenant;
         this.email = userData.email;
         this.name = userData.name;
         this.passwordhash = userData.passwordhash;
@@ -24,15 +25,17 @@ class User {
      * Create a new user
      */
     static async create(userData) {
-        const { email, name, password, role, permissions, status } = userData;
+        const { email, name, password, role, permissions, status, tenant_id } = userData;
         
         // Hash the password
         const saltRounds = 12;
         const passwordhash = await bcrypt.hash(password, saltRounds);
 
         const query = `
-            INSERT INTO users (email, name, passwordhash, role, permissions, status, createdat, updatedat)
-            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO users (email, name, passwordhash, role, permissions, status, tenant_id,
+                               createdat, updatedat)
+            VALUES ($1, $2, $3, $4, $5, $6, $7,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *
         `;
 
@@ -42,7 +45,8 @@ class User {
             passwordhash,
             role || 'viewer',
             JSON.stringify(permissions || []),
-            status || 'active'
+            status || 'active',
+            tenant_id,
         ];
 
         try {

@@ -1,7 +1,6 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const Location = require('../models/Location');
-const Equipment = require('../models/Equipment');
 const Meter = require('../models/Meter');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
@@ -44,7 +43,6 @@ function mapLocationToResponse(b) {
     squareFootage: b.squarefootage,
     description: b.description,
     notes: b.notes,
-    equipmentCount: b.equipmentcount,
     meterCount: b.metercount,
     createdAt: b.createdat,
     updatedAt: b.updatedat
@@ -313,19 +311,13 @@ router.delete('/:id', requirePermission('location:delete'), async (req, res) => 
       return res.status(404).json({ success: false, message: 'Location not found' });
     }
 
-    // Check if location has associated equipment or meters
-    const [equipmentList, metersList] = await Promise.all([
-      Equipment.findAll({ locationid: req.params.id }),
-      Meter.findAll({ location_location: location.name })
-    ]);
-
-    const equipmentCount = equipmentList.length;
+    // Check if location has associated meters
     const meterCount = metersList.length;
 
-    if (equipmentCount > 0 || meterCount > 0) {
+    if (meterCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete location. It has ${equipmentCount} equipment items and ${meterCount} meters associated with it.`
+        message: `Cannot delete location. It has ${meterCount} meters associated with it.`
       });
     }
 

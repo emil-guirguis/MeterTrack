@@ -29,7 +29,6 @@ export interface Location {
   yearBuilt?: number;
   squareFootage?: number;
   description?: string;
-  equipmentCount: number;
   meterCount: number;
   notes?: string;
   createdAt: Date;
@@ -53,47 +52,6 @@ export interface LocationCreateRequest {
 export interface LocationUpdateRequest extends Partial<LocationCreateRequest> {
   id: string;
 }
-
-// Equipment Management
-export interface Equipment {
-  id: string;
-  name: string;
-  type: string;
-  locationId: string;
-  locationName?: string; // For display purposes
-  specifications: Record<string, any>;
-  status: 'operational' | 'maintenance' | 'offline';
-  installDate: Date;
-  lastMaintenance?: Date;
-  nextMaintenance?: Date;
-  serialNumber?: string;
-  manufacturer?: string;
-  model?: string;
-  location?: string;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EquipmentCreateRequest {
-  name: string;
-  type: string;
-  locationId: string;
-  specifications: Record<string, any>;
-  installDate: Date;
-  serialNumber?: string;
-  manufacturer?: string;
-  model?: string;
-  notes?: string;
-}
-
-export interface EquipmentUpdateRequest extends Partial<EquipmentCreateRequest> {
-  id: string;
-  status?: 'operational' | 'maintenance' | 'offline';
-  lastMaintenance?: Date;
-  nextMaintenance?: Date;
-}
-
 
 // Contact Management (Customers and Vendors)
 export interface Contact {
@@ -354,8 +312,6 @@ export interface Meter {
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
   locationId?: string;
   locationName?: string; // For display purposes
-  equipmentId?: string;
-  equipmentName?: string; // For display purposes
   configuration: MeterConfig;
   lastReading?: MeterReading;
   status: 'active' | 'inactive' | 'maintenance';
@@ -394,7 +350,6 @@ export interface MeterCreateRequest {
   slaveId?: number;
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
   locationId?: string;
-  equipmentId?: string;
   configuration: MeterConfig;
   installDate: Date;
   location?: string;
@@ -495,7 +450,6 @@ export interface CompanySettings {
   features: {
     userManagement: boolean;
     locationManagement: boolean;
-    equipmentManagement: boolean;
     meterManagement: boolean;
     contactManagement: boolean;
     emailTemplates: boolean;
@@ -594,13 +548,6 @@ export const EntityStatus = {
 
 export type EntityStatus = typeof EntityStatus[keyof typeof EntityStatus];
 
-export const EquipmentStatus = {
-  OPERATIONAL: 'operational',
-  MAINTENANCE: 'maintenance',
-  OFFLINE: 'offline'
-} as const;
-
-export type EquipmentStatus = typeof EquipmentStatus[keyof typeof EquipmentStatus];
 
 export const MeterType = {
   ELECTRIC: 'electric',

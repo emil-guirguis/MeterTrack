@@ -3,7 +3,6 @@
 // Export all entity stores
 export * from './usersStore';
 export * from './locationStore';
-export * from './equipmentStore';
 export * from './contactsStore';
 export * from './metersStore';
 export * from './templatesStore';
@@ -15,7 +14,6 @@ export * from '../patterns/crudOperations';
 // Create a centralized entity manager
 import { useUsersStore, useUsersEnhanced } from './usersStore';
 import { useLocationsStore, useLocationsEnhanced } from './locationStore';
-import { useEquipmentStore, useEquipmentEnhanced } from './equipmentStore';
 import { useContactsStore, useContactsEnhanced } from './contactsStore';
 import { useMetersStore, useMetersEnhanced } from './metersStore';
 import { useTemplatesStore, useTemplatesEnhanced } from './templatesStore';
@@ -28,7 +26,6 @@ export const entityManager = {
   stores: {
     users: useUsersStore,
     locations: useLocationsStore,
-    equipment: useEquipmentStore,
     contacts: useContactsStore,
     meters: useMetersStore,
     templates: useTemplatesStore,
@@ -39,7 +36,6 @@ export const entityManager = {
   hooks: {
     users: useUsersEnhanced,
     locations: useLocationsEnhanced,
-    equipment: useEquipmentEnhanced,
     contacts: useContactsEnhanced,
     meters: useMetersEnhanced,
     templates: useTemplatesEnhanced,
@@ -54,7 +50,6 @@ export const entityManager = {
   resetAllStores: () => {
     useUsersStore.getState().reset();
     useLocationsStore.getState().reset();
-    useEquipmentStore.getState().reset();
     useContactsStore.getState().reset();
     useMetersStore.getState().reset();
     useTemplatesStore.getState().reset();
@@ -66,7 +61,6 @@ export const entityManager = {
     const promises = [
       useUsersStore.getState().fetchItems(),
       useLocationsStore.getState().fetchItems(),
-      useEquipmentStore.getState().fetchItems(),
       useContactsStore.getState().fetchItems(),
       useMetersStore.getState().fetchItems(),
       useTemplatesStore.getState().fetchItems(),
@@ -85,17 +79,15 @@ export const entityManager = {
   getGlobalLoadingState: () => {
     const usersLoading = useUsersStore.getState().loading || useUsersStore.getState().list.loading;
     const locationsLoading = useLocationsStore.getState().loading || useLocationsStore.getState().list.loading;
-    const equipmentLoading = useEquipmentStore.getState().loading || useEquipmentStore.getState().list.loading;
     const contactsLoading = useContactsStore.getState().loading || useContactsStore.getState().list.loading;
     const metersLoading = useMetersStore.getState().loading || useMetersStore.getState().list.loading;
     const templatesLoading = useTemplatesStore.getState().loading || useTemplatesStore.getState().list.loading;
     const settingsLoading = useSettingsStore.getState().loading;
 
     return {
-      isLoading: usersLoading || locationsLoading || equipmentLoading || contactsLoading || metersLoading || templatesLoading || settingsLoading,
+      isLoading: usersLoading || locationsLoading || contactsLoading || metersLoading || templatesLoading || settingsLoading,
       users: usersLoading,
       locations: locationsLoading,
-      equipment: equipmentLoading,
       contacts: contactsLoading,
       meters: metersLoading,
       templates: templatesLoading,
@@ -107,17 +99,15 @@ export const entityManager = {
   getGlobalErrorState: () => {
     const usersError = useUsersStore.getState().error || useUsersStore.getState().list.error;
     const locationsError = useLocationsStore.getState().error || useLocationsStore.getState().list.error;
-    const equipmentError = useEquipmentStore.getState().error || useEquipmentStore.getState().list.error;
     const contactsError = useContactsStore.getState().error || useContactsStore.getState().list.error;
     const metersError = useMetersStore.getState().error || useMetersStore.getState().list.error;
     const templatesError = useTemplatesStore.getState().error || useTemplatesStore.getState().list.error;
     const settingsError = useSettingsStore.getState().error;
 
     return {
-      hasError: !!(usersError || locationsError || equipmentError || contactsError || metersError || templatesError || settingsError),
+      hasError: !!(usersError || locationsError || contactsError || metersError || templatesError || settingsError),
       users: usersError,
       locations: locationsError,
-      equipment: equipmentError,
       contacts: contactsError,
       meters: metersError,
       templates: templatesError,
@@ -129,7 +119,6 @@ export const entityManager = {
   getGlobalStats: () => {
     const usersState = useUsersStore.getState();
     const locationsState = useLocationsStore.getState();
-    const equipmentState = useEquipmentStore.getState();
     const contactsState = useContactsStore.getState();
     const metersState = useMetersStore.getState();
     const templatesState = useTemplatesStore.getState();
@@ -138,20 +127,17 @@ export const entityManager = {
     return {
       totalUsers: usersState.total,
       totalLocations: locationsState.total,
-      totalEquipment: equipmentState.total,
       totalContacts: contactsState.total,
       totalMeters: metersState.total,
       totalTemplates: templatesState.total,
       activeUsers: usersState.items.filter(u => u.status === 'active').length,
       activeLocations: locationsState.items.filter(b => b.status === 'active').length,
-      operationalEquipment: equipmentState.items.filter(e => e.status === 'operational').length,
       activeContacts: contactsState.items.filter(c => c.status === 'active').length,
       activeMeters: metersState.items.filter(m => m.status === 'active').length,
       activeTemplates: templatesState.items.filter(t => t.status === 'active').length,
       lastUpdated: Math.max(
         usersState.lastFetch || 0,
         locationsState.lastFetch || 0,
-        equipmentState.lastFetch || 0,
         contactsState.lastFetch || 0,
         metersState.lastFetch || 0,
         templatesState.lastFetch || 0,
@@ -165,7 +151,6 @@ export const entityManager = {
 export const useEntityManager = () => {
   const usersState = useUsersStore();
   const locationsState = useLocationsStore();
-  const equipmentState = useEquipmentStore();
   const contactsState = useContactsStore();
   const metersState = useMetersStore();
   const templatesState = useTemplatesStore();
@@ -175,7 +160,6 @@ export const useEntityManager = () => {
     // Individual states
     users: usersState,
     locations: locationsState,
-    equipment: equipmentState,
     contacts: contactsState,
     meters: metersState,
     templates: templatesState,
@@ -204,12 +188,6 @@ export const entityRegistry = {
     hook: useLocationsEnhanced,
     name: 'Location',
     pluralName: 'Locations',
-  },
-  equipment: {
-    store: useEquipmentStore,
-    hook: useEquipmentEnhanced,
-    name: 'Equipment',
-    pluralName: 'Equipment',
   },
   contacts: {
     store: useContactsStore,

@@ -26,7 +26,6 @@ class Location {
         this.squarefootage = locationData.squarefootage;
         this.description = locationData.description;
         this.notes = locationData.notes;
-        this.equipmentcount = locationData.equipmentcount || 0;
         this.metercount = locationData.metercount || 0;
         this.createdat = locationData.createdat;
         this.updatedat = locationData.updatedat;
@@ -200,34 +199,12 @@ class Location {
                 COUNT(CASE WHEN type = 'retail' THEN 1 END) as retail_locations,
                 COUNT(CASE WHEN type = 'residential' THEN 1 END) as residential_locations,
                 COUNT(CASE WHEN type = 'industrial' THEN 1 END) as industrial_locations,
-                SUM(equipmentcount) as total_equipment,
                 SUM(metercount) as total_meters
             FROM location
         `;
 
         const result = await db.query(query);
         return result.rows[0];
-    }
-
-    /**
-     * Update equipment count for a location
-     */
-    async updateEquipmentCount() {
-        const query = `
-            UPDATE location 
-            SET equipmentcount = (
-                SELECT COUNT(*) FROM equipment WHERE locationid = $1
-            ),
-            updatedat = CURRENT_TIMESTAMP
-            WHERE id = $1
-            RETURNING equipmentcount
-        `;
-
-        const result = await db.query(query, [this.id]);
-        if (result.rows.length > 0) {
-            this.equipmentcount = result.rows[0].equipmentcount;
-        }
-        return this;
     }
 
     /**

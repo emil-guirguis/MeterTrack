@@ -215,12 +215,6 @@ export const UserForm: React.FC<UserFormProps> = ({
       Permission.LOCATION_UPDATE,
       Permission.LOCATION_DELETE,
     ],
-    'Equipment Management': [
-      Permission.EQUIPMENT_CREATE,
-      Permission.EQUIPMENT_READ,
-      Permission.EQUIPMENT_UPDATE,
-      Permission.EQUIPMENT_DELETE,
-    ],
     'Contact Management': [
       Permission.CONTACT_CREATE,
       Permission.CONTACT_READ,
@@ -318,7 +312,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               className={`user-form__select ${validationErrors.role ? 'user-form__select--error' : ''}`}
             >
               <option value={UserRole.VIEWER}>Viewer - Read-only access</option>
-              <option value={UserRole.TECHNICIAN}>Technician - Equipment & meter management</option>
+              <option value={UserRole.TECHNICIAN}>Technician - meter management</option>
               <option value={UserRole.MANAGER}>Manager - Full business operations</option>
               {currentUser?.role === UserRole.ADMIN && (
                 <option value={UserRole.ADMIN}>Administrator - Full system access</option>
