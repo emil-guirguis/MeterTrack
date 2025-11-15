@@ -1,0 +1,216 @@
+#!/usr/bin/env node
+
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import { db } from './database/client.js';
+import { logger } from './utils/logger.js';
+import { queryMeters } from './tools/query-meters.js';
+import { queryReadings } from './tools/query-readings.js';
+import { getSiteStatus } from './tools/get-site-status.js';
+import { generateReport } from './tools/generate-report.js';
+
+const server = new Server(
+  {
+    name: 'meteritpro-client-mcp',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
+
+// List available tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: 'query_meters',
+        description: 'Query meter information across all sites. Returns meters with their site information, BACnet configuration, and last reading timestamp.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            site_id: {
+              type: 'number',
+              description: 'Optional: Filter by specific site ID',
+            },
+            external_id: {
+              type: 'string',
+              description: 'Optional: Filter by meter external ID (e.g., meter-001)',
+            },
+            is_active: {
+              type: 'boolean',
+              description: 'Optional: Filter by active status (default: true)',
+            },
+          },
+        },
+      },
+      {
+        name: 'query_readings',
+        description: 'Query meter readings with filters. Returns readings with meter and site information.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            site_id: {
+              type: 'number',
+              description: 'Optional: Filter by site ID',
+            },
+            meter_id: {
+              type: 'number',
+              description: 'Optional: Filter by meter ID',
+            },
+            external_id: {
+              type: 'string',
+              description: 'Optional: Filter by meter external ID',
+            },
+            data_point: {
+              type: 'string',
+              description: 'Optional: Filter by data point type (e.g., total_kwh, current_kw)',
+            },
+            start_date: {
+              type: 'string',
+              description: 'Optional: Start date for readings (ISO 8601 format)',
+            },
+            end_date: {
+              type: 'string',
+              description: 'Optional: End date for readings (ISO 8601 format)',
+            },
+            limit: {
+              type: 'number',
+              description: 'Optional: Maximum number of readings to return (default: 1000)',
+            },
+          },
+        },
+      },
+      {
+        name: 'get_site_status',
+        description: 'Get connectivity status of Sync sites. Returns site information including last heartbeat and active status.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            site_id: {
+              type: 'number',
+              description: 'Optional: Get status for specific site ID',
+            },
+            include_inactive: {
+              type: 'boolean',
+              description: 'Optional: Include inactive sites (default: false)',
+            },
+          },
+        },
+      },
+      {
+        name: 'generate_report',
+        description: 'Generate multi-site reports with aggregated data. Returns summary statistics and detailed readings.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            report_type: {
+              type: 'string',
+              enum: ['summary', 'detailed', 'comparison'],
+              description: 'Type of report to generate',
+            },
+            site_ids: {
+              type: 'array',
+              items: { type: 'number' },
+              description: 'Optional: Array of site IDs to include (default: all sites)',
+            },
+            start_date: {
+              type: 'string',
+              description: 'Start date for report (ISO 8601 format)',
+            },
+            end_date: {
+              type: 'string',
+              description: 'End date for report (ISO 8601 format)',
+            },
+            data_point: {
+              type: 'string',
+              description: 'Optional: Specific data point to report on (e.g., total_kwh)',
+            },
+          },
+          required: ['report_type', 'start_date', 'end_date'],
+        },
+      },
+    ],
+  };
+});
+
+// Handle tool calls
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  try {
+    switch (name) {
+      case 'query_meters':
+        return await queryMeters(args || {});
+      
+      case 'query_readings':
+        return await queryReadings(args || {});
+      
+      case 'get_site_status':
+        return await getSiteStatus(args || {});
+      
+      case 'generate_report':
+        if (!args || !args.report_type || !args.start_date || !args.end_date) {
+          throw new Error('generate_report requires report_type, start_date, and end_date');
+        }
+        return await generateReport(args as any);
+      
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
+  } catch (error) {
+    logger.error('Tool execution error', { 
+      tool: name, 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error executing tool: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+    };
+  }
+});
+
+// Start server
+async function main() {
+  logger.info('Starting Client MCP Server...');
+  
+  // Test database connection
+  const connected = await db.testConnection();
+  if (!connected) {
+    logger.error('Failed to connect to database. Exiting...');
+    process.exit(1);
+  }
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  
+  logger.info('Client MCP Server started successfully');
+}
+
+// Handle shutdown
+process.on('SIGINT', async () => {
+  logger.info('Shutting down Client MCP Server...');
+  await db.close();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  logger.info('Shutting down Client MCP Server...');
+  await db.close();
+  process.exit(0);
+});
+
+main().catch((error) => {
+  logger.error('Fatal error', { error: error instanceof Error ? error.message : String(error) });
+  process.exit(1);
+});

@@ -1,0 +1,2 @@
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-15T00:32:32.365Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-15T00:32:32.368Z"}

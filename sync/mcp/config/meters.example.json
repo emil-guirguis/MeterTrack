@@ -1,0 +1,63 @@
+{
+  "description": "Example BACnet meter configuration",
+  "meters": [
+    {
+      "id": "meter-001",
+      "name": "Building A Main",
+      "bacnet_device_id": 12345,
+      "bacnet_ip": "192.168.1.100",
+      "data_points": [
+        {
+          "object_type": 0,
+          "instance": 0,
+          "property": 85,
+          "name": "total_kwh"
+        },
+        {
+          "object_type": 0,
+          "instance": 1,
+          "property": 85,
+          "name": "current_kw"
+        },
+        {
+          "object_type": 0,
+          "instance": 2,
+          "property": 85,
+          "name": "voltage"
+        },
+        {
+          "object_type": 0,
+          "instance": 3,
+          "property": 85,
+          "name": "current"
+        },
+        {
+          "object_type": 0,
+          "instance": 4,
+          "property": 85,
+          "name": "power_factor"
+        }
+      ]
+    },
+    {
+      "id": "meter-002",
+      "name": "Building B Main",
+      "bacnet_device_id": 12346,
+      "bacnet_ip": "192.168.1.101",
+      "data_points": [
+        {
+          "object_type": 0,
+          "instance": 0,
+          "property": 85,
+          "name": "total_kwh"
+        },
+        {
+          "object_type": 0,
+          "instance": 1,
+          "property": 85,
+          "name": "current_kw"
+        }
+      ]
+    }
+  ]
+}

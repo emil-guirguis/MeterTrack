@@ -1,24 +1,28 @@
 Write-Host "[prepare-dev] Stopping any running dev servers..." -ForegroundColor Cyan
 & powershell -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot\stop-dev.ps1"
 
-# Ensure frontend deps exist so 'vite' is available
-$frontend = Join-Path $PSScriptRoot 'responsive-web-app'
-if (-not (Test-Path (Join-Path $frontend 'node_modules'))) {
-  Write-Host "[prepare-dev] Installing frontend dependencies..." -ForegroundColor Yellow
-  Push-Location $frontend
-  try {
-    npm ci --no-audit --no-fund
-  } finally {
-    Pop-Location
-  }
-} else {
-  # If vite isn't on PATH due to missing local install, run a lightweight check
-  $vitePath = Join-Path $frontend 'node_modules/.bin/vite.cmd'
-  if (-not (Test-Path $vitePath)) {
-    Write-Host "[prepare-dev] 'vite' not found, (re)installing frontend deps..." -ForegroundColor Yellow
-    Push-Location $frontend
+# Ensure Client frontend deps exist
+$clientFrontend = Join-Path $PSScriptRoot 'client\frontend'
+if (Test-Path $clientFrontend) {
+  if (-not (Test-Path (Join-Path $clientFrontend 'node_modules'))) {
+    Write-Host "[prepare-dev] Installing Client frontend dependencies..." -ForegroundColor Yellow
+    Push-Location $clientFrontend
     try {
-      npm ci --no-audit --no-fund
+      npm install --no-audit --no-fund
+    } finally {
+      Pop-Location
+    }
+  }
+}
+
+# Ensure Sync frontend deps exist
+$syncFrontend = Join-Path $PSScriptRoot 'sync\frontend'
+if (Test-Path $syncFrontend) {
+  if (-not (Test-Path (Join-Path $syncFrontend 'node_modules'))) {
+    Write-Host "[prepare-dev] Installing Sync frontend dependencies..." -ForegroundColor Yellow
+    Push-Location $syncFrontend
+    try {
+      npm install --no-audit --no-fund
     } finally {
       Pop-Location
     }

@@ -1,0 +1,57 @@
+import pg from 'pg';
+import { config } from '../config.js';
+import { logger } from '../utils/logger.js';
+
+const { Pool } = pg;
+
+export class DatabaseClient {
+  private pool: pg.Pool;
+
+  constructor() {
+    this.pool = new Pool({
+      host: config.database.host,
+      port: config.database.port,
+      database: config.database.database,
+      user: config.database.user,
+      password: config.database.password,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+
+    this.pool.on('error', (err) => {
+      logger.error('Unexpected database error', { error: err.message });
+    });
+  }
+
+  async query<T extends pg.QueryResultRow = any>(text: string, params?: any[]): Promise<pg.QueryResult<T>> {
+    const start = Date.now();
+    try {
+      const result = await this.pool.query<T>(text, params);
+      const duration = Date.now() - start;
+      logger.debug('Executed query', { text, duration, rows: result.rowCount });
+      return result;
+    } catch (error) {
+      logger.error('Database query error', { text, error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
+    logger.info('Database connection pool closed');
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.query('SELECT 1');
+      logger.info('Database connection test successful');
+      return true;
+    } catch (error) {
+      logger.error('Database connection test failed', { error: error instanceof Error ? error.message : String(error) });
+      return false;
+    }
+  }
+}
+
+export const db = new DatabaseClient();

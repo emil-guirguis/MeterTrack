@@ -1,24 +1,27 @@
 {
   "name": "meterit",
   "version": "1.0.0",
-  "description": "Full-stack facility management application",
+  "description": "Full-stack device tracking application with dual-deployment architecture",
   "scripts": {
     "predev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./prepare-dev.ps1",
-    "dev": "concurrently -k -t -p \"[{name}]\" -n backend,frontend -c \"yellowBright,cyanBright\" \"npm run backend\" \"npm run frontend\"",
-    "dev:no-agent": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:SKIP_MCP_AGENT='1'; npm run dev\"",
-    "backend": "cd backend && npm start",
-    "frontend": "cd responsive-web-app && npm run dev",
-    "install-all": "npm install && cd backend && npm install && cd ../responsive-web-app && npm install",
-    "build": "cd responsive-web-app && npm run build",
-    "start": "concurrently -k -t -p \"[{name}]\" -n backend,mcp-agent -c \"yellowBright,greenBright\" \"cd backend && npm start\" \"cd mcp-modbus-agent && node standalone-collector.mjs\"",
-    "mcp-agent": "cd mcp-modbus-agent && node standalone-collector.mjs",
+    "dev": "concurrently -k -t -p \"[{name}]\" -n client-backend,client-frontend,sync-mcp,sync-frontend -c \"yellowBright,cyanBright,magentaBright,greenBright\" \"npm run client:backend\" \"npm run client:frontend\" \"npm run sync:mcp\" \"npm run sync:frontend\"",
+    "dev:client": "concurrently -k -t -p \"[{name}]\" -n client-backend,client-frontend -c \"yellowBright,cyanBright\" \"npm run client:backend\" \"npm run client:frontend\"",
+    "dev:sync": "concurrently -k -t -p \"[{name}]\" -n sync-mcp,sync-frontend -c \"magentaBright,greenBright\" \"npm run sync:mcp\" \"npm run sync:frontend\"",
+    "client:backend": "cd client/backend && npm start",
+    "client:frontend": "cd client/frontend && npm run dev",
+    "sync:mcp": "cd sync/mcp && npm run dev",
+    "sync:frontend": "cd sync/frontend && npm run dev",
+    "install-all": "npm install && cd client/backend && npm install && cd ../frontend && npm install && cd ../../sync/mcp && npm install && cd ../frontend && npm install",
+    "build:client": "cd client/frontend && npm run build",
+    "build:sync": "cd sync/frontend && npm run build",
+    "build": "npm run build:client && npm run build:sync",
     "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./stop-dev.ps1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "keywords": [
-    "facility-management",
+    "meteritpro",
     "react",
     "nodejs",
     "postgresql",
@@ -27,9 +30,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.13",
-    "@mui/x-data-grid": "^8.14.0",
-    "dotenv": "^17.2.3",
-    "pg": "^8.16.3"
+    "dotenv": "^17.2.3"
   }
 }

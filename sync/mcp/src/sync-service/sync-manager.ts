@@ -1,0 +1,398 @@
+/**
+ * Sync Manager
+ * 
+ * Orchestrates the synchronization of meter readings from Sync Database to Client System.
+ * Handles scheduled sync, batching, retry logic, and cleanup.
+ */
+
+import * as cron from 'node-cron';
+import { SyncDatabase, MeterReading } from '../database/postgres.js';
+import { ClientSystemApiClient } from './api-client.js';
+import { ConnectivityMonitor } from './connectivity-monitor.js';
+
+export interface SyncManagerConfig {
+  database: SyncDatabase;
+  apiClient: ClientSystemApiClient;
+  syncIntervalMinutes?: number;
+  batchSize?: number;
+  maxRetries?: number;
+  enableAutoSync?: boolean;
+  connectivityCheckIntervalMs?: number;
+}
+
+export interface SyncStatus {
+  isRunning: boolean;
+  lastSyncTime?: Date;
+  lastSyncSuccess?: boolean;
+  lastSyncError?: string;
+  queueSize: number;
+  totalSynced: number;
+  totalFailed: number;
+  isClientConnected: boolean;
+}
+
+export class SyncManager {
+  private database: SyncDatabase;
+  private apiClient: ClientSystemApiClient;
+  private connectivityMonitor: ConnectivityMonitor;
+  private syncIntervalMinutes: number;
+  private batchSize: number;
+  private maxRetries: number;
+  private enableAutoSync: boolean;
+
+  private cronJob?: cron.ScheduledTask;
+  private isSyncing: boolean = false;
+  private status: SyncStatus;
+
+  constructor(config: SyncManagerConfig) {
+    this.database = config.database;
+    this.apiClient = config.apiClient;
+    this.syncIntervalMinutes = config.syncIntervalMinutes || 5;
+    this.batchSize = config.batchSize || 1000;
+    this.maxRetries = config.maxRetries || 5;
+    this.enableAutoSync = config.enableAutoSync !== false;
+
+    // Initialize connectivity monitor
+    this.connectivityMonitor = new ConnectivityMonitor(
+      this.apiClient,
+      config.connectivityCheckIntervalMs || 60000
+    );
+
+    // Listen for connectivity restoration
+    this.connectivityMonitor.on('connected', () => {
+      console.log('Connectivity restored - auto-resuming sync');
+      this.performSync();
+    });
+
+    this.connectivityMonitor.on('disconnected', () => {
+      console.log('Connectivity lost - readings will be queued');
+    });
+
+    this.status = {
+      isRunning: false,
+      queueSize: 0,
+      totalSynced: 0,
+      totalFailed: 0,
+      isClientConnected: false,
+    };
+  }
+
+  /**
+   * Start the sync manager with scheduled sync
+   */
+  async start(): Promise<void> {
+    if (this.cronJob) {
+      console.log('Sync manager already running');
+      return;
+    }
+
+    console.log(`Starting sync manager with ${this.syncIntervalMinutes} minute interval`);
+
+    // Start connectivity monitoring
+    this.connectivityMonitor.start();
+
+    // Test initial connectivity
+    await this.checkClientConnectivity();
+
+    if (this.enableAutoSync) {
+      // Schedule sync job
+      const cronExpression = `*/${this.syncIntervalMinutes} * * * *`;
+      this.cronJob = cron.schedule(cronExpression, async () => {
+        await this.performSync();
+      });
+
+      console.log(`Sync scheduled: every ${this.syncIntervalMinutes} minutes`);
+
+      // Perform initial sync
+      await this.performSync();
+    }
+
+    this.status.isRunning = true;
+  }
+
+  /**
+   * Stop the sync manager
+   */
+  async stop(): Promise<void> {
+    if (this.cronJob) {
+      this.cronJob.stop();
+      this.cronJob = undefined;
+      console.log('Sync manager stopped');
+    }
+    
+    // Stop connectivity monitoring
+    this.connectivityMonitor.stop();
+    
+    this.status.isRunning = false;
+  }
+
+  /**
+   * Perform a single sync operation
+   */
+  async performSync(): Promise<void> {
+    if (this.isSyncing) {
+      console.log('Sync already in progress, skipping');
+      return;
+    }
+
+    this.isSyncing = true;
+
+    try {
+      // Check Client System connectivity
+      const isConnected = await this.checkClientConnectivity();
+      
+      if (!isConnected) {
+        console.log('Client System unreachable, queueing readings');
+        await this.updateQueueSize();
+        return;
+      }
+
+      // Get unsynchronized readings
+      const readings = await this.database.getUnsynchronizedReadings(this.batchSize);
+      
+      if (readings.length === 0) {
+        console.log('No readings to sync');
+        return;
+      }
+
+      console.log(`Syncing ${readings.length} readings...`);
+
+      // Upload batch with retry logic
+      const result = await this.uploadBatchWithRetry(readings);
+
+      if (result.success) {
+        // Delete synchronized readings
+        const readingIds = readings.map((r) => r.id);
+        const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
+        
+        console.log(`Successfully synced and deleted ${deletedCount} readings`);
+
+        // Log success
+        await this.database.logSyncOperation(readings.length, true);
+
+        this.status.lastSyncTime = new Date();
+        this.status.lastSyncSuccess = true;
+        this.status.lastSyncError = undefined;
+        this.status.totalSynced += readings.length;
+      } else {
+        // Log failure
+        await this.database.logSyncOperation(
+          readings.length,
+          false,
+          result.error || 'Unknown error'
+        );
+
+        this.status.lastSyncTime = new Date();
+        this.status.lastSyncSuccess = false;
+        this.status.lastSyncError = result.error;
+        this.status.totalFailed += readings.length;
+
+        console.error(`Sync failed: ${result.error}`);
+      }
+
+      // Update queue size
+      await this.updateQueueSize();
+    } catch (error) {
+      console.error('Sync error:', error);
+      
+      this.status.lastSyncTime = new Date();
+      this.status.lastSyncSuccess = false;
+      this.status.lastSyncError = error instanceof Error ? error.message : 'Unknown error';
+
+      // Log error
+      await this.database.logSyncOperation(
+        0,
+        false,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
+   * Upload batch with exponential backoff retry logic
+   */
+  private async uploadBatchWithRetry(
+    readings: MeterReading[],
+    retryCount: number = 0
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await this.apiClient.uploadBatch(readings);
+      
+      if (response.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: response.message };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if Client System is unreachable
+      if (errorMessage.includes('unreachable')) {
+        this.status.isClientConnected = false;
+        return { success: false, error: 'Client System unreachable' };
+      }
+
+      // Retry with exponential backoff
+      if (retryCount < this.maxRetries) {
+        const delay = this.calculateBackoff(retryCount);
+        console.log(`Retry ${retryCount + 1}/${this.maxRetries} in ${delay}ms`);
+        
+        await this.sleep(delay);
+        
+        // Increment retry count in database
+        const readingIds = readings.map((r) => r.id);
+        await this.database.incrementRetryCount(readingIds);
+        
+        return this.uploadBatchWithRetry(readings, retryCount + 1);
+      }
+
+      // Max retries exceeded
+      console.error(`Max retries (${this.maxRetries}) exceeded`);
+      
+      // Increment retry count one final time
+      const readingIds = readings.map((r) => r.id);
+      await this.database.incrementRetryCount(readingIds);
+      
+      return { success: false, error: `Max retries exceeded: ${errorMessage}` };
+    }
+  }
+
+  /**
+   * Check Client System connectivity
+   */
+  private async checkClientConnectivity(): Promise<boolean> {
+    try {
+      const isConnected = await this.apiClient.testConnection();
+      this.status.isClientConnected = isConnected;
+      return isConnected;
+    } catch (error) {
+      this.status.isClientConnected = false;
+      return false;
+    }
+  }
+
+  /**
+   * Update queue size in status
+   */
+  private async updateQueueSize(): Promise<void> {
+    try {
+      const count = await this.database.getUnsynchronizedCount();
+      this.status.queueSize = count;
+    } catch (error) {
+      console.error('Failed to update queue size:', error);
+    }
+  }
+
+  /**
+   * Get current sync status
+   */
+  getStatus(): SyncStatus {
+    return { ...this.status };
+  }
+
+  /**
+   * Get connectivity status
+   */
+  getConnectivityStatus() {
+    return this.connectivityMonitor.getStatus();
+  }
+
+  /**
+   * Manually trigger a sync operation
+   */
+  async triggerSync(): Promise<void> {
+    console.log('Manual sync triggered');
+    await this.performSync();
+  }
+
+  /**
+   * Manually trigger a sync operation (alias for API compatibility)
+   */
+  async triggerManualSync(): Promise<void> {
+    return this.triggerSync();
+  }
+
+  /**
+   * Download and update configuration from Client System
+   */
+  async downloadConfiguration(): Promise<void> {
+    try {
+      console.log('Downloading configuration from Client System...');
+      
+      const config = await this.apiClient.downloadConfig();
+      
+      // Update meters in database
+      for (const meter of config.meters) {
+        await this.database.upsertMeter({
+          external_id: meter.external_id,
+          name: meter.name,
+          bacnet_device_id: meter.bacnet_device_id,
+          bacnet_ip: meter.bacnet_ip,
+          config: meter.config,
+          is_active: true,
+        });
+      }
+
+      console.log(`Updated ${config.meters.length} meters from configuration`);
+    } catch (error) {
+      console.error('Failed to download configuration:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send heartbeat to Client System
+   */
+  async sendHeartbeat(): Promise<void> {
+    try {
+      await this.apiClient.sendHeartbeat();
+      this.status.isClientConnected = true;
+    } catch (error) {
+      console.error('Failed to send heartbeat:', error);
+      this.status.isClientConnected = false;
+    }
+  }
+
+  /**
+   * Get sync statistics
+   */
+  async getSyncStats(hours: number = 24): Promise<any> {
+    return this.database.getSyncStats(hours);
+  }
+
+  /**
+   * Calculate exponential backoff delay
+   */
+  private calculateBackoff(retryCount: number): number {
+    const baseDelay = 2000; // 2 seconds
+    return Math.min(baseDelay * Math.pow(2, retryCount), 60000); // Max 60 seconds
+  }
+
+  /**
+   * Sleep utility
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
+
+/**
+ * Create sync manager from environment variables
+ */
+export function createSyncManagerFromEnv(
+  database: SyncDatabase,
+  apiClient: ClientSystemApiClient
+): SyncManager {
+  const config: SyncManagerConfig = {
+    database,
+    apiClient,
+    syncIntervalMinutes: parseInt(process.env.SYNC_INTERVAL_MINUTES || '5', 10),
+    batchSize: parseInt(process.env.BATCH_SIZE || '1000', 10),
+    maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
+    enableAutoSync: process.env.ENABLE_AUTO_SYNC !== 'false',
+  };
+
+  return new SyncManager(config);
+}
