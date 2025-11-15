@@ -304,11 +304,11 @@ export class SyncDatabase {
  */
 export function createDatabaseFromEnv() {
     const config = {
-        host: process.env.LOCAL_POSTGRES_HOST || 'localhost',
-        port: parseInt(process.env.LOCAL_POSTGRES_PORT || '5432', 10),
-        database: process.env.LOCAL_POSTGRES_DB || 'meterit_sync',
-        user: process.env.LOCAL_POSTGRES_USER || 'postgres',
-        password: process.env.LOCAL_POSTGRES_PASSWORD || '',
+        host: process.env.POSTGRES_SYNC_HOST || 'localhost',
+        port: parseInt(process.env.POSTGRES_SYNC_PORT || '5432', 10),
+        database: process.env.POSTGRES_SYNC_DB || 'postgres',
+        user: process.env.POSTGRES_SYNC_USER || 'postgres',
+        password: process.env.POSTGRES_SYNC_PASSWORD || '',
     };
     return new SyncDatabase(config);
 }

@@ -391,7 +391,7 @@ class MeterMonitoringService {
     async getAllMeters() {
         const query = `
             SELECT *, l.location as location
-            FROM meters m 
+            FROM meter m 
                    join location l on (l.id = m.location_id)
             ORDER BY location 
         `;

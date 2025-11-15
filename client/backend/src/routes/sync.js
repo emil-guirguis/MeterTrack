@@ -90,7 +90,7 @@ router.post(
           try {
             // Find or create meter
             let meterResult = await client.query(
-              'SELECT id FROM meters WHERE site_id = $1 AND external_id = $2',
+              'SELECT id FROM meter WHERE site_id = $1 AND external_id = $2',
               [siteId, reading.meter_external_id]
             );
 
@@ -98,7 +98,7 @@ router.post(
             if (meterResult.rows.length === 0) {
               // Create meter if it doesn't exist
               const insertMeterResult = await client.query(
-                `INSERT INTO meters (site_id, external_id, name, created_at) 
+                `INSERT INTO meter (site_id, external_id, name, created_at) 
                  VALUES ($1, $2, $3, NOW()) 
                  RETURNING id`,
                 [siteId, reading.meter_external_id, reading.meter_external_id]
@@ -177,7 +177,7 @@ router.get('/config', authenticateSyncServer, async (req, res) => {
     // Get meters for this site
     const metersResult = await db.query(
       `SELECT id, external_id, name, bacnet_device_id, bacnet_ip 
-       FROM meters 
+       FROM meter 
        WHERE site_id = $1`,
       [siteId]
     );

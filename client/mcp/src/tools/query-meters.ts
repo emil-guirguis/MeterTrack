@@ -66,7 +66,7 @@ export async function queryMeters(args: QueryMetersArgs) {
           FROM meter_readings mr 
           WHERE mr.meter_id = m.id
         ) as last_reading_timestamp
-      FROM meters m
+      FROM meter m
       INNER JOIN sites s ON m.site_id = s.id
       ${whereClause}
       ORDER BY s.name, m.name

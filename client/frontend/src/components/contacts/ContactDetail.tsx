@@ -152,9 +152,10 @@ export const ContactDetail: React.FC<ContactDetailProps> = ({
               <h3 className="contact-detail__section-title">📍 Address</h3>
               <div className="contact-detail__section-content">
                 <div className="contact-detail__address">
-                  <div>{contact.address.street}</div>
-                  <div>{contact.address.city}, {contact.address.state} {contact.address.zipCode}</div>
-                  <div>{contact.address.country}</div>
+                  <div>{contact.address}</div>
+                  <div>{contact.address2}</div>
+                  <div>{contact.city}, {contact.state} {contact.zip}</div>
+                  <div>{contact.country}</div>
                 </div>
               </div>
             </div>

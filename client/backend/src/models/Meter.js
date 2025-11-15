@@ -83,8 +83,8 @@ class Meter {
     static async findById(id) {
         const query = `
             SELECT m.*, d.manufacturer as device_name, d.description as device_description
-            FROM meters m
-            LEFT JOIN device d ON m.device_id = d.id
+            FROM meter m
+               LEFT JOIN device d ON m.device_id = d.id
             WHERE m.id = $1
         `;
         const result = await db.query(query, [id]);
@@ -114,7 +114,7 @@ class Meter {
     static async findAll(filters = {}) {
         let query = `SELECT m.*, d.manufacturer as device_name, d.description as device_description,
                             l.name as location 
-                      FROM meters m
+                      FROM meter m
                          LEFT JOIN device d ON m.device_id = d.id
                          LEFT JOIN location l ON m.location_id = l.id
                       WHERE 1=1`;
@@ -286,7 +286,7 @@ class Meter {
      */
     static async findByLocation(location) {
         const query = `SELECT m.*, l.name as location_name 
-                       FROM meters m 
+                       FROM meter m 
                           join location l on m.location_id = l.id
                        WHERE l.name like  $1 
                        ORDER BY l.name ASC`;

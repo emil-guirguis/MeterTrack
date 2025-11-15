@@ -200,7 +200,6 @@ export const MeterList: React.FC<MeterListProps> = ({
         loading={meters.loading}
         error={meters.error || undefined}
         onEdit={onMeterEdit}
-        onView={onMeterSelect}
         bulkActions={bulkActions}
       />
     </div>

@@ -1,0 +1,14 @@
+VS code
+delete line Ctrl + Shift + K
+find file  Ctrl + P
+format code Shift + Alt + F
+select column Shift + Alt + Ctrl + arrow 
+search in files Ctrl + Shift + F
+save all files Ctrl + K S
+
+
+chrome 
+hard reset Ctrl + F5 
+hard reset mouse Ctrl and click the Reload button
+switch tab  Ctrl + Tab
+close tab Ctrl + W

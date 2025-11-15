@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { ContactList } from '../../components/contacts/ContactList';
 import { ContactForm } from '../../components/contacts/ContactForm';
-import { ContactDetail } from '../../components/contacts/ContactDetail';
+import { FormModal } from '../../components/common/FormModal';
 import type { Contact } from '../../types/entities';
 import AppLayout from '../../components/layout/AppLayout';
 import './ContactManagementPage.css';
+import { ContactDetail } from '../../components/contacts';
 
 export const ContactManagementPage: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -20,6 +21,7 @@ export const ContactManagementPage: React.FC = () => {
   const handleEdit = (contact: Contact) => {
     setEditingContact(contact);
     setShowForm(true);
+    setSelectedContact(null); // Clear selected contact when editing
   };
 
   const handleCreate = () => {
@@ -41,13 +43,22 @@ export const ContactManagementPage: React.FC = () => {
           onContactEdit={handleEdit}
           onContactCreate={handleCreate}
         />
-        {showForm && (
+        
+        {/* Form Modal */}
+        <FormModal
+          isOpen={showForm}
+          title={editingContact ? 'Edit Contact' : 'Create New Contact'}
+          onClose={handleFormClose}
+          onSubmit={() => {}} // ContactForm handles its own submission
+          size="lg"
+        >
           <ContactForm
             contact={editingContact || undefined}
             onCancel={handleFormClose}
             onSubmit={async () => {}}
           />
-        )}
+        </FormModal>
+
         {selectedContact && !showForm && (
           <ContactDetail contact={selectedContact} onClose={() => setSelectedContact(null)} />
         )}

@@ -445,7 +445,7 @@ class MeterDataAnalyzer {
                 m.next_maintenance,
                 m.maintenance_interval,
                 m.last_maintenance
-            FROM meters m
+            FROM meter m
             LEFT JOIN locations b ON m.location_id = b.id
             WHERE m.is_active = true
             ORDER BY m.id

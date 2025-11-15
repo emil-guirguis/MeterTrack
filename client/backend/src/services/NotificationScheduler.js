@@ -516,7 +516,7 @@ class NotificationScheduler {
                 COALESCE(SUM(mr.reading_value), 0) as total_consumption,
                 COUNT(mr.id) as reading_count,
                 MAX(mr.reading_date) as last_reading
-            FROM meters m
+            FROM meter m
             LEFT JOIN locations b ON m.location_id = b.id
             LEFT JOIN meterreadings mr ON m.id = mr.meterid 
                 AND mr.reading_date >= CURRENT_DATE - INTERVAL '${days} days'
@@ -574,7 +574,7 @@ class NotificationScheduler {
     async getLocationContacts(locationId) {
         const query = `
             SELECT name, email, phone, role
-            FROM contacts 
+            FROM contact 
             WHERE location_id = $1 AND is_active = true
             ORDER BY role, name
         `;
@@ -605,8 +605,8 @@ class NotificationScheduler {
                 m.maintenance_interval,
                 m.next_maintenance as due_date,
                 m.maintenance_notes as notes
-            FROM meters m
-            LEFT JOIN locations b ON m.location_id = b.id
+            FROM meter m
+              LEFT JOIN locations b ON m.location_id = b.id
             WHERE m.is_active = true 
                 AND m.next_maintenance IS NOT NULL
                 AND m.next_maintenance <= CURRENT_DATE + INTERVAL '${daysAhead} days'

@@ -62,21 +62,18 @@ export interface Contact {
   role?: string;
   email: string;
   phone: string;
-  address_street?: string;
-  address_city?: string;
-  address_state?: string;
-  address_zip_code?: string;
-  address_country?: string;
+  address?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
   status: 'active' | 'inactive';
   notes?: string;
   createdat: Date;
   updatedat: Date;
   // Legacy fields for backward compatibility
   contactPerson?: string;
-  address?: Address;
-  businessType?: string;
-  industry?: string;
-  website?: string;
   tags?: string[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -97,11 +94,11 @@ export interface ContactCreateRequest {
   role?: string;
   email: string;
   phone: string;
-  address_street?: string;
-  address_city?: string;
-  address_state?: string;
-  address_zip_code?: string;
-  address_country?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   notes?: string;
   // Legacy fields for backward compatibility
   type?: 'customer' | 'vendor';
@@ -399,15 +396,6 @@ export interface EmailTemplateUpdateRequest extends Partial<EmailTemplateCreateR
 }
 
 // Company Settings
-export interface BrandingConfig {
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
-  logoUrl: string;
-  faviconUrl: string;
-  customCSS: string;
-  emailSignature: string;
-}
 
 export interface SystemConfig {
   timezone: string;
@@ -445,7 +433,6 @@ export interface CompanySettings {
   logo?: string;
   address: Address;
   contactInfo: ContactInfo;
-  branding: BrandingConfig;
   systemConfig: SystemConfig;
   features: {
     userManagement: boolean;
@@ -474,7 +461,6 @@ export interface CompanySettingsUpdateRequest {
   logo?: string;
   address?: Address;
   contactInfo?: ContactInfo;
-  branding?: Partial<BrandingConfig>;
   systemConfig?: Partial<SystemConfig>;
 }
 

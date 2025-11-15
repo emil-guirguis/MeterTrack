@@ -21,5 +21,5 @@ export { SearchFilter } from './common/SearchFilter';
 export { LocationList, LocationForm } from './location';
 export { MeterList, MeterForm } from './meters';
 export { TemplateList, TemplateForm, TemplatePreview, TemplateEditor, RichTextEditor, TemplateAnalytics, TemplateManagement } from './templates';
-export { BrandingForm, CompanyInfoForm, SystemConfigForm, EmailConfigForm } from './settings';
+export { CompanyInfoForm, SystemConfigForm, EmailConfigForm } from './settings';
 export { SystemHealth } from './system';

@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, Tab } from '@mui/material';
 import CompanyInfoForm from '../components/settings/CompanyInfoForm';
-import BrandingForm from '../components/settings/BrandingForm';
 import SystemConfigForm from '../components/settings/SystemConfigForm';
 import './SettingsPage.css';
 import { useSettings } from '../store/entities/settingsStore';
@@ -15,7 +14,6 @@ const SettingsPage: React.FC = () => {
     error,
     fetchSettings,
     updateSettings,
-    updateBranding,
     updateSystemConfig,
   } = useSettings();
 
@@ -24,18 +22,68 @@ const SettingsPage: React.FC = () => {
     // eslint-disable-next-line
   }, []);
 
-  // Handlers for updating settings
+  // Local state for form changes
+  const [localSettings, setLocalSettings] = useState(settings);
+
+  // Update local state when settings are fetched
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
+
+  // Handlers for updating local form state
   const handleCompanyInfoChange = (field: string, value: any) => {
-    if (!settings) return;
-    updateSettings({ ...settings, [field]: value });
+    if (!localSettings) return;
+    
+    // Handle nested field updates (e.g., 'address.street')
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setLocalSettings({
+        ...localSettings,
+        [parent]: {
+          ...(localSettings[parent as keyof typeof localSettings] as any),
+          [child]: value
+        }
+      });
+    } else {
+      setLocalSettings({ ...localSettings, [field]: value });
+    }
   };
-  const handleBrandingChange = (field: string, value: any) => {
-    if (!settings) return;
-    updateBranding({ ...settings.branding, [field]: value });
-  };
+
+
   const handleSystemConfigChange = (field: string, value: any) => {
-    if (!settings) return;
-    updateSystemConfig({ ...settings.systemConfig, [field]: value });
+    if (!localSettings) return;
+    setLocalSettings({
+      ...localSettings,
+      systemConfig: { ...localSettings.systemConfig, [field]: value }
+    });
+  };
+
+  // Save handlers
+  const handleCompanyInfoSubmit = async () => {
+    if (!localSettings) return;
+    try {
+      await updateSettings(localSettings);
+      alert('Company information saved successfully!');
+    } catch (err) {
+      console.error('Failed to save company info:', err);
+    }
+  };
+
+  const handleSystemConfigSubmit = async () => {
+    if (!localSettings) return;
+    try {
+      await updateSystemConfig(localSettings.systemConfig);
+      alert('System configuration saved successfully!');
+    } catch (err) {
+      console.error('Failed to save system config:', err);
+    }
+  };
+
+  // Cancel handlers
+  const handleCancel = () => {
+    setLocalSettings(settings);
   };
 
   return (
@@ -43,36 +91,25 @@ const SettingsPage: React.FC = () => {
       <h2>Settings</h2>
       <Tabs value={tab} onChange={(_event, newValue) => setTab(newValue)} aria-label="Settings Tabs" className="settings-tabs">
         <Tab label="Company Info" />
-        <Tab label="Branding" />
         <Tab label="System Config" />
       </Tabs>
       <div className="settings-content">
-        {tab === 0 && settings && (
+        {tab === 0 && localSettings && (
           <CompanyInfoForm
-            values={settings}
+            values={localSettings}
             onChange={handleCompanyInfoChange}
-            onSubmit={() => {}}
-            onCancel={() => {}}
+            onSubmit={handleCompanyInfoSubmit}
+            onCancel={handleCancel}
             loading={loading}
             error={error}
           />
         )}
-        {tab === 1 && settings && (
-          <BrandingForm
-            values={settings.branding}
-            onChange={handleBrandingChange}
-            onSubmit={() => {}}
-            onCancel={() => {}}
-            loading={loading}
-            error={error}
-          />
-        )}
-        {tab === 2 && settings && (
+        {tab === 1 && localSettings && (
           <SystemConfigForm
-            values={settings.systemConfig}
+            values={localSettings.systemConfig}
             onChange={handleSystemConfigChange}
-            onSubmit={() => {}}
-            onCancel={() => {}}
+            onSubmit={handleSystemConfigSubmit}
+            onCancel={handleCancel}
             loading={loading}
             error={error}
           />

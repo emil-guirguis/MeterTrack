@@ -34,21 +34,21 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
             />
           </div>
           <div className="settings-form__field">
-            <label className="settings-form__label">Logo URL</label>
+            <label className="settings-form__label">Website URL</label>
             <input
               type="text"
-              value={values.logo || ''}
-              onChange={e => onChange('logo', e.target.value)}
+              value={values.url || ''}
+              onChange={e => onChange('url', e.target.value)}
               className="settings-form__input"
               disabled={loading}
-              placeholder="Enter logo URL"
-              title="Logo URL"
+              placeholder="Enter website URL"
+              title="Website URL"
             />
           </div>
         </div>
         <div className="settings-form__row">
           <div className="settings-form__field">
-            <label className="settings-form__label">Street</label>
+            <label className="settings-form__label">Address Line 1</label>
             <input
               type="text"
               value={values.address?.street || ''}
@@ -56,9 +56,23 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               className="settings-form__input"
               disabled={loading}
               placeholder="Enter street address"
-              title="Street Address"
+              title="Address Line 1"
             />
           </div>
+          <div className="settings-form__field">
+            <label className="settings-form__label">Address Line 2</label>
+            <input
+              type="text"
+              value={values.address?.street2 || ''}
+              onChange={e => onChange('address.street2', e.target.value)}
+              className="settings-form__input"
+              disabled={loading}
+              placeholder="Enter address line 2"
+              title="Address Line 2"
+            />
+          </div>
+        </div>
+        <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">City</label>
             <input
@@ -71,8 +85,6 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               title="City"
             />
           </div>
-        </div>
-        <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">State</label>
             <input
@@ -85,6 +97,8 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               title="State"
             />
           </div>
+        </div>
+        <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">Zip Code</label>
             <input
@@ -97,8 +111,6 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
               title="Zip Code"
             />
           </div>
-        </div>
-        <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">Country</label>
             <CountrySelect

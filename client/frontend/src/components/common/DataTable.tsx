@@ -123,18 +123,6 @@ export function DataTable<T extends Record<string, any>>({
 
     return (
       <div className="data-table__actions">
-        {onView && (
-          <button
-            className="data-table__action-btn data-table__action-btn--view"
-            onClick={(e) => {
-              e.stopPropagation();
-              onView(item);
-            }}
-            title="View"
-          >
-            👁️
-          </button>
-        )}
         {onEdit && (
           <button
             className="data-table__action-btn data-table__action-btn--edit"

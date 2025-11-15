@@ -63,12 +63,18 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   useEffect(() => {
     if (contact) {
       setFormData({
-        type: contact.type,
+        type: (contact.category as 'customer' | 'vendor') || 'customer',
         name: contact.name,
-        contactPerson: contact.contactPerson,
+        contactPerson: contact.company || contact.role || '',
         email: contact.email,
         phone: contact.phone,
-        address: { ...contact.address },
+        address: {
+          street: contact.street || contact.address?.street || '',
+          city: contact.city || contact.address?.city || '',
+          state: contact.state || contact.address?.state || '',
+          zipCode: contact.zip_code || contact.address?.zipCode || '',
+          country: contact.country || contact.address?.country || 'US',
+        },
         status: contact.status,
         businessType: contact.businessType || '',
         industry: contact.industry || '',

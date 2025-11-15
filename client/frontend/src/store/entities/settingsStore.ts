@@ -18,7 +18,6 @@ interface SettingsStoreState {
 interface SettingsStoreActions {
   fetchSettings: () => Promise<void>;
   updateSettings: (updates: Partial<CompanySettings>) => Promise<void>;
-  updateBranding: (branding: Partial<CompanySettings['branding']>) => Promise<void>;
   updateSystemConfig: (config: Partial<CompanySettings['systemConfig']>) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -184,19 +183,6 @@ export const useSettingsStore = create<SettingsStore>()(
         }
       },
 
-      updateBranding: async (branding) => {
-        const state = get();
-        if (!state.settings) {
-          throw new Error('Settings not loaded');
-        }
-
-        const updates = {
-          branding: { ...state.settings.branding, ...branding },
-        };
-
-        return get().updateSettings(updates);
-      },
-
       updateSystemConfig: async (config) => {
         const state = get();
         if (!state.settings) {
@@ -253,14 +239,12 @@ export const useSettings = () => {
     // Actions
     fetchSettings: store.fetchSettings,
     updateSettings: store.updateSettings,
-    updateBranding: store.updateBranding,
     updateSystemConfig: store.updateSystemConfig,
     reset: store.reset,
     
     // Computed values
     isLoaded: !!store.settings,
     companyName: store.settings?.name || 'Company',
-    primaryColor: store.settings?.branding?.primaryColor || '#2563eb',
     timezone: store.settings?.systemConfig?.timezone || 'America/New_York',
     dateFormat: store.settings?.systemConfig?.dateFormat || 'MM/DD/YYYY',
     currency: store.settings?.systemConfig?.currency || 'USD',
@@ -286,16 +270,6 @@ export const useSettingsEnhanced = () => {
       );
     },
     
-    updateBrandingWithNotification: async (branding: Partial<CompanySettings['branding']>) => {
-      return withApiCall(
-        () => settings.updateBranding(branding),
-        {
-          loadingKey: 'updateBranding',
-          showSuccessNotification: true,
-          successMessage: 'Branding updated successfully',
-        }
-      );
-    },
     
     updateSystemConfigWithNotification: async (config: Partial<CompanySettings['systemConfig']>) => {
       return withApiCall(
@@ -393,26 +367,6 @@ export const useSettingsEnhanced = () => {
       };
     },
     
-    // Branding helpers
-    applyBranding: () => {
-      if (!settings.settings?.branding) return;
-      
-      const root = document.documentElement;
-      root.style.setProperty('--primary-color', settings.settings.branding.primaryColor);
-      root.style.setProperty('--secondary-color', settings.settings.branding.secondaryColor);
-      root.style.setProperty('--accent-color', settings.settings.branding.accentColor);
-      
-      // Apply custom CSS if provided
-      if (settings.settings.branding.customCSS) {
-        let styleElement = document.getElementById('custom-styles');
-        if (!styleElement) {
-          styleElement = document.createElement('style');
-          styleElement.id = 'custom-styles';
-          document.head.appendChild(styleElement);
-        }
-        styleElement.textContent = settings.settings.branding.customCSS;
-      }
-    },
     
     // Export/Import settings
     exportSettings: () => {

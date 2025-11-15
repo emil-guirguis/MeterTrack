@@ -129,7 +129,7 @@ const AppLayout: React.FC<LayoutProps> = ({
   // Sidebar brand configuration
   const sidebarBrand = {
     icon: '🏢',
-    text: 'MeterIt'
+    text: 'MeterIt Pro'
   };
 
   const handleToggleSidebar = () => {

@@ -323,7 +323,6 @@ export const UserList: React.FC<UserListProps> = ({
         loading={users.list.loading}
         error={users.list.error || undefined}
         emptyMessage="No users found. Create your first user to get started."
-        onView={handleUserView}
         onEdit={canUpdate ? handleUserEdit : undefined}
         onDelete={canDelete ? handleUserDelete : undefined}
         onSelect={bulkActions.length > 0 ? () => {} : undefined}

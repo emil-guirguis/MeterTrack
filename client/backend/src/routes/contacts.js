@@ -12,15 +12,15 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
       page = 1,
       limit = 25,
       search,
-      status,
-      category
+      active,
+      role
     } = req.query;
 
     // Build filters for Contact
     const filters = {};
     if (search) filters.search = search;
-    if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (active) filters.active = active;
+    if (role) filters.role = role;
     filters.limit = parseInt(limit);
     filters.offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -118,34 +118,6 @@ router.delete('/:id', requirePermission('contact:delete'), async (req, res) => {
   }
 });
 
-// Bulk update contact status
-router.patch('/bulk/status', requirePermission('contact:update'), async (req, res) => {
-  try {
-    const { contactIds, status } = req.body;
-    
-    if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
-      return res.status(400).json({ success: false, message: 'Contact IDs are required' });
-    }
-    
-    if (!['active', 'inactive'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status value' });
-    }
-
-    const result = await Contact.updateMany(
-      { _id: { $in: contactIds } },
-      { status, updatedAt: new Date() }
-    );
-
-    res.json({
-      success: true,
-      message: `Updated ${result.modifiedCount} contacts`,
-      data: { modifiedCount: result.modifiedCount }
-    });
-  } catch (error) {
-    console.error('Error bulk updating contacts:', error);
-    res.status(500).json({ success: false, message: 'Failed to update contacts' });
-  }
-});
 
 // Get contact statistics
 router.get('/stats/overview', requirePermission('contact:read'), async (req, res) => {
@@ -157,8 +129,8 @@ router.get('/stats/overview', requirePermission('contact:read'), async (req, res
           totalContacts: { $sum: 1 },
           customers: { $sum: { $cond: [{ $eq: ['$type', 'customer'] }, 1, 0] } },
           vendors: { $sum: { $cond: [{ $eq: ['$type', 'vendor'] }, 1, 0] } },
-          activeContacts: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
-          inactiveContacts: { $sum: { $cond: [{ $eq: ['$status', 'inactive'] }, 1, 0] } }
+          activeContacts: { $sum: { $cond: [{ $eq: ['$active', 'true'] }, 1, 0] } },
+          inactiveContacts: { $sum: { $cond: [{ $eq: ['$active', 'false'] }, 1, 0] } }
         }
       }
     ]);

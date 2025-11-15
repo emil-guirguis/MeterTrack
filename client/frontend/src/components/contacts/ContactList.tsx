@@ -25,7 +25,7 @@ export const ContactList: React.FC<ContactListProps> = ({
   const contacts = useContactsEnhanced();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [industryFilter, setIndustryFilter] = useState<string>('');
   const [businessTypeFilter, setBusinessTypeFilter] = useState<string>('');
@@ -45,7 +45,7 @@ export const ContactList: React.FC<ContactListProps> = ({
   useEffect(() => {
     const filters: Record<string, any> = {};
     
-    if (categoryFilter) filters.category = categoryFilter;
+    if (roleFilter) filters.category = roleFilter;
     if (statusFilter) filters.status = statusFilter;
     if (industryFilter) filters.industry = industryFilter;
     if (businessTypeFilter) filters.businessType = businessTypeFilter;
@@ -53,7 +53,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     contacts.setFilters(filters);
     contacts.setSearch(searchQuery);
     contacts.fetchItems();
-  }, [searchQuery, categoryFilter, statusFilter, industryFilter, businessTypeFilter]);
+  }, [searchQuery, roleFilter, statusFilter, industryFilter, businessTypeFilter]);
 
   // Define table columns
   const columns: ColumnDefinition<Contact>[] = useMemo(() => [
@@ -106,13 +106,13 @@ export const ContactList: React.FC<ContactListProps> = ({
       ),
     },
     {
-      key: 'address.city',
+      key: 'city',
       label: 'Location',
       sortable: true,
       render: (_, contact) => (
         <div className="contact-list__location">
-          <div>{contact.address_city}, {contact.address_state}</div>
-          <div className="contact-list__zip">{contact.address_zip_code}</div>
+          <div>{contact.city}, {contact.state}</div>
+          <div className="contact-list__zip">{contact.zip_code}</div>
         </div>
       ),
       responsive: 'hide-mobile',
@@ -162,7 +162,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     if (canUpdate) {
       actions.push(
         {
-          key: 'activate',
+          id: 'activate',
           label: 'Activate',
           icon: '✅',
           color: 'success',
@@ -174,7 +174,7 @@ export const ContactList: React.FC<ContactListProps> = ({
           confirmMessage: 'Are you sure you want to activate the selected contacts?',
         },
         {
-          key: 'deactivate',
+          id: 'deactivate',
           label: 'Deactivate',
           icon: '❌',
           color: 'warning',
@@ -189,7 +189,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     }
 
     actions.push({
-      key: 'export',
+      id: 'export',
       label: 'Export CSV',
       icon: '📄',
       color: 'primary',
@@ -239,11 +239,11 @@ export const ContactList: React.FC<ContactListProps> = ({
         contact.email,
         contact.phone,
         contact.status,
-        `"${contact.address_street || ''}"`,
-        `"${contact.address_city || ''}"`,
-        contact.address_state || '',
-        contact.address_zip_code || '',
-        contact.address_country || '',
+        `"${contact.street || ''}"`,
+        `"${contact.city || ''}"`,
+        contact.state || '',
+        contact.zip_code || '',
+        contact.country || '',
         contact.businessType || '',
         contact.industry || '',
         contact.website || '',
@@ -302,12 +302,12 @@ export const ContactList: React.FC<ContactListProps> = ({
 
       <div className="contact-list__filter-group">
         <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
           className="contact-list__filter-select"
-          aria-label="Filter by category"
+          aria-label="Filter by role"
         >
-          <option value="">All Types</option>
+          <option value="">All Roles</option>
           <option value="customer">Customer</option>
           <option value="vendor">Vendor</option>
         </select>
@@ -347,12 +347,12 @@ export const ContactList: React.FC<ContactListProps> = ({
           ))}
         </select>
 
-        {(categoryFilter || statusFilter || industryFilter || businessTypeFilter || searchQuery) && (
+        {(roleFilter || statusFilter || industryFilter || businessTypeFilter || searchQuery) && (
           <button
             type="button"
             className="contact-list__clear-filters"
             onClick={() => {
-              setCategoryFilter('');
+              setRoleFilter('');
               setStatusFilter('');
               setIndustryFilter('');
               setBusinessTypeFilter('');
@@ -423,7 +423,6 @@ export const ContactList: React.FC<ContactListProps> = ({
         loading={contacts.list.loading}
         error={contacts.list.error || undefined}
         emptyMessage="No contacts found. Create your first contact to get started."
-        onView={handleContactView}
         onEdit={canUpdate ? handleContactEdit : undefined}
         onDelete={canDelete ? handleContactDelete : undefined}
         onSelect={bulkActions.length > 0 ? () => {} : undefined}

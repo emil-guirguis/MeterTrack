@@ -335,7 +335,6 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
                 loading={templates.list.loading}
                 error={templates.list.error || undefined}
                 emptyMessage="No templates found. Create your first template to get started."
-                onView={handleTemplateView}
                 onEdit={canUpdate ? handleTemplateEdit : undefined}
                 onDelete={canDelete ? handleTemplateDelete : undefined}
                 onSelect={bulkActions.length > 0 ? () => {} : undefined}

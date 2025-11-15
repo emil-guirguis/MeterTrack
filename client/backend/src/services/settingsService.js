@@ -47,34 +47,15 @@ class SettingsService {
    */
   static async createDefaultSettings() {
     const defaultSettings = {
-      company_name: 'Your Company Name',
-      company_address_street: '123 Main Street',
-      company_address_city: 'Your City',
-      company_address_state: 'Your State',
-      company_address_zip_code: '12345',
-      company_address_country: 'USA',
-      company_phone: '(555) 123-4567',
-      company_email: 'info@yourcompany.com',
-      company_website: 'https://yourcompany.com',
-      default_currency: 'USD',
-      default_timezone: 'America/New_York',
-      business_hours: JSON.stringify({
-        monday: { open: '09:00', close: '17:00' },
-        tuesday: { open: '09:00', close: '17:00' },
-        wednesday: { open: '09:00', close: '17:00' },
-        thursday: { open: '09:00', close: '17:00' },
-        friday: { open: '09:00', close: '17:00' },
-        saturday: { open: '10:00', close: '14:00' },
-        sunday: { closed: true }
-      }),
-      notification_settings: JSON.stringify({
-        email_enabled: true,
-        sms_enabled: false,
-        push_enabled: true,
-        daily_reports: true,
-        weekly_reports: true,
-        monthly_reports: true
-      })
+      name: 'Your Company Name',
+      url: 'https://yourcompany.com',
+      address: '123 Main Street',
+      address2: '',
+      city: 'Your City',
+      state: 'Your State',
+      zip: '12345',
+      country: 'USA',
+      active: true
     };
 
     return await this.createSettings(defaultSettings);
@@ -136,44 +117,24 @@ class SettingsService {
     return {
       id: dbRow.id,
       // Company info
-      name: dbRow.company_name,
-      logo: null, // Not yet implemented in DB schema
+      name: dbRow.name,
+      url: dbRow.url,
       address: {
-        street: dbRow.company_address_street,
-        city: dbRow.company_address_city,
-        state: dbRow.company_address_state,
-        zipCode: dbRow.company_address_zip_code,
-        country: dbRow.company_address_country
+        street: dbRow.address,
+        street2: dbRow.address2,
+        city: dbRow.city,
+        state: dbRow.state,
+        zipCode: dbRow.zip,
+        country: dbRow.country
       },
-      contact: {
-        phone: dbRow.company_phone,
-        email: dbRow.company_email,
-        website: dbRow.company_website
-      },
-      // System config
+      // System config (placeholder for compatibility)
       systemConfig: {
-        timezone: dbRow.default_timezone,
-        currency: dbRow.default_currency,
-        businessHours: typeof dbRow.business_hours === 'string' 
-          ? JSON.parse(dbRow.business_hours) 
-          : dbRow.business_hours
+        timezone: 'America/New_York',
+        currency: 'USD',
+        businessHours: {}
       },
-      // Branding (placeholder for compatibility)
-      branding: {
-        primaryColor: '#1976d2',
-        secondaryColor: '#dc004e',
-        accentColor: '#ff5722',
-        logoUrl: null, // Not yet implemented in DB schema
-        faviconUrl: null,
-        customCss: null,
-        emailSignature: null
-      },
-      // Notification settings
-      notifications: typeof dbRow.notification_settings === 'string'
-        ? JSON.parse(dbRow.notification_settings)
-        : dbRow.notification_settings,
-      createdAt: dbRow.createdat,
-      updatedAt: dbRow.updatedat
+      createdAt: dbRow.created_at,
+      updatedAt: dbRow.updated_at
     };
   }
 
@@ -183,33 +144,16 @@ class SettingsService {
   static formatForDatabase(frontendData) {
     const dbData = {};
 
-    if (frontendData.name) dbData.company_name = frontendData.name;
-    // logo field not yet implemented in DB schema
+    if (frontendData.name !== undefined) dbData.name = frontendData.name;
+    if (frontendData.url !== undefined) dbData.url = frontendData.url;
 
     if (frontendData.address) {
-      if (frontendData.address.street) dbData.company_address_street = frontendData.address.street;
-      if (frontendData.address.city) dbData.company_address_city = frontendData.address.city;
-      if (frontendData.address.state) dbData.company_address_state = frontendData.address.state;
-      if (frontendData.address.zipCode) dbData.company_address_zip_code = frontendData.address.zipCode;
-      if (frontendData.address.country) dbData.company_address_country = frontendData.address.country;
-    }
-
-    if (frontendData.contact) {
-      if (frontendData.contact.phone) dbData.company_phone = frontendData.contact.phone;
-      if (frontendData.contact.email) dbData.company_email = frontendData.contact.email;
-      if (frontendData.contact.website) dbData.company_website = frontendData.contact.website;
-    }
-
-    if (frontendData.systemConfig) {
-      if (frontendData.systemConfig.timezone) dbData.default_timezone = frontendData.systemConfig.timezone;
-      if (frontendData.systemConfig.currency) dbData.default_currency = frontendData.systemConfig.currency;
-      if (frontendData.systemConfig.businessHours) {
-        dbData.business_hours = JSON.stringify(frontendData.systemConfig.businessHours);
-      }
-    }
-
-    if (frontendData.notifications) {
-      dbData.notification_settings = JSON.stringify(frontendData.notifications);
+      if (frontendData.address.street !== undefined) dbData.address = frontendData.address.street;
+      if (frontendData.address.street2 !== undefined) dbData.address2 = frontendData.address.street2;
+      if (frontendData.address.city !== undefined) dbData.city = frontendData.address.city;
+      if (frontendData.address.state !== undefined) dbData.state = frontendData.address.state;
+      if (frontendData.address.zipCode !== undefined) dbData.zip = frontendData.address.zipCode;
+      if (frontendData.address.country !== undefined) dbData.country = frontendData.address.country;
     }
 
     return dbData;

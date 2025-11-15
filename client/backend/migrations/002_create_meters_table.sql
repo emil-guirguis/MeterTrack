@@ -1,9 +1,9 @@
--- Migration: Create meters table
--- Description: Create the meters table with site_id foreign key
+-- Migration: Create meter table
+-- Description: Create the meter table with site_id foreign key
 -- Date: 2025-11-14
 
--- Create meters table
-CREATE TABLE IF NOT EXISTS meters (
+-- Create meter table
+CREATE TABLE IF NOT EXISTS meter (
   id SERIAL PRIMARY KEY,
   site_id INTEGER REFERENCES sites(id) ON DELETE CASCADE,
   external_id VARCHAR(255) NOT NULL,
@@ -15,12 +15,12 @@ CREATE TABLE IF NOT EXISTS meters (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_meters_site_id ON meters(site_id);
-CREATE INDEX IF NOT EXISTS idx_meters_external_id ON meters(external_id);
+CREATE INDEX IF NOT EXISTS idx_meter_site_id ON meter(site_id);
+CREATE INDEX IF NOT EXISTS idx_meter_external_id ON meter(external_id);
 
 -- Add comments to table
-COMMENT ON TABLE meters IS 'Stores meter information for all sites';
-COMMENT ON COLUMN meters.site_id IS 'Foreign key to sites table';
-COMMENT ON COLUMN meters.external_id IS 'External identifier from Sync (e.g., meter-001)';
-COMMENT ON COLUMN meters.bacnet_device_id IS 'BACnet device ID for the meter';
-COMMENT ON COLUMN meters.bacnet_ip IS 'IP address of the BACnet meter';
+COMMENT ON TABLE meter IS 'Stores meter information for all sites';
+COMMENT ON COLUMN meter.site_id IS 'Foreign key to sites table';
+COMMENT ON COLUMN meter.external_id IS 'External identifier from Sync (e.g., meter-001)';
+COMMENT ON COLUMN meter.bacnet_device_id IS 'BACnet device ID for the meter';
+COMMENT ON COLUMN meter.bacnet_ip IS 'IP address of the BACnet meter';

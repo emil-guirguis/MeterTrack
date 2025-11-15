@@ -15,8 +15,14 @@ import { MeterCollector } from './meter-collection/collector.js';
 import { createSyncManagerFromEnv } from './sync-service/sync-manager.js';
 import { ClientSystemApiClient } from './sync-service/api-client.js';
 import { createAndStartLocalApiServer } from './api/server.js';
-// Load environment variables
-dotenv.config();
+// Load environment variables from root .env file first, then local .env
+// Use __dirname equivalent for ES modules
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '../../../.env') }); // Root .env
+dotenv.config({ path: join(__dirname, '../.env') }); // Local .env to override if needed
 // Configure logger
 const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || 'info',
