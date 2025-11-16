@@ -65,7 +65,6 @@ const SettingsPage: React.FC = () => {
     if (!localSettings) return;
     try {
       await updateSettings(localSettings);
-      alert('Company information saved successfully!');
     } catch (err) {
       console.error('Failed to save company info:', err);
     }
@@ -75,7 +74,6 @@ const SettingsPage: React.FC = () => {
     if (!localSettings) return;
     try {
       await updateSystemConfig(localSettings.systemConfig);
-      alert('System configuration saved successfully!');
     } catch (err) {
       console.error('Failed to save system config:', err);
     }

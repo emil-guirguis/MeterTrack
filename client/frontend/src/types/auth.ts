@@ -34,6 +34,12 @@ export const Permission = {
   METER_UPDATE: 'meter:update',
   METER_DELETE: 'meter:delete',
   
+  // Device Management
+  DEVICE_CREATE: 'device:create',
+  DEVICE_READ: 'device:read',
+  DEVICE_UPDATE: 'device:update',
+  DEVICE_DELETE: 'device:delete',
+  
   // Settings Management
   SETTINGS_READ: 'settings:read',
   SETTINGS_UPDATE: 'settings:update',
@@ -117,6 +123,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.METER_UPDATE,
     Permission.METER_DELETE,
     
+    // Full device management
+    Permission.DEVICE_CREATE,
+    Permission.DEVICE_READ,
+    Permission.DEVICE_UPDATE,
+    Permission.DEVICE_DELETE,
+    
     // Settings read/update
     Permission.SETTINGS_READ,
     Permission.SETTINGS_UPDATE,
@@ -143,6 +155,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.METER_UPDATE,
     Permission.METER_DELETE,
     
+    // Full device management
+    Permission.DEVICE_CREATE,
+    Permission.DEVICE_READ,
+    Permission.DEVICE_UPDATE,
+    Permission.DEVICE_DELETE,
+    
     // Read-only settings
     Permission.SETTINGS_READ,
     
@@ -155,6 +173,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.LOCATION_READ,
     Permission.CONTACT_READ,
     Permission.METER_READ,
+    Permission.DEVICE_READ,
     Permission.SETTINGS_READ,
     Permission.TEMPLATE_READ
   ]

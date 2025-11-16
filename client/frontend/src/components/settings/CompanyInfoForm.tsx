@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CountrySelect } from '../common';
 import Toast from '../common/Toast';
+import { useBaseForm } from '../../../../../framework/frontend/forms/hooks/useBaseForm';
+import { FormSection } from '../../../../../framework/frontend/forms/components/FormSection';
+import { FormField } from '../../../../../framework/frontend/forms/components/FormField';
+import { FormActions } from '../../../../../framework/frontend/forms/components/FormActions';
+import { validators } from '../../../../../framework/frontend/forms/utils/validation';
 import './SettingsForm.css';
 
 export interface CompanyInfoFormProps {
@@ -13,46 +18,79 @@ export interface CompanyInfoFormProps {
 }
 
 const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onSubmit, onCancel, loading, error }) => {
+  // Use the framework's useBaseForm hook
+  const form = useBaseForm({
+    initialValues: values,
+    validationSchema: {
+      name: [validators.required('Company name is required')],
+      url: [validators.url('Please enter a valid URL')],
+      'address.zipCode': [validators.zipCode('Please enter a valid ZIP code')],
+    },
+    onSubmit: async (formValues) => {
+      // Sync form values back to parent
+      Object.keys(formValues).forEach(key => {
+        if (key.includes('.')) {
+          onChange(key, (formValues as any)[key]);
+        } else {
+          onChange(key, (formValues as any)[key]);
+        }
+      });
+      onSubmit();
+    },
+  });
+
+  // Sync parent values to form when they change
+  useEffect(() => {
+    form.setValues(values);
+  }, [values]);
+
+  // Sync form changes back to parent
+  const handleFieldChange = (field: string, value: any) => {
+    form.setFieldValue(field, value);
+    onChange(field, value);
+  };
+
   return (
-    <form className="settings-form" onSubmit={e => { e.preventDefault(); onSubmit(); }}>
+    <form className="settings-form" onSubmit={form.handleSubmit}>
       {/* Show error as a toast notification */}
       {error && <Toast message={error} type="error" />}
-      <div className="settings-form__section">
-        <h3 className="settings-form__section-title">Company Information</h3>
+      
+      <FormSection title="Company Information">
         <div className="settings-form__row">
           <div className="settings-form__field">
-            <label className="settings-form__label">Company Name</label>
-            <input
+            <FormField
+              {...form.getFieldProps('name')}
+              label="Company Name"
               type="text"
-              value={values.name || ''}
-              onChange={e => onChange('name', e.target.value)}
-              className="settings-form__input"
+              placeholder="Enter company name"
               required
               disabled={loading}
-              placeholder="Enter company name"
-              title="Company Name"
+              error={form.getFieldMeta('name').error}
+              touched={form.getFieldMeta('name').touched}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('name', e.target.value)}
             />
           </div>
           <div className="settings-form__field">
-            <label className="settings-form__label">Website URL</label>
-            <input
-              type="text"
-              value={values.url || ''}
-              onChange={e => onChange('url', e.target.value)}
-              className="settings-form__input"
-              disabled={loading}
+            <FormField
+              {...form.getFieldProps('url')}
+              label="Website URL"
+              type="url"
               placeholder="Enter website URL"
-              title="Website URL"
+              disabled={loading}
+              error={form.getFieldMeta('url').error}
+              touched={form.getFieldMeta('url').touched}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('url', e.target.value)}
             />
           </div>
         </div>
+        
         <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">Address Line 1</label>
             <input
               type="text"
               value={values.address?.street || ''}
-              onChange={e => onChange('address.street', e.target.value)}
+              onChange={e => handleFieldChange('address.street', e.target.value)}
               className="settings-form__input"
               disabled={loading}
               placeholder="Enter street address"
@@ -64,7 +102,7 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
             <input
               type="text"
               value={values.address?.street2 || ''}
-              onChange={e => onChange('address.street2', e.target.value)}
+              onChange={e => handleFieldChange('address.street2', e.target.value)}
               className="settings-form__input"
               disabled={loading}
               placeholder="Enter address line 2"
@@ -72,13 +110,14 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
             />
           </div>
         </div>
+        
         <div className="settings-form__row">
           <div className="settings-form__field">
             <label className="settings-form__label">City</label>
             <input
               type="text"
               value={values.address?.city || ''}
-              onChange={e => onChange('address.city', e.target.value)}
+              onChange={e => handleFieldChange('address.city', e.target.value)}
               className="settings-form__input"
               disabled={loading}
               placeholder="Enter city"
@@ -90,7 +129,7 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
             <input
               type="text"
               value={values.address?.state || ''}
-              onChange={e => onChange('address.state', e.target.value)}
+              onChange={e => handleFieldChange('address.state', e.target.value)}
               className="settings-form__input"
               disabled={loading}
               placeholder="Enter state"
@@ -98,35 +137,40 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
             />
           </div>
         </div>
+        
         <div className="settings-form__row">
           <div className="settings-form__field">
-            <label className="settings-form__label">Zip Code</label>
-            <input
+            <FormField
+              {...form.getFieldProps('address.zipCode')}
+              label="Zip Code"
               type="text"
-              value={values.address?.zipCode || ''}
-              onChange={e => onChange('address.zipCode', e.target.value)}
-              className="settings-form__input"
-              disabled={loading}
               placeholder="Enter zip code"
-              title="Zip Code"
+              disabled={loading}
+              error={form.getFieldMeta('address.zipCode').error}
+              touched={form.getFieldMeta('address.zipCode').touched}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('address.zipCode', e.target.value)}
             />
           </div>
           <div className="settings-form__field">
             <label className="settings-form__label">Country</label>
             <CountrySelect
               value={values.address?.country || ''}
-              onChange={value => onChange('address.country', value)}
+              onChange={value => handleFieldChange('address.country', value)}
               disabled={loading}
               required
               className="settings-form__input"
             />
           </div>
         </div>
-      </div>
-      <div className="settings-form__actions">
-        <button type="button" className="settings-form__btn settings-form__btn--secondary" onClick={onCancel} disabled={loading}>Cancel</button>
-        <button type="submit" className="settings-form__btn settings-form__btn--primary" disabled={loading}>Save</button>
-      </div>
+      </FormSection>
+      
+      <FormActions
+        onCancel={onCancel}
+        submitLabel="Save"
+        cancelLabel="Cancel"
+        isSubmitting={loading}
+        isDisabled={loading}
+      />
     </form>
   );
 };

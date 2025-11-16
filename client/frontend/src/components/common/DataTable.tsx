@@ -331,26 +331,10 @@ export function DataTable<T extends Record<string, any>>({
                 </th>
               ))}
               
-              {(onView || onEdit || onDelete) ? (
+              {(onView || onEdit || onDelete) && (
                 <th className="data-table__header data-table__header--actions">
-                  <div className="data-table__header-actions-cell">
-                    <span>Actions</span>
-                    {headerActions && (
-                      <div className="data-table__header-actions-inline">
-                        {headerActions}
-                      </div>
-                    )}
-                  </div>
+                  {/* Empty header for actions column */}
                 </th>
-              ) : (
-                // No per-row actions column; add a dedicated header cell for headerActions if provided
-                headerActions ? (
-                  <th className="data-table__header data-table__header--actions">
-                    <div className="data-table__header-actions-inline">
-                      {headerActions}
-                    </div>
-                  </th>
-                ) : null
               )}
             </tr>
           </thead>
@@ -388,13 +372,6 @@ export function DataTable<T extends Record<string, any>>({
                 {(onView || onEdit || onDelete) && (
                   <td className="data-table__cell data-table__cell--actions">
                     {renderActions(item)}
-                  </td>
-                )}
-                {!(onView || onEdit || onDelete) && headerActions && (
-                  // If headerActions are provided but there is no actions column above,
-                  // render an empty cell per row to keep table columns aligned.
-                  <td className="data-table__cell data-table__cell--actions">
-                    {/* intentionally empty - actions are only in header */}
                   </td>
                 )}
               </tr>

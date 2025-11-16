@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
 import { FormModal } from '../../components/common/FormModal';
-import { TemplateListSimple } from '../../components/templates/TemplateListSimple';
+import { EmailTemplateListSimple } from '../../components/templates/EmailTemplateListSimple';
 import { TemplateForm } from '../../components/templates/TemplateForm';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -75,7 +75,7 @@ export const TemplatesPage: React.FC = () => {
 
   return (
     <AppLayout title="Email Templates">
-      <TemplateListSimple
+      <EmailTemplateListSimple
         onTemplateSelect={handleTemplateSelect}
         onTemplateEdit={handleTemplateEdit}
         onTemplateCreate={handleTemplateCreate}

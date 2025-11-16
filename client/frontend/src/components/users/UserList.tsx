@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import DataList from '../common/DataList';
-import { FormModal } from '../common/FormModal';
+import React from 'react';
+import { DataList } from '@framework/lists/components';
 import { useUsersEnhanced } from '../../store/entities/usersStore';
-import { useAuth } from '../../hooks/useAuth';
+import { useBaseList } from '@framework/lists/hooks';
 import type { User } from '../../types/auth';
-import { UserRole, Permission } from '../../types/auth';
-import type { ColumnDefinition, BulkAction } from '../../types/ui';
+import { Permission } from '../../types/auth';
+import {
+  userColumns,
+  userFilters,
+  userStats,
+  createUserBulkActions,
+  userExportConfig,
+} from '../../config/userConfig';
+import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
 import './UserList.css';
 import '../common/ListStats.css';
 import '../common/TableCellStyles.css';
@@ -21,346 +27,79 @@ export const UserList: React.FC<UserListProps> = ({
   onUserEdit,
   onUserCreate,
 }) => {
-  const { checkPermission } = useAuth();
   const users = useUsersEnhanced();
   
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [showExportModal, setShowExportModal] = useState(false);
-
-  // Check permissions
-  const canCreate = checkPermission(Permission.USER_CREATE);
-  const canUpdate = checkPermission(Permission.USER_UPDATE);
-  const canDelete = checkPermission(Permission.USER_DELETE);
-
-  // Load users on component mount
-  useEffect(() => {
-    users.fetchItems();
-  }, []);
-
-  // Apply filters and search
-  useEffect(() => {
-    const filters: Record<string, any> = {};
-    
-    if (roleFilter) filters.role = roleFilter;
-    if (statusFilter) filters.status = statusFilter;
-    
-    users.setFilters(filters);
-    users.setSearch(searchQuery);
-    users.fetchItems();
-  }, [searchQuery, roleFilter, statusFilter]);
-
-  // Define table columns
-  const columns: ColumnDefinition<User>[] = useMemo(() => [
-    {
-      key: 'name',
-      label: 'Name',
-      sortable: true,
-      render: (value, user) => (
-        <div className="table-cell--two-line">
-          <div className="table-cell__primary">{value}</div>
-          <div className="table-cell__secondary">{user.email}</div>
-        </div>
-      ),
+  // Initialize base list hook with user configuration
+  const baseList = useBaseList<User, any>({
+    entityName: 'user',
+    entityNamePlural: 'users',
+    useStore: useUsersEnhanced,
+    features: {
+      allowCreate: true,
+      allowEdit: true,
+      allowDelete: true,
+      allowBulkActions: true,
+      allowExport: true,
+      allowImport: false,
+      allowSearch: true,
+      allowFilters: true,
+      allowStats: true,
     },
-    {
-      key: 'role',
-      label: 'Role',
-      sortable: true,
-      render: (value) => {
-        const getRoleVariant = (role: string) => {
-          switch (role) {
-            case 'admin': return 'error';
-            case 'manager': return 'warning';
-            case 'technician': return 'info';
-            case 'viewer': return 'success';
-            default: return 'neutral';
-          }
-        };
-        return (
-          <span className={`badge badge--${getRoleVariant(value)} badge--uppercase`}>
-            {value.charAt(0).toUpperCase() + value.slice(1)}
-          </span>
-        );
-      },
-      responsive: 'hide-mobile',
+    permissions: {
+      create: Permission.USER_CREATE,
+      update: Permission.USER_UPDATE,
+      delete: Permission.USER_DELETE,
     },
-    {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      render: (value) => (
-        <span className={`status-indicator status-indicator--${value}`}>
-          <span className={`status-dot status-dot--${value}`}></span>
-          {value === 'active' ? 'Active' : 'Inactive'}
-        </span>
-      ),
-    },
-    {
-      key: 'lastLogin',
-      label: 'Last Login',
-      sortable: true,
-      render: (value) => value ? new Date(value).toLocaleDateString() : 'Never',
-      responsive: 'hide-mobile',
-    },
-    {
-      key: 'createdAt',
-      label: 'Created',
-      sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
-      responsive: 'hide-tablet',
-    },
-  ], []);
+    columns: userColumns,
+    filters: userFilters,
+    stats: userStats,
+    bulkActions: createUserBulkActions(
+      { bulkUpdateStatus: async (ids: string[], status: string) => {
+        await users.bulkUpdateStatus(ids, status as 'active' | 'inactive');
+      }},
+      (items) => baseList.handleExport(items)
+    ),
+    export: userExportConfig,
+    onEdit: onUserEdit,
+    onCreate: onUserCreate,
+  });
 
-  // Define bulk actions
-  const bulkActions: BulkAction<User>[] = useMemo(() => {
-    const actions: BulkAction<User>[] = [];
-
-    if (canUpdate) {
-      actions.push(
-        {
-          id: 'activate',
-          label: 'Activate',
-          icon: '✅',
-          color: 'success',
-          action: async (selectedUsers) => {
-            const userIds = selectedUsers.map(u => u.id);
-            await users.bulkUpdateStatus(userIds, 'active');
-          },
-          confirm: true,
-          confirmMessage: 'Are you sure you want to activate the selected users?',
-        },
-        {
-          id: 'deactivate',
-          label: 'Deactivate',
-          icon: '❌',
-          color: 'warning',
-          action: async (selectedUsers) => {
-            const userIds = selectedUsers.map(u => u.id);
-            await users.bulkUpdateStatus(userIds, 'inactive');
-          },
-          confirm: true,
-          confirmMessage: 'Are you sure you want to deactivate the selected users?',
-        }
-      );
-    }
-
-    actions.push({
-      id: 'export',
-      label: 'Export CSV',
-      icon: '📄',
-      color: 'primary',
-      action: async (selectedUsers) => {
-        exportUsersToCSV(selectedUsers);
-      },
+  // Custom delete handler for inactivating users
+  const handleUserDelete = (user: User) => {
+    showConfirmation({
+      type: 'warning',
+      title: 'Inactivate User',
+      message: `Inactivate user "${user.name}"?`,
+      confirmText: 'Inactivate',
+      onConfirm: async () => {
+        // Update user's status to inactive
+        await users.updateItem(user.id, { status: 'inactive' });
+        // Refresh the list
+        await users.fetchItems();
+      }
     });
-
-    return actions;
-  }, [canUpdate, users]);
-
-  // Handle user actions
-  const handleUserView = useCallback((user: User) => {
-    onUserSelect?.(user);
-  }, [onUserSelect]);
-
-  const handleUserEdit = useCallback((user: User) => {
-    if (!canUpdate) return;
-    onUserEdit?.(user);
-  }, [canUpdate, onUserEdit]);
-
-  const handleUserDelete = useCallback(async (user: User) => {
-    if (!canDelete) return;
-    
-    const confirmed = window.confirm(
-      `Are you sure you want to delete user "${user.name}"? This action cannot be undone.`
-    );
-    
-    if (confirmed) {
-      await users.deleteUser(user.id);
-    }
-  }, [canDelete, users]);
-
-  // Export functionality
-  const exportUsersToCSV = useCallback((usersToExport: User[]) => {
-    const headers = ['Name', 'Email', 'Role', 'Status', 'Last Login', 'Created'];
-    const csvContent = [
-      headers.join(','),
-      ...usersToExport.map(user => [
-        `"${user.name}"`,
-        `"${user.email}"`,
-        user.role,
-        user.status,
-        user.lastLogin ? new Date(user.lastLogin).toISOString() : '',
-        new Date(user.createdAt).toISOString(),
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, []);
-
-  const exportAllUsers = useCallback(() => {
-    exportUsersToCSV(users.items);
-    setShowExportModal(false);
-  }, [users.items, exportUsersToCSV]);
-
-  const filters = (
-    <>
-      <div className="user-list__search">
-        <input
-          type="text"
-          placeholder="Search users by name or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="user-list__search-input"
-        />
-      </div>
-
-      <div className="user-list__filter-group">
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="user-list__filter-select"
-          aria-label="Filter by role"
-        >
-          <option value="">All Roles</option>
-          <option value={UserRole.ADMIN}>Admin</option>
-          <option value={UserRole.MANAGER}>Manager</option>
-          <option value={UserRole.TECHNICIAN}>Technician</option>
-          <option value={UserRole.VIEWER}>Viewer</option>
-        </select>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="user-list__filter-select"
-          aria-label="Filter by status"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-
-        {(roleFilter || statusFilter || searchQuery) && (
-          <button
-            type="button"
-            className="user-list__clear-filters"
-            onClick={() => {
-              setRoleFilter('');
-              setStatusFilter('');
-              setSearchQuery('');
-            }}
-          >
-            Clear Filters
-          </button>
-        )}
-      </div>
-    </>
-  );
-
-  const headerActions = (
-    <div className="data-table__header-actions-inline">
-      <button
-        type="button"
-        className="user-list__btn user-list__btn--secondary"
-        onClick={() => setShowExportModal(true)}
-        aria-label="Export users to CSV"
-      >
-        📄 Export CSV
-      </button>
-
-      {canCreate && (
-        <button
-          type="button"
-          className="user-list__btn user-list__btn--primary"
-          onClick={onUserCreate}
-          aria-label="Add a new user"
-        >
-          ➕ Add User
-        </button>
-      )}
-    </div>
-  );
-
-  const stats = (
-    <div className="list__stats">
-      <div className="list__stat">
-        <span className="list__stat-value">{users.activeUsers.length}</span>
-        <span className="list__stat-label">Active Users</span>
-      </div>
-      <div className="list__stat">
-        <span className="list__stat-value">{users.inactiveUsers.length}</span>
-        <span className="list__stat-label">Inactive Users</span>
-      </div>
-      <div className="list__stat">
-        <span className="list__stat-value">{users.adminUsers.length}</span>
-        <span className="list__stat-label">Administrators</span>
-      </div>
-      <div className="list__stat">
-        <span className="list__stat-value">{users.items.length}</span>
-        <span className="list__stat-label">Total Users</span>
-      </div>
-    </div>
-  );
+  };
 
   return (
     <div className="user-list">
       <DataList
         title="Users"
-        filters={filters}
-        headerActions={headerActions}
-        stats={stats}
-        data={users.items}
-        columns={columns}
-        loading={users.list.loading}
-        error={users.list.error || undefined}
+        filters={baseList.renderFilters()}
+        headerActions={baseList.renderHeaderActions()}
+        stats={baseList.renderStats()}
+        data={baseList.data}
+        columns={baseList.columns}
+        loading={baseList.loading}
+        error={baseList.error}
         emptyMessage="No users found. Create your first user to get started."
-        onEdit={canUpdate ? handleUserEdit : undefined}
-        onDelete={canDelete ? handleUserDelete : undefined}
-        onSelect={bulkActions.length > 0 ? () => {} : undefined}
-        bulkActions={bulkActions}
-        pagination={{
-          currentPage: users.list.page,
-          pageSize: users.list.pageSize,
-          total: users.list.total,
-          onPageChange: (page) => {
-            users.setPage(page);
-            users.fetchItems();
-          },
-          onPageSizeChange: (size) => {
-            users.setPageSize(size);
-            users.fetchItems();
-          },
-          showSizeChanger: true,
-          pageSizeOptions: [10, 25, 50, 100],
-        }}
+        onEdit={baseList.handleEdit}
+        onDelete={handleUserDelete}
+        onSelect={baseList.bulkActions.length > 0 ? () => {} : undefined}
+        bulkActions={baseList.bulkActions}
+        pagination={baseList.pagination}
       />
-
-      {/* Export Modal */}
-      <FormModal
-        isOpen={showExportModal}
-        title="Export Users"
-        onClose={() => setShowExportModal(false)}
-        onSubmit={exportAllUsers}
-      >
-        <div className="user-list__export-content">
-          <p>Export all users to CSV format?</p>
-          <p className="user-list__export-info">
-            This will include: Name, Email, Role, Status, Last Login, and Created Date
-          </p>
-          <p className="user-list__export-count">
-            <strong>{users.items.length} users</strong> will be exported.
-          </p>
-        </div>
-      </FormModal>
+      {baseList.renderExportModal()}
+      {baseList.renderImportModal()}
     </div>
   );
 };

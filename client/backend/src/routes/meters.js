@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const Meter = require('../models/Meter');
-const DeviceService = require('../services/DeviceService');
+const DeviceService = require('../services/deviceService');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -34,7 +34,7 @@ router.get('/', [
       sortBy = 'createdAt',
       sortOrder = 'desc',
       search,
-      'filter.brand': filterBrand,
+      'filter.manufacture': filtermanufacture,
       'filter.status': filterStatus
     } = req.query;
 
@@ -45,8 +45,6 @@ router.get('/', [
     // Fetch from PG model (returns already sorted by meterid ASC). We'll sort after mapping.
     const filters = {
       status: filterStatus || undefined,
-      // findAll supports a broad search across meterid/name/manufacturer
-      search: search || (filterBrand ? String(filterBrand) : undefined)
     };
 
     const allMeters = await Meter.findAll(filters);
@@ -59,7 +57,6 @@ router.get('/', [
       status: 'status',
       type: 'type',
       serialNumber: 'serialnumber',
-      brand: 'device_name',
       model: 'device_description'
     };
     const key = sortKeyMap[sortBy] || 'createdat';
@@ -165,7 +162,6 @@ router.post('/', [
   body('meterid').optional().isLength({ max: 50 }).trim(),
   body('device_id').optional().isUUID(),
   body('device').optional().isLength({ max: 100 }).trim(),
-  body('brand').optional().isLength({ max: 100 }).trim(), // Keep for backward compatibility
   body('model').optional().isLength({ max: 100 }).trim(),
   body('serialNumber').optional().isLength({ max: 100 }).trim(),
   body('serialnumber').optional().isLength({ max: 100 }).trim(),
@@ -186,9 +182,8 @@ router.post('/', [
     }
 
     // Normalize body to PG model fields
-    // Resolve device_id: accept device_id directly, or device/brand and model strings and upsert into devices table
+    // Resolve device_id: accept device_id directly, or device and model strings and upsert into devices table
     let resolvedDeviceId = req.body.device_id || null;
-    const deviceName = (req.body.device || req.body.brand || '').trim();
     if (!resolvedDeviceId && (deviceName || req.body.model)) {
       const deviceDescription = (req.body.model || '').trim() || null;
       if (deviceName) {
@@ -308,7 +303,6 @@ router.put('/:id', [
   body('meterid').optional().isLength({ max: 50 }).trim(),
   body('device_id').optional().isUUID(),
   body('device').optional().isLength({ max: 100 }).trim(),
-  body('brand').optional().isLength({ max: 100 }).trim(), // Keep for backward compatibility
   body('model').optional().isLength({ max: 100 }).trim(),
   body('serialNumber').optional().isLength({ max: 100 }).trim(),
   body('serialnumber').optional().isLength({ max: 100 }).trim(),

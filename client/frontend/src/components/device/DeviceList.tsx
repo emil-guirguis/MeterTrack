@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import DataList from '../common/DataList';
+import React, { useState, useCallback } from 'react';
+import { DataList } from '@framework/lists/components';
 import { FormModal } from '../common/FormModal';
 import { DeviceForm } from './DeviceForm';
-import { deviceService } from '../../services/deviceService';
-import { useAuth } from '../../hooks/useAuth';
+import { useBaseList } from '@framework/lists/hooks';
+import { useDevicesEnhanced } from '../../store/entities/deviceStore';
 import { Permission } from '../../types/auth';
 import type { Device } from '../../types/device';
-import type { ColumnDefinition, BulkAction } from '../../types/ui';
+import {
+  deviceColumns,
+  deviceFilters,
+  deviceStats,
+  createDeviceBulkActions,
+  deviceExportConfig,
+} from '../../config/deviceConfig';
 import './DeviceList.css';
 
 interface DeviceListProps {
@@ -18,108 +24,9 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   onDeviceEdit,
   onDeviceCreate
 }) => {
-  // const { checkPermission } = useAuth();
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const store = useDevicesEnhanced();
   const [showFormModal, setShowFormModal] = useState(false);
   const [formDevice, setFormDevice] = useState<Device | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-
-  // Load devices
-  const loadDevices = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await deviceService.getAll();
-      setDevices(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load devices';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadDevices();
-  }, [loadDevices]);
-
-  // Pagination
-  const totalItems = devices.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedDevices = devices.slice(startIndex, endIndex);
-
-  const pagination = {
-    currentPage,
-    pageSize,
-    totalItems,
-    totalPages,
-    onPageChange: setCurrentPage,
-    onPageSizeChange: (newSize: number) => {
-      setPageSize(newSize);
-      setCurrentPage(1);
-    },
-  };
-
-  // Column definitions
-  const columns: ColumnDefinition<Device>[] = useMemo(() => [
-    {
-      key: 'type',
-      label: 'Type',
-      sortable: true,
-      render: (_value, device) => device.type,
-    },
-    {
-      key: 'manufacturer',
-      label: 'Manufacturer',
-      sortable: true,
-      render: (_value, device) => device.manufacturer,
-    },
-    {
-      key: 'model_number',
-      label: 'Model Number',
-      sortable: true,
-      render: (_value, device) => device.model_number || '-',
-    },
-    {
-      key: 'description',
-      label: 'Description',
-      sortable: false,
-      render: (_value, device) => device.description || '-',
-    },
-  ], []);
-
-  // Bulk actions
-  const bulkActions: BulkAction<Device>[] = useMemo(() => [
-    {
-      id: 'delete',
-      label: 'Delete',
-      icon: 'delete',
-      color: 'error',
-      confirm: true,
-      confirmMessage: 'Are you sure you want to delete the selected devices?',
-      action: async (selectedDevices: Device[]) => {
-        const confirmed = window.confirm('Are you sure you want to delete the selected devices? This action cannot be undone.');
-        if (confirmed) {
-          try {
-            await Promise.all(selectedDevices.map(device => deviceService.delete(device.id)));
-            await loadDevices();
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to delete devices';
-            alert(errorMessage);
-          }
-        }
-      },
-
-    },
-  ], [loadDevices]);
-
-
 
   // Handle device edit
   const handleDeviceEdit = useCallback((device: Device) => {
@@ -135,34 +42,16 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     onDeviceCreate?.();
   }, [onDeviceCreate]);
 
-  // Handle device delete
-  const handleDeviceDelete = useCallback(async (device: Device) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete device "${device.model_number}"? This action cannot be undone.`
-    );
-
-    if (confirmed) {
-      try {
-        await deviceService.delete(device.id);
-        await loadDevices();
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to delete device';
-        alert(errorMessage);
-      }
-    }
-  }, [loadDevices]);
-
   // Handle form submit
   const handleFormSubmit = useCallback(async (data: Partial<Device>) => {
     if (formDevice) {
-      await deviceService.update(formDevice.id, data as any);
+      await store.updateDevice(formDevice.id, data);
     } else {
-      await deviceService.create(data as any);
+      await store.createDevice(data);
     }
     setShowFormModal(false);
     setFormDevice(null);
-    await loadDevices();
-  }, [formDevice, loadDevices]);
+  }, [formDevice, store]);
 
   // Handle form cancel
   const handleFormCancel = useCallback(() => {
@@ -170,30 +59,55 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     setFormDevice(null);
   }, []);
 
+  // Initialize base list hook
+  const baseList = useBaseList<Device, ReturnType<typeof useDevicesEnhanced>>({
+    entityName: 'device',
+    entityNamePlural: 'devices',
+    useStore: useDevicesEnhanced,
+    features: {
+      allowCreate: true,
+      allowEdit: true,
+      allowDelete: true,
+      allowBulkActions: true,
+      allowExport: true,
+      allowImport: false,
+      allowSearch: true,
+      allowFilters: true,
+      allowStats: true,
+    },
+    permissions: {
+      create: Permission.DEVICE_CREATE,
+      update: Permission.DEVICE_UPDATE,
+      delete: Permission.DEVICE_DELETE,
+    },
+    columns: deviceColumns,
+    filters: deviceFilters,
+    stats: deviceStats,
+    bulkActions: createDeviceBulkActions(store),
+    export: deviceExportConfig,
+    onEdit: handleDeviceEdit,
+    onCreate: handleDeviceCreate,
+  });
+
   return (
     <div className="device-list">
-      <div className="device-list__header">
-        <button
-          type="button"
-          className="device-list__btn device-list__btn--primary"
-          onClick={handleDeviceCreate}
-          aria-label="Add a new device"
-        >
-          ➕ Add Device
-        </button>
-      </div>
-
       <DataList
-        data={paginatedDevices as any[]}
-        columns={columns as any[]}
-        loading={loading}
-        error={error || undefined}
-        onEdit={handleDeviceEdit as any}
-        onDelete={handleDeviceDelete as any}
-        bulkActions={bulkActions as any[]}
-        pagination={pagination as any}
-        emptyMessage="No devices found"
+        title="Devices"
+        filters={baseList.renderFilters()}
+        headerActions={baseList.renderHeaderActions()}
+        stats={baseList.renderStats()}
+        data={baseList.data}
+        columns={baseList.columns}
+        loading={baseList.loading}
+        error={baseList.error}
+        emptyMessage="No devices found. Create your first device to get started."
+        onEdit={baseList.handleEdit}
+        onDelete={baseList.handleDelete}
+        onSelect={baseList.bulkActions.length > 0 ? () => {} : undefined}
+        bulkActions={baseList.bulkActions}
+        pagination={baseList.pagination}
       />
+      {baseList.renderExportModal()}
 
       {/* Form Modal */}
       {showFormModal && (

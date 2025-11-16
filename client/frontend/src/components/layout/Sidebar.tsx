@@ -25,7 +25,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     // When the sidebar is collapsed on desktop, clicking a parent menu
     // should not auto-expand its submenu. Return early in that case.
     if (hasChildren && isCollapsed && !isMobile) {
-      console.debug('[Sidebar] click on parent item while collapsed (desktop) - ignoring expand for', item.id);
       return;
     }
 
@@ -81,7 +80,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             e.preventDefault();
             e.stopPropagation();
             // Use error-level logging so it's visible even if debug is filtered
-            console.error('[Sidebar] menu item clicked:', item.id, 'isCollapsed=', isCollapsed, 'isMobile=', isMobile);
             // Brief visual flash on the sidebar to confirm the handler ran
             try {
               if (asideRef.current) {

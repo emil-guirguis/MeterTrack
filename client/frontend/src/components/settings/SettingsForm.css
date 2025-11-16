@@ -13,6 +13,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 1rem;
+  color: #111827;
 }
 .settings-form__row {
   display: flex;
@@ -27,12 +28,33 @@
 .settings-form__label {
   font-weight: 500;
   margin-bottom: 0.5rem;
+  color: #374151;
+  font-size: 0.875rem;
 }
 .settings-form__input {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 4px;
   font-size: 1rem;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  transition: border-color 0.2s ease;
+}
+
+.settings-form__input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.settings-form__input::placeholder {
+  color: #9ca3af;
+}
+
+.settings-form__input:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed;
 }
 .settings-form__actions {
   display: flex;

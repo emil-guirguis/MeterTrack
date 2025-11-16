@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { DataTable } from './DataTable';
 import type { DataTableProps, ColumnDefinition, BulkAction } from '../../types/ui';
+import './ListFilters.css';
 
 interface DataListProps<T> {
   title?: string;
