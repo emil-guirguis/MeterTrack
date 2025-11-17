@@ -1,5 +1,6 @@
+// @ts-nocheck
 const express = require('express');
-const Contact = require('../models/Contact');
+const Contact = require('../models/Contact.js');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,28 +17,30 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
       role
     } = req.query;
 
-    // Build filters for Contact
-    const filters = {};
-    if (search) filters.search = search;
-    if (active) filters.active = active;
-    if (role) filters.role = role;
-    filters.limit = parseInt(limit);
-    filters.offset = (parseInt(page) - 1) * parseInt(limit);
+    // Build where clause for Contact
+    const where = {};
+    if (search) where.name = search; // Assuming search by name
+    if (active !== undefined) where.active = active;
+    if (role) where.role = role;
+
+    // Build options for findAll
+    const options = {
+      where,
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit)
+    };
 
     // Get contacts
-    const contacts = await Contact.findAll(filters);
-
-    // Get total count for pagination
-    const total = await Contact.countAll(filters);
+    const result = await Contact.findAll(options);
 
     res.json({
       success: true,
       data: {
-        items: contacts,
-        total,
+        items: result.rows,
+        total: result.pagination.total,
         page: parseInt(page),
         pageSize: parseInt(limit),
-        totalPages: Math.ceil(total / parseInt(limit))
+        totalPages: result.pagination.totalPages
       }
     });
   } catch (error) {

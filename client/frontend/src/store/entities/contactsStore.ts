@@ -50,28 +50,19 @@ export const useContacts = createEntityHook(useContactsStore);
 export const useContactsEnhanced = () => {
   const contacts = useContacts();
   
+  // Ensure items is always an array
+  const items = Array.isArray(contacts.items) ? contacts.items : [];
+  
   return {
     ...contacts,
+    items, // Override with safe array
     
     // Additional computed values
-    customers: contacts.items.filter(contact => contact.type === 'customer'),
-    vendors: contacts.items.filter(contact => contact.type === 'vendor'),
-    activeContacts: contacts.items.filter(contact => contact.status === 'active'),
-    inactiveContacts: contacts.items.filter(contact => contact.status === 'inactive'),
+    customers: items.filter(contact => contact.category === 'customer'),
+    vendors: items.filter(contact => contact.category === 'vendor'),
+    activeContacts: items.filter(contact => contact.active),
+    inactiveContacts: items.filter(contact => !contact.active),
     
-    // Industry breakdown
-    contactsByIndustry: contacts.items.reduce((acc, contact) => {
-      const industry = contact.industry || 'Unknown';
-      acc[industry] = (acc[industry] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>),
-    
-    // Business type breakdown
-    contactsByBusinessType: contacts.items.reduce((acc, contact) => {
-      const type = contact.businessType || 'Unknown';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>),
     
     // Enhanced actions with notifications
     createContact: async (data: Partial<Contact>) => {
@@ -157,22 +148,16 @@ export const useContactsEnhanced = () => {
       contacts.fetchItems();
     },
     
-    filterByBusinessType: (businessType: string) => {
-      contacts.setFilters({ ...contacts.list.filters, businessType });
-      contacts.fetchItems();
-    },
-    
     // Specialized queries
-    getCustomers: () => contacts.items.filter(c => c.type === 'customer'),
-    getVendors: () => contacts.items.filter(c => c.type === 'vendor'),
+    getCustomers: () => items.filter(c => c.category === 'customer'),
+    getVendors: () => items.filter(c => c.category === 'vendor'),
     getContactsByTag: (tag: string) => 
-      contacts.items.filter(c => c.tags?.includes(tag)),
+      items.filter(c => c.tags?.includes(tag)),
     
     // Contact relationship helpers
-    getContactsByIndustry: (industry: string) =>
-      contacts.items.filter(c => c.industry === industry),
+
     
     getVIPContacts: () =>
-      contacts.items.filter(c => c.tags?.includes('VIP')),
+      items.filter(c => c.tags?.includes('VIP')),
   };
 };

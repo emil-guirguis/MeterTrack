@@ -3,12 +3,14 @@ const db = require('../config/database');
 class Device {
     constructor(deviceData = {}) {
         this.id = deviceData.id;
-        this.type = deviceData.type;
         this.description = deviceData.description;
         this.manufacturer = deviceData.manufacturer;
         this.model_number = deviceData.model_number;
-        this.createdat = deviceData.createdat;
-        this.updatedat = deviceData.updatedat;
+        this.type = deviceData.type;
+        this.register_map = deviceData.register_map;
+        this.active = deviceData.active;
+        this.created_at = deviceData.created_at;
+        this.updated_at = deviceData.updated_at;
     }
 
     /**
@@ -32,7 +34,7 @@ class Device {
             const result = await db.query(query, values);
             return new Device(result.rows[0]);
         } catch (error) {
-            if (error.code === '23505') { // Unique constraint violation
+            if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // Unique constraint violation
                 throw new Error('Device name already exists');
             }
             throw error;
@@ -120,7 +122,7 @@ class Device {
             Object.assign(this, result.rows[0]);
             return this;
         } catch (error) {
-            if (error.code === '23505') { // Unique constraint violation
+            if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // Unique constraint violation
                 throw new Error('Device name already exists');
             }
             throw error;
@@ -151,8 +153,8 @@ class Device {
             manufacturer: this.manufacturer,
             model_number: this.model_number,
             description: this.description,
-            createdAt: this.createdat,
-            updatedAt: this.updatedat
+            createdAt: this.created_at,
+            updatedAt: this.updated_at
         };
     }
 }

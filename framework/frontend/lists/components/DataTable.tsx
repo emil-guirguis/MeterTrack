@@ -105,7 +105,7 @@ export function DataTable<T extends Record<string, any>>({
 
   // Render cell content
   const renderCell = useCallback((column: ColumnDefinition<T>, item: T, index: number) => {
-    const key = column.key || column.id;
+    const key = column.key;
     const value = typeof key === 'string' && key.includes('.') 
       ? key.split('.').reduce((obj, key) => obj?.[key], item)
       : item[key as keyof T];
@@ -222,7 +222,7 @@ export function DataTable<T extends Record<string, any>>({
               
               <div className="data-table__card-content">
                 {visibleColumns.map(column => (
-                  <div key={column.key?.toString() || column.id} className="data-table__card-field">
+                  <div key={column.key?.toString()} className="data-table__card-field">
                     <span className="data-table__card-label">{column.label}:</span>
                     <span className="data-table__card-value">
                       {renderCell(column, item, index)}
@@ -314,7 +314,7 @@ export function DataTable<T extends Record<string, any>>({
               
               {visibleColumns.map(column => (
                 <th
-                  key={column.key?.toString() || column.id}
+                  key={column.key?.toString()}
                   className={`
                     data-table__header
                     ${column.sortable ? 'data-table__header--sortable' : ''}
@@ -325,11 +325,11 @@ export function DataTable<T extends Record<string, any>>({
                     minWidth: column.minWidth,
                     textAlign: column.align || 'left'
                   }}
-                  onClick={column.sortable ? () => handleSort((column.key || column.id).toString()) : undefined}
+                  onClick={column.sortable ? () => handleSort(column.key.toString()) : undefined}
                 >
                   <span className="data-table__header-content">
                     {column.label}
-                    {column.sortable && sortConfig?.key === (column.key || column.id) && (
+                    {column.sortable && sortConfig && sortConfig.key === column.key && (
                       <span className="data-table__sort-indicator">
                         {sortConfig.direction === 'asc' ? '↑' : '↓'}
                       </span>
@@ -367,7 +367,7 @@ export function DataTable<T extends Record<string, any>>({
                 
                 {visibleColumns.map(column => (
                   <td
-                    key={column.key?.toString() || column.id}
+                    key={column.key?.toString()}
                     className={`data-table__cell ${column.className || ''}`}
                     style={{ textAlign: column.align || 'left' }}
                   >

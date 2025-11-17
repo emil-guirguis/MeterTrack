@@ -70,7 +70,7 @@ class DeviceService {
    * Create validation error with specific error code
    */
   static createValidationError(errors) {
-    const error = new Error(`Validation failed: ${errors.join(', ')}`);
+    const error = /** @type {Error & {code: string, details: string[]}} */ (new Error(`Validation failed: ${errors.join(', ')}`));
     error.code = 'VALIDATION_ERROR';
     error.details = errors;
     return error;
@@ -80,23 +80,24 @@ class DeviceService {
    * Create database error with specific error code
    */
   static createDatabaseError(originalError, operation) {
+    /** @type {Error & {code: string, originalError: any}} */
     let error;
 
-    if (originalError.code === '23505') {
+    if (originalError && typeof originalError === 'object' && 'code' in originalError && originalError.code === '23505') {
       // Unique constraint violation
-      error = new Error('Device manufacturer already exists');
+      error = /** @type {Error & {code: string, originalError: any}} */ (new Error('Device manufacturer already exists'));
       error.code = 'DUPLICATE_NAME';
-    } else if (originalError.code === '23503') {
+    } else if (originalError && typeof originalError === 'object' && 'code' in originalError && originalError.code === '23503') {
       // Foreign key constraint violation
-      error = new Error('Cannot delete device: it is referenced by other records');
+      error = /** @type {Error & {code: string, originalError: any}} */ (new Error('Cannot delete device: it is referenced by other records'));
       error.code = 'FOREIGN_KEY_VIOLATION';
-    } else if (originalError.code === '22001') {
+    } else if (originalError && typeof originalError === 'object' && 'code' in originalError && originalError.code === '22001') {
       // String data too long
-      error = new Error('Input data exceeds maximum length');
+      error = /** @type {Error & {code: string, originalError: any}} */ (new Error('Input data exceeds maximum length'));
       error.code = 'DATA_TOO_LONG';
     } else {
       // Generic database error
-      error = new Error(`Database error during ${operation}`);
+      error = /** @type {Error & {code: string, originalError: any}} */ (new Error(`Database error during ${operation}`));
       error.code = 'DATABASE_ERROR';
     }
 
@@ -248,7 +249,7 @@ class DeviceService {
       return this.formatDevice(result.rows[0]);
     } catch (error) {
       console.error('Error updating device:', error);
-      if (error.code === 'VALIDATION_ERROR') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'VALIDATION_ERROR') {
         throw error;
       }
       throw this.createDatabaseError(error, 'device update');
@@ -284,10 +285,10 @@ class DeviceService {
       id: dbRow.id,
       type: dbRow.type,
       manufacturer: dbRow.manufacturer,
-      model_number: dbRow.model_number,
+      modelNumber: dbRow.model_number,
       description: dbRow.description,
-      createdAt: dbRow.createdat,
-      updatedAt: dbRow.updatedat
+      createdAt: dbRow.created_at,
+      updatedAt: dbRow.updated_at
     };
   }
 }

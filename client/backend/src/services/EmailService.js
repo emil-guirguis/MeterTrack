@@ -16,6 +16,18 @@ class EmailService {
     }
 
     /**
+     * Helper to safely get error message
+     * @param {unknown} error 
+     * @returns {string}
+     */
+    getErrorMessage(error) {
+        if (error && typeof error === 'object' && 'message' in error) {
+            return String(error.message);
+        }
+        return String(error);
+    }
+
+    /**
      * Initialize email service with SMTP configuration
      */
     async initialize(config = null) {
@@ -30,7 +42,7 @@ class EmailService {
             }
 
             // Create SMTP transporter
-            this.transporter = nodemailer.createTransporter({
+            this.transporter = nodemailer.createTransport({
                 host: this.config.smtp.host,
                 port: this.config.smtp.port,
                 secure: this.config.smtp.secure, // true for 465, false for other ports
@@ -55,9 +67,10 @@ class EmailService {
             
             return { success: true };
         } catch (error) {
-            console.error('❌ Failed to initialize email service:', error.message);
+            const errorMessage = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
+            console.error('❌ Failed to initialize email service:', errorMessage);
             this.isInitialized = false;
-            return { success: false, error: error.message };
+            return { success: false, error: errorMessage };
         }
     }
 
@@ -68,7 +81,7 @@ class EmailService {
         return {
             smtp: {
                 host: process.env.SMTP_HOST || 'localhost',
-                port: parseInt(process.env.SMTP_PORT) || 587,
+                port: parseInt(process.env.SMTP_PORT || '587') || 587,
                 secure: process.env.SMTP_SECURE === 'true',
                 user: process.env.SMTP_USER || '',
                 password: process.env.SMTP_PASSWORD || ''
@@ -133,8 +146,9 @@ class EmailService {
             console.log('✅ SMTP connection verified');
             return true;
         } catch (error) {
-            console.error('❌ SMTP connection failed:', error.message);
-            throw new Error(`SMTP connection failed: ${error.message}`);
+            const errorMsg = this.getErrorMessage(error);
+            console.error('❌ SMTP connection failed:', errorMsg);
+            throw new Error(`SMTP connection failed: ${errorMsg}`);
         }
     }
 
@@ -157,7 +171,7 @@ class EmailService {
                 throw new Error(`Template rendering failed: ${renderResult.error}`);
             }
 
-            const { renderedSubject, renderedContent } = renderResult.data;
+            const { renderedSubject, renderedContent } = renderResult.data || {};
 
             // Send email
             const emailResult = await this.sendEmail({
@@ -175,7 +189,7 @@ class EmailService {
                         await template.incrementUsage();
                     }
                 } catch (error) {
-                    console.warn('Failed to record template usage:', error.message);
+                    console.warn('Failed to record template usage:', this.getErrorMessage(error));
                 }
             }
 
@@ -184,14 +198,14 @@ class EmailService {
                 messageId: emailResult.messageId,
                 templateId,
                 recipients: Array.isArray(recipients) ? recipients : [recipients],
-                warnings: renderResult.data.warnings,
+                warnings: renderResult.data?.warnings,
                 error: emailResult.error
             };
 
         } catch (error) {
             return {
                 success: false,
-                error: error.message,
+                error: this.getErrorMessage(error),
                 templateId,
                 recipients: Array.isArray(recipients) ? recipients : [recipients]
             };
@@ -205,6 +219,10 @@ class EmailService {
         try {
             if (!this.isInitialized) {
                 throw new Error('Email service not initialized');
+            }
+
+            if (!this.config || !this.transporter) {
+                throw new Error('Email service not properly initialized');
             }
 
             // Prepare email options
@@ -251,12 +269,12 @@ class EmailService {
                 to: emailData.to,
                 subject: emailData.subject,
                 status: 'failed',
-                error: error.message
+                error: this.getErrorMessage(error)
             });
 
             return {
                 success: false,
-                error: error.message
+                error: this.getErrorMessage(error)
             };
         }
     }
@@ -290,7 +308,7 @@ class EmailService {
                     return { 
                         index: i * batchSize + index, 
                         success: false, 
-                        error: error.message,
+                        error: this.getErrorMessage(error),
                         to: email.to
                     };
                 }
@@ -329,6 +347,9 @@ class EmailService {
      * Add tracking pixel to HTML content
      */
     addTrackingPixel(html, trackingId) {
+        if (!this.config) {
+            return html;
+        }
         const trackingUrl = `${this.config.tracking.baseUrl}/api/email/track/open/${trackingId}`;
         const trackingPixel = `<img src="${trackingUrl}" width="1" height="1" style="display:none;" alt="" />`;
         
@@ -361,7 +382,7 @@ class EmailService {
 
             await db.query(query, values);
         } catch (error) {
-            console.error('Failed to log email delivery:', error.message);
+            console.error('Failed to log email delivery:', this.getErrorMessage(error));
             // Don't throw - logging failure shouldn't break email sending
         }
     }
@@ -425,7 +446,7 @@ class EmailService {
         } catch (error) {
             return {
                 success: false,
-                error: error.message
+                error: this.getErrorMessage(error)
             };
         }
     }
@@ -443,7 +464,7 @@ class EmailService {
                     port: this.config?.smtp?.port || 'not configured',
                     secure: this.config?.smtp?.secure || false
                 },
-                connection: null,
+                connection: /** @type {string | null} */ (null),
                 lastCheck: new Date().toISOString()
             };
 
@@ -453,7 +474,7 @@ class EmailService {
                     health.connection = 'verified';
                 } catch (error) {
                     health.connection = 'failed';
-                    health.connectionError = error.message;
+                    health.connectionError = this.getErrorMessage(error);
                     health.isHealthy = false;
                 }
             }
@@ -462,7 +483,7 @@ class EmailService {
         } catch (error) {
             return {
                 isHealthy: false,
-                error: error.message,
+                error: this.getErrorMessage(error),
                 lastCheck: new Date().toISOString()
             };
         }

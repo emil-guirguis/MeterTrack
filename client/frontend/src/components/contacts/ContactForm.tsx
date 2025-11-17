@@ -69,16 +69,16 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         email: contact.email,
         phone: contact.phone,
         address: {
-          street: contact.street || contact.address?.street || '',
-          city: contact.city || contact.address?.city || '',
-          state: contact.state || contact.address?.state || '',
-          zipCode: contact.zip_code || contact.address?.zipCode || '',
-          country: contact.country || contact.address?.country || 'US',
+          street: contact.address || contact.address || '',
+          city: contact.city || contact.city || '',
+          state: contact.state || contact.state || '',
+          zipCode: contact.zip || contact.zip || '',
+          country: contact.country || contact.country || 'US',
         },
         status: contact.status,
-        businessType: contact.businessType || '',
-        industry: contact.industry || '',
-        website: contact.website || '',
+        businessType: '',
+        industry: '',
+        website: '',
         notes: contact.notes || '',
         tags: contact.tags || [],
       });
@@ -114,7 +114,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   };
 
   // Handle tag input
-  const handleTagKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       addTag();
@@ -180,16 +180,24 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      const submitData = {
-        ...formData,
-        website: formData.website?.trim() || undefined,
+      const submitData: ContactCreateRequest = {
+        category: formData.type,
+        name: formData.name,
+        company: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phone,
+        street: formData.address.street,
+        city: formData.address.city,
+        state: formData.address.state,
+        zip_code: formData.address.zipCode,
+        country: formData.address.country,
         notes: formData.notes?.trim() || undefined,
       };
 
       if (contact) {
-        await onSubmit({ id: contact.id, ...submitData } as ContactUpdateRequest);
+        await onSubmit({ id: contact.id, ...submitData, status: formData.status } as ContactUpdateRequest);
       } else {
-        await onSubmit(submitData as ContactCreateRequest);
+        await onSubmit(submitData);
       }
     } catch (error) {
       console.error('Form submission error:', error);
@@ -424,7 +432,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               value={formData.businessType}
               onChange={(e) => handleInputChange('businessType', e.target.value)}
               disabled={isFormDisabled}
-              placeholder="e.g., Corporation, LLC, Partnership"
+              placeholder="e.g., LLC, Corporation, Partnership"
               className="contact-form__input"
             />
           </div>
@@ -467,7 +475,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
-              onKeyPress={handleTagKeyPress}
+              onKeyDown={handleTagKeyDown}
               onBlur={addTag}
               disabled={isFormDisabled}
               placeholder="Add tags (press Enter or comma to add)"

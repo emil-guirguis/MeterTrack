@@ -8,7 +8,7 @@
 import React from 'react';
 import type { Contact } from '../types/entities';
 import type { ColumnDefinition } from '../types/ui';
-import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '../types/list';
+import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
 import { Permission } from '../types/auth';
 import {
   createTwoLineColumn,
@@ -32,7 +32,7 @@ export const contactColumns: ColumnDefinition<Contact>[] = [
     'category',
     {
       sortable: true,
-      secondaryRender: (contact) => {
+      secondaryRender: (contact: Contact) => {
         const category = contact.category || 'unknown';
         const badgeClass = category === 'customer' ? 'badge--primary' : 'badge--secondary';
         return React.createElement('span', { className: `badge ${badgeClass}` }, 
@@ -42,15 +42,6 @@ export const contactColumns: ColumnDefinition<Contact>[] = [
     }
   ),
   
-  createTwoLineColumn<Contact>(
-    'contactPerson',
-    'Contact Person',
-    'email',
-    {
-      sortable: true,
-      secondaryRender: (contact) => contact.company || contact.role || contact.email || '',
-    }
-  ),
   
   createPhoneColumn<Contact>('phone', 'Phone', {
     responsive: 'hide-mobile',
@@ -82,14 +73,7 @@ export const contactColumns: ColumnDefinition<Contact>[] = [
     render: (_, contact) => (contact as any).industry || 'N/A',
   },
   
-  {
-    key: 'notes' as keyof Contact,
-    label: 'Business Type',
-    sortable: true,
-    responsive: 'hide-tablet',
-    render: (_, contact) => (contact as any).businessType || 'N/A',
-  },
-  
+ 
   createBadgeListColumn<Contact>('tags', 'Tags', {
     sortable: false,
     responsive: 'hide-mobile',
@@ -116,7 +100,7 @@ export const contactFilters: FilterDefinition[] = [
     type: 'select',
     options: (items: Contact[]) => {
       const uniqueValues = items
-        .map(item => (item as any).industry)
+        .map((item: Contact) => (item as any).industry)
         .filter(Boolean)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
@@ -129,24 +113,6 @@ export const contactFilters: FilterDefinition[] = [
     placeholder: 'All Industries',
   },
   
-  {
-    key: 'businessType',
-    label: 'Business Type',
-    type: 'select',
-    options: (items: Contact[]) => {
-      const uniqueValues = items
-        .map(item => (item as any).businessType)
-        .filter(Boolean)
-        .filter((value, index, self) => self.indexOf(value) === index)
-        .sort();
-      
-      return uniqueValues.map(value => ({
-        label: String(value),
-        value: String(value),
-      }));
-    },
-    placeholder: 'All Business Types',
-  },
 ];
 
 /**
@@ -155,20 +121,20 @@ export const contactFilters: FilterDefinition[] = [
 export const contactStats: StatDefinition<Contact>[] = [
   {
     label: 'Customers',
-    value: (items) => items.filter(c => c.category === 'customer').length,
+    value: (items: Contact[]) => items.filter((c: Contact) => c.category === 'customer').length,
   },
   {
     label: 'Vendors',
-    value: (items) => items.filter(c => c.category === 'vendor').length,
+    value: (items: Contact[]) => items.filter((c: Contact) => c.category === 'vendor').length,
   },
   {
     label: 'Active Contacts',
-    value: (items) => items.filter(c => c.status === 'active').length,
+    value: (items: Contact[]) => items.filter((c: Contact) => c.status === 'active').length,
   },
   {
     label: 'Industries',
-    value: (items) => {
-      const industries = new Set(items.map(c => (c as any).industry).filter(Boolean));
+    value: (items: Contact[]) => {
+      const industries = new Set(items.map((c: Contact) => (c as any).industry).filter(Boolean));
       return industries.size;
     },
   },
@@ -200,7 +166,6 @@ export const contactExportConfig: ExportConfig<Contact> = {
   headers: [
     'Name',
     'Type',
-    'Contact Person',
     'Email',
     'Phone',
     'Status',
@@ -209,7 +174,6 @@ export const contactExportConfig: ExportConfig<Contact> = {
     'State',
     'Zip Code',
     'Country',
-    'Business Type',
     'Industry',
     'Website',
     'Tags',

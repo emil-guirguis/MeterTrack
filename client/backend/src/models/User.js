@@ -9,16 +9,30 @@ const db = require('../config/database');
 class User {
     constructor(userData = {}) {
         this.id = userData.id;
-        this.tenant = userData.tenant;
+        this.tenant_id = userData.tenant_id;
         this.email = userData.email;
         this.name = userData.name;
-        this.passwordhash = userData.passwordhash;
+        this.password_hash = userData.password_hash || userData.passwordhash;
         this.role = userData.role || 'viewer';
         this.permissions = userData.permissions || [];
         this.status = userData.status || 'active';
-        this.lastlogin = userData.lastlogin;
-        this.createdat = userData.createdat;
-        this.updatedat = userData.updatedat;
+        this.last_login = userData.last_login || userData.lastlogin;
+        this.created_at = userData.created_at || userData.createdat;
+        this.updated_at = userData.updated_at || userData.updatedat;
+    }
+
+    /**
+     * Helper to parse user data from database
+     * @param {any} row 
+     * @returns {any}
+     */
+    static parseUserData(row) {
+        const userData = /** @type {any} */(row);
+        // Parse JSON fields
+        if (userData.permissions && typeof userData.permissions === 'string') {
+            userData.permissions = JSON.parse(userData.permissions);
+        }
+        return userData;
     }
 
     /**
@@ -32,8 +46,8 @@ class User {
         const passwordhash = await bcrypt.hash(password, saltRounds);
 
         const query = `
-            INSERT INTO users (email, name, passwordhash, role, permissions, status, tenant_id,
-                               createdat, updatedat)
+            INSERT INTO users (email, name, password_hash, role, permissions, status, tenant_id,
+                               created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7,
                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING *
@@ -53,7 +67,7 @@ class User {
             const result = await db.query(query, values);
             return new User(result.rows[0]);
         } catch (error) {
-            if (error.code === '23505') { // Unique constraint violation
+            if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // Unique constraint violation
                 throw new Error('Email already exists');
             }
             throw error;
@@ -71,13 +85,7 @@ class User {
             return null;
         }
 
-        const userData = result.rows[0];
-        // Parse JSON fields
-        if (userData.permissions && typeof userData.permissions === 'string') {
-            userData.permissions = JSON.parse(userData.permissions);
-        }
-        
-        return new User(userData);
+        return new User(this.parseUserData(result.rows[0]));
     }
 
     /**
@@ -91,13 +99,7 @@ class User {
             return null;
         }
 
-        const userData = result.rows[0];
-        // Parse JSON fields
-        if (userData.permissions && typeof userData.permissions === 'string') {
-            userData.permissions = JSON.parse(userData.permissions);
-        }
-        
-        return new User(userData);
+        return new User(this.parseUserData(result.rows[0]));
     }
 
     /**
@@ -143,12 +145,14 @@ class User {
             'email': 'email', 
             'role': 'role',
             'status': 'status',
-            'createdAt': 'createdat',
-            'updatedAt': 'updatedat',
-            'createdat': 'createdat',
-            'updatedat': 'updatedat'
+            'createdAt': 'created_at',
+            'updatedAt': 'updated_at',
+            'createdat': 'created_at',
+            'updatedat': 'updated_at',
+            'created_at': 'created_at',
+            'updated_at': 'updated_at'
         };
-        const sortField = sortFieldMap[sortBy] || 'createdat';
+        const sortField = sortFieldMap[sortBy] || 'created_at';
         const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
         query += ` ORDER BY ${sortField} ${sortDirection}`;
 
@@ -177,17 +181,13 @@ class User {
                 db.query(countQuery, countValues)
             ]);
 
-            const users = usersResult.rows.map(userData => {
-                // Parse JSON fields
-                if (userData.permissions && typeof userData.permissions === 'string') {
-                    userData.permissions = JSON.parse(userData.permissions);
-                }
-                return new User(userData);
+            const users = usersResult.rows.map(row => {
+                return new User(this.parseUserData(row));
             });
 
             return {
                 users,
-                total: parseInt(countResult.rows[0].count)
+                total: parseInt(/** @type {any} */(countResult.rows[0]).count)
             };
         } catch (error) {
             console.error('Error in User.findAll:', error);
@@ -222,7 +222,7 @@ class User {
         }
 
         paramCount++;
-        updates.push(`updatedat = CURRENT_TIMESTAMP`);
+        updates.push(`updated_at = CURRENT_TIMESTAMP`);
         values.push(this.id);
 
         const query = `
@@ -238,11 +238,7 @@ class User {
             throw new Error('User not found');
         }
 
-        const userData = result.rows[0];
-        // Parse JSON fields
-        if (userData.permissions && typeof userData.permissions === 'string') {
-            userData.permissions = JSON.parse(userData.permissions);
-        }
+        const userData = User.parseUserData(result.rows[0]);
 
         // Update current instance
         Object.assign(this, userData);
@@ -258,7 +254,7 @@ class User {
 
         const query = `
             UPDATE users 
-            SET passwordhash = $1, updatedat = CURRENT_TIMESTAMP
+            SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
             WHERE id = $2
             RETURNING *
         `;
@@ -269,8 +265,8 @@ class User {
             throw new Error('User not found');
         }
 
-        this.passwordhash = passwordhash;
-        this.updatedat = result.rows[0].updatedat;
+        this.password_hash = passwordhash;
+        this.updated_at = /** @type {any} */(result.rows[0]).updated_at;
         return this;
     }
 
@@ -280,15 +276,15 @@ class User {
     async updateLastLogin() {
         const query = `
             UPDATE users 
-            SET lastlogin = CURRENT_TIMESTAMP, updatedat = CURRENT_TIMESTAMP
+            SET last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
-            RETURNING lastlogin
+            RETURNING last_login
         `;
 
         const result = await db.query(query, [this.id]);
         
         if (result.rows.length > 0) {
-            this.lastlogin = result.rows[0].lastlogin;
+            this.last_login = /** @type {any} */(result.rows[0]).last_login;
         }
 
         return this;
@@ -298,7 +294,7 @@ class User {
      * Compare password
      */
     async comparePassword(password) {
-        return await bcrypt.compare(password, this.passwordhash);
+        return await bcrypt.compare(password, this.password_hash);
     }
 
     /**
@@ -307,7 +303,7 @@ class User {
     async delete() {
         const query = `
             UPDATE users 
-            SET status = 'inactive', updatedat = CURRENT_TIMESTAMP
+            SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
         `;
@@ -319,7 +315,7 @@ class User {
         }
 
         this.status = 'inactive';
-        this.updatedat = result.rows[0].updatedat;
+        this.updated_at = /** @type {any} */(result.rows[0]).updated_at;
         return this;
     }
 
@@ -327,7 +323,7 @@ class User {
      * Convert to JSON (exclude sensitive data)
      */
     toJSON() {
-        const { passwordhash, ...userWithoutPassword } = this;
+        const { password_hash, ...userWithoutPassword } = this;
         return userWithoutPassword;
     }
 

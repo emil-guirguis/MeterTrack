@@ -9,26 +9,24 @@ class Location {
     constructor(locationData = {}) {
         this.id = locationData.id;
         this.name = locationData.name;
-        this.address_street = locationData.address_street;
-        this.address_city = locationData.address_city;
-        this.address_state = locationData.address_state;
-        this.address_zip_code = locationData.address_zip_code;
-        this.address_country = locationData.address_country;
+        this.address = locationData.address;
+        this.address2 = locationData.address2;
+        this.city = locationData.city;
+        this.state = locationData.state;
+        this.zip = locationData.zip;
+        this.country = locationData.country;
+        this.contact_id = locationData.contact_id;
         this.contact_primarycontact = locationData.contact_primarycontact;
         this.contact_email = locationData.contact_email;
         this.contact_phone = locationData.contact_phone;
         this.contact_website = locationData.contact_website;
         this.type = locationData.type;
         this.status = locationData.status || 'active';
-        this.totalfloors = locationData.totalfloors;
-        this.totalunits = locationData.totalunits;
-        this.yearbuilt = locationData.yearbuilt;
-        this.squarefootage = locationData.squarefootage;
-        this.description = locationData.description;
+        this.square_footage = locationData.square_footage;
         this.notes = locationData.notes;
-        this.metercount = locationData.metercount || 0;
-        this.createdat = locationData.createdat;
-        this.updatedat = locationData.updatedat;
+        this.active = locationData.active;
+        this.created_at = locationData.created_at;
+        this.updated_at = locationData.updated_at;
     }
 
     /**
@@ -182,7 +180,7 @@ class Location {
         }
 
         this.status = 'inactive';
-        this.updatedat = result.rows[0].updatedat;
+        this.updated_at = /** @type {any} */(result.rows[0]).updated_at;
         return this;
     }
 
@@ -223,7 +221,6 @@ class Location {
 
         const result = await db.query(query, [this.id]);
         if (result.rows.length > 0) {
-            this.metercount = result.rows[0].metercount;
         }
         return this;
     }
@@ -233,11 +230,12 @@ class Location {
      */
     get fullAddress() {
         const parts = [
-            this.address_street,
-            this.address_city,
-            this.address_state,
-            this.address_zip_code,
-            this.address_country
+            this.address,
+            this.address2,
+            this.city,
+            this.state,
+            this.zip,
+            this.country
         ].filter(part => part && part.trim());
         
         return parts.join(', ');

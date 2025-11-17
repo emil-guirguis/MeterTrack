@@ -26,7 +26,7 @@ class PostgresDB {
             
             this.pool = new Pool({
                 host: process.env.POSTGRES_HOST,
-                port: process.env.POSTGRES_PORT,
+                port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
                 database: process.env.POSTGRES_DB,
                 user: process.env.POSTGRES_USER,
                 password: process.env.POSTGRES_PASSWORD,
@@ -47,7 +47,8 @@ class PostgresDB {
             
             return this.pool;
         } catch (error) {
-            console.error('❌ PostgreSQL connection error:', error.message);
+            const err = /** @type {Error} */ (error);
+            console.error('❌ PostgreSQL connection error:', err.message);
             this.isConnected = false;
             throw error;
         }
@@ -75,7 +76,8 @@ class PostgresDB {
             const result = await client.query(text, params);
             return result;
         } catch (error) {
-            console.error('SQL Error:', error.message);
+            const err = /** @type {Error} */ (error);
+            console.error('SQL Error:', err.message);
             throw error;
         } finally {
             client.release();
@@ -136,10 +138,11 @@ class PostgresDB {
                 response_time: 'fast'
             };
         } catch (error) {
+            const err = /** @type {Error} */ (error);
             return {
                 status: 'unhealthy',
                 connected: false,
-                error: error.message,
+                error: err.message,
                 timestamp: new Date().toISOString()
             };
         }

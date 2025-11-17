@@ -1,7 +1,7 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components';
+import { DataList } from '@framework/lists/components/DataList';
 import { useContactsEnhanced } from '../../store/entities/contactsStore';
-import { useBaseList } from '@framework/lists/hooks';
+import { useBaseList } from '@framework/lists/hooks/useBaseList';
 import type { Contact } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import {
@@ -28,6 +28,8 @@ export const ContactList: React.FC<ContactListProps> = ({
   onContactCreate,
 }) => {
   const contacts = useContactsEnhanced();
+  
+
   
   // Wrap bulkUpdateStatus to match expected signature
   const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
@@ -81,7 +83,17 @@ export const ContactList: React.FC<ContactListProps> = ({
     onCreate: onContactCreate,
   });
 
+  
 
+  // Safety check - ensure data is always an array
+  const safeData = Array.isArray(baseList.data) ? baseList.data : [];
+  
+  // Debug: Check data structure
+  console.log('ContactList data:', {
+    dataLength: safeData.length,
+    firstItem: safeData[0],
+    columns: baseList.columns,
+  });
 
   return (
     <div className="contact-list">
@@ -90,7 +102,7 @@ export const ContactList: React.FC<ContactListProps> = ({
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}
         stats={baseList.renderStats()}
-        data={baseList.data}
+        data={safeData}
         columns={baseList.columns}
         loading={baseList.loading}
         error={baseList.error}

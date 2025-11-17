@@ -9,10 +9,10 @@ const router = express.Router();
  * POST /api/direct-meter-read
  */
 router.post('/direct-meter-read', async (req, res) => {
-  const { ip, port = 502, slaveId = 1, registers } = req.body;
+  const { ip, port = 502, registers } = req.body;
   const startTime = Date.now();
   
-  console.log(`🔌 Direct meter read (JavaScript): ${ip}:${port} slave ${slaveId}`);
+  console.log(`🔌 Direct meter read: ${ip}:${port} slave ${slaveId}`);
   
   try {
     // Validate input
@@ -49,12 +49,12 @@ router.post('/direct-meter-read', async (req, res) => {
         console.log(`📊 Reading register ${reg.address} (${reg.name})...`);
         
         // const result = await modbusService.readInputRegisters(
-        const result = { success: false, error: 'Modbus service disabled' }; /*
-          ip, 
-          reg.address, 
-          reg.count, 
-          { port, unitId: slaveId }
-        );
+        //   ip, 
+        //   reg.address, 
+        //   reg.count, 
+        //   { port, unitId: slaveId }
+        // );
+        const result = { success: false, error: 'Modbus service disabled' };
         
         if (result.success && result.data && Array.isArray(result.data)) {
           const rawValue = result.data[0];

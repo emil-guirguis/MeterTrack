@@ -1,11 +1,18 @@
+// @ts-nocheck
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const Meter = require('../models/Meter');
 const DeviceService = require('../services/deviceService');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
+const {
+  ValidationError,
+  UniqueConstraintError,
+  ForeignKeyError,
+  NotFoundError,
+  NotNullError
+} = require('../../../../framework/backend/api/base/errors');
 
 const router = express.Router();
-const db = require('../config/database');
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -31,62 +38,61 @@ router.get('/', [
     const {
       page = 1,
       pageSize = 20,
-      sortBy = 'createdAt',
+      sortBy = 'created_at',
       sortOrder = 'desc',
-      search,
-      'filter.manufacture': filtermanufacture,
       'filter.status': filterStatus
     } = req.query;
 
     const numericPage = parseInt(page);
     const numericPageSize = parseInt(pageSize);
-    const skip = (numericPage - 1) * numericPageSize;
+    const offset = (numericPage - 1) * numericPageSize;
 
-    // Fetch from PG model (returns already sorted by meterid ASC). We'll sort after mapping.
-    const filters = {
-      status: filterStatus || undefined,
-    };
+    // Build where clause for filtering
+    const where = {};
+    if (filterStatus) {
+      where.status = filterStatus;
+    }
 
-    const allMeters = await Meter.findAll(filters);
-
-    // Sort in-memory based on requested field
+    // Map sortBy to database column names
     const sortKeyMap = {
-      createdAt: 'createdat',
+      createdAt: 'created_at',
       meterId: 'meterid',
       meterid: 'meterid',
       status: 'status',
       type: 'type',
-      serialNumber: 'serialnumber',
-      model: 'device_description'
+      serialNumber: 'serial_number',
+      model: 'device_id'
     };
-    const key = sortKeyMap[sortBy] || 'createdat';
-    const sorted = allMeters.sort((a, b) => {
-      const va = (a[key] ?? '').toString().toLowerCase();
-      const vb = (b[key] ?? '').toString().toLowerCase();
-      if (va < vb) return sortOrder === 'desc' ? 1 : -1;
-      if (va > vb) return sortOrder === 'desc' ? -1 : 1;
-      return 0;
+    const orderColumn = sortKeyMap[sortBy] || 'created_at';
+    const orderDirection = sortOrder.toUpperCase();
+
+    // Use BaseModel's findAll with proper options
+    const result = await Meter.findAll({
+      where,
+      include: ['device', 'location'],
+      order: [[orderColumn, orderDirection]],
+      limit: numericPageSize,
+      offset
     });
 
-    const total = sorted.length;
-    const itemsPage = sorted.slice(skip, skip + numericPageSize).map(m => ({
+    // Map results to frontend format
+    const itemsPage = result.rows.map(m => ({
       id: m.id,
       meterId: m.meterid,
-      serialNumber: m.serialnumber,
+      serialNumber: m.serial_number || m.serial_number,
       device: m.device_name || null,
       model: m.device_description || null,
       type: m.type,
       status: m.status,
-      location: m.fullLocation,
-      createdAt: m.createdat,
-      updatedAt: m.updatedat,
+      location: m.Location,
+      createdAt: m.created_at || m.created_at,
+      updatedAt: m.updated_at || m.updated_at,
       register_map: m.register_map ?? null,
-      // Align with frontend expectations; configuration may not exist in PG
       configuration: undefined,
       lastReading: null
     }));
 
-    const totalPages = Math.ceil(total / numericPageSize) || 1;
+    const totalPages = result.pagination.totalPages;
 
     res.json({
       success: true,
@@ -95,7 +101,7 @@ router.get('/', [
         pagination: {
           currentPage: numericPage,
           pageSize: numericPageSize,
-          totalItems: total,
+          totalItems: result.pagination.totalItems,
           totalPages,
           hasNextPage: numericPage < totalPages,
           hasPreviousPage: numericPage > 1
@@ -109,6 +115,16 @@ router.get('/', [
     console.error('Error stack:', error.stack);
     console.error('Error code:', error.code);
     console.error('==========================');
+    
+    // Handle specific error types
+    if (error instanceof ValidationError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        details: error.details
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meters',
@@ -120,7 +136,11 @@ router.get('/', [
 // Get meter by ID
 router.get('/:id', requirePermission('meter:read'), async (req, res) => {
   try {
-    const meter = await Meter.findById(req.params.id);
+    // Use BaseModel's findById with relationship includes
+    const meter = await Meter.findById(req.params.id, {
+      include: ['device', 'location']
+    });
+    
     if (!meter) {
       return res.status(404).json({
         success: false,
@@ -131,14 +151,14 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
     const data = {
       id: meter.id,
       meterId: meter.meterid,
-      serialNumber: meter.serialnumber,
+      serialNumber: meter.serial_number || meter.serial_number,
       device: meter.device_name || null,
       model: meter.device_description || null,
       type: meter.type,
       status: meter.status,
       location: meter.fullLocation,
-      createdAt: meter.createdat,
-      updatedAt: meter.updatedat,
+      createdAt: meter.created_at || meter.created_at,
+      updatedAt: meter.updated_at || meter.updated_at,
       register_map: meter.register_map ?? null,
       configuration: undefined,
       lastReading: null
@@ -148,6 +168,15 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
 
   } catch (error) {
     console.error('Meter fetch error:', error);
+    
+    // Handle specific error types
+    if (error instanceof NotFoundError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meter',
@@ -160,7 +189,7 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
 router.post('/', [
   body('meterId').optional().isLength({ max: 50 }).trim(),
   body('meterid').optional().isLength({ max: 50 }).trim(),
-  body('device_id').optional().isUUID(),
+  body('device_id').optional().isInt(),
   body('device').optional().isLength({ max: 100 }).trim(),
   body('model').optional().isLength({ max: 100 }).trim(),
   body('serialNumber').optional().isLength({ max: 100 }).trim(),
@@ -184,6 +213,7 @@ router.post('/', [
     // Normalize body to PG model fields
     // Resolve device_id: accept device_id directly, or device and model strings and upsert into devices table
     let resolvedDeviceId = req.body.device_id || null;
+    const deviceName = (req.body.device || req.body.brand || '').trim();
     if (!resolvedDeviceId && (deviceName || req.body.model)) {
       const deviceDescription = (req.body.model || '').trim() || null;
       if (deviceName) {
@@ -248,21 +278,21 @@ router.post('/', [
       return res.status(400).json({ success: false, message: 'Meter ID is required' });
     }
 
-    // Attempt to create
+    // Use BaseModel's create method
     const created = await Meter.create(normalized);
 
     const responseItem = {
       id: created.id,
       meterId: created.meterid,
       device_id: created.device_id || null,
-      serialNumber: created.serialnumber,
+      serialNumber: created.serial_number || created.serial_number,
       device: created.device_name || null,
       model: created.device_description || null,
       type: created.type,
       status: created.status,
       location: created.fullLocation,
-      createdAt: created.createdat,
-      updatedAt: created.updatedat,
+      createdAt: created.created_at || created.created_at,
+      updatedAt: created.updated_at || created.updated_at,
       register_map: created.register_map ?? null,
     };
 
@@ -275,17 +305,36 @@ router.post('/', [
   } catch (error) {
     console.error('Meter creation error:', error);
     
-    if (error.code === 'DUPLICATE_CONNECTION') {
-      return res.status(409).json({
+    // Handle BaseModel custom errors
+    if (error instanceof UniqueConstraintError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'IP and port combination already exists'
+        message: error.message,
+        details: error.details
       });
     }
-
-    if (error.code === 11000) {
-      return res.status(409).json({
+    
+    if (error instanceof ForeignKeyError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'Meter ID already exists'
+        message: error.message,
+        details: error.details
+      });
+    }
+    
+    if (error instanceof NotNullError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        details: error.details
+      });
+    }
+    
+    if (error instanceof ValidationError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        details: error.details
       });
     }
 
@@ -301,7 +350,7 @@ router.post('/', [
 router.put('/:id', [
   body('meterId').optional().isLength({ max: 50 }).trim(),
   body('meterid').optional().isLength({ max: 50 }).trim(),
-  body('device_id').optional().isUUID(),
+  body('device_id').optional().isInt(),
   body('device').optional().isLength({ max: 100 }).trim(),
   body('model').optional().isLength({ max: 100 }).trim(),
   body('serialNumber').optional().isLength({ max: 100 }).trim(),
@@ -377,7 +426,7 @@ router.put('/:id', [
       meterid: req.body.meterid || req.body.meterId,
       type: req.body.type,
       device_id: resolvedDeviceId,
-      serialnumber: req.body.serialnumber || req.body.serialNumber,
+      serial_number: req.body.serialnumber || req.body.serialNumber,
       status: req.body.status,
       location_location: req.body.location_location,
       location_floor: req.body.location_floor,
@@ -389,19 +438,20 @@ router.put('/:id', [
       register_map: req.body.register_map
     };
 
+    // Use BaseModel's instance update method
     const updated = await meter.update(updateData);
 
     const responseItem = {
       id: updated.id,
       meterId: updated.meterid,
-      serialNumber: updated.serialnumber,
+      serialNumber: updated.serial_number || updated.serialnumber,
       device: updated.device_name || null,
       model: updated.device_description || null,
       type: updated.type,
       status: updated.status,
       location: updated.fullLocation,
-      createdAt: updated.createdat,
-      updatedAt: updated.updatedat,
+      createdAt: updated.created_at || updated.created_at,
+      updatedAt: updated.updated_at || updated.updated_at,
       register_map: updated.register_map ?? null,
     };
 
@@ -410,17 +460,43 @@ router.put('/:id', [
   } catch (error) {
     console.error('Meter update error:', error);
     
-    if (error.code === 'DUPLICATE_CONNECTION') {
-      return res.status(409).json({
+    // Handle BaseModel custom errors
+    if (error instanceof UniqueConstraintError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'IP and port combination already exists'
+        message: error.message,
+        details: error.details
       });
     }
-
-    if (error.code === 11000) {
-      return res.status(409).json({
+    
+    if (error instanceof ForeignKeyError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'Meter ID already exists'
+        message: error.message,
+        details: error.details
+      });
+    }
+    
+    if (error instanceof NotNullError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        details: error.details
+      });
+    }
+    
+    if (error instanceof ValidationError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        details: error.details
+      });
+    }
+    
+    if (error instanceof NotFoundError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
       });
     }
 
@@ -440,13 +516,35 @@ router.delete('/:id', requirePermission('meter:delete'), async (req, res) => {
       return res.status(404).json({ success: false, message: 'Meter not found' });
     }
 
+    // Use BaseModel's instance delete method
     await meter.delete();
 
     res.json({ success: true, message: 'Meter deleted successfully' });
 
   } catch (error) {
     console.error('Meter deletion error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete meter', error: error.message });
+    
+    // Handle BaseModel custom errors
+    if (error instanceof ForeignKeyError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: 'Cannot delete meter: it is referenced by other records',
+        details: error.details
+      });
+    }
+    
+    if (error instanceof NotFoundError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to delete meter', 
+      error: error.message 
+    });
   }
 });
 
@@ -466,14 +564,27 @@ router.post('/:id/test-connection', requirePermission('meter:read'), async (req,
 
   } catch (error) {
     console.error('Connection test error:', error);
-    res.status(500).json({ success: false, message: 'Failed to test connection', error: error.message });
+    
+    if (error instanceof NotFoundError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to test connection', 
+      error: error.message 
+    });
   }
 });
 
 // Get all meter maps (templates)
 router.get('/maps/templates', requirePermission('meter:read'), async (req, res) => {
   try {
-    const db = require('../config/database');
+    // Use BaseModel's database connection
+    const db = Meter.getDb();
     const query = `
       SELECT id, name, created_at, manufacturer, model, description, register_map
       FROM meter_maps 

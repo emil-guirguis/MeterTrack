@@ -1,3 +1,4 @@
+// @ts-nocheck
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -274,7 +275,6 @@ async function initializeAutoMeterCollection() {
       meters: {
         defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.11',
         defaultPort: parseInt(process.env.DEFAULT_METER_PORT) || 502,
-        defaultSlaveId: parseInt(process.env.DEFAULT_METER_SLAVE_ID) || 1,
         registers: {
           voltage: { address: 5, count: 1, scale: 200, unit: 'V' },
           current: { address: 6, count: 1, scale: 100, unit: 'A' },

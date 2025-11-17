@@ -335,7 +335,6 @@ export function createContactFilters(config?: {
   includeRole?: boolean;
   includeStatus?: boolean;
   includeIndustry?: boolean;
-  includeBusinessType?: boolean;
   roleOptions?: FilterOption[];
 }): FilterDefinition[] {
   const filters: FilterDefinition[] = [];
@@ -359,12 +358,7 @@ export function createContactFilters(config?: {
     );
   }
   
-  if (config?.includeBusinessType) {
-    filters.push(
-      createDynamicSelectFilter('businessType', 'Business Type', 'businessType')
-    );
-  }
-  
+ 
   return filters;
 }
 

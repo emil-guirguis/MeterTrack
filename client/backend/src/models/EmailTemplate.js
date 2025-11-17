@@ -20,6 +20,21 @@ class EmailTemplate {
         this.createdby = templateData.createdby;
         this.createdat = templateData.createdat;
         this.updatedat = templateData.updatedat;
+        this.updatedat = templateData.updatedat;
+    }
+
+    /**
+     * Helper to parse template data from database
+     * @param {any} row 
+     * @returns {any}
+     */
+    static parseTemplateData(row) {
+        const templateData = /** @type {any} */(row);
+        // Parse JSON fields
+        if (templateData.variables && typeof templateData.variables === 'string') {
+            templateData.variables = JSON.parse(templateData.variables);
+        }
+        return templateData;
     }
 
     /**
@@ -50,7 +65,7 @@ class EmailTemplate {
             const result = await db.query(query, values);
             return new EmailTemplate(result.rows[0]);
         } catch (error) {
-            if (error.code === '23505') { // Unique constraint violation
+            if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // Unique constraint violation
                 throw new Error('Template name already exists');
             }
             throw error;
@@ -68,13 +83,7 @@ class EmailTemplate {
             return null;
         }
 
-        const templateData = result.rows[0];
-        // Parse JSON fields
-        if (templateData.variables && typeof templateData.variables === 'string') {
-            templateData.variables = JSON.parse(templateData.variables);
-        }
-
-        return new EmailTemplate(templateData);
+        return new EmailTemplate(this.parseTemplateData(result.rows[0]));
     }
 
     /**
@@ -88,13 +97,7 @@ class EmailTemplate {
             return null;
         }
 
-        const templateData = result.rows[0];
-        // Parse JSON fields
-        if (templateData.variables && typeof templateData.variables === 'string') {
-            templateData.variables = JSON.parse(templateData.variables);
-        }
-
-        return new EmailTemplate(templateData);
+        return new EmailTemplate(this.parseTemplateData(result.rows[0]));
     }
 
     /**
@@ -179,17 +182,13 @@ class EmailTemplate {
                 db.query(countQuery, values.slice(0, paramCount - (limit ? 1 : 0) - (offset ? 1 : 0)))
             ]);
 
-            const templates = templatesResult.rows.map(templateData => {
-                // Parse JSON fields
-                if (templateData.variables && typeof templateData.variables === 'string') {
-                    templateData.variables = JSON.parse(templateData.variables);
-                }
-                return new EmailTemplate(templateData);
+            const templates = templatesResult.rows.map(row => {
+                return new EmailTemplate(this.parseTemplateData(row));
             });
 
             return {
                 templates,
-                total: parseInt(countResult.rows[0].count)
+                total: parseInt(/** @type {any} */(countResult.rows[0]).count)
             };
         } catch (error) {
             console.error('Error in EmailTemplate.findAll:', error);
@@ -240,11 +239,7 @@ class EmailTemplate {
             throw new Error('Template not found');
         }
 
-        const templateData = result.rows[0];
-        // Parse JSON fields
-        if (templateData.variables && typeof templateData.variables === 'string') {
-            templateData.variables = JSON.parse(templateData.variables);
-        }
+        const templateData = EmailTemplate.parseTemplateData(result.rows[0]);
 
         // Update current instance
         Object.assign(this, templateData);
@@ -265,8 +260,9 @@ class EmailTemplate {
         const result = await db.query(query, [this.id]);
 
         if (result.rows.length > 0) {
-            this.usagecount = result.rows[0].usagecount;
-            this.lastused = result.rows[0].lastused;
+            const row = /** @type {any} */(result.rows[0]);
+            this.usagecount = row.usagecount;
+            this.lastused = row.lastused;
         }
 
         return this;
@@ -295,7 +291,7 @@ class EmailTemplate {
         }
 
         this.isactive = false;
-        this.updatedat = result.rows[0].updatedat;
+        this.updatedat = /** @type {any} */(result.rows[0]).updatedat;
         return this;
     }
 
@@ -347,12 +343,8 @@ class EmailTemplate {
         const query = 'SELECT * FROM email_templates WHERE category = $1 AND isactive = true ORDER BY name';
         const result = await db.query(query, [category]);
 
-        return result.rows.map(templateData => {
-            // Parse JSON fields
-            if (templateData.variables && typeof templateData.variables === 'string') {
-                templateData.variables = JSON.parse(templateData.variables);
-            }
-            return new EmailTemplate(templateData);
+        return result.rows.map(row => {
+            return new EmailTemplate(this.parseTemplateData(row));
         });
     }
 

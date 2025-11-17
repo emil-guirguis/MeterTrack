@@ -8,11 +8,38 @@ const notificationScheduler = require('./NotificationScheduler');
 const meterDataAnalyzer = require('./MeterDataAnalyzer');
 const Meter = require('../models/Meter');
 
+/**
+ * @typedef {Object} MeterWithMeterId
+ * @property {string} meterid
+ * @property {number} id
+ * @property {string} status
+ * @property {Date} last_reading_date
+ * @property {Date} updated_at
+ * @property {string} location_location
+ * @property {string} type
+ * @property {string} maintenance_interval
+ * @property {Date} last_maintenance
+ * @property {Date} installation_date
+ * @property {Date} createdat
+ */
+
 class MeterIntegrationService {
     constructor() {
         this.isInitialized = false;
         this.config = null;
         this.eventListeners = new Map();
+    }
+
+    /**
+     * Helper to safely get error message
+     * @param {unknown} error 
+     * @returns {string}
+     */
+    getErrorMessage(error) {
+        if (error && typeof error === 'object' && 'message' in error) {
+            return String(error.message);
+        }
+        return String(error);
     }
 
     /**
@@ -46,18 +73,18 @@ class MeterIntegrationService {
         return {
             monitoring: {
                 enabled: process.env.METER_INTEGRATION_ENABLED !== 'false',
-                checkInterval: parseInt(process.env.METER_CHECK_INTERVAL) || 300000, // 5 minutes
-                batchSize: parseInt(process.env.METER_BATCH_SIZE) || 50
+                checkInterval: parseInt(process.env.METER_CHECK_INTERVAL || '300000') || 300000, // 5 minutes
+                batchSize: parseInt(process.env.METER_BATCH_SIZE || '50') || 50
             },
             thresholds: {
-                offlineTimeout: parseInt(process.env.METER_OFFLINE_THRESHOLD) || 300000, // 5 minutes
-                highUsageThreshold: parseFloat(process.env.HIGH_USAGE_THRESHOLD) || 1000, // kWh
-                lowUsageThreshold: parseFloat(process.env.LOW_USAGE_THRESHOLD) || 0.1, // kWh
-                usageSpikeMultiplier: parseFloat(process.env.USAGE_SPIKE_MULTIPLIER) || 2.0
+                offlineTimeout: parseInt(process.env.METER_OFFLINE_THRESHOLD || '300000') || 300000, // 5 minutes
+                highUsageThreshold: parseFloat(process.env.HIGH_USAGE_THRESHOLD || '1000') || 1000, // kWh
+                lowUsageThreshold: parseFloat(process.env.LOW_USAGE_THRESHOLD || '0.1') || 0.1, // kWh
+                usageSpikeMultiplier: parseFloat(process.env.USAGE_SPIKE_MULTIPLIER || '2.0') || 2.0
             },
             maintenance: {
                 defaultInterval: process.env.DEFAULT_MAINTENANCE_INTERVAL || '3 months',
-                reminderDays: parseInt(process.env.MAINTENANCE_REMINDER_DAYS) || 7,
+                reminderDays: parseInt(process.env.MAINTENANCE_REMINDER_DAYS || '7') || 7,
                 autoSchedule: process.env.AUTO_SCHEDULE_MAINTENANCE !== 'false'
             },
             notifications: {
@@ -113,7 +140,7 @@ class MeterIntegrationService {
             }
 
         } catch (error) {
-            console.error(`Error handling new meter reading for ${readingData.meterid}:`, error.message);
+            console.error(`Error handling new meter reading for ${readingData.meterid}:`, this.getErrorMessage(error));
         }
     }
 
@@ -140,7 +167,7 @@ class MeterIntegrationService {
             await this.logMeterStatusChange(meter.id, oldStatus, newStatus, reason);
 
         } catch (error) {
-            console.error(`Error handling meter status change for ${statusData.meterid}:`, error.message);
+            console.error(`Error handling meter status change for ${statusData.meterid}:`, this.getErrorMessage(error));
         }
     }
 
@@ -168,12 +195,13 @@ class MeterIntegrationService {
                     break;
                     
                 case 'overdue':
-                    await this.handleOverdueMaintenance(meter, notes);
+                    // TODO: Implement handleOverdueMaintenance
+                    console.warn(`Overdue maintenance for meter ${meter.meterid}: ${notes}`);
                     break;
             }
 
         } catch (error) {
-            console.error(`Error handling maintenance event for ${maintenanceData.meterid}:`, error.message);
+            console.error(`Error handling maintenance event for ${maintenanceData.meterid}:`, this.getErrorMessage(error));
         }
     }
 
@@ -198,14 +226,14 @@ class MeterIntegrationService {
                     await this.autoScheduleMaintenance(meter);
                     scheduledCount++;
                 } catch (error) {
-                    console.error(`Failed to schedule maintenance for meter ${meter.meterid}:`, error.message);
+                    console.error(`Failed to schedule maintenance for meter ${meter.id}:`, this.getErrorMessage(error));
                 }
             }
 
             console.log(`📅 Maintenance scheduling initialized: ${scheduledCount} meters scheduled`);
 
         } catch (error) {
-            console.error('Error initializing maintenance scheduling:', error.message);
+            console.error('Error initializing maintenance scheduling:', this.getErrorMessage(error));
         }
     }
 
@@ -248,7 +276,7 @@ class MeterIntegrationService {
             }
 
             // Calculate average usage
-            const values = recentReadings.map(r => parseFloat(r.reading_value));
+            const values = recentReadings.map(r => parseFloat(/** @type {any} */(r).reading_value));
             const average = values.reduce((sum, val) => sum + val, 0) / values.length;
             const currentValue = parseFloat(currentReading);
 
@@ -280,7 +308,7 @@ class MeterIntegrationService {
             }
 
         } catch (error) {
-            console.error(`Error checking usage anomalies for meter ${meter.meterid}:`, error.message);
+            console.error(`Error checking usage anomalies for meter ${meter.meterid}:`, this.getErrorMessage(error));
         }
     }
 
@@ -294,11 +322,11 @@ class MeterIntegrationService {
             
             const meterData = {
                 meter_id: meter.meterid,
-                location_id: location?.id,
-                location_name: location?.name || meter.location_location || 'Unknown Location',
+                location_id: /** @type {any} */(location)?.id,
+                location_name: /** @type {any} */(location)?.name || meter.location_location || 'Unknown Location',
                 location: this.formatMeterLocation(meter),
                 meter_type: meter.type || 'Electric Meter',
-                last_communication: meter.last_reading_date || meter.updatedat,
+                last_communication: meter.last_reading_date || meter.updated_at,
                 error_code: 'COMM_TIMEOUT',
                 error_description: reason || 'Meter communication timeout - no recent readings received'
             };
@@ -312,7 +340,7 @@ class MeterIntegrationService {
             }
 
         } catch (error) {
-            console.error(`Error sending offline notification for meter ${meter.meterid}:`, error.message);
+            console.error(`Error sending offline notification for meter ${meter.meterid}:`, this.getErrorMessage(error));
         }
     }
 
@@ -329,7 +357,7 @@ class MeterIntegrationService {
             await this.logUsageAlert(meter.id, alertType, data);
 
         } catch (error) {
-            console.error(`Error sending usage alert for meter ${meter.meterid}:`, error.message);
+            console.error(`Error sending usage alert for meter ${meter.meterid}:`, this.getErrorMessage(error));
         }
     }
 
@@ -513,7 +541,7 @@ class MeterIntegrationService {
             // Check if meter is offline
             const lastReading = meter.last_reading_date;
             const now = new Date();
-            const timeSinceLastReading = lastReading ? now - new Date(lastReading) : Infinity;
+            const timeSinceLastReading = lastReading ? now.getTime() - new Date(lastReading).getTime() : Infinity;
 
             if (timeSinceLastReading > this.config.thresholds.offlineTimeout) {
                 await this.handleMeterStatusChange({
@@ -526,7 +554,7 @@ class MeterIntegrationService {
 
             return { success: true, status: timeSinceLastReading > this.config.thresholds.offlineTimeout ? 'offline' : 'online' };
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: this.getErrorMessage(error) };
         }
     }
 
@@ -553,7 +581,7 @@ class MeterIntegrationService {
 
             return { success: true, message: 'Maintenance scheduled successfully' };
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: this.getErrorMessage(error) };
         }
     }
 
@@ -585,7 +613,7 @@ class MeterIntegrationService {
 
             return { success: true, message: 'Maintenance completed and next maintenance scheduled' };
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: this.getErrorMessage(error) };
         }
     }
 

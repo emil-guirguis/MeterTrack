@@ -73,8 +73,8 @@ export interface Contact {
   createdat: Date;
   updatedat: Date;
   // Legacy fields for backward compatibility
-  contactPerson?: string;
   tags?: string[];
+  active?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

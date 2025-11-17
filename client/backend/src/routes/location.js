@@ -38,14 +38,12 @@ function mapLocationToResponse(b) {
       website: b.contact_website
     },
     totalFloors: b.totalfloors,
-    totalUnits: b.totalunits,
-    yearBuilt: b.yearbuilt,
-    squareFootage: b.squarefootage,
+    squareFootage: b.square_footage,
     description: b.description,
     notes: b.notes,
-    meterCount: b.metercount,
-    createdAt: b.createdat,
-    updatedAt: b.updatedat
+    meterCount: b.meter_count,
+    createdAt: b.created_at,
+    updatedAt: b.updated_at
   };
 }
 
@@ -312,7 +310,8 @@ router.delete('/:id', requirePermission('location:delete'), async (req, res) => 
     }
 
     // Check if location has associated meters
-    const meterCount = metersList.length;
+    const meters = await Meter.findAll({ filters: { location_id: req.params.id } });
+    const meterCount = meters?.meters?.length || 0;
 
     if (meterCount > 0) {
       return res.status(400).json({
@@ -339,7 +338,7 @@ router.delete('/:id', requirePermission('location:delete'), async (req, res) => 
 // Bulk update location status
 router.patch('/bulk-status', [
   body('locationIds').isArray().withMessage('Location IDs must be an array'),
-  body('locationIds.*').isUUID().withMessage('Invalid location ID'),
+  body('locationIds.*').isInt().withMessage('Invalid location ID'),
   body('status').isIn(['active', 'inactive', 'maintenance']).withMessage('Invalid status')
 ], requirePermission('location:update'), async (req, res) => {
   try {
@@ -392,7 +391,7 @@ router.get('/stats', requirePermission('location:read'), async (req, res) => {
       return acc;
     }, {});
 
-    const squareValues = all.map(b => Number(b.squarefootage) || 0);
+    const squareValues = all.map(b => Number(b.square_footage) || 0);
     const totalSquareFootage = squareValues.reduce((sum, v) => sum + v, 0);
     const countNonZero = squareValues.filter(v => v > 0).length;
     const averageSquareFootage = countNonZero > 0 ? Math.round(totalSquareFootage / countNonZero) : 0;

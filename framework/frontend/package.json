@@ -1,0 +1,17 @@
+{
+  "name": "@meterit/framework-frontend",
+  "version": "1.0.0",
+  "description": "Shared frontend framework components for MeterIt applications",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "typescript": "~5.8.3"
+  }
+}

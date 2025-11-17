@@ -5,7 +5,6 @@ import { FormModal } from '../../components/common/FormModal';
 import type { Contact } from '../../types/entities';
 import AppLayout from '../../components/layout/AppLayout';
 import './ContactManagementPage.css';
-import { ContactDetail } from '../../components/contacts';
 
 export const ContactManagementPage: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -58,10 +57,6 @@ export const ContactManagementPage: React.FC = () => {
             onSubmit={async () => {}}
           />
         </FormModal>
-
-        {selectedContact && !showForm && (
-          <ContactDetail contact={selectedContact} onClose={() => setSelectedContact(null)} />
-        )}
       </div>
     </AppLayout>
   );

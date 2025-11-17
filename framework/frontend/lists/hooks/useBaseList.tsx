@@ -452,7 +452,8 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
             );
           }
 
-          return null;
+          // Return null with key for unsupported filter types
+          return <React.Fragment key={filter.key} />;
         })}
 
         {(searchQuery || Object.keys(buildFilters(filters)).length > 0) && (

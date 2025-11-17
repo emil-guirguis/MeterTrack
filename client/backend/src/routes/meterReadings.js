@@ -23,8 +23,9 @@ router.get('/direct', requirePermission('meter:read'), async (req, res) => {
     }
     res.json({ success: true, data: result.data, meta: { deviceIP, port, slaveId, timestamp: result.timestamp } });
   } catch (error) {
-    console.error('[Modbus API] Direct Modbus read error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Direct Modbus read failed', data: null });
+    const err = /** @type {Error} */ (error);
+    console.error('[Modbus API] Direct Modbus read error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Direct Modbus read failed', data: null });
   }
 });
 // Minimal mapper to align PG readings to frontend's expected fields,
@@ -203,11 +204,12 @@ router.get('/', [
       }
     });
   } catch (error) {
-    console.error('Get meter readings error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get meter readings error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meter readings',
-      ...(process.env.NODE_ENV !== 'production' ? { error: String(error && error.message || error) } : {})
+      ...(process.env.NODE_ENV !== 'production' ? { error: String(err && err.message || err) } : {})
     });
   }
 });
@@ -219,13 +221,16 @@ router.get('/recent', requirePermission('meter:read'), async (req, res) => {
     const items = await MeterReading.findAll({ limit: parseInt(limit) });
     // Items are ordered DESC by reading_date in model; ensure recency
     const sorted = items.sort((a, b) => {
-      const ta = new Date(a.reading_date || a.createdat || 0).getTime();
-      const tb = new Date(b.reading_date || b.createdat || 0).getTime();
+      const aData = /** @type {any} */ (a);
+      const bData = /** @type {any} */ (b);
+      const ta = new Date(aData.reading_date || aData.createdat || 0).getTime();
+      const tb = new Date(bData.reading_date || bData.createdat || 0).getTime();
       return tb - ta;
     });
     res.json({ success: true, data: sorted.map(toFrontendReading) });
   } catch (error) {
-    console.error('Get recent readings error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get recent readings error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch recent readings'
@@ -246,14 +251,16 @@ router.get('/latest', requirePermission('meter:read'), async (req, res) => {
     `;
     const result = await db.query(sql);
     // Sort by reading_date desc for nicer display
-    const rows = result.rows.sort((a, b) => (new Date(b.reading_date || b.createdat) - new Date(a.reading_date || a.createdat)));
-    res.json({ success: true, data: rows.map(toFrontendReading) });
+    const rows = /** @type {any[]} */ (result.rows);
+    const sorted = rows.sort((a, b) => (new Date(a.reading_date || a.createdat).getTime() - new Date(b.reading_date || b.createdat).getTime()));
+    res.json({ success: true, data: sorted.map(toFrontendReading) });
   } catch (error) {
-    console.error('Get latest readings error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get latest readings error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch latest readings',
-      ...(process.env.NODE_ENV !== 'production' ? { error: String(error && error.message || error) } : {})
+      ...(process.env.NODE_ENV !== 'production' ? { error: String(err && err.message || err) } : {})
     });
   }
 });
@@ -279,7 +286,8 @@ router.get('/:id', requirePermission('meter:read'), async (req, res, next) => {
       data: toFrontendReading(reading)
     });
   } catch (error) {
-    console.error('Get meter reading error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get meter reading error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meter reading'
@@ -316,7 +324,8 @@ router.get('/meter/:meterId', [
 
     res.json({ success: true, data: readings.map(toFrontendReading) });
   } catch (error) {
-    console.error('Get meter readings by meter ID error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get meter readings by meter ID error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meter readings'
@@ -339,7 +348,7 @@ router.get('/stats/summary', requirePermission('meter:read'), async (req, res) =
       WHERE (status IS NULL OR status = 'active')
     `;
     const result = await db.query(sql);
-    const row = result.rows[0] || {};
+    const row = /** @type {any} */ (result.rows[0] || {});
 
     const data = {
       totalReadings: Number(row.total_readings || 0),
@@ -355,11 +364,12 @@ router.get('/stats/summary', requirePermission('meter:read'), async (req, res) =
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('Get meter stats error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get meter stats error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch meter statistics',
-      ...(process.env.NODE_ENV !== 'production' ? { error: String(error && error.message || error) } : {})
+      ...(process.env.NODE_ENV !== 'production' ? { error: String(err && err.message || err) } : {})
     });
   }
 });

@@ -91,10 +91,13 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Login error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({
       success: false,
-      message: 'Login failed'
+      message: 'Login failed',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
@@ -147,7 +150,8 @@ router.post('/refresh', [
       }
     });
   } catch (error) {
-    console.error('Refresh token error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Refresh token error:', err);
     res.status(401).json({
       success: false,
       message: 'Invalid refresh token'
@@ -165,7 +169,8 @@ router.get('/verify', authenticateToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Token verification error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Token verification error:', err);
     res.status(500).json({
       success: false,
       message: 'Token verification failed'
@@ -183,7 +188,8 @@ router.post('/logout', authenticateToken, async (req, res) => {
       message: 'Logged out successfully'
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Logout error:', err);
     res.status(500).json({
       success: false,
       message: 'Logout failed'
