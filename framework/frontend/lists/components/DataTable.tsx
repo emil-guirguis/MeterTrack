@@ -130,6 +130,7 @@ export function DataTable<T extends Record<string, any>>({
             className="data-table__action-btn data-table__action-btn--edit"
             onClick={(e) => {
               e.stopPropagation();
+              console.log('[DataTable] Edit clicked for item:', item);
               onEdit(item);
             }}
             title="Edit"

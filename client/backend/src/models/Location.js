@@ -9,8 +9,8 @@ class Location {
     constructor(locationData = {}) {
         this.id = locationData.id;
         this.name = locationData.name;
-        this.address = locationData.address;
-        this.address2 = locationData.address2;
+        this.street = locationData.street;
+        this.street2 = locationData.street2;
         this.city = locationData.city;
         this.state = locationData.state;
         this.zip = locationData.zip;
@@ -34,7 +34,7 @@ class Location {
      */
     static async create(locationData) {
         const {
-            name, address_street, address_city, address_state, address_zip_code, address_country,
+            name, address_street, address_city, address_state, zip, address_country,
             contact_primarycontact, contact_email, contact_phone, contact_website,
             type, status, totalfloors, totalunits, yearbuilt, squarefootage,
             description, notes
@@ -230,8 +230,8 @@ class Location {
      */
     get fullAddress() {
         const parts = [
-            this.address,
-            this.address2,
+            this.street,
+            this.street2,
             this.city,
             this.state,
             this.zip,

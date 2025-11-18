@@ -5,7 +5,7 @@
 
 import React from 'react';
 import type { ColumnDefinition } from '../types/ui';
-import type { FilterDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
+import type { FilterDefinition, BulkActionConfig } from '@framework/lists/types/list';
 
 // Column helpers
 export function createTwoLineColumn<T>(
@@ -18,12 +18,12 @@ export function createTwoLineColumn<T>(
     key: primaryField as string,
     label,
     render: options?.secondaryRender 
-      ? (value: any, row: T) => 
+      ? (_value: any, row: T) => 
           React.createElement('div', { className: 'table-cell--two-line' },
             React.createElement('div', { className: 'table-cell__primary' }, String(row[primaryField])),
             React.createElement('div', { className: 'table-cell__secondary' }, options.secondaryRender(row))
           )
-      : (value: any, row: T) => 
+      : (_value: any, row: T) => 
           React.createElement('div', { className: 'table-cell--two-line' },
             React.createElement('div', { className: 'table-cell__primary' }, String(row[primaryField])),
             React.createElement('div', { className: 'table-cell__secondary' }, String(row[secondaryField]))
@@ -41,12 +41,28 @@ export function createStatusColumn<T>(
   return {
     key: String(field),
     label,
-    render: (value: any, row: T) => {
+    render: (_value: any, row: T) => {
       const status = row[field];
       const statusStr = String(status);
       const displayLabel = options?.labels?.[statusStr] || statusStr;
-      const badgeClass = statusStr === 'active' ? 'badge--success' : 'badge--secondary';
       
+      // If indicator light mode is enabled
+      if (options?.indicatorLight) {
+        const isActive = statusStr === 'active';
+        const indicatorClass = isActive ? 'status-indicator--active' : 'status-indicator--inactive';
+        
+        return React.createElement('div', { className: 'status-indicator-wrapper' },
+          React.createElement('span', { 
+            className: `status-indicator ${indicatorClass}`,
+            'aria-label': displayLabel,
+            title: displayLabel
+          }),
+          React.createElement('span', { className: 'status-indicator-label' }, displayLabel)
+        );
+      }
+      
+      // Default badge mode
+      const badgeClass = statusStr === 'active' ? 'badge--success' : 'badge--secondary';
       return React.createElement('span', { className: `badge ${badgeClass}` }, displayLabel);
     },
     responsive: options?.responsive,
@@ -62,7 +78,7 @@ export function createDateColumn<T>(
   return {
     key: String(field),
     label,
-    render: (value: any, row: T) => {
+    render: (_value: any, row: T) => {
       const date = row[field];
       if (!date) return '';
       
@@ -83,7 +99,7 @@ export function createLocationColumn<T>(
   return {
     key: String(cityKey),
     label,
-    render: (value: any, row: T) => {
+    render: (_value: any, row: T) => {
       const city = row[cityKey];
       const state = row[stateKey];
       const zip = options?.zipKey ? row[options.zipKey as keyof T] : null;
@@ -104,7 +120,7 @@ export function createBadgeListColumn<T>(
   return {
     key: String(field),
     label,
-    render: (value: any, row: T) => {
+    render: (_value: any, row: T) => {
       const tags = row[field];
       if (!tags || !Array.isArray(tags) || tags.length === 0) {
         return React.createElement('span', { className: 'text-muted' }, options?.emptyText || 'None');
@@ -121,7 +137,7 @@ export function createBadgeListColumn<T>(
       
       if (remaining > 0) {
         badges.push(
-          React.createElement('span', { key: 'remaining', className: 'badge badge--secondary' }, `+${remaining}`)
+          React.createElement('span', { key: visibleTags.length, className: 'badge badge--secondary' }, `+${remaining}`)
         );
       }
       
@@ -140,7 +156,7 @@ export function createPhoneColumn<T>(
   return {
     key: String(field),
     label,
-    render: (value: any, row: T) => {
+    render: (_value: any, row: T) => {
       const phone = row[field];
       return phone ? String(phone) : '';
     },
@@ -186,7 +202,7 @@ export function createStandardStatusActions<T>(
       id: 'activate',
       label: 'Activate',
       icon: 'check',
-      variant: 'success',
+      color: 'success',
       confirm: true,
       confirmMessage: (items: T[]) => `Activate ${items.length} ${items.length === 1 ? entityName : entityNamePlural}?`,
       action: async (items: T[]) => {
@@ -199,7 +215,7 @@ export function createStandardStatusActions<T>(
       id: 'deactivate',
       label: 'Deactivate',
       icon: 'x',
-      variant: 'warning',
+      color: 'warning',
       confirm: true,
       confirmMessage: (items: T[]) => `Deactivate ${items.length} ${items.length === 1 ? entityName : entityNamePlural}?`,
       action: async (items: T[]) => {
@@ -216,7 +232,7 @@ export function createExportAction<T>(exportFunction: (items: T[]) => void): Bul
     id: 'export',
     label: 'Export Selected',
     icon: 'download',
-    variant: 'secondary',
+    color: 'secondary',
     action: async (items: T[]) => {
       exportFunction(items);
     },

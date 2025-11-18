@@ -239,6 +239,9 @@ export interface EntityStoreSlice<T> extends EntityState<T>, EntityActions<T> {
   setListLoading: (loading: boolean) => void;
   setListError: (error: string | null) => void;
   resetList: () => void;
+  // Optimistic update methods
+  addItemToList: (item: T) => void;
+  updateItemInList: (item: T) => void;
 }
 
 // Cache Configuration

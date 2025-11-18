@@ -1,0 +1,144 @@
+/**
+ * Base Form Styles
+ * 
+ * These styles provide sensible defaults for form inputs to prevent common issues
+ * like invisible text due to color inheritance.
+ * 
+ * Import this in your form components or globally in your app.
+ */
+
+/* Base input styles - ensures text is always visible */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="search"],
+select,
+textarea {
+  /* Ensure text is visible with explicit color */
+  color: var(--form-text-color, var(--color-text-primary, #111827)) !important;
+  
+  /* Ensure background is visible */
+  background-color: var(--form-background, var(--color-surface, #ffffff));
+  
+  /* Basic styling */
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Disabled state */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--form-text-disabled, var(--color-text-secondary, #6b7280)) !important;
+  background-color: var(--form-background-disabled, var(--color-background-alt, #f9fafb));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Placeholder text */
+input::placeholder,
+textarea::placeholder {
+  color: var(--form-placeholder-color, var(--color-text-secondary, #9ca3af));
+  opacity: 1;
+}
+
+/* Focus state */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--form-border-focus, var(--color-primary, #1976d2));
+  box-shadow: 0 0 0 3px var(--form-focus-ring, rgba(25, 118, 210, 0.1));
+}
+
+/* Error state */
+input.error,
+input[aria-invalid="true"],
+select.error,
+select[aria-invalid="true"],
+textarea.error,
+textarea[aria-invalid="true"] {
+  border-color: var(--form-border-error, var(--color-error, #dc2626));
+}
+
+input.error:focus,
+input[aria-invalid="true"]:focus,
+select.error:focus,
+select[aria-invalid="true"]:focus,
+textarea.error:focus,
+textarea[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--form-error-ring, rgba(220, 38, 38, 0.1));
+}
+
+/* Autofill styles - prevent browser autofill from making text invisible */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--form-text-color, var(--color-text-primary, #111827)) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--form-background, var(--color-surface, #ffffff)) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Select dropdown arrow */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+}
+
+/* Checkbox and radio inputs */
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  height: auto;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  cursor: not-allowed;
+}
+
+/* Form labels */
+label {
+  color: var(--form-label-color, var(--color-text-primary, #111827));
+  font-weight: 500;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+/* Required indicator */
+.required,
+[aria-required="true"]::after {
+  color: var(--form-required-color, var(--color-error, #dc2626));
+  content: " *";
+  font-weight: bold;
+}
+
+/* Error message */
+.form-error,
+.error-message,
+[role="alert"] {
+  color: var(--form-error-text, var(--color-error, #dc2626));
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Help text */
+.form-help,
+.help-text {
+  color: var(--form-help-text, var(--color-text-secondary, #6b7280));
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}

@@ -49,8 +49,8 @@ class SettingsService {
     const defaultSettings = {
       name: 'Your Company Name',
       url: 'https://yourcompany.com',
-      address: '123 Main Street',
-      address2: '',
+      street: '123 Main Street',
+      street2: '',
       city: 'Your City',
       state: 'Your State',
       zip: '12345',
@@ -120,8 +120,8 @@ class SettingsService {
       name: dbRow.name,
       url: dbRow.url,
       address: {
-        street: dbRow.address,
-        street2: dbRow.address2,
+        street: dbRow.street,
+        street2: dbRow.street2,
         city: dbRow.city,
         state: dbRow.state,
         zipCode: dbRow.zip,
@@ -148,8 +148,8 @@ class SettingsService {
     if (frontendData.url !== undefined) dbData.url = frontendData.url;
 
     if (frontendData.address) {
-      if (frontendData.address.street !== undefined) dbData.address = frontendData.address.street;
-      if (frontendData.address.street2 !== undefined) dbData.address2 = frontendData.address.street2;
+      if (frontendData.address.street !== undefined) dbData.street = frontendData.address.street;
+      if (frontendData.address.street2 !== undefined) dbData.street2 = frontendData.address.street2;
       if (frontendData.address.city !== undefined) dbData.city = frontendData.address.city;
       if (frontendData.address.state !== undefined) dbData.state = frontendData.address.state;
       if (frontendData.address.zipCode !== undefined) dbData.zip = frontendData.address.zipCode;

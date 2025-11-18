@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DataList from '../common/DataList';
-import { FormModal } from '../common/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import { useAuth } from '../../hooks/useAuth';
 import type { EmailTemplate } from '../../types/entities';

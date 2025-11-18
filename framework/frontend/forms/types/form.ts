@@ -1,4 +1,4 @@
-import type { AuthContextProvider } from '../../shared/types/auth';
+import type { AuthContextProvider } from '../../lists/types/list';
 
 /**
  * Validation rule types
@@ -156,4 +156,106 @@ export interface FormSubmitResult {
   success: boolean;
   errors?: ValidationErrors;
   data?: any;
+}
+
+/**
+ * Configuration for entity form initialization
+ */
+export interface EntityFormConfig<TEntity, TFormData> {
+  entity?: TEntity;
+  entityToFormData: (entity: TEntity) => TFormData;
+  getDefaultFormData: () => TFormData;
+  onInitialize?: (formData: TFormData, mode: 'create' | 'edit') => void;
+  /** Name of the entity for validation logging (e.g., 'Contact', 'User') */
+  entityName?: string;
+  /** Enable automatic field validation (default: true in development) */
+  validateFields?: boolean;
+}
+
+/**
+ * Return type for useEntityForm hook
+ */
+export interface EntityFormReturn<TFormData> {
+  formData: TFormData;
+  setFormData: React.Dispatch<React.SetStateAction<TFormData>>;
+  isEditMode: boolean;
+  updateField: (field: string, value: any) => void;
+  resetForm: () => void;
+}
+
+/**
+ * Update strategy for list synchronization after form submission
+ * - 'optimistic': Updates list immediately using saved entity (faster, recommended)
+ * - 'reload': Fetches entire list from API after save (slower, but ensures consistency)
+ */
+export type UpdateStrategy = 'optimistic' | 'reload';
+
+/**
+ * Enhanced store interface that includes create/update methods and optimistic update methods
+ */
+export interface EntityStore<T> {
+  /** Create a new entity */
+  createItem?: (data: Partial<T>) => Promise<T>;
+  /** Update an existing entity */
+  updateItem?: (id: string, data: Partial<T>) => Promise<T>;
+  /** Fetch all entities from the API */
+  fetchItems?: () => Promise<void>;
+  
+  /** Add an item to the list (optimistic update) */
+  addItemToList?: (item: T) => void;
+  /** Update an item in the list (optimistic update) */
+  updateItemInList?: (item: T) => void;
+  
+  // Alternative method names (some stores use these)
+  create?: (data: Partial<T>) => Promise<T>;
+  update?: (id: string, data: Partial<T>) => Promise<T>;
+  
+  [key: string]: any; // Allow other store methods
+}
+
+/**
+ * Configuration for useEntityFormWithStore
+ */
+export interface EntityFormWithStoreConfig<TEntity, TFormData> 
+  extends Omit<EntityFormConfig<TEntity, TFormData>, 'onInitialize'> {
+  /** Entity store with create/update methods */
+  store: EntityStore<TEntity>;
+  /** Callback after successful save */
+  onSuccess?: (savedEntity: TEntity, mode: 'create' | 'update') => void;
+  /** Callback on error */
+  onError?: (error: Error, mode: 'create' | 'update') => void;
+  /** Transform form data to entity data before saving */
+  formDataToEntity?: (formData: TFormData) => Partial<TEntity>;
+  
+  /**
+   * Update strategy for list synchronization after form submission
+   * - 'optimistic': Updates list immediately using saved entity (default, faster)
+   * - 'reload': Fetches entire list from API after save (slower, but ensures consistency)
+   * @default 'optimistic'
+   */
+  updateStrategy?: UpdateStrategy;
+  
+  /**
+   * Whether to refresh the list after save
+   * @deprecated Use `updateStrategy` instead. This parameter is kept for backward compatibility.
+   * When set to true, it behaves like updateStrategy='reload'. When false, no list update occurs.
+   */
+  refreshAfterSave?: boolean;
+  
+  /** Custom create method name if store uses different naming */
+  createMethodName?: string;
+  /** Custom update method name if store uses different naming */
+  updateMethodName?: string;
+}
+
+/**
+ * Return type for useEntityFormWithStore
+ */
+export interface EntityFormWithStoreReturn<TFormData> extends EntityFormReturn<TFormData> {
+  /** Submit handler that calls store methods */
+  handleSubmit: (e?: React.FormEvent) => Promise<void>;
+  /** Whether form is currently submitting */
+  isSubmitting: boolean;
+  /** Error from last submission */
+  submitError: Error | null;
 }

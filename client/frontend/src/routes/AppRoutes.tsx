@@ -8,7 +8,7 @@ import { Dashboard } from '../pages/Dashboard';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../pages/users';
 import { LocationManagementPage } from '../pages/location';
-import { ContactManagementPage } from '../pages/contacts/ContactManagementPage';
+import { ContactManagementPage } from '../components/contacts';
 import { DeviceManagementPage } from '../pages/devices';
 import { Permission, UserRole } from '../types/auth';
 import { SettingsPage, MetersPage, TemplatesPage } from '../pages';

@@ -43,7 +43,7 @@ function logError(message, error, context = {}) {
   const logContext = {
     ...context,
     errorMessage: error.message,
-    errorCode: error.code,
+    errorCode: /** @type {any} */ (error).code || 'UNKNOWN',
     errorStack: error.stack
   };
   
@@ -92,12 +92,19 @@ function logDebug(message, context = {}) {
  * @param {Array} params - Query parameters
  */
 function logQuery(operation, model, sql, params = []) {
-  if (process.env.DEBUG_SQL) {
-    logDebug(`Database query: ${operation}`, {
-      model,
-      sql,
-      params
-    });
+  // Always log SQL queries in development for easier debugging
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const forceLog = process.env.DEBUG_SQL === 'true';
+  
+  if (isDevelopment || forceLog) {
+    // console.log(`\n${'='.repeat(80)}`);
+    console.log(`${operation.toUpperCase()} on ${model} - ${sql}`);
+    //console.log(`${'='.repeat(80)}`);
+    //console.log('SQL:', sql);
+    if (params.length > 0) {
+      console.log('Params:', JSON.stringify(params, null, 2));
+    } 
+    // console.log(`${'='.repeat(80)}\n`);
   }
 }
 
@@ -110,11 +117,11 @@ function logQuery(operation, model, sql, params = []) {
  * @param {string} sql - SQL query that failed
  * @param {Array} params - Query parameters
  */
-function logDatabaseError(operation, model, error, sql = null, params = []) {
+function logDatabaseError(operation, model, error, sql = '', params = []) {
   const context = {
     operation,
     model,
-    errorCode: error.code
+    errorCode: /** @type {any} */ (error).code || 'UNKNOWN'
   };
   
   if (sql) {

@@ -13,7 +13,7 @@ export { RoleGuard } from './auth/RoleGuard';
 
 // Common UI Components
 export { DataTable } from './common/DataTable';
-export { FormModal } from './common/FormModal';
+export { FormModal } from '../../../../framework/frontend/shared/components/FormModal';
 export { FormField } from './common/FormField';
 export { SearchFilter } from './common/SearchFilter';
 

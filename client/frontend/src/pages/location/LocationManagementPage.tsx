@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
 import { LocationList } from '../../components/location/LocationList';
 import { LocationForm } from '../../components/location/LocationForm';
-import { FormModal } from '../../components/common/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { useLocationsEnhanced } from '../../store/entities/locationStore';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageTitle } from '../../hooks/usePageTitle';

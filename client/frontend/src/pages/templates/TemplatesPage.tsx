@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
-import { FormModal } from '../../components/common/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { EmailTemplateListSimple } from '../../components/templates/EmailTemplateListSimple';
 import { TemplateForm } from '../../components/templates/TemplateForm';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';

@@ -694,9 +694,25 @@ class BaseModel {
       // Log query for debugging
       logQuery('update', ModelClass.name, sql, values);
       
+      // ALWAYS log SQL for debugging (even without DEBUG_SQL flag)
+      console.log('\n' + '█'.repeat(100));
+      console.log('█ SQL UPDATE STATEMENT');
+      console.log('█'.repeat(100));
+      console.log('Model:', ModelClass.name);
+      console.log('SQL:', sql);
+      console.log('Values:', JSON.stringify(values, null, 2));
+      console.log('█'.repeat(100) + '\n');
+      
       // Execute query
       const db = ModelClass._getDb();
       const result = await db.query(sql, values);
+      
+      console.log('\n' + '█'.repeat(100));
+      console.log('█ SQL UPDATE RESULT');
+      console.log('█'.repeat(100));
+      console.log('Rows affected:', result.rowCount);
+      console.log('Returned data:', JSON.stringify(result.rows, null, 2));
+      console.log('█'.repeat(100) + '\n');
       
       // Update current instance properties with returned data
       if (result.rows && result.rows.length > 0) {

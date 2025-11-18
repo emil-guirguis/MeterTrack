@@ -71,6 +71,35 @@ export const createEntityStore = <T extends { id: string }>(
         });
       },
 
+      // Optimistic update methods for form integration
+      addItemToList: (item) => {
+        set((state) => {
+          state.items.unshift(item as any);
+          state.total += 1;
+        });
+      },
+
+      updateItemInList: (item) => {
+        set((state) => {
+          // Convert both IDs to strings for comparison to handle type mismatches
+          const index = state.items.findIndex(i => String(i.id) === String(item.id));
+          if (index !== -1) {
+            // Replace the entire item to ensure all fields are updated
+            state.items[index] = item as any;
+          } else {
+            // Fallback: add item if not found (edge case)
+            console.warn('[updateItemInList] Item not found in list, adding as new item');
+            state.items.unshift(item as any);
+            state.total += 1;
+          }
+          
+          // Update selected item if it matches
+          if (state.selectedItem && String(state.selectedItem.id) === String(item.id)) {
+            state.selectedItem = item as any;
+          }
+        });
+      },
+
       setSelectedItem: (item) => {
         set((state) => {
           state.selectedItem = item as any;
@@ -206,7 +235,7 @@ export const createEntityStore = <T extends { id: string }>(
         const state = get();
         
         // Check cache freshness
-        if (isCacheFresh(state.lastFetch, cacheConfig.ttl) && !params) {
+        if (state.lastFetch && isCacheFresh(state.lastFetch, cacheConfig.ttl) && !params) {
           return; // Use cached data
         }
 
@@ -436,6 +465,10 @@ export const createEntityHook = <T extends { id: string }>(
       deleteItem: storeState.deleteItem,
       setSelectedItem: storeState.setSelectedItem,
       reset: storeState.reset,
+      
+      // Optimistic update methods
+      addItemToList: storeState.addItemToList,
+      updateItemInList: storeState.updateItemInList,
       
       // List actions
       setPage: storeState.setPage,

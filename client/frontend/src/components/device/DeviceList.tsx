@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { DataList } from '@framework/lists/components';
-import { FormModal } from '../common/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { DeviceForm } from './DeviceForm';
 import { useBaseList } from '@framework/lists/hooks';
 import { useDevicesEnhanced } from '../../store/entities/deviceStore';

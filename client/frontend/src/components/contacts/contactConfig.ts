@@ -1,15 +1,19 @@
 /**
- * Contact List Configuration
+ * Contact Configuration
  * 
- * Defines columns, filters, stats, bulk actions, and export configuration
- * for the ContactList component using the list framework.
+ * Centralized configuration for Contact entity including:
+ * - Form schema (field definitions, validation, API mapping)
+ * - List columns, filters, stats
+ * - Bulk actions and export configuration
+ * 
+ * This configuration is shared between ContactForm and ContactList components.
  */
 
-import React from 'react';
-import type { Contact } from '../types/entities';
-import type { ColumnDefinition } from '../types/ui';
+import type { Contact } from '../../types/entities';
+import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
-import { Permission } from '../types/auth';
+import { Permission } from '../../types/auth';
+import { createFormSchema, field } from '@framework/forms/utils/formSchema';
 import {
   createTwoLineColumn,
   createPhoneColumn,
@@ -20,7 +24,52 @@ import {
   createStatusFilter,
   createStandardStatusActions,
   createExportAction,
-} from './listHelpers';
+} from '../../config/listHelpers';
+
+// ============================================================================
+// FORM CONFIGURATION
+// ============================================================================
+
+/**
+ * Contact form schema - defines all fields, validation, and API mapping
+ * Used by ContactForm component
+ */
+export const contactFormSchema = createFormSchema({
+  name: field({ type: 'string', default: '', required: true, label: 'Name' }),
+  company: field({ type: 'string', default: '', label: 'Company' }),
+  role: field({ type: 'string', default: '', label: 'Role' }),
+  email: field({ type: 'email', default: '', required: true, label: 'Email' }),
+  phone: field({ type: 'phone', default: '', required: true, label: 'Phone' }),
+  street: field({ type: 'string', default: '', label: 'Street Address' }),
+  street2: field({ type: 'string', default: '', label: 'Street Address 2' }),
+  city: field({ type: 'string', default: '', label: 'City' }),
+  state: field({ type: 'string', default: '', label: 'State' }),
+  zip: field({
+    type: 'string',
+    default: '',
+    label: 'ZIP Code',
+    apiField: 'zip'
+  }),
+  country: field({ type: 'string', default: 'US', label: 'Country' }),
+  notes: field({ type: 'string', default: '', label: 'Notes' }),
+});
+
+/**
+ * Country options for form dropdown
+ */
+export const countryOptions = [
+  { value: 'US', label: 'United States' },
+  { value: 'CA', label: 'Canada' },
+  { value: 'GB', label: 'United Kingdom' },
+  { value: 'AU', label: 'Australia' },
+  { value: 'DE', label: 'Germany' },
+  { value: 'FR', label: 'France' },
+  { value: 'JP', label: 'Japan' },
+];
+
+// ============================================================================
+// LIST CONFIGURATION
+// ============================================================================
 
 /**
  * Column definitions for contact list
@@ -28,32 +77,21 @@ import {
 export const contactColumns: ColumnDefinition<Contact>[] = [
   createTwoLineColumn<Contact>(
     'name',
-    'Contact Name',
-    'category',
+    'Contact',
+    'company',
     {
-      sortable: true,
-      secondaryRender: (contact: Contact) => {
-        const category = contact.category || 'unknown';
-        const badgeClass = category === 'customer' ? 'badge--primary' : 'badge--secondary';
-        return React.createElement('span', { className: `badge ${badgeClass}` }, 
-          category.charAt(0).toUpperCase() + category.slice(1)
-        );
-      },
+      responsive: 'hide-mobile',
+      fallback: 'N/A',
     }
   ),
-  
-  
+
+
   createPhoneColumn<Contact>('phone', 'Phone', {
     responsive: 'hide-mobile',
   }),
-  
-  createStatusColumn<Contact>('status', 'Status', {
-    labels: {
-      active: 'Active',
-      inactive: 'Inactive',
-    },
-  }),
-  
+
+
+
   createLocationColumn<Contact>(
     'city',
     'state',
@@ -64,7 +102,7 @@ export const contactColumns: ColumnDefinition<Contact>[] = [
       fallback: 'N/A',
     }
   ),
-  
+
   {
     key: 'notes' as keyof Contact,
     label: 'Industry',
@@ -72,14 +110,22 @@ export const contactColumns: ColumnDefinition<Contact>[] = [
     responsive: 'hide-tablet',
     render: (_, contact) => (contact as any).industry || 'N/A',
   },
-  
- 
+
+
   createBadgeListColumn<Contact>('tags', 'Tags', {
     sortable: false,
     responsive: 'hide-mobile',
     maxVisible: 2,
     variant: 'neutral',
     emptyText: 'No tags',
+  }),
+
+  createStatusColumn<Contact>('active', 'Status', {
+    labels: {
+      active: 'Active',
+      inactive: 'Inactive',
+    },
+    indicatorLight: true,
   }),
 ];
 
@@ -91,9 +137,9 @@ export const contactFilters: FilterDefinition[] = [
     { label: 'Customer', value: 'customer' },
     { label: 'Vendor', value: 'vendor' },
   ]),
-  
+
   createStatusFilter(),
-  
+
   {
     key: 'industry',
     label: 'Industry',
@@ -104,7 +150,7 @@ export const contactFilters: FilterDefinition[] = [
         .filter(Boolean)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
-      
+
       return uniqueValues.map(value => ({
         label: String(value),
         value: String(value),
@@ -112,7 +158,7 @@ export const contactFilters: FilterDefinition[] = [
     },
     placeholder: 'All Industries',
   },
-  
+
 ];
 
 /**
@@ -187,7 +233,7 @@ export const contactExportConfig: ExportConfig<Contact> = {
     contact.email,
     contact.phone,
     contact.status,
-    contact.address || '',
+    contact.street || '',
     contact.city || '',
     contact.state || '',
     contact.zip || '',

@@ -217,9 +217,27 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
 
   // CRUD handlers
   const handleEdit = useCallback((item: T) => {
-    // Temporarily bypass permission check for debugging
-    // if (!canUpdate) return;
-    onEdit?.(item);
+    console.log('[useBaseList] handleEdit called with item:', item);
+    
+    // Validate item has required properties
+    if (!item || typeof item !== 'object') {
+      console.error('[useBaseList] Invalid item passed to handleEdit:', item);
+      return;
+    }
+    
+    // Check permissions
+    if (!canUpdate) {
+      console.warn('[useBaseList] Edit not allowed - missing permission');
+      return;
+    }
+    
+    // Invoke callback with complete item
+    if (onEdit) {
+      console.log('[useBaseList] Invoking onEdit callback');
+      onEdit(item);
+    } else {
+      console.warn('[useBaseList] No onEdit callback provided');
+    }
   }, [canUpdate, onEdit]);
 
   const handleDelete = useCallback(async (item: T) => {

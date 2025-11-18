@@ -1,6 +1,6 @@
 // Export common UI components
 export { DataTable } from './DataTable';
-export { FormModal } from './FormModal';
+export { FormModal } from '@framework/shared/components';
 export { FormField } from './FormField';
 export { SearchFilter } from './SearchFilter';
 export { CountrySelect } from './CountrySelect';

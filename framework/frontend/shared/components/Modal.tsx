@@ -67,13 +67,6 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, loading, onClose]);
 
-  // Handle backdrop click
-  const handleBackdropClick = useCallback((event: React.MouseEvent) => {
-    if (event.target === event.currentTarget && !loading) {
-      onClose();
-    }
-  }, [loading, onClose]);
-
   if (!isOpen) return null;
 
   return (
@@ -82,7 +75,6 @@ export const Modal: React.FC<ModalProps> = ({
         modal__backdrop
         ${shouldFullScreen ? 'modal__backdrop--fullscreen' : ''}
       `.trim()}
-      onClick={handleBackdropClick}
     >
       <div 
         className={`

@@ -84,18 +84,38 @@ router.post('/', requirePermission('contact:create'), async (req, res) => {
 
 // Update contact
 router.put('/:id', requirePermission('contact:update'), async (req, res) => {
+  console.log('\n' + '='.repeat(80));
+  console.log('[API] PUT /contacts/:id - Update Contact');
+  console.log('='.repeat(80));
+  console.log('Contact ID:', req.params.id);
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('='.repeat(80) + '\n');
+  
   try {
-    const contact = await Contact.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    // Find the contact first
+    const contact = await Contact.findById(req.params.id);
     if (!contact) {
       return res.status(404).json({ success: false, message: 'Contact not found' });
     }
+    
+    // Update the contact using instance method
+    await contact.update(req.body);
+    
+    console.log('\n' + '='.repeat(80));
+    console.log('[API] Contact Updated Successfully');
+    console.log('='.repeat(80));
+    console.log('Updated Contact:', JSON.stringify(contact, null, 2));
+    console.log('='.repeat(80) + '\n');
+    
     res.json({ success: true, data: contact });
   } catch (error) {
-    console.error('Error updating contact:', error);
+    console.error('\n' + '='.repeat(80));
+    console.error('[API ERROR] Failed to update contact');
+    console.error('='.repeat(80));
+    console.error('Error:', error);
+    console.error('Error Stack:', error.stack);
+    console.error('='.repeat(80) + '\n');
+    
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         success: false,
@@ -110,10 +130,15 @@ router.put('/:id', requirePermission('contact:update'), async (req, res) => {
 // Delete contact
 router.delete('/:id', requirePermission('contact:delete'), async (req, res) => {
   try {
-    const contact = await Contact.findByIdAndDelete(req.params.id);
+    // Find the contact first
+    const contact = await Contact.findById(req.params.id);
     if (!contact) {
       return res.status(404).json({ success: false, message: 'Contact not found' });
     }
+    
+    // Delete the contact using instance method
+    await contact.delete();
+    
     res.json({ success: true, message: 'Contact deleted successfully' });
   } catch (error) {
     console.error('Error deleting contact:', error);

@@ -62,8 +62,8 @@ export interface Contact {
   role?: string;
   email: string;
   phone: string;
-  address?: string;
-  address2?: string;
+  street?: string;
+  street2?: string;
   city?: string;
   state?: string;
   zip?: string;
@@ -97,7 +97,7 @@ export interface ContactCreateRequest {
   street?: string;
   city?: string;
   state?: string;
-  zip_code?: string;
+  zip?: string;
   country?: string;
   notes?: string;
   // Legacy fields for backward compatibility
@@ -333,9 +333,11 @@ export interface Meter {
 export interface Device {
   id: string;
   type: string;
-  brand: string;
+  manufacturer: string;
   model_number: string;
-  description: string;
+  description?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 } 
 export interface MeterCreateRequest {
   meterId: string;

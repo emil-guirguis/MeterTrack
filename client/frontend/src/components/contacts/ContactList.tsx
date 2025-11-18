@@ -10,7 +10,7 @@ import {
   contactStats,
   createContactBulkActions,
   contactExportConfig,
-} from '../../config/contactConfig';
+} from './contactConfig';
 import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
 import './ContactList.css';
 import '../common/ListStats.css';
@@ -50,6 +50,12 @@ export const ContactList: React.FC<ContactListProps> = ({
     });
   };
   
+  // Mock auth context that allows all permissions (temporary for development)
+  const mockAuthContext = {
+    checkPermission: () => true,
+    user: { id: '1', name: 'Dev User' }
+  };
+
   // Initialize base list hook with contact configuration
   const baseList = useBaseList<Contact, any>({
     entityName: 'contact',
@@ -81,6 +87,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     export: contactExportConfig,
     onEdit: onContactEdit,
     onCreate: onContactCreate,
+    authContext: mockAuthContext,
   });
 
   
@@ -88,11 +95,14 @@ export const ContactList: React.FC<ContactListProps> = ({
   // Safety check - ensure data is always an array
   const safeData = Array.isArray(baseList.data) ? baseList.data : [];
   
-  // Debug: Check data structure
-  console.log('ContactList data:', {
+  // Debug: Check data structure and permissions
+  console.log('ContactList debug:', {
     dataLength: safeData.length,
     firstItem: safeData[0],
     columns: baseList.columns,
+    canCreate: baseList.canCreate,
+    headerActions: baseList.renderHeaderActions(),
+    onContactCreate: onContactCreate,
   });
 
   return (

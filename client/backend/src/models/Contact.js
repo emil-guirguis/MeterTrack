@@ -14,8 +14,8 @@ class Contact extends BaseModel {
         this.role = contactData.role;
         this.email = contactData.email;
         this.phone = contactData.phone;
-        this.address = contactData.address;
-        this.address2 = contactData.address2;
+        this.street = contactData.street;
+        this.street2 = contactData.street2;
         this.city = contactData.city;
         this.state = contactData.state;
         this.zip = contactData.zip;
@@ -24,6 +24,8 @@ class Contact extends BaseModel {
         this.notes = contactData.notes;
         this.createdat = contactData.created_at;
         this.updated_at = contactData.updated_at;
+
+        
     }
     /**
      * @override
