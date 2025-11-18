@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
-import { DeviceList } from '../device/DeviceList';
-import { LocationList } from '../location/LocationList';
+import { DeviceList } from '../../features/devices';
+import { LocationList } from '../../features/locations';
 import {
   Paper,
   Typography,

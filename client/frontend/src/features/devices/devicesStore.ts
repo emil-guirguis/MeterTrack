@@ -1,0 +1,207 @@
+/**
+ * Devices Store - Consolidated
+ * 
+ * Combines API service and state management for devices.
+ * Handles all device-related data fetching, mutations, and state.
+ */
+
+import type { Device } from '../../types/device';
+import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
+import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+
+// ============================================================================
+// API SERVICE (Internal)
+// ============================================================================
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  count?: number;
+}
+
+class DeviceAPI {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getAll(): Promise<Device[]> {
+    const response = await this.request<ApiResponse<Device[]>>('/device');
+    return response.data;
+  }
+
+  async getById(id: string): Promise<Device> {
+    const response = await this.request<ApiResponse<Device>>(`/device/${id}`);
+    return response.data;
+  }
+
+  async create(data: Partial<Device>): Promise<Device> {
+    const response = await this.request<ApiResponse<Device>>('/device', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async update(id: string, data: Partial<Device>): Promise<Device> {
+    const response = await this.request<ApiResponse<Device>>(`/device/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.request<ApiResponse<void>>(`/device/${id}`, {
+      method: 'DELETE',
+    });
+  }
+}
+
+const api = new DeviceAPI();
+
+// ============================================================================
+// STORE CONFIGURATION
+// ============================================================================
+
+const devicesService = {
+  async getAll(): Promise<{ items: Device[]; total: number; hasMore: boolean }> {
+    return withTokenRefresh(async () => {
+      const items = await api.getAll();
+      return {
+        items,
+        total: items.length,
+        hasMore: false,
+      };
+    });
+  },
+
+  async getById(id: string): Promise<Device> {
+    return withTokenRefresh(async () => {
+      return await api.getById(id);
+    });
+  },
+
+  async create(data: Partial<Device>): Promise<Device> {
+    return withTokenRefresh(async () => {
+      return await api.create(data);
+    });
+  },
+
+  async update(id: string, data: Partial<Device>): Promise<Device> {
+    return withTokenRefresh(async () => {
+      return await api.update(id, data);
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    return withTokenRefresh(async () => {
+      await api.delete(id);
+    });
+  },
+};
+
+export const useDeviceStore = createEntityStore(devicesService, {
+  name: 'devices',
+  cache: {
+    ttl: 10 * 60 * 1000, // 10 minutes
+    maxAge: 60 * 60 * 1000, // 1 hour
+  },
+});
+
+export const useDevice = createEntityHook(useDeviceStore);
+
+// ============================================================================
+// ENHANCED HOOK
+// ============================================================================
+
+export const useDevicesEnhanced = () => {
+  const device = useDevice();
+
+  return {
+    ...device,
+
+    // Computed values
+    devicesByType: (type: string) =>
+      device.items.filter(d => d.type.toLowerCase().includes(type.toLowerCase())),
+
+    devicesByManufacturer: (manufacturer: string) =>
+      device.items.filter(d => d.manufacturer.toLowerCase().includes(manufacturer.toLowerCase())),
+
+    devicesByModel: (model: string) =>
+      device.items.filter(d => d.model_number?.toLowerCase().includes(model.toLowerCase())),
+
+    // Statistics
+    totalDevices: device.items.length,
+    uniqueManufacturers: [...new Set(device.items.map(d => d.manufacturer))].length,
+
+    // Enhanced actions
+    createDevice: async (data: Partial<Device>) => {
+      return withApiCall(
+        () => device.createItem(data),
+        {
+          loadingKey: 'createDevice',
+          showSuccessNotification: true,
+          successMessage: 'Device created successfully',
+        }
+      );
+    },
+
+    updateDevice: async (id: string, data: Partial<Device>) => {
+      return withApiCall(
+        () => device.updateItem(id, data),
+        {
+          loadingKey: 'updateDevice',
+          showSuccessNotification: true,
+          successMessage: 'Device updated successfully',
+        }
+      );
+    },
+
+    deleteDevice: async (id: string) => {
+      return withApiCall(
+        () => device.deleteItem(id),
+        {
+          loadingKey: 'deleteDevice',
+          showSuccessNotification: true,
+          successMessage: 'Device deleted successfully',
+        }
+      );
+    },
+
+    // Bulk operations
+    bulkDelete: async (ids: string[]) => {
+      return withApiCall(
+        async () => {
+          const promises = ids.map(id => device.deleteItem(id));
+          await Promise.all(promises);
+        },
+        {
+          loadingKey: 'bulkDeleteDevices',
+          showSuccessNotification: true,
+          successMessage: `${ids.length} devices deleted successfully`,
+        }
+      );
+    },
+  };
+};

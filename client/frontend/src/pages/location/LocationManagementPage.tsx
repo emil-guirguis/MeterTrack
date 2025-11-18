@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
-import { LocationList } from '../../components/location/LocationList';
-import { LocationForm } from '../../components/location/LocationForm';
+import { LocationList } from '../../features/locations/LocationList';
+import { LocationForm } from '../../features/locations/LocationForm';
 import { FormModal } from '@framework/shared/components';
-import { useLocationsEnhanced } from '../../store/entities/locationStore';
+import { useLocationsEnhanced } from '../../features/locations/locationsStore';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type { Location, LocationCreateRequest, LocationUpdateRequest } from '../../types/entities';

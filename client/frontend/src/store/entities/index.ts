@@ -1,10 +1,10 @@
 // Entity Stores Index
 
 // Export all entity stores
-export * from './usersStore';
-export * from './locationStore';
-export * from './contactsStore';
-export * from './metersStore';
+export * from '../../features/users/usersStore';
+export * from '../../features/locations/locationsStore';
+export * from '../../features/contacts/contactsStore';
+export * from '../../features/meters/metersStore';
 export * from './templatesStore';
 export * from './settingsStore';
 
@@ -12,10 +12,10 @@ export * from './settingsStore';
 export * from '../patterns/crudOperations';
 
 // Create a centralized entity manager
-import { useUsersStore, useUsersEnhanced } from './usersStore';
-import { useLocationsStore, useLocationsEnhanced } from './locationStore';
-import { useContactsStore, useContactsEnhanced } from './contactsStore';
-import { useMetersStore, useMetersEnhanced } from './metersStore';
+import { useUsersStore, useUsersEnhanced } from '../../features/users/usersStore';
+import { useLocationsStore, useLocationsEnhanced } from '../../features/locations/locationsStore';
+import { useContactsStore, useContactsEnhanced } from '../../features/contacts/contactsStore';
+import { useMetersStore, useMetersEnhanced } from '../../features/meters/metersStore';
 import { useTemplatesStore, useTemplatesEnhanced } from './templatesStore';
 import { useSettingsStore, useSettingsEnhanced } from './settingsStore';
 import { clearCache } from '../middleware/apiMiddleware';

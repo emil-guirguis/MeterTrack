@@ -1,0 +1,105 @@
+import React from 'react';
+import { DataList } from '@framework/lists/components';
+import { useUsersEnhanced } from './usersStore';
+import { useBaseList } from '@framework/lists/hooks';
+import type { User } from '../../types/auth';
+import { Permission } from '../../types/auth';
+import {
+  userColumns,
+  userFilters,
+  userStats,
+  createUserBulkActions,
+  userExportConfig,
+} from './userConfig';
+import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
+import './UserList.css';
+import '../../components/common/ListStats.css';
+import '../../components/common/TableCellStyles.css';
+
+interface UserListProps {
+  onUserSelect?: (user: User) => void;
+  onUserEdit?: (user: User) => void;
+  onUserCreate?: () => void;
+}
+
+export const UserList: React.FC<UserListProps> = ({
+  onUserSelect,
+  onUserEdit,
+  onUserCreate,
+}) => {
+  const users = useUsersEnhanced();
+  
+  // Initialize base list hook with user configuration
+  const baseList = useBaseList<User, any>({
+    entityName: 'user',
+    entityNamePlural: 'users',
+    useStore: useUsersEnhanced,
+    features: {
+      allowCreate: true,
+      allowEdit: true,
+      allowDelete: true,
+      allowBulkActions: true,
+      allowExport: true,
+      allowImport: false,
+      allowSearch: true,
+      allowFilters: true,
+      allowStats: true,
+    },
+    permissions: {
+      create: Permission.USER_CREATE,
+      update: Permission.USER_UPDATE,
+      delete: Permission.USER_DELETE,
+    },
+    columns: userColumns,
+    filters: userFilters,
+    stats: userStats,
+    bulkActions: createUserBulkActions(
+      { bulkUpdateStatus: async (ids: string[], status: string) => {
+        await users.bulkUpdateStatus(ids, status as 'active' | 'inactive');
+      }},
+      (items) => baseList.handleExport(items)
+    ),
+    export: userExportConfig,
+    onEdit: onUserEdit,
+    onCreate: onUserCreate,
+  });
+
+  // Custom delete handler for inactivating users
+  const handleUserDelete = (user: User) => {
+    showConfirmation({
+      type: 'warning',
+      title: 'Inactivate User',
+      message: `Inactivate user "${user.name}"?`,
+      confirmText: 'Inactivate',
+      onConfirm: async () => {
+        // Update user's status to inactive
+        await users.updateItem(user.id, { status: 'inactive' });
+        // Refresh the list
+        await users.fetchItems();
+      }
+    });
+  };
+
+  return (
+    <div className="user-list">
+      <DataList
+        title="Users"
+        filters={baseList.renderFilters()}
+        headerActions={baseList.renderHeaderActions()}
+        stats={baseList.renderStats()}
+        data={baseList.data}
+        columns={baseList.columns}
+        loading={baseList.loading}
+        error={baseList.error}
+        emptyMessage="No users found. Create your first user to get started."
+        onEdit={baseList.handleEdit}
+        onDelete={handleUserDelete}
+        onSelect={baseList.bulkActions.length > 0 ? () => {} : undefined}
+        bulkActions={baseList.bulkActions}
+        pagination={baseList.pagination}
+      />
+      {baseList.renderExportModal()}
+      {baseList.renderImportModal()}
+    </div>
+  );
+};

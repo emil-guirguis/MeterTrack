@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
 import { FormModal } from '@framework/shared/components';
-import { UserList } from '../../components/users/UserList';
-import { UserForm } from '../../components/users/UserForm';
-import { useUsersEnhanced } from '../../store/entities/usersStore';
+import { UserList } from '../../features/users/UserList';
+import { UserForm } from '../../features/users/UserForm';
+import { useUsersEnhanced } from '../../features/users/usersStore';
 import { useAuth } from '../../hooks/useAuth';
 import type { User } from '../../types/auth';
 import { Permission } from '../../types/auth';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppLayout } from '../../components/layout';
-import { DeviceList } from '../../components/device/DeviceList';
+import { DeviceList } from '../../features/devices/DeviceList';
 
 export const DeviceManagementPage: React.FC = () => {
   // Breadcrumb configuration
