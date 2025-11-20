@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Contact } from '../../types/entities';
+import type { Contact } from './contactConfig';
 import { contactFormSchema, countryOptions } from './contactConfig';
 import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
 import { useContactsEnhanced } from './contactsStore';
@@ -107,7 +107,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   const isFormDisabled = loading || form.isSubmitting;
 
   return (
-    <form onSubmit={handleSubmit} className="contact-form">
+    <form onSubmit={handleSubmit} className="contact-form base-form">
       <div className="contact-form__section">
         <h3 className="contact-form__section-title">Contact Information</h3>
         

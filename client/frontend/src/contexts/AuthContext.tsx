@@ -101,26 +101,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize authentication state on app load
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🔄 Initializing authentication...');
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         
         // Check if user has a stored token
         const token = authService.getStoredToken();
+        console.log('🔑 Stored token exists:', !!token);
+        
         if (token) {
-          // Verify token and get user data
-          const user = await authService.verifyToken();
-          if (user) {
-            dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-          } else {
-            // Token is invalid, clear it
+          // Add timeout to prevent hanging on network issues
+          const timeoutPromise = new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error('Token verification timeout')), 5000)
+          );
+          
+          try {
+            console.log('⏳ Verifying token...');
+            // Race between token verification and timeout
+            const user = await Promise.race([
+              authService.verifyToken(),
+              timeoutPromise
+            ]);
+            
+            if (user) {
+              console.log('✅ Token verified, user authenticated:', user.email);
+              dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+            } else {
+              console.log('❌ Token invalid, clearing...');
+              // Token is invalid, clear it
+              authService.clearStoredToken();
+              dispatch({ type: 'SET_LOADING', payload: false });
+            }
+          } catch (verifyError) {
+            console.warn('⚠️ Token verification failed or timed out:', verifyError);
+            // Clear invalid/unverifiable token
             authService.clearStoredToken();
             dispatch({ type: 'SET_LOADING', payload: false });
           }
         } else {
+          console.log('ℹ️ No stored token, user not authenticated');
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('❌ Auth initialization error:', error);
         authService.clearStoredToken();
         dispatch({ type: 'SET_LOADING', payload: false });
       }

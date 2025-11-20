@@ -4,8 +4,8 @@ import { MeterList } from './MeterList';
 import { MeterForm } from './MeterForm';
 import { FormModal } from '@framework/shared/components/FormModal';
 import { useMetersEnhanced } from './metersStore';
-import AppLayout from '../../components/layout/AppLayout';
-import type { Meter } from '../../types/entities';
+import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
+import type { Meter } from './meterConfig';
 
 export const MeterManagementPage: React.FC = () => (
   <EntityManagementPage<Meter, ReturnType<typeof useMetersEnhanced>>
@@ -14,7 +14,7 @@ export const MeterManagementPage: React.FC = () => (
     ListComponent={MeterList}
     FormComponent={MeterForm}
     useStore={useMetersEnhanced}
-    LayoutComponent={AppLayout}
+    LayoutComponent={AppLayoutWrapper}
     ModalComponent={FormModal}
   />
 );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useDevice } from '../devices/devicesStore';
-import type { Meter, CreateMeterRequest } from '../../types/meter';
+import type { Meter, CreateMeterRequest } from './meterConfig';
 import { Permission } from '../../types/auth';
 import RegisterMapEditor from './RegisterMapEditor';
 import './MeterForm.css';

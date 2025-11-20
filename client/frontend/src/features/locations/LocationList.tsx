@@ -2,8 +2,8 @@ import React from 'react';
 import { DataList } from '@framework/lists/components';
 import { useLocationsEnhanced } from './locationsStore';
 import { useBaseList } from '@framework/lists/hooks';
-import type { Location } from '../../types/entities';
 import { Permission } from '../../types/auth';
+import type { Location } from '../../types/entities';
 import {
   locationColumns,
   locationFilters,
@@ -25,11 +25,12 @@ export const LocationList: React.FC<LocationListProps> = ({
 }) => {
   const locations = useLocationsEnhanced();
   
-  // Wrap bulkUpdateStatus to match expected signature
-  const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
-    await locations.bulkUpdateStatus(ids, status as 'active' | 'inactive' | 'maintenance');
+  // Mock auth context that allows all permissions (temporary for development)
+  const mockAuthContext = {
+    checkPermission: () => true,
+    user: { id: '1', name: 'Dev User' }
   };
-
+  
   // Custom delete handler for locations
   const handleLocationDelete = (location: Location) => {
     showConfirmation({
@@ -68,12 +69,13 @@ export const LocationList: React.FC<LocationListProps> = ({
     filters: locationFilters,
     stats: locationStats,
     bulkActions: createLocationBulkActions(
-      { bulkUpdateStatus: bulkUpdateStatusWrapper },
+      { bulkUpdateStatus: locations.bulkUpdateStatus },
       (items) => baseList.handleExport(items)
     ),
     export: locationExportConfig,
     onEdit: onLocationEdit,
     onCreate: onLocationCreate,
+    authContext: mockAuthContext,
   });
 
   return (

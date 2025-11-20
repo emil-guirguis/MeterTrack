@@ -1,22 +1,21 @@
 /* Contact Form Component Styles */
 
+/* Contact form inherits base-form styles from framework */
 .contact-form {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  background: var(--color-surface, #ffffff);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Additional contact-specific overrides can go here */
 }
 
+/* Sections inherit form-section styles from framework */
 .contact-form__section {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .contact-form__section:last-of-type {
-  border-bottom: none;
   margin-bottom: 1rem;
 }
 
@@ -71,6 +70,7 @@
   outline: none;
   border-color: var(--color-primary, #1976d2);
   box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+  background-color: #fefce8 !important;
 }
 
 .contact-form__input--error,

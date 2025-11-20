@@ -41,6 +41,7 @@ import { debounceSearch, buildFilters } from '../utils/listHelpers';
 import { ConfirmationModal } from '../../shared/components';
 import { generateCSV, downloadCSV, formatDateForFilename, generateExportInfo } from '../utils/exportHelpers';
 import { processImportFile, generateImportTemplate } from '../utils/importHelpers';
+import { getIconElement, MaterialIcons } from '../../shared/utils/iconHelper';
 
 // Default auth context that always returns false for permissions
 const defaultAuthContext: AuthContextProvider = {
@@ -502,47 +503,44 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
   const renderHeaderActions = useCallback((): ReactNode => {
     const actions: ReactNode[] = [];
 
-    // Create button
+    // Create link
     if (canCreate) {
       actions.push(
         <button
           key="create"
           type="button"
-          className="btn btn-primary"
           onClick={handleCreate}
           aria-label={`Add new ${entityName}`}
         >
-          <i className="icon-plus"></i> Add {entityName}
+          {getIconElement(MaterialIcons.ADD)} Add {entityName}
         </button>
       );
     }
 
-    // Export button
+    // Export link
     if (canExport && exportConfig) {
       actions.push(
         <button
           key="export"
           type="button"
-          className="btn btn-secondary"
           onClick={() => setShowExportModal(true)}
           aria-label={`Export ${entityNamePlural} to CSV`}
         >
-          <i className="icon-download"></i> Export CSV
+          {getIconElement(MaterialIcons.TABLE_CHART)} Export CSV
         </button>
       );
     }
 
-    // Import button
+    // Import link
     if (canImport && importConfig) {
       actions.push(
         <button
           key="import"
           type="button"
-          className="btn btn-secondary"
           onClick={() => setShowImportModal(true)}
           aria-label={`Import ${entityNamePlural} from CSV`}
         >
-          <i className="icon-upload"></i> Import CSV
+          {getIconElement(MaterialIcons.UPLOAD)} Import CSV
         </button>
       );
     }

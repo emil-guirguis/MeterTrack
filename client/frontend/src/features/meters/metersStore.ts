@@ -1,6 +1,6 @@
 // Meters Entity Store
 
-import type { Meter } from '../../types/entities';
+import type { Meter } from './meterConfig';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
 import { tokenStorage } from '../../utils/tokenStorage';

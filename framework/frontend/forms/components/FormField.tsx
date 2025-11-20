@@ -56,7 +56,7 @@ export const FormField: React.FC<FormFieldProps> = ({
             disabled={disabled}
             rows={rows}
             className={`${baseClassName}__textarea ${showError ? `${baseClassName}__textarea--error` : ''}`}
-            aria-invalid={showError}
+            {...(showError && { 'aria-invalid': true })}
             aria-describedby={showError ? errorId : undefined}
           />
         );
@@ -72,7 +72,7 @@ export const FormField: React.FC<FormFieldProps> = ({
             required={required}
             disabled={disabled}
             className={`${baseClassName}__select ${showError ? `${baseClassName}__select--error` : ''}`}
-            aria-invalid={showError}
+            {...(showError && { 'aria-invalid': true })}
             aria-describedby={showError ? errorId : undefined}
           >
             {placeholder && <option value="">{placeholder}</option>}
@@ -96,7 +96,7 @@ export const FormField: React.FC<FormFieldProps> = ({
               onBlur={onBlur}
               disabled={disabled}
               className={`${baseClassName}__checkbox`}
-              aria-invalid={showError}
+              {...(showError && { 'aria-invalid': true })}
               aria-describedby={showError ? errorId : undefined}
             />
             <span>{label}</span>
@@ -140,7 +140,7 @@ export const FormField: React.FC<FormFieldProps> = ({
             max={max}
             step={step}
             className={inputClassName}
-            aria-invalid={showError}
+            {...(showError && { 'aria-invalid': true })}
             aria-describedby={showError ? errorId : undefined}
           />
         );

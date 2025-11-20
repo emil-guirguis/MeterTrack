@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { AppLayout } from '../../components/layout';
 import { LocationList } from '../../features/locations/LocationList';
 import { LocationForm } from '../../features/locations/LocationForm';
-import { FormModal } from '@framework/shared/components';
 import { useLocationsEnhanced } from '../../features/locations/locationsStore';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -18,7 +17,6 @@ export const LocationManagementPage: React.FC = () => {
   
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [showFormModal, setShowFormModal] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
   // Set page title
@@ -43,7 +41,6 @@ export const LocationManagementPage: React.FC = () => {
     
     setSelectedLocation(location);
     setViewMode('edit');
-    setShowFormModal(true);
   }, [canUpdate]);
 
   // Handle location creation
@@ -52,7 +49,6 @@ export const LocationManagementPage: React.FC = () => {
     
     setSelectedLocation(null);
     setViewMode('create');
-    setShowFormModal(true);
   }, [canCreate]);
 
   // Handle form submission
@@ -67,8 +63,7 @@ export const LocationManagementPage: React.FC = () => {
         await locations.updateLocation(updateData.id, updateData);
       }
       
-      // Close modal and return to list
-      setShowFormModal(false);
+      // Return to list
       setViewMode('list');
       setSelectedLocation(null);
       
@@ -85,7 +80,6 @@ export const LocationManagementPage: React.FC = () => {
 
   // Handle form cancellation
   const handleFormCancel = useCallback(() => {
-    setShowFormModal(false);
     setViewMode('list');
     setSelectedLocation(null);
   }, []);
@@ -101,12 +95,23 @@ export const LocationManagementPage: React.FC = () => {
     if (!canUpdate || !selectedLocation) return;
     
     setViewMode('edit');
-    setShowFormModal(true);
   }, [canUpdate, selectedLocation]);
 
   // Render different views based on current mode
   const renderContent = () => {
     switch (viewMode) {
+      case 'create':
+      case 'edit':
+        return (
+          <div className="location-management-page__form-container">
+            <LocationForm
+              location={selectedLocation || undefined}
+              onSubmit={handleFormSubmit}
+              onCancel={handleFormCancel}
+              loading={formLoading}
+            />
+          </div>
+        );
       
       case 'list':
       default:
@@ -152,22 +157,6 @@ export const LocationManagementPage: React.FC = () => {
         <div className="location-management-page__content">
           {renderContent()}
         </div>
-
-        {/* Form Modal */}
-        <FormModal
-          isOpen={showFormModal}
-          title={viewMode === 'create' ? 'Create New Location' : 'Edit Location'}
-          onClose={handleFormCancel}
-          onSubmit={() => {}} // FormModal requires this prop, but LocationForm handles its own submission
-          size="lg"
-        >
-          <LocationForm
-            location={selectedLocation || undefined}
-            onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-            loading={formLoading}
-          />
-        </FormModal>
       </div>
     </AppLayout>
   );

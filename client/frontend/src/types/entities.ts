@@ -53,31 +53,6 @@ export interface LocationUpdateRequest extends Partial<LocationCreateRequest> {
   id: string;
 }
 
-// Contact Management (Customers and Vendors)
-export interface Contact {
-  id: string;
-  category: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
-  name: string;
-  company?: string;
-  role?: string;
-  email: string;
-  phone: string;
-  street?: string;
-  street2?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-  status: 'active' | 'inactive';
-  notes?: string;
-  createdat: Date;
-  updatedat: Date;
-  // Legacy fields for backward compatibility
-  tags?: string[];
-  active?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
 
 export interface BusinessInfo {
   taxId?: string;

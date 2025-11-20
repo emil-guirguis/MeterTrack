@@ -5,7 +5,7 @@
  * Handles all contact-related data fetching, mutations, and state.
  */
 
-import type { Contact } from '../../types/entities';
+import type { Contact } from './contactConfig';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
 

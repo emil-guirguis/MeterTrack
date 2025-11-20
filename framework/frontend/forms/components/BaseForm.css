@@ -7,6 +7,32 @@
  * Import this in your form components or globally in your app.
  */
 
+/* Form Container - provides background for card-based sections */
+.base-form,
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--color-background, #f9fafb);
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .base-form,
+  .form-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .base-form,
+  .form-container {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+}
+
 /* Base input styles - ensures text is always visible */
 input[type="text"],
 input[type="email"],
@@ -56,6 +82,7 @@ textarea:focus {
   outline: none;
   border-color: var(--form-border-focus, var(--color-primary, #1976d2));
   box-shadow: 0 0 0 3px var(--form-focus-ring, rgba(25, 118, 210, 0.1));
+  background-color: #fefce8 !important;
 }
 
 /* Error state */

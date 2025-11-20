@@ -5,10 +5,12 @@ format code Shift + Alt + F
 select column Shift + Alt + Ctrl + arrow 
 search in files Ctrl + Shift + F
 save all files Ctrl + K S
+toUpperCase() Ctrl + Shift + U
+toLowerCase() Ctrl + Shift + L
 
 
 chrome 
-hard reset Ctrl + F5 
+hard reset Ctrl + F5 ,   Ctrl + Shift + R
 hard reset mouse Ctrl and click the Reload button
 switch tab  Ctrl + Tab
 close tab Ctrl + W

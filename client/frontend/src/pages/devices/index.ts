@@ -1,1 +1,0 @@
-export { DeviceManagementPage } from './DeviceManagementPage';

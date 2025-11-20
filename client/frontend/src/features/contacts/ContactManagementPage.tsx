@@ -4,8 +4,8 @@ import { ContactList } from './ContactList';
 import { ContactForm } from './ContactForm';
 import { FormModal } from '@framework/shared/components/FormModal';
 import { useContactsEnhanced } from './contactsStore';
-import AppLayout from '../../components/layout/AppLayout';
-import type { Contact } from '../../types/entities';
+import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
+import type { Contact } from './contactConfig';
 
 export const ContactManagementPage: React.FC = () => (
   <EntityManagementPage<Contact, ReturnType<typeof useContactsEnhanced>>
@@ -14,7 +14,7 @@ export const ContactManagementPage: React.FC = () => (
     ListComponent={ContactList}
     FormComponent={ContactForm}
     useStore={useContactsEnhanced}
-    LayoutComponent={AppLayout}
+    LayoutComponent={AppLayoutWrapper}
     ModalComponent={FormModal}
   />
 );

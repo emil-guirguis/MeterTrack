@@ -192,7 +192,7 @@ export const useLocationsEnhanced = () => {
     },
     
     // Bulk operations
-    bulkUpdateStatus: async (locationIds: string[], status: 'active' | 'inactive' | 'maintenance') => {
+    bulkUpdateStatus: async (locationIds: string[], status: string) => {
       return withApiCall(
         async () => {
           const promises = locationIds.map(id => locations.updateItem(id, { status }));

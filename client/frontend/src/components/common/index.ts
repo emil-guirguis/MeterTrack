@@ -4,7 +4,7 @@ export { FormModal } from '@framework/shared/components';
 export { FormField } from './FormField';
 export { SearchFilter } from './SearchFilter';
 export { CountrySelect } from './CountrySelect';
-export { HamburgerIcon } from './HamburgerIcon';
+export { HamburgerIcon } from '@framework/layout/components';
 
 // Common CSS files:
 // - ListStats.css: Common styles for list stats components (right-aligned sidebar)

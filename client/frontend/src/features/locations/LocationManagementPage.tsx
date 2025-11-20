@@ -4,7 +4,7 @@ import { LocationList } from './LocationList';
 import { LocationForm } from './LocationForm';
 import { FormModal } from '@framework/shared/components/FormModal';
 import { useLocationsEnhanced } from './locationsStore';
-import AppLayout from '../../components/layout/AppLayout';
+import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 import type { Location } from '../../types/entities';
 
 export const LocationManagementPage: React.FC = () => (
@@ -14,7 +14,7 @@ export const LocationManagementPage: React.FC = () => (
     ListComponent={LocationList}
     FormComponent={LocationForm}
     useStore={useLocationsEnhanced}
-    LayoutComponent={AppLayout}
+    LayoutComponent={AppLayoutWrapper}
     ModalComponent={FormModal}
   />
 );

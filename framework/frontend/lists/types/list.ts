@@ -328,6 +328,8 @@ export interface BaseListReturn<T> {
   renderExportModal: () => ReactNode;
   /** Render import modal */
   renderImportModal: () => ReactNode;
+  /** Render delete confirmation modal */
+  renderDeleteConfirmation: () => ReactNode;
   
   // Data
   /** Processed column definitions */

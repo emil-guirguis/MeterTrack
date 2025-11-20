@@ -4,7 +4,7 @@ import { UserList } from './UserList';
 import { UserForm } from './UserForm';
 import { FormModal } from '@framework/shared/components/FormModal';
 import { useUsersEnhanced } from './usersStore';
-import AppLayout from '../../components/layout/AppLayout';
+import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 import type { User } from '../../types/auth';
 
 export const UserManagementPage: React.FC = () => (
@@ -14,7 +14,7 @@ export const UserManagementPage: React.FC = () => (
     ListComponent={UserList}
     FormComponent={UserForm}
     useStore={useUsersEnhanced}
-    LayoutComponent={AppLayout}
+    LayoutComponent={AppLayoutWrapper}
     ModalComponent={FormModal}
   />
 );

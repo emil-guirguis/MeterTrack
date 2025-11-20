@@ -180,3 +180,67 @@
 {"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T18:03:45.446Z"}
 {"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T18:07:13.259Z"}
 {"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T18:07:13.262Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T18:15:42.445Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T18:15:42.450Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T18:16:52.533Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T18:16:52.536Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T18:31:22.902Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T18:31:22.905Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T18:34:56.206Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T18:34:56.209Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T21:09:39.878Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T21:09:39.886Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-18T21:45:54.005Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-18T21:45:54.010Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T19:02:29.610Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T19:02:29.613Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T19:08:33.440Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T19:08:33.445Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T19:12:38.561Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T19:12:38.565Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T19:13:33.623Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T19:13:33.627Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T19:17:32.438Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T19:17:32.442Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T20:48:12.789Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T20:48:12.792Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T20:59:50.045Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T20:59:50.049Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T21:52:16.156Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T21:52:16.159Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T21:52:17.781Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T21:52:17.784Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T23:14:56.982Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T23:14:56.986Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T23:14:58.751Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T23:14:58.755Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-19T23:40:39.397Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-19T23:40:39.400Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T00:20:57.110Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T00:20:57.113Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T00:59:05.764Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T00:59:05.768Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T01:26:57.673Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T01:26:57.676Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T01:26:59.269Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T01:26:59.271Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T03:09:42.338Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T03:09:42.342Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T03:12:40.501Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T03:12:40.507Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T03:53:37.249Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T03:53:37.252Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T04:34:00.485Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T04:34:00.487Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T04:34:02.104Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T04:34:02.107Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T06:00:21.039Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T06:00:21.042Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T06:00:22.766Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T06:00:22.769Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T06:19:09.912Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T06:19:09.916Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T07:00:31.113Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T07:00:31.116Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T07:00:32.716Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T07:00:32.719Z"}

@@ -22,13 +22,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
+  console.log('🛡️ ProtectedRoute check:', { isLoading, isAuthenticated, path: location.pathname });
+
   // Show loading spinner while checking authentication
   if (isLoading) {
+    console.log('⏳ Showing loading spinner...');
     return fallback || <LoadingSpinner message="Checking authentication..." fullScreen />;
   }
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
+    console.log('🔒 Not authenticated, redirecting to login...');
     return (
       <Navigate
         to={redirectTo}
@@ -39,6 +43,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Render protected content
+  console.log('✅ Authenticated, rendering protected content');
   return <>{children}</>;
 };
 

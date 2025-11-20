@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ProtectedRoute, AuthGuard } from '../components/auth';
-import { AppLayout } from '../components/layout';
+import AppLayoutWrapper from '../components/layout/AppLayoutWrapper';
 import LoginPage from '../pages/LoginPage';
 import { Dashboard } from '../pages/Dashboard';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
@@ -16,19 +16,19 @@ import ManagementForm from '../components/management/ManagementForm';
 
 // Dashboard Page with Layout
 const DashboardPage = () => (
-  <AppLayout title="Dashboard">
+  <AppLayoutWrapper title="Dashboard">
     <Dashboard />
-  </AppLayout>
+  </AppLayoutWrapper>
 );
 
 
 const UnauthorizedPage = () => (
-  <AppLayout title="Unauthorized">
+  <AppLayoutWrapper title="Unauthorized">
     <div className="unauthorized-page">
       <h2>Access Denied</h2>
       <p>You don't have permission to access this page.</p>
     </div>
-  </AppLayout>
+  </AppLayoutWrapper>
 );
 
 const AppRoutes: React.FC = () => {
@@ -99,9 +99,9 @@ const AppRoutes: React.FC = () => {
               requiredPermissions={[Permission.SETTINGS_READ, Permission.SETTINGS_UPDATE]}
               requireAll={false}
             >
-              <AppLayout title="Settings">
+              <AppLayoutWrapper title="Settings">
                 <SettingsPage />
-              </AppLayout>
+              </AppLayoutWrapper>
             </AuthGuard>
           }
         />
@@ -121,9 +121,9 @@ const AppRoutes: React.FC = () => {
           path="/meters"
           element={
             <AuthGuard requiredPermissions={[Permission.METER_READ]}>
-              <AppLayout title="Meters">
+              <AppLayoutWrapper title="Meters">
                 <MetersPage />
-              </AppLayout>
+              </AppLayoutWrapper>
             </AuthGuard>
           }
         />
@@ -143,9 +143,9 @@ const AppRoutes: React.FC = () => {
           path="/management"
           element={
             <AuthGuard requiredPermissions={[Permission.TEMPLATE_READ]}>
-              <AppLayout title="Management">
+              <AppLayoutWrapper title="Management">
                 <ManagementForm />
-              </AppLayout>
+              </AppLayoutWrapper>
             </AuthGuard>
           }
         />

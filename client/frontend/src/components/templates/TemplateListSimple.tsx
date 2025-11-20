@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import DataList from '../common/DataList';
+import { DataList } from '@framework/lists/components/DataList';
 import { FormModal } from '@framework/shared/components';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import { useAuth } from '../../hooks/useAuth';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Device } from '../../types/device';
+import type { Device } from './deviceConfig';
 import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
 import { useDevicesEnhanced } from './devicesStore';
 import '@framework/forms/components/BaseForm.css';

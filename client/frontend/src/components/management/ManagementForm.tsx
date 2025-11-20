@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
-import { DeviceList } from '../../features/devices';
-import { LocationList } from '../../features/locations';
+import { DeviceList, DeviceForm } from '../../features/devices';
+import { LocationList, LocationForm } from '../../features/locations';
+import { Modal } from '@framework/shared/components/Modal';
+import type { Device } from '../../features/devices/deviceConfig';
+import type { Location } from '../../types/entities';
 import {
   Paper,
   Typography,
@@ -29,6 +32,43 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
 }) => {
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+  const [showDeviceForm, setShowDeviceForm] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [showLocationForm, setShowLocationForm] = useState(false);
+
+  const handleDeviceEdit = (device: Device) => {
+    setEditingDevice(device);
+    setShowDeviceForm(true);
+  };
+
+  const handleDeviceCreate = () => {
+    setEditingDevice(null);
+    setShowDeviceForm(true);
+  };
+
+  const handleDeviceFormClose = () => {
+    setShowDeviceForm(false);
+    setEditingDevice(null);
+  };
+
+  const handleLocationEdit = (location: Location) => {
+    setEditingLocation(location);
+    setShowLocationForm(true);
+  };
+
+  const handleLocationCreate = () => {
+    setEditingLocation(null);
+    setShowLocationForm(true);
+  };
+
+  const handleLocationFormClose = () => {
+    setShowLocationForm(false);
+    setEditingLocation(null);
+  };
+
+  const deviceFormTitle = editingDevice ? 'Edit Device' : 'Create New Device';
+  const locationFormTitle = editingLocation ? 'Edit Location' : 'Create New Location';
 
   return (
     <form className="settings-form" onSubmit={e => { e.preventDefault(); onSubmit?.(); }}>
@@ -101,10 +141,32 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
           <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
-            <LocationList />
+            <LocationList 
+              onLocationEdit={handleLocationEdit}
+              onLocationCreate={handleLocationCreate}
+            />
           </Box>
         </DialogContent>
       </Dialog>
+
+      {/* Location Form Modal */}
+      <Modal
+        isOpen={showLocationForm}
+        title={locationFormTitle}
+        onClose={handleLocationFormClose}
+        size="lg"
+      >
+        {showLocationForm && (
+          <LocationForm
+            key={editingLocation?.id ? `edit-${editingLocation.id}` : 'new'}
+            location={editingLocation || undefined}
+            onCancel={handleLocationFormClose}
+            onSubmit={async () => {
+              handleLocationFormClose();
+            }}
+          />
+        )}
+      </Modal>
 
       {/* Device Management Modal */}
       <Dialog
@@ -133,10 +195,29 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
           <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
-            <DeviceList />
+            <DeviceList 
+              onDeviceEdit={handleDeviceEdit}
+              onDeviceCreate={handleDeviceCreate}
+            />
           </Box>
         </DialogContent>
       </Dialog>
+
+      {/* Device Form Modal */}
+      <Modal
+        isOpen={showDeviceForm}
+        title={deviceFormTitle}
+        onClose={handleDeviceFormClose}
+        size="lg"
+      >
+        {showDeviceForm && (
+          <DeviceForm
+            key={editingDevice?.id ? `edit-${editingDevice.id}` : 'new'}
+            device={editingDevice || undefined}
+            onCancel={handleDeviceFormClose}
+          />
+        )}
+      </Modal>
     </form>
   );
 };

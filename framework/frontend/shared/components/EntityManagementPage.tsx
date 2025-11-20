@@ -24,6 +24,7 @@
 
 import React, { useState } from 'react';
 import type { ReactElement } from 'react';
+import './EntityManagementPage.css';
 
 export interface EntityManagementPageProps<TEntity, TStore> {
   /** Page title */
@@ -31,19 +32,9 @@ export interface EntityManagementPageProps<TEntity, TStore> {
   /** Entity name for modal titles (e.g., "contact", "user") */
   entityName: string;
   /** List component to display entities */
-  ListComponent: React.ComponentType<{
-    onContactSelect?: (entity: TEntity) => void;
-    onContactEdit?: (entity: TEntity) => void;
-    onContactCreate?: () => void;
-    [key: string]: any;
-  }>;
+  ListComponent: React.ComponentType<any>;
   /** Form component for create/edit */
-  FormComponent: React.ComponentType<{
-    contact?: TEntity;
-    onCancel: () => void;
-    onSubmit: (data: any) => Promise<void>;
-    [key: string]: any;
-  }>;
+  FormComponent: React.ComponentType<any>;
   /** Hook that returns the entity store */
   useStore: () => TStore & {
     createItem?: (data: any) => Promise<TEntity>;
@@ -158,16 +149,26 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
     ? `Edit ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`
     : `Create New ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`;
 
+  // Create dynamic prop names based on entity name
+  const capitalizedEntity = entityName.charAt(0).toUpperCase() + entityName.slice(1);
+  const listComponentProps = {
+    [`on${capitalizedEntity}Select`]: handleSelect,
+    [`on${capitalizedEntity}Edit`]: handleEdit,
+    [`on${capitalizedEntity}Create`]: handleCreate,
+    ...listProps,
+  };
+
+  const formComponentProps = {
+    [entityName]: editingEntity || undefined,
+    onCancel: handleFormClose,
+    onSubmit: handleFormSubmit,
+    ...formProps,
+  };
+
   return (
     <Layout title={title}>
       <div className="entity-management-page">
-        <h1>{title}</h1>
-        <ListComponent
-          onContactSelect={handleSelect}
-          onContactEdit={handleEdit}
-          onContactCreate={handleCreate}
-          {...listProps}
-        />
+        <ListComponent {...listComponentProps} />
 
         <Modal
           isOpen={showForm}
@@ -177,10 +178,7 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
           {showForm && (
             <FormComponent
               key={editingEntity?.id ? `edit-${editingEntity.id}` : 'new'}
-              contact={editingEntity || undefined}
-              onCancel={handleFormClose}
-              onSubmit={handleFormSubmit}
-              {...formProps}
+              {...formComponentProps}
             />
           )}
         </Modal>

@@ -2,7 +2,7 @@ import React from 'react';
 import { DataList } from '@framework/lists/components/DataList';
 import { useContactsEnhanced } from './contactsStore';
 import { useBaseList } from '@framework/lists/hooks/useBaseList';
-import type { Contact } from '../../types/entities';
+import type { Contact } from './contactConfig';
 import { Permission } from '../../types/auth';
 import {
   contactColumns,

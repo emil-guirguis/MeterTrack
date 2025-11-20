@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { DataTable } from './DataTable';
 import type { DataTableProps, ColumnDefinition, BulkAction } from '../types/ui';
 import './ListFilters.css';
@@ -45,24 +46,12 @@ export function DataList<T extends Record<string, any>>({
   striped = true,
   hoverable = true,
 }: DataListProps<T>) {
+  const [actionsCollapsed, setActionsCollapsed] = useState(false);
+  const [statsCollapsed, setStatsCollapsed] = useState(false);
+
   return (
     <div className="data-list">
-      <div className="data-list__header">
-        <div className="data-list__header-left">
-          {headerActions && (
-            <div className="data-list__header-actions">
-              {headerActions}
-            </div>
-          )}
-        </div>
-        {title && (
-          <div className="data-list__title-section">
-            <h2 className="data-list__title">{title}</h2>
-          </div>
-        )}
-      </div>
-
-      {filters && (
+      if{filters && (
         <div className="user-list__filters">{/* reuse existing filter styles */}
           {filters}
         </div>
@@ -90,7 +79,43 @@ export function DataList<T extends Record<string, any>>({
         </div>
 
         <div className="list__sidebar">
-          {stats}
+          {headerActions && (
+            <div className="list__sidebar-card">
+              <div 
+                className="list__sidebar-card__header"
+                onClick={() => setActionsCollapsed(!actionsCollapsed)}
+              >
+                <h3 className="list__sidebar-card__title">Actions</h3>
+                <span className="list__sidebar-card__toggle">
+                  {actionsCollapsed ? '▼' : '▲'}
+                </span>
+              </div>
+              {!actionsCollapsed && (
+                <div className="list__sidebar-card__content">
+                  {headerActions}
+                </div>
+              )}
+            </div>
+          )}
+
+          {stats && (
+            <div className="list__sidebar-card">
+              <div 
+                className="list__sidebar-card__header"
+                onClick={() => setStatsCollapsed(!statsCollapsed)}
+              >
+                <h3 className="list__sidebar-card__title">Stats</h3>
+                <span className="list__sidebar-card__toggle">
+                  {statsCollapsed ? '▼' : '▲'}
+                </span>
+              </div>
+              {!statsCollapsed && (
+                <div className="list__sidebar-card__content">
+                  {stats}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

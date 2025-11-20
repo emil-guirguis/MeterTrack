@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DataList } from '../common/DataList';
+import { DataList } from '@framework/lists/components/DataList';
 import { meterReadingService } from '../../services';
 import type { DetailedMeterReading } from '../../types/entities';
 import './MeterReadingsList.css';

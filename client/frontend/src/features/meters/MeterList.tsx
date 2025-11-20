@@ -3,7 +3,7 @@ import { DataList } from '@framework/lists/components';
 import { useMetersEnhanced } from './metersStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useBaseList } from '@framework/lists/hooks';
-import type { Meter } from '../../types/entities';
+import type { Meter } from './meterConfig';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition } from '@framework/lists/types';
 import { meterColumns, meterFilters, createMeterBulkActions, meterExportConfig } from './meterConfig';
@@ -92,6 +92,12 @@ export const MeterList: React.FC<MeterListProps> = ({
     });
   }, [canRead, testingConnection, handleTestConnection]);
 
+  // Mock auth context that allows all permissions (temporary for development)
+  const mockAuthContext = {
+    checkPermission: () => true,
+    user: { id: '1', name: 'Dev User' }
+  };
+  
   // Wrap bulkUpdateStatus to match expected signature
   const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
     await meters.bulkUpdateStatus(ids, status as Meter['status']);
@@ -127,6 +133,7 @@ export const MeterList: React.FC<MeterListProps> = ({
     export: meterExportConfig,
     onEdit: onMeterEdit,
     onCreate: onMeterCreate,
+    authContext: mockAuthContext,
   });
 
   return (

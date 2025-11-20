@@ -5,7 +5,7 @@
  * Handles all device-related data fetching, mutations, and state.
  */
 
-import type { Device } from '../../types/device';
+import type { Device } from './deviceConfig';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
 
@@ -76,6 +76,7 @@ class DeviceAPI {
       method: 'DELETE',
     });
   }
+  
 }
 
 const api = new DeviceAPI();

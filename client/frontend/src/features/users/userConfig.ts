@@ -1,15 +1,20 @@
 /**
- * User List Configuration
+ * User Configuration
  * 
- * Defines columns, filters, stats, bulk actions, and export configuration
- * for the UserList component using the list framework.
+ * Centralized configuration for User entity including:
+ * - Form schema (field definitions, validation, API mapping)
+ * - List columns, filters, stats
+ * - Bulk actions and export configuration
+ * 
+ * This configuration is shared between UserForm and UserList components.
  */
 
 import React from 'react';
-import type { User, UserRole } from '../../types/auth';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
-import { Permission, UserRole as UserRoleEnum } from '../../types/auth';
+import { Permission, UserRole as UserRoleEnum, type Permission as PermissionType } from '../../types/auth';
+import { field } from '@framework/forms/utils/formSchema';
+import { defineEntitySchema } from '@framework/forms/utils/entitySchema';
 import {
   createTwoLineColumn,
   createStatusColumn,
@@ -18,6 +23,74 @@ import {
   createStandardStatusActions,
   createExportAction,
 } from '../../config/listHelpers';
+
+// ============================================================================
+// UNIFIED SCHEMA DEFINITION
+// ============================================================================
+
+/**
+ * User entity schema - single source of truth for User entity
+ * Defines form fields, entity fields, and legacy field mappings
+ */
+export const userSchema = defineEntitySchema({
+  formFields: {
+    name: field({ type: 'string', default: '', required: true, label: 'Full Name' }),
+    email: field({ type: 'email', default: '', required: true, label: 'Email Address' }),
+  },
+  
+  entityFields: {
+    id: { type: 'string' as const, default: '', readOnly: true },
+    client: { type: 'string' as const, default: '' },
+    role: { 
+      type: 'string' as const,
+      enumValues: ['admin', 'manager', 'technician', 'viewer'] as const,
+      default: 'viewer' as const
+    },
+    status: { 
+      type: 'string' as const,
+      enumValues: ['active', 'inactive'] as const,
+      default: 'active' as const
+    },
+    permissions: { type: 'string' as any, default: [] as string[] },
+    lastLogin: { type: 'date' as const, default: undefined as any },
+    createdAt: { type: 'date' as const, default: new Date(), readOnly: true },
+    updatedAt: { type: 'date' as const, default: new Date(), readOnly: true },
+  },
+  
+  entityName: 'User',
+  description: 'User entity for authentication and authorization',
+} as const);
+
+/**
+ * User form schema - exported for backward compatibility
+ * Used by UserForm component
+ */
+export const userFormSchema = userSchema.form;
+
+/**
+ * UserRole type - matches the enum values in the schema
+ */
+export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
+
+/**
+ * User TypeScript type - inferred from schema with explicit entity fields
+ */
+export type User = typeof userSchema._entityType & {
+  id: string;
+  email: string;
+  name: string;
+  client: string;
+  role: UserRole;
+  permissions: PermissionType[];
+  status: 'active' | 'inactive';
+  lastLogin?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// ============================================================================
+// LIST CONFIGURATION
+// ============================================================================
 
 /**
  * Column definitions for user list

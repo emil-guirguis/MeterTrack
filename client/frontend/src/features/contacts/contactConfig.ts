@@ -9,11 +9,11 @@
  * This configuration is shared between ContactForm and ContactList components.
  */
 
-import type { Contact } from '../../types/entities';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
 import { Permission } from '../../types/auth';
-import { createFormSchema, field } from '@framework/forms/utils/formSchema';
+import { field } from '@framework/forms/utils/formSchema';
+import { defineEntitySchema } from '@framework/forms/utils/entitySchema';
 import {
   createTwoLineColumn,
   createPhoneColumn,
@@ -27,32 +27,84 @@ import {
 } from '../../config/listHelpers';
 
 // ============================================================================
-// FORM CONFIGURATION
+// UNIFIED SCHEMA DEFINITION
 // ============================================================================
 
 /**
- * Contact form schema - defines all fields, validation, and API mapping
+ * Contact entity schema - single source of truth for Contact entity
+ * Defines form fields, entity fields, and legacy field mappings
+ */
+export const contactSchema = defineEntitySchema({
+  formFields: {
+    name: field({ type: 'string', default: '', required: true, label: 'Name' }),
+    company: field({ type: 'string', default: '', label: 'Company' }),
+    role: field({ type: 'string', default: '', label: 'Role' }),
+    email: field({ type: 'email', default: '', required: true, label: 'Email' }),
+    phone: field({ type: 'phone', default: '', required: true, label: 'Phone' }),
+    street: field({ type: 'string', default: '', label: 'Street Address' }),
+    street2: field({ type: 'string', default: '', label: 'Street Address 2' }),
+    city: field({ type: 'string', default: '', label: 'City' }),
+    state: field({ type: 'string', default: '', label: 'State' }),
+    zip: field({
+      type: 'string',
+      default: '',
+      label: 'ZIP Code',
+      apiField: 'zip'
+    }),
+    country: field({ type: 'string', default: 'US', label: 'Country' }),
+    notes: field({ type: 'string', default: '', label: 'Notes' }),
+  },
+  
+  entityFields: {
+    id: { type: 'string' as const, default: '', readOnly: true },
+    category: { 
+      type: 'string' as const,
+      enumValues: ['customer', 'vendor', 'contractor', 'technician', 'client'] as const,
+      default: 'customer' as const
+    },
+    status: { 
+      type: 'string' as const,
+      enumValues: ['active', 'inactive'] as const,
+      default: 'active' as const
+    },
+    createdat: { type: 'date' as const, default: new Date(), readOnly: true },
+    updatedat: { type: 'date' as const, default: new Date(), readOnly: true },
+    tags: { type: 'string' as any, default: [] as string[] },
+  },
+  
+  legacyFields: {
+    active: { 
+      maps: 'status', 
+      transform: (status: string) => status === 'active' 
+    },
+    createdAt: { maps: 'createdat' },
+    updatedAt: { maps: 'updatedat' },
+  },
+  
+  entityName: 'Contact',
+  description: 'Contact entity for customers, vendors, and other business contacts',
+} as const);
+
+/**
+ * Contact form schema - exported for backward compatibility
  * Used by ContactForm component
  */
-export const contactFormSchema = createFormSchema({
-  name: field({ type: 'string', default: '', required: true, label: 'Name' }),
-  company: field({ type: 'string', default: '', label: 'Company' }),
-  role: field({ type: 'string', default: '', label: 'Role' }),
-  email: field({ type: 'email', default: '', required: true, label: 'Email' }),
-  phone: field({ type: 'phone', default: '', required: true, label: 'Phone' }),
-  street: field({ type: 'string', default: '', label: 'Street Address' }),
-  street2: field({ type: 'string', default: '', label: 'Street Address 2' }),
-  city: field({ type: 'string', default: '', label: 'City' }),
-  state: field({ type: 'string', default: '', label: 'State' }),
-  zip: field({
-    type: 'string',
-    default: '',
-    label: 'ZIP Code',
-    apiField: 'zip'
-  }),
-  country: field({ type: 'string', default: 'US', label: 'Country' }),
-  notes: field({ type: 'string', default: '', label: 'Notes' }),
-});
+export const contactFormSchema = contactSchema.form;
+
+/**
+ * Contact TypeScript type - inferred from schema with explicit entity fields
+ */
+export type Contact = typeof contactSchema._entityType & {
+  id: string;
+  category: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
+  status: 'active' | 'inactive';
+  createdat: Date;
+  updatedat: Date;
+  tags?: string[];
+  active?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
 
 /**
  * Country options for form dropdown
