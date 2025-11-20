@@ -244,3 +244,15 @@
 {"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T07:00:31.116Z"}
 {"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T07:00:32.716Z"}
 {"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T07:00:32.719Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T15:37:22.721Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T15:37:22.727Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T16:27:23.890Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T16:27:23.893Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T17:35:44.720Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T17:35:44.724Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T17:49:44.725Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T17:49:44.728Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T17:54:34.453Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T17:54:34.457Z"}
+{"level":"info","message":"Sync MCP Server started","timestamp":"2025-11-20T18:19:09.872Z"}
+{"level":"info","message":"Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status","timestamp":"2025-11-20T18:19:09.878Z"}

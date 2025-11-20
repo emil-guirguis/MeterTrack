@@ -51,7 +51,7 @@ export function DataList<T extends Record<string, any>>({
 
   return (
     <div className="data-list">
-      if{filters && (
+      {filters && (
         <div className="user-list__filters">{/* reuse existing filter styles */}
           {filters}
         </div>
@@ -81,7 +81,7 @@ export function DataList<T extends Record<string, any>>({
         <div className="list__sidebar">
           {headerActions && (
             <div className="list__sidebar-card">
-              <div 
+              <div
                 className="list__sidebar-card__header"
                 onClick={() => setActionsCollapsed(!actionsCollapsed)}
               >
@@ -100,7 +100,7 @@ export function DataList<T extends Record<string, any>>({
 
           {stats && (
             <div className="list__sidebar-card">
-              <div 
+              <div
                 className="list__sidebar-card__header"
                 onClick={() => setStatsCollapsed(!statsCollapsed)}
               >

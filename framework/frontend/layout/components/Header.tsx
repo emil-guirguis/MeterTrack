@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { HeaderProps } from '../types';
 import { HamburgerIcon } from './HamburgerIcon';
 import { getIconElement } from '../../shared/utils/iconHelper';
+import { getAppVersion, formatVersion } from '../../shared/utils/version';
 
 import './Header.css';
 
@@ -249,6 +250,12 @@ export const Header: React.FC<HeaderProps> = ({
                     {getIconElement('lock', 'icon')}
                     Sign Out
                   </button>
+                </div>
+                <div className="user-menu-divider" role="separator"></div>
+                <div className="user-menu-footer">
+                  <div className="app-version">
+                    <span className="version-number">{formatVersion(getAppVersion())}</span>
+                  </div>
                 </div>
               </div>
             )}

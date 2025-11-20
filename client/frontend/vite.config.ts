@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { versionPlugin } from './vite-plugins/version-plugin';
 
 // Custom plugin to log errors to terminal
 const errorLoggerPlugin = () => {
@@ -35,6 +36,7 @@ const errorLoggerPlugin = () => {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    versionPlugin(),
     react({
       // Log React errors to terminal
       babel: {

@@ -402,7 +402,7 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
     }
 
     return (
-      <div className="list__filters">
+      <>
         {allowSearch && (
           <div className="list__filter-item">
             <input
@@ -485,7 +485,7 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
             Clear Filters
           </button>
         )}
-      </div>
+      </>
     );
   }, [
     allowFilters,

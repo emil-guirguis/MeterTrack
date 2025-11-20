@@ -127,38 +127,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}
       aria-label="Main navigation"
     >
-      <div className="sidebar__header">
-        {/* Only show toggle button on desktop */}
-        {!isMobile && (
-          <button
-            className="sidebar__toggle"
-            onClick={onToggle}
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            type="button"
-          >
-            <span className={`toggle-icon ${isCollapsed ? 'collapsed' : ''}`}>
-              ◀
-            </span>
-          </button>
-        )}
-      </div>
+
 
       <nav className="sidebar__nav" id="main-navigation">
         <ul className="sidebar-menu">
           {menuItems.map(item => renderMenuItem(item))}
         </ul>
       </nav>
-
-      <div className="sidebar__footer">
-        {(!isCollapsed || isMobile) && (
-          <div className="sidebar-footer-content">
-            <div className="app-version">
-              <span className="version-label">Version</span>
-              <span className="version-number">1.0.0</span>
-            </div>
-          </div>
-        )}
-      </div>
     </aside>
   );
 };

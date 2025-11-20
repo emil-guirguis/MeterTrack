@@ -72,12 +72,14 @@
 /* Filters */
 .location-list__filters {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
   background-color: var(--color-background-secondary);
   border-radius: 0.5rem;
   border: 1px solid var(--color-border);
+  align-items: center;
 }
 
 .location-list__search {

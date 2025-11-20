@@ -6,6 +6,7 @@
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
+  padding-right: 10px;list__filters
 }
 
 .list__content {

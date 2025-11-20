@@ -14,8 +14,8 @@
   grid-template-areas: "left center right";
   align-items: center;
   height: 64px;
-  padding: 0.5rem 1rem;
-  background-color: #3b82f6;
+  padding: 0;
+  background-color: #94b5e9;
   border-bottom: 1px solid var(--color-border, #e0e0e0);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   z-index: 2000;
@@ -33,10 +33,17 @@
   backface-visibility: hidden;
 }
 
+/* When sidebar is collapsed, adjust header margin */
+.app-layout.sidebar-collapsed .app-header {
+  margin-left: var(--sidebar-collapsed-width, 64px);
+}
+
 /* show-sidebar-elements */
 
 /* Left section - Sidebar elements */
 .app-header__left {
+  padding-left: 20px;
+  padding-top: 5px;
   grid-area: left;
   display: flex;
   align-items: center;
@@ -44,7 +51,6 @@
   /* Performance optimizations */
   will-change: transform, opacity;
   contain: layout style;
-  top: 4px;
   position: fixed;
 }
 
@@ -67,7 +73,6 @@
   gap: 1rem;
   justify-content: flex-end;
   min-width: 0;
-  top: -9px;
   position: inherit;
 
 }
@@ -561,7 +566,26 @@
   background-color: var(--color-error-light, rgba(220, 53, 69, 0.1));
 }
 
-/* Responsive Design */
+/* User Menu Footer */
+.user-menu-footer {
+  padding: 0.25rem 1rem;
+  background-color: var(--color-hover, rgba(0, 0, 0, 0.02));
+  min-height: 10px;
+}
+
+.user-menu-footer .app-version {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.user-menu-footer .version-number {
+  font-family: monospace;
+}
+
+/* Responsive Desig
 
 /* Desktop: Always show hamburger button */
 @media (min-width: 1024px) {
@@ -578,7 +602,8 @@
 /* Tablet and Mobile: Show sidebar elements in header when needed */
 @media (max-width: 1023px) {
   .app-header {
-    padding: 0 1rem;
+    padding: 0;
+    margin-left: 0 !important;
   }
 
   /* Hide search bar on mobile */
@@ -606,7 +631,7 @@
 
 @media (max-width: 768px) {
   .app-header {
-    padding: 0 1rem;
+    padding: 0;
   }
 
   .brand-text {
@@ -616,7 +641,7 @@
 
 @media (max-width: 480px) {
   .app-header {
-    padding: 0 0.75rem;
+    padding: 0;
   }
 
 
