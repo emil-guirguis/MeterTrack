@@ -4,6 +4,7 @@ import { useDevice } from '../devices/devicesStore';
 import type { Meter, CreateMeterRequest } from './meterConfig';
 import { Permission } from '../../types/auth';
 import RegisterMapEditor from './RegisterMapEditor';
+import '@framework/forms/components/BaseForm.css';
 import './MeterForm.css';
 
 interface MeterFormProps {
@@ -407,13 +408,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
             disabled={loading}
           >
             Cancel
-          </button>
-          <button
-            type="submit"
-            className={`btn btn--primary ${loading ? 'btn--loading' : ''}`}
-            disabled={loading || devices.loading}
-          >
-            {loading ? 'Saving...' : isEditing ? 'Update Meter' : 'Create Meter'}
           </button>
         </div>
       </form>

@@ -56,13 +56,13 @@ const MetersPage: React.FC = () => {
       <div className="meter-details__header">
         <h3>{meter.meterId}</h3>
         <div className="meter-details__actions">
-          <button 
+          <button
             className="btn btn--secondary btn--sm"
             onClick={() => handleEditMeter(meter)}
           >
             Edit
           </button>
-          <button 
+          <button
             className="btn btn--secondary btn--sm"
             onClick={() => setViewMode('list')}
           >
@@ -160,23 +160,6 @@ const MetersPage: React.FC = () => {
 
   return (
     <div className="meters-page">
-      <div className="page-header">
-        <div className="page-header__content">
-          <h1>Meter Management</h1>
-          <p>Manage and monitor your facility meters</p>
-        </div>
-        {viewMode === 'list' && (
-          <div className="page-header__actions">
-            <button 
-              className="btn btn--primary"
-              onClick={handleCreateMeter}
-            >
-              + Add Meter
-            </button>
-          </div>
-        )}
-      </div>
-
       <div className="page-content">
         {viewMode === 'list' && (
           <MeterList
@@ -195,7 +178,7 @@ const MetersPage: React.FC = () => {
           isOpen={true}
           title={viewMode === 'create' ? 'Add New Meter' : 'Edit Meter'}
           onClose={handleFormCancel}
-          onSubmit={() => {}} // No-op since form handles its own submission
+          onSubmit={() => { }} // No-op since form handles its own submission
           size="lg"
         >
           <MeterForm

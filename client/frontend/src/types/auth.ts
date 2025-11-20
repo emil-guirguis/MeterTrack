@@ -90,7 +90,7 @@ export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
-  checkPermission: (permission: Permission) => boolean;
+  checkPermission: (permission: string) => boolean;
   hasRole: (role: UserRole) => boolean;
 }
 
@@ -102,6 +102,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   [UserRole.MANAGER]: [
     // User management (limited)
+    Permission.USER_CREATE,
     Permission.USER_READ,
     Permission.USER_UPDATE,
     

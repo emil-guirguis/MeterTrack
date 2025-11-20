@@ -2,6 +2,7 @@ import React from 'react';
 import { DataList } from '@framework/lists/components';
 import { useUsersEnhanced } from './usersStore';
 import { useBaseList } from '@framework/lists/hooks';
+import { useAuth } from '../../hooks/useAuth';
 import type { User } from '../../types/auth';
 import { Permission } from '../../types/auth';
 import {
@@ -28,6 +29,7 @@ export const UserList: React.FC<UserListProps> = ({
   onUserCreate,
 }) => {
   const users = useUsersEnhanced();
+  const auth = useAuth();
   
   // Initialize base list hook with user configuration
   const baseList = useBaseList<User, any>({
@@ -62,6 +64,7 @@ export const UserList: React.FC<UserListProps> = ({
     export: userExportConfig,
     onEdit: onUserEdit,
     onCreate: onUserCreate,
+    authContext: auth,
   });
 
   // Custom delete handler for inactivating users

@@ -240,9 +240,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Check if user has specific permission
-  const checkPermission = (permission: Permission): boolean => {
+  const checkPermission = (permission: string): boolean => {
     if (!state.user) return false;
-    return state.user.permissions.includes(permission);
+    return state.user.permissions.includes(permission as Permission);
   };
 
   // Check if user has specific role

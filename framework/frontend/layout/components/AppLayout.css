@@ -23,6 +23,7 @@
   width: 100%;
   margin: 0;
   padding: 0;
+  padding-top: var(--header-height, 64px); /* Account for fixed header */
   overflow-x: visible; /* Allow horizontal expansion */
   overflow-y: hidden; /* Prevent vertical overflow on body */
 }

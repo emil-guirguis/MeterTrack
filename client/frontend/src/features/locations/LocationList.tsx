@@ -2,6 +2,7 @@ import React from 'react';
 import { DataList } from '@framework/lists/components';
 import { useLocationsEnhanced } from './locationsStore';
 import { useBaseList } from '@framework/lists/hooks';
+import { useAuth } from '../../hooks/useAuth';
 import { Permission } from '../../types/auth';
 import type { Location } from '../../types/entities';
 import {
@@ -24,12 +25,7 @@ export const LocationList: React.FC<LocationListProps> = ({
   onLocationCreate,
 }) => {
   const locations = useLocationsEnhanced();
-  
-  // Mock auth context that allows all permissions (temporary for development)
-  const mockAuthContext = {
-    checkPermission: () => true,
-    user: { id: '1', name: 'Dev User' }
-  };
+  const auth = useAuth();
   
   // Custom delete handler for locations
   const handleLocationDelete = (location: Location) => {
@@ -75,7 +71,7 @@ export const LocationList: React.FC<LocationListProps> = ({
     export: locationExportConfig,
     onEdit: onLocationEdit,
     onCreate: onLocationCreate,
-    authContext: mockAuthContext,
+    authContext: auth,
   });
 
   return (

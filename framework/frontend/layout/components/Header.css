@@ -19,9 +19,12 @@
   border-bottom: 1px solid var(--color-border, #e0e0e0);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   z-index: 2000;
-  /* Higher than mobile nav backdrop */
-  /* keep header in normal flow so it sits to the right of the sidebar */
-  position: relative;
+  /* Higher than sidebar */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   overflow: visible;
   transition: transform var(--sidebar-header-transition, 0.3s ease-in-out),
     opacity var(--sidebar-header-transition, 0.3s ease-in-out);
@@ -31,11 +34,6 @@
   transform: translateZ(0);
   /* Force hardware acceleration */
   backface-visibility: hidden;
-}
-
-/* When sidebar is collapsed, adjust header margin */
-.app-layout.sidebar-collapsed .app-header {
-  margin-left: var(--sidebar-collapsed-width, 64px);
 }
 
 /* show-sidebar-elements */
@@ -51,7 +49,7 @@
   /* Performance optimizations */
   will-change: transform, opacity;
   contain: layout style;
-  position: fixed;
+  position: relative;
 }
 
 /* Center section - Title when sidebar elements are shown */
@@ -62,7 +60,7 @@
   align-items: center;
   min-width: 0;
   top: 4px;
-  position: fixed;
+  position: relative;
 }
 
 
@@ -603,7 +601,6 @@
 @media (max-width: 1023px) {
   .app-header {
     padding: 0;
-    margin-left: 0 !important;
   }
 
   /* Hide search bar on mobile */

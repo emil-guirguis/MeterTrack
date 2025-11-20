@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { SidebarProps } from '../types';
 import { getIconElement } from '../../shared/utils/iconHelper';
 import './Sidebar.css';
@@ -23,6 +23,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const asideRef = useRef<HTMLElement | null>(null);
+
+  // Auto-expand parent menus when their children are active
+  useEffect(() => {
+    const parentsToExpand: string[] = [];
+    
+    const findActiveParents = (items: any[]) => {
+      items.forEach(item => {
+        if (item.children && item.children.length > 0) {
+          const hasActiveChild = item.children.some((child: any) => child.path === currentPath);
+          if (hasActiveChild) {
+            parentsToExpand.push(item.id);
+          }
+        }
+      });
+    };
+    
+    findActiveParents(menuItems);
+    
+    if (parentsToExpand.length > 0) {
+      setExpandedItems(prev => {
+        const newExpanded = [...prev];
+        parentsToExpand.forEach(id => {
+          if (!newExpanded.includes(id)) {
+            newExpanded.push(id);
+          }
+        });
+        return newExpanded;
+      });
+    }
+  }, [currentPath, menuItems]);
 
   const handleItemClick = (item: any) => {
     const hasChildren = item.children && item.children.length > 0;

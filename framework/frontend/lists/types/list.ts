@@ -210,7 +210,7 @@ export interface EnhancedStore<T> {
  * Projects must implement this interface to provide authentication.
  */
 export interface AuthContextProvider {
-  checkPermission: (permission: Permission) => boolean;
+  checkPermission: (permission: string) => boolean;
   user?: any;
 }
 

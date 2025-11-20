@@ -1,7 +1,13 @@
 /* DataList Component Styles */
+/* Inherits base list styles from EntityManagementPage.css */
 
 .data-list {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--color-background, #f9fafb);
 }
 
 .list__main-content {

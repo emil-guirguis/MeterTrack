@@ -92,11 +92,7 @@ export const MeterList: React.FC<MeterListProps> = ({
     });
   }, [canRead, testingConnection, handleTestConnection]);
 
-  // Mock auth context that allows all permissions (temporary for development)
-  const mockAuthContext = {
-    checkPermission: () => true,
-    user: { id: '1', name: 'Dev User' }
-  };
+  const auth = useAuth();
   
   // Wrap bulkUpdateStatus to match expected signature
   const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
@@ -133,7 +129,7 @@ export const MeterList: React.FC<MeterListProps> = ({
     export: meterExportConfig,
     onEdit: onMeterEdit,
     onCreate: onMeterCreate,
-    authContext: mockAuthContext,
+    authContext: auth,
   });
 
   return (

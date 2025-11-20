@@ -2,6 +2,7 @@ import React from 'react';
 import { DataList } from '@framework/lists/components/DataList';
 import { useContactsEnhanced } from './contactsStore';
 import { useBaseList } from '@framework/lists/hooks/useBaseList';
+import { useAuth } from '../../hooks/useAuth';
 import type { Contact } from './contactConfig';
 import { Permission } from '../../types/auth';
 import {
@@ -28,8 +29,7 @@ export const ContactList: React.FC<ContactListProps> = ({
   onContactCreate,
 }) => {
   const contacts = useContactsEnhanced();
-  
-
+  const auth = useAuth();
   
   // Wrap bulkUpdateStatus to match expected signature
   const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
@@ -48,12 +48,6 @@ export const ContactList: React.FC<ContactListProps> = ({
         await contacts.fetchItems();
       }
     });
-  };
-  
-  // Mock auth context that allows all permissions (temporary for development)
-  const mockAuthContext = {
-    checkPermission: () => true,
-    user: { id: '1', name: 'Dev User' }
   };
 
   // Initialize base list hook with contact configuration
@@ -87,7 +81,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     export: contactExportConfig,
     onEdit: onContactEdit,
     onCreate: onContactCreate,
-    authContext: mockAuthContext,
+    authContext: auth,
   });
 
   
