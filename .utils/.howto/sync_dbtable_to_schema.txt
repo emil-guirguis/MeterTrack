@@ -1,0 +1,194 @@
+# How to Sync Database Table to Frontend/Backend Schema
+
+## Quick Reference
+
+### Option 1: Standard Generation (Direct DB Mapping)
+```bash
+# Generates code with direct database field mapping
+node scripts/schema-generator.js <table_name>
+
+# Example
+node scripts/schema-generator.js device
+```
+
+### Option 2: Custom Mapping (For Complex Schemas)
+```bash
+# Generates code using custom field mappings
+node scripts/schema-generator-custom.js <table_name> <mapping_file>
+
+# Example
+node scripts/schema-generator-custom.js meter scripts/schema-mappings/meter-mapping.json
+```
+
+## When to Use Each Option
+
+### Use Standard Generator When:
+- Frontend field names match database column names (snake_case → camelCase)
+- No computed fields or relationships in the form
+- Simple CRUD operations
+- Example: devices, locations, simple lookup tables
+
+### Use Custom Mapping When:
+- Frontend uses different field names than database
+- Form includes computed fields (from relationships)
+- Complex business logic in the schema
+- Example: meters (has device, model, location computed fields)
+
+## Creating a Custom Mapping File
+
+1. Create a JSON file in `scripts/schema-mappings/`
+2. Define your custom field mappings
+
+Example structure:
+```json
+{
+  "tableName": "meter",
+  "customFormFields": {
+    "meterId": {
+      "dbField": "name",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Meter ID"
+    },
+    "device": {
+      "dbField": null,
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Device Manufacturer",
+      "comment": "Populated from device relationship"
+    }
+  },
+  "entityFields": {
+    "id": {
+      "dbField": "id",
+      "type": "string",
+      "readOnly": true
+    },
+    "status": {
+      "dbField": "status",
+      "type": "string",
+      "enumValues": ["active", "inactive", "maintenance"],
+      "default": "active"
+    }
+  }
+}
+```
+
+## Workflow
+
+### 1. After Database Migration
+```bash
+# Run migration
+npm run db:migrate
+
+# Generate code
+node scripts/schema-generator.js meter
+# OR with custom mapping
+node scripts/schema-generator-custom.js meter scripts/schema-mappings/meter-mapping.json
+```
+
+### 2. Review Generated Files
+Check `generated/` directory:
+- `Meter.js` - Backend model
+- `meterConfig.ts` or `meterConfig-custom.ts` - Frontend schema
+- `meter_schema_summary.txt` - Summary
+
+### 3. Copy to Project
+```bash
+# Backend
+cp generated/Meter.js client/backend/src/models/
+
+# Frontend (merge with existing if using custom)
+# Review and merge the schema definition
+code --diff client/frontend/src/features/meters/meterConfig.ts generated/meterConfig-custom.ts
+```
+
+### 4. Customize
+- Add relationships in backend model
+- Add custom validation
+- Update list columns and filters
+- Test CRUD operations
+
+## Tips
+
+1. **Always review before copying** - Generated code is a starting point
+2. **Use version control** - Easy to see what changed
+3. **Keep custom logic separate** - Add below generated sections
+4. **Document deviations** - Comment why you changed generated code
+5. **Regenerate after schema changes** - Keep in sync
+
+## Common Scenarios
+
+### Scenario 1: New Table
+```bash
+# 1. Create migration
+# 2. Run migration
+npm run db:migrate
+
+# 3. Generate code
+node scripts/schema-generator.js users
+
+# 4. Copy to project
+cp generated/User.js client/backend/src/models/
+cp generated/userConfig.ts client/frontend/src/features/users/
+
+# 5. Customize and test
+```
+
+### Scenario 2: Schema Changed
+```bash
+# 1. Create and run migration
+npm run db:migrate
+
+# 2. Regenerate
+node scripts/schema-generator.js meter
+
+# 3. Compare and merge
+code --diff client/backend/src/models/Meter.js generated/Meter.js
+
+# 4. Update and test
+```
+
+### Scenario 3: Frontend Out of Sync
+```bash
+# 1. Regenerate from database (source of truth)
+node scripts/schema-generator-custom.js meter scripts/schema-mappings/meter-mapping.json
+
+# 2. Review schema definition
+code generated/meterConfig-custom.ts
+
+# 3. Update your meterConfig.ts with the new schema definition
+# Keep your existing types, columns, filters, etc.
+```
+
+## Files and Locations
+
+### Generated Files
+- `generated/` - All generated files go here first
+
+### Backend Models
+- `client/backend/src/models/` - Copy backend models here
+
+### Frontend Schemas
+- `client/frontend/src/features/<entity>s/` - Copy frontend schemas here
+
+### Mapping Files
+- `scripts/schema-mappings/` - Custom mapping configurations
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Cannot find module 'pg'" | `cd client/backend && npm install` |
+| "Table not found" | Check table name (case-sensitive) |
+| "Connection refused" | Verify .env database credentials |
+| Wrong field names | Use custom mapping generator |
+| Missing computed fields | Add to custom mapping with `dbField: null` |
+
+## Documentation
+
+- Full docs: `scripts/README-SCHEMA-GENERATOR.md`
+- Quick start: `scripts/QUICK-START-SCHEMA-GENERATOR.md`
+- Overview: `SCHEMA-GENERATOR-TOOL.md`
