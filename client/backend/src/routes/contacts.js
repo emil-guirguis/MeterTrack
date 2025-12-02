@@ -1,10 +1,10 @@
 // @ts-nocheck
 const express = require('express');
-const Contact = require('../models/Contact.js');
-const { authenticateToken, requirePermission } = require('../middleware/auth');
+const Contact = require('../models/ContactWithSchema.js');
+const { requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
-router.use(authenticateToken);
+// Note: authenticateToken is now applied globally in server.js
 
 // Get all contacts with filtering and pagination
 router.get('/', requirePermission('contact:read'), async (req, res) => {

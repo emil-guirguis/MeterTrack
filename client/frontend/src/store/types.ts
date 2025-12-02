@@ -1,13 +1,13 @@
 // Store Types and Interfaces
 
 import type { User } from '../types/auth';
-import type { 
-  Location, 
-  Contact, 
-  Meter, 
-  EmailTemplate, 
-  CompanySettings 
-} from '../types/entities';
+// import type { 
+//   Location, 
+//   Contact, 
+//   Meter, 
+//   EmailTemplate, 
+//   CompanySettings 
+// } from '../types/entities';
 
 // Base Entity State
 export interface EntityState<T> {
@@ -131,35 +131,35 @@ export interface LocationsStoreState extends EntityState<Location> {
 }
 
 
-export interface ContactsStoreState extends EntityState<Contact> {
-  list: ListState;
-}
+// export interface ContactsStoreState extends EntityState<Contact> {
+//   list: ListState;
+// }
 
-export interface MetersStoreState extends EntityState<Meter> {
-  list: ListState;
-}
+// export interface MetersStoreState extends EntityState<Meter> {
+//   list: ListState;
+// }
 
-export interface TemplatesStoreState extends EntityState<EmailTemplate> {
-  list: ListState;
-}
+// export interface TemplatesStoreState extends EntityState<EmailTemplate> {
+//   list: ListState;
+// }
 
-export interface SettingsStoreState {
-  company: CompanySettings | null;
-  loading: boolean;
-  error: string | null;
-  lastFetch: number | null;
-}
+// export interface SettingsStoreState {
+//   company: CompanySettings | null;
+//   loading: boolean;
+//   error: string | null;
+//   lastFetch: number | null;
+// }
 
 // Root Store State
 export interface RootStoreState {
   auth: AuthStoreState;
   ui: UIStoreState;
-  users: UsersStoreState;
-  locations: LocationsStoreState;
-  contacts: ContactsStoreState;
-  meters: MetersStoreState;
-  templates: TemplatesStoreState;
-  settings: SettingsStoreState;
+  // users: UsersStoreState;
+  // locations: LocationsStoreState;
+  // contacts: ContactsStoreState;
+  // meters: MetersStoreState;
+  // templates: TemplatesStoreState;
+  // settings: SettingsStoreState;
 }
 
 // Action Types

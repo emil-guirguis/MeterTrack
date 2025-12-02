@@ -82,7 +82,7 @@ export type User = typeof userSchema._entityType & {
   client: string;
   role: UserRole;
   permissions: PermissionType[];
-  status: 'active' | 'inactive';
+  active: boolean;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -128,7 +128,7 @@ export const userColumns: ColumnDefinition<User>[] = [
     },
   },
   
-  createStatusColumn<User>('status', 'Status', {
+  createStatusColumn<User>('active', 'Active', {
     labels: {
       active: 'Active',
       inactive: 'Inactive',
@@ -171,19 +171,19 @@ export const userFilters: FilterDefinition[] = [
 export const userStats: StatDefinition<User>[] = [
   {
     label: 'Active Users',
-    value: (items, store) => store?.activeUsers?.length ?? items.filter(u => u.status === 'active').length,
+    value: (items, store) => store?.activeUsers?.length ?? (Array.isArray(items) ? items.filter(u => u.active).length : 0),
   },
   {
     label: 'Inactive Users',
-    value: (items, store) => store?.inactiveUsers?.length ?? items.filter(u => u.status === 'inactive').length,
+    value: (items, store) => store?.inactiveUsers?.length ?? (Array.isArray(items) ? items.filter(u => !u.active).length : 0),
   },
   {
     label: 'Administrators',
-    value: (items, store) => store?.adminUsers?.length ?? items.filter(u => u.role === 'admin').length,
+    value: (items, store) => store?.adminUsers?.length ?? (Array.isArray(items) ? items.filter(u => u.role === 'admin').length : 0),
   },
   {
     label: 'Total Users',
-    value: (items) => items.length,
+    value: (items) => Array.isArray(items) ? items.length : 0,
   },
 ];
 
@@ -222,7 +222,7 @@ export const userExportConfig: ExportConfig<User> = {
     user.name,
     user.email,
     user.role,
-    user.status,
+    user.active,
     user.lastLogin ? new Date(user.lastLogin).toISOString() : '',
     new Date(user.createdAt).toISOString(),
   ],

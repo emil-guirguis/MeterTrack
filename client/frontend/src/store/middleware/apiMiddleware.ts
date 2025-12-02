@@ -1,7 +1,6 @@
 // API Middleware for Store Actions
 
-
-import { useAuthStore } from '../slices/authSlice';
+import { authService } from '../../services/authService';
 import { useUIStore } from '../slices/uiSlice';
 
 // API call wrapper with error handling and loading states
@@ -28,7 +27,6 @@ export const withApiCall = async <T>(
   } = options;
 
   const uiStore = useUIStore.getState();
-  const authStore = useAuthStore.getState();
 
   // Set loading state
   if (loadingKey) {
@@ -64,7 +62,10 @@ export const withApiCall = async <T>(
 
       // Handle authentication errors
       if (isAuthError(error)) {
-        authStore.logout();
+        // Auth is handled by AuthContext, redirect to login
+        authService.setLogoutFlag();
+        authService.clearStoredToken();
+        window.location.href = '/login';
         throw error;
       }
 
@@ -134,38 +135,20 @@ export const withTokenRefresh = <T>(
   apiCall: () => Promise<T>
 ): Promise<T> => {
   return new Promise(async (resolve, reject) => {
-    const authStore = useAuthStore.getState();
-
-    // Check if token needs refresh
-    const needsRefresh = authStore.expiresAt && Date.now() >= (authStore.expiresAt - 5 * 60 * 1000);
-    if (authStore.isAuthenticated && needsRefresh) {
-      try {
-        await authStore.refreshAuth();
-      } catch (error) {
-        // If refresh fails, logout and reject
-        authStore.logout();
-        reject(error);
-        return;
-      }
-    }
-
+    // Token refresh is now handled by authService interceptors
+    // This middleware is kept for compatibility but delegates to authService
+    
     try {
       const result = await apiCall();
       resolve(result);
     } catch (error) {
-      // If API call fails with auth error, try to refresh token once
-      if (isAuthError(error) && authStore.refreshToken) {
-        try {
-          await authStore.refreshAuth();
-          const retryResult = await apiCall();
-          resolve(retryResult);
-        } catch (retryError) {
-          authStore.logout();
-          reject(retryError);
-        }
-      } else {
-        reject(error);
+      // If API call fails with auth error, authService will handle it
+      if (isAuthError(error)) {
+        authService.setLogoutFlag();
+        authService.clearStoredToken();
+        window.location.href = '/login';
       }
+      reject(error);
     }
   });
 };

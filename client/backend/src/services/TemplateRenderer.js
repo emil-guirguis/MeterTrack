@@ -3,7 +3,7 @@
  * Handles template rendering with variable substitution, conditional logic, and loops
  */
 
-const EmailTemplate = require('../models/EmailTemplate');
+const EmailTemplate = require('../models/EmailTemplatesWithSchema');
 const DOMPurify = require('isomorphic-dompurify');
 const VariableProcessor = require('./VariableProcessor');
 

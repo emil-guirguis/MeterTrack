@@ -6,6 +6,8 @@ const filtering = require('./filtering');
 const pagination = require('./pagination');
 const sorting = require('./sorting');
 const responseFormatter = require('./responseFormatter');
+const tenantUtils = require('./tenantUtils');
+const tenantIsolationLogging = require('./tenantIsolationLogging');
 
 module.exports = {
   // Filtering utilities
@@ -18,5 +20,11 @@ module.exports = {
   ...sorting,
   
   // Response formatting utilities
-  ...responseFormatter
+  ...responseFormatter,
+  
+  // Tenant utilities
+  ...tenantUtils,
+  
+  // Tenant isolation logging utilities
+  ...tenantIsolationLogging
 };

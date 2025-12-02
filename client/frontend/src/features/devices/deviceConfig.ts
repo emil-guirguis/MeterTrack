@@ -2,65 +2,34 @@
  * Device Configuration
  * 
  * Centralized configuration for Device entity including:
- * - Form schema (field definitions, validation, API mapping)
  * - List columns, filters, stats
  * - Bulk actions and export configuration
  * 
+ * Schema is now loaded dynamically from the backend API.
  * This configuration is shared between DeviceForm and DeviceList components.
  */
 
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
 import { Permission } from '../../types/auth';
-import { field } from '@framework/forms/utils/formSchema';
-import { defineEntitySchema } from '@framework/forms/utils/entitySchema';
 import {
   createTwoLineColumn,
 } from '../../config/listHelpers';
 
 // ============================================================================
-// UNIFIED SCHEMA DEFINITION
+// TYPE DEFINITION
 // ============================================================================
 
 /**
- * Device entity schema - single source of truth for Device entity
- * Defines form fields, entity fields, and legacy field mappings
+ * Device TypeScript type
  */
-export const deviceSchema = defineEntitySchema({
-  formFields: {
-    description: field({ type: 'string', default: '', required: true, label: 'Description' }),
-    manufacturer: field({ type: 'string', default: '', required: true, label: 'Manufacturer' }),
-    model_number: field({ type: 'string', default: '', required: true, label: 'Model Number' }),
-    type: field({ type: 'string', default: '', required: true, label: 'Type' }),
-    register_map: field({ type: 'string', default: '', label: 'Register Map' }),
-  },
-  
-  entityFields: {
-    id: { type: 'string' as const, default: '', readOnly: true },
-    createdat: { type: 'date' as const, default: new Date(), readOnly: true },
-    updatedat: { type: 'date' as const, default: new Date(), readOnly: true },
-  },
-  
-  legacyFields: {
-    createdAt: { maps: 'createdat' },
-    updatedAt: { maps: 'updatedat' },
-  },
-  
-  entityName: 'Device',
-  description: 'Device entity for hardware devices and equipment',
-} as const);
-
-/**
- * Device form schema - exported for backward compatibility
- * Used by DeviceForm component
- */
-export const deviceFormSchema = deviceSchema.form;
-
-/**
- * Device TypeScript type - inferred from schema with explicit entity fields
- */
-export type Device = typeof deviceSchema._entityType & {
+export type Device = {
   id: string;
+  type: string;
+  manufacturer: string;
+  model_number: string;
+  description?: string;
+  register_map?: string;
   createdat: Date;
   updatedat: Date;
   createdAt?: Date;
@@ -152,11 +121,12 @@ export const deviceFilters: FilterDefinition[] = [
 export const deviceStats: StatDefinition<Device>[] = [
   {
     label: 'Total Devices',
-    value: (items) => items.length,
+    value: (items) => Array.isArray(items) ? items.length : 0,
   },
   {
     label: 'Device Types',
     value: (items) => {
+      if (!Array.isArray(items)) return 0;
       const types = new Set(items.map(d => d.type).filter(Boolean));
       return types.size;
     },
@@ -164,6 +134,7 @@ export const deviceStats: StatDefinition<Device>[] = [
   {
     label: 'Manufacturers',
     value: (items) => {
+      if (!Array.isArray(items)) return 0;
       const manufacturers = new Set(items.map(d => d.manufacturer).filter(Boolean));
       return manufacturers.size;
     },

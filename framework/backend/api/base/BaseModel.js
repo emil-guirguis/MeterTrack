@@ -920,6 +920,495 @@ class BaseModel {
       throw err; // Ensure function returns
     }
   }
+
+  // ============================================================================
+  // Relationship Loading Methods
+  // ============================================================================
+
+  /**
+   * Load a relationship for the current instance
+   * Supports BELONGS_TO, HAS_MANY, HAS_ONE, and MANY_TO_MANY relationships
+   * 
+   * @param {string} relationshipName - Name of the relationship to load
+   * @param {Object} options - Loading options
+   * @param {Array<string>} [options.select] - Fields to select from related model
+   * @param {Object} [options.where] - Additional WHERE conditions
+   * @param {Array} [options.order] - Order by clauses
+   * @param {number} [options.limit] - Limit number of results (for HAS_MANY)
+   * @param {Set<string>} [options._loadedPath] - Internal: Track loaded relationships to prevent cycles
+   * @returns {Promise<Object|Array|null>} Related data (single object for BELONGS_TO/HAS_ONE, array for HAS_MANY)
+   * @throws {ConfigurationError} If relationship is not defined
+   * @throws {ModelError} If database error occurs
+   * 
+   * @example
+   * // Load a BELONGS_TO relationship
+   * const meter = await Meter.findById(5);
+   * const device = await meter.loadRelationship('device');
+   * console.log(device.manufacturer);
+   * 
+   * @example
+   * // Load a HAS_MANY relationship with options
+   * const location = await Location.findById(10);
+   * const meters = await location.loadRelationship('meters', {
+   *   select: ['id', 'name', 'status'],
+   *   where: { status: 'active' },
+   *   order: [['name', 'ASC']],
+   *   limit: 10
+   * });
+   */
+  async loadRelationship(relationshipName, options = {}) {
+    try {
+      // Get the constructor (class) of this instance
+      const ModelClass = /** @type {typeof BaseModel} */ (this.constructor);
+      
+      // Get relationship definition
+      const relationships = ModelClass.relationships;
+      const relationship = relationships[relationshipName];
+      
+      if (!relationship) {
+        throw new ConfigurationError(
+          `Relationship '${relationshipName}' is not defined in ${ModelClass.name} model`,
+          { model: ModelClass.name, relationshipName, availableRelationships: Object.keys(relationships) }
+        );
+      }
+      
+      // Initialize cycle detection if not provided
+      const loadedPath = options._loadedPath || new Set();
+      const currentPath = `${ModelClass.name}.${relationshipName}`;
+      
+      // Check for circular dependency
+      if (loadedPath.has(currentPath)) {
+        console.warn(`Circular dependency detected: ${currentPath} already loaded in path: ${Array.from(loadedPath).join(' -> ')}`);
+        return null;
+      }
+      
+      // Add current path to loaded set
+      const newLoadedPath = new Set(loadedPath);
+      newLoadedPath.add(currentPath);
+      
+      // Get the related model class
+      const RelatedModel = this._getRelatedModel(relationship.model);
+      
+      // Load relationship based on type
+      switch (relationship.type) {
+        case 'belongsTo':
+          return await this._loadBelongsTo(relationship, RelatedModel, options, newLoadedPath);
+        
+        case 'hasMany':
+          return await this._loadHasMany(relationship, RelatedModel, options, newLoadedPath);
+        
+        case 'hasOne':
+          return await this._loadHasOne(relationship, RelatedModel, options, newLoadedPath);
+        
+        case 'manyToMany':
+          return await this._loadManyToMany(relationship, RelatedModel, options, newLoadedPath);
+        
+        default:
+          throw new ConfigurationError(
+            `Unknown relationship type '${relationship.type}' for relationship '${relationshipName}'`,
+            { model: ModelClass.name, relationshipName, relationshipType: relationship.type }
+          );
+      }
+    } catch (error) {
+      const ModelClass = /** @type {typeof BaseModel} */ (this.constructor);
+      const err = error instanceof Error ? error : new Error(String(error));
+      ModelClass._handleDatabaseError(err, 'loadRelationship', '', []);
+      throw err;
+    }
+  }
+
+  /**
+   * Get related model class by name
+   * 
+   * @param {string} modelName - Name of the model class
+   * @returns {typeof BaseModel} Model class
+   * @throws {ConfigurationError} If model cannot be found
+   * @private
+   */
+  _getRelatedModel(modelName) {
+    try {
+      // Try to require the model from the standard location
+      // This assumes models are in client/backend/src/models/
+      const modelPath = `../../../../client/backend/src/models/${modelName}WithSchema`;
+      return require(modelPath);
+    } catch (error) {
+      // Try without "WithSchema" suffix
+      try {
+        const modelPath = `../../../../client/backend/src/models/${modelName}`;
+        return require(modelPath);
+      } catch (error2) {
+        throw new ConfigurationError(
+          `Cannot load related model '${modelName}'. Make sure the model file exists.`,
+          { modelName, error: error.message }
+        );
+      }
+    }
+  }
+
+  /**
+   * Load a BELONGS_TO relationship
+   * Example: Meter belongs to Device (meter.device_id -> device.id)
+   * 
+   * @param {Object} relationship - Relationship definition
+   * @param {typeof BaseModel} RelatedModel - Related model class
+   * @param {Object} options - Loading options
+   * @param {Set<string>} loadedPath - Loaded relationship path for cycle detection
+   * @returns {Promise<Object|null>} Related instance or null
+   * @private
+   */
+  async _loadBelongsTo(relationship, RelatedModel, options, loadedPath) {
+    const foreignKeyValue = this[relationship.foreignKey];
+    
+    if (!foreignKeyValue) {
+      return null;
+    }
+    
+    // Build query options
+    const queryOptions = {
+      where: { [relationship.targetKey]: foreignKeyValue },
+      ...(options.where && { where: { ...options.where, [relationship.targetKey]: foreignKeyValue } }),
+    };
+    
+    // Apply select fields if specified
+    if (options.select || relationship.select) {
+      queryOptions.select = options.select || relationship.select;
+    }
+    
+    // Load the related record
+    const related = await RelatedModel.findOne(queryOptions.where, queryOptions);
+    
+    // Store on instance
+    const alias = relationship.as || relationship.model.toLowerCase();
+    this[alias] = related;
+    
+    return related;
+  }
+
+  /**
+   * Load a HAS_MANY relationship
+   * Example: Location has many Meters (location.id <- meter.location_id)
+   * 
+   * @param {Object} relationship - Relationship definition
+   * @param {typeof BaseModel} RelatedModel - Related model class
+   * @param {Object} options - Loading options
+   * @param {Set<string>} loadedPath - Loaded relationship path for cycle detection
+   * @returns {Promise<Array>} Array of related instances
+   * @private
+   */
+  async _loadHasMany(relationship, RelatedModel, options, loadedPath) {
+    const ModelClass = /** @type {typeof BaseModel} */ (this.constructor);
+    const primaryKeyValue = this[ModelClass.primaryKey];
+    
+    if (!primaryKeyValue) {
+      return [];
+    }
+    
+    // Build query options
+    const queryOptions = {
+      where: { [relationship.foreignKey]: primaryKeyValue },
+      ...(options.where && { where: { ...options.where, [relationship.foreignKey]: primaryKeyValue } }),
+    };
+    
+    // Apply select fields if specified
+    if (options.select || relationship.select) {
+      queryOptions.select = options.select || relationship.select;
+    }
+    
+    // Apply order if specified
+    if (options.order) {
+      queryOptions.order = options.order;
+    }
+    
+    // Apply limit if specified
+    if (options.limit) {
+      queryOptions.limit = options.limit;
+    }
+    
+    // Load the related records
+    const result = await RelatedModel.findAll(queryOptions);
+    const related = result.rows || [];
+    
+    // Store on instance
+    const alias = relationship.as || `${relationship.model.toLowerCase()}s`;
+    this[alias] = related;
+    
+    return related;
+  }
+
+  /**
+   * Load a HAS_ONE relationship
+   * Example: User has one Profile (user.id <- profile.user_id)
+   * 
+   * @param {Object} relationship - Relationship definition
+   * @param {typeof BaseModel} RelatedModel - Related model class
+   * @param {Object} options - Loading options
+   * @param {Set<string>} loadedPath - Loaded relationship path for cycle detection
+   * @returns {Promise<Object|null>} Related instance or null
+   * @private
+   */
+  async _loadHasOne(relationship, RelatedModel, options, loadedPath) {
+    const ModelClass = /** @type {typeof BaseModel} */ (this.constructor);
+    const primaryKeyValue = this[ModelClass.primaryKey];
+    
+    if (!primaryKeyValue) {
+      return null;
+    }
+    
+    // Build query options
+    const queryOptions = {
+      where: { [relationship.foreignKey]: primaryKeyValue },
+      ...(options.where && { where: { ...options.where, [relationship.foreignKey]: primaryKeyValue } }),
+    };
+    
+    // Apply select fields if specified
+    if (options.select || relationship.select) {
+      queryOptions.select = options.select || relationship.select;
+    }
+    
+    // Load the related record
+    const related = await RelatedModel.findOne(queryOptions.where, queryOptions);
+    
+    // Store on instance
+    const alias = relationship.as || relationship.model.toLowerCase();
+    this[alias] = related;
+    
+    return related;
+  }
+
+  /**
+   * Load a MANY_TO_MANY relationship
+   * Example: Student has many Courses through Enrollments
+   * 
+   * @param {Object} relationship - Relationship definition
+   * @param {typeof BaseModel} RelatedModel - Related model class
+   * @param {Object} options - Loading options
+   * @param {Set<string>} loadedPath - Loaded relationship path for cycle detection
+   * @returns {Promise<Array>} Array of related instances
+   * @private
+   */
+  async _loadManyToMany(relationship, RelatedModel, options, loadedPath) {
+    const ModelClass = /** @type {typeof BaseModel} */ (this.constructor);
+    const primaryKeyValue = this[ModelClass.primaryKey];
+    
+    if (!primaryKeyValue || !relationship.through) {
+      return [];
+    }
+    
+    // Build query with JOIN through junction table
+    const db = ModelClass._getDb();
+    const junctionTable = relationship.through;
+    const relatedTable = RelatedModel.tableName;
+    
+    // Build SELECT clause
+    let selectClause = `${relatedTable}.*`;
+    if (options.select || relationship.select) {
+      const fields = options.select || relationship.select;
+      selectClause = fields.map(f => `${relatedTable}.${f}`).join(', ');
+    }
+    
+    // Build WHERE clause
+    let whereClause = `${junctionTable}.${relationship.foreignKey} = $1`;
+    const values = [primaryKeyValue];
+    
+    if (options.where) {
+      let paramIndex = 2;
+      Object.entries(options.where).forEach(([key, value]) => {
+        whereClause += ` AND ${relatedTable}.${key} = $${paramIndex}`;
+        values.push(value);
+        paramIndex++;
+      });
+    }
+    
+    // Build ORDER clause
+    let orderClause = '';
+    if (options.order) {
+      const orderParts = options.order.map(([field, direction]) => `${relatedTable}.${field} ${direction}`);
+      orderClause = ` ORDER BY ${orderParts.join(', ')}`;
+    }
+    
+    // Build LIMIT clause
+    let limitClause = '';
+    if (options.limit) {
+      limitClause = ` LIMIT ${options.limit}`;
+    }
+    
+    // Execute query
+    const sql = `
+      SELECT ${selectClause}
+      FROM ${relatedTable}
+      INNER JOIN ${junctionTable} ON ${relatedTable}.${relationship.targetKey} = ${junctionTable}.${relationship.targetKey}
+      WHERE ${whereClause}
+      ${orderClause}
+      ${limitClause}
+    `;
+    
+    const result = await db.query(sql, values);
+    const related = result.rows.map(row => RelatedModel._mapResultToInstance(row));
+    
+    // Store on instance
+    const alias = relationship.as || `${relationship.model.toLowerCase()}s`;
+    this[alias] = related;
+    
+    return related;
+  }
+
+  /**
+   * Load multiple relationships at once
+   * 
+   * @param {Array<string>} relationshipNames - Array of relationship names to load
+   * @param {Object} options - Loading options (applied to all relationships)
+   * @returns {Promise<Object>} Object with relationship names as keys and loaded data as values
+   * 
+   * @example
+   * const meter = await Meter.findById(5);
+   * const relationships = await meter.loadRelationships(['device', 'location']);
+   * console.log(relationships.device.manufacturer);
+   * console.log(relationships.location.name);
+   */
+  async loadRelationships(relationshipNames, options = {}) {
+    const results = {};
+    
+    for (const relationshipName of relationshipNames) {
+      results[relationshipName] = await this.loadRelationship(relationshipName, options);
+    }
+    
+    return results;
+  }
+
+  /**
+   * Batch load a relationship for multiple instances
+   * This is more efficient than loading relationships one by one
+   * 
+   * @param {Array<BaseModel>} instances - Array of model instances
+   * @param {string} relationshipName - Name of the relationship to load
+   * @param {Object} options - Query options
+   * @returns {Promise<Map>} Map of instance ID to related data
+   * 
+   * @example
+   * const meters = await Meter.findAll({ where: { status: 'active' } });
+   * const devicesMap = await Meter.batchLoadRelationship(meters, 'device');
+   * meters.forEach(meter => {
+   *   meter.device = devicesMap.get(meter.id);
+   * });
+   */
+  static async batchLoadRelationship(instances, relationshipName, options = {}) {
+    if (!instances || instances.length === 0) {
+      return new Map();
+    }
+
+    const ModelClass = this;
+    const schema = ModelClass.schema;
+    
+    if (!schema || !schema.relationships || !schema.relationships[relationshipName]) {
+      throw new Error(`Relationship '${relationshipName}' not defined in schema`);
+    }
+
+    const relationship = schema.relationships[relationshipName];
+    const RelatedModel = require(`../../../client/backend/src/models/${relationship.model}WithSchema`);
+    
+    const results = new Map();
+
+    try {
+      if (relationship.type === 'belongsTo') {
+        // Collect all foreign key values
+        const foreignKeyValues = instances
+          .map(instance => instance[relationship.foreignKey])
+          .filter(val => val != null);
+
+        if (foreignKeyValues.length === 0) {
+          return results;
+        }
+
+        // Load all related records in one query
+        const relatedRecords = await RelatedModel.findAll({
+          where: {
+            [RelatedModel.primaryKey]: foreignKeyValues
+          },
+          select: options.select
+        });
+
+        // Create a map of related records by their primary key
+        const relatedMap = new Map();
+        relatedRecords.forEach(record => {
+          relatedMap.set(record[RelatedModel.primaryKey], record);
+        });
+
+        // Map related records back to instances
+        instances.forEach(instance => {
+          const foreignKeyValue = instance[relationship.foreignKey];
+          if (foreignKeyValue != null) {
+            results.set(instance[ModelClass.primaryKey], relatedMap.get(foreignKeyValue));
+          }
+        });
+
+      } else if (relationship.type === 'hasMany') {
+        // Collect all primary key values
+        const primaryKeyValues = instances.map(instance => instance[ModelClass.primaryKey]);
+
+        // Load all related records in one query
+        const relatedRecords = await RelatedModel.findAll({
+          where: {
+            [relationship.foreignKey]: primaryKeyValues
+          },
+          select: options.select
+        });
+
+        // Group related records by foreign key
+        const groupedRecords = new Map();
+        relatedRecords.forEach(record => {
+          const foreignKeyValue = record[relationship.foreignKey];
+          if (!groupedRecords.has(foreignKeyValue)) {
+            groupedRecords.set(foreignKeyValue, []);
+          }
+          groupedRecords.get(foreignKeyValue).push(record);
+        });
+
+        // Map grouped records back to instances
+        instances.forEach(instance => {
+          const primaryKeyValue = instance[ModelClass.primaryKey];
+          results.set(primaryKeyValue, groupedRecords.get(primaryKeyValue) || []);
+        });
+      }
+
+      return results;
+    } catch (error) {
+      console.error(`Error batch loading relationship '${relationshipName}':`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Load relationships for multiple instances efficiently
+   * Uses batch loading to minimize database queries
+   * 
+   * @param {Array<BaseModel>} instances - Array of model instances
+   * @param {Array<string>} relationshipNames - Names of relationships to load
+   * @param {Object} options - Query options
+   * @returns {Promise<void>} Modifies instances in place
+   * 
+   * @example
+   * const meters = await Meter.findAll({ where: { status: 'active' } });
+   * await Meter.batchLoadRelationships(meters, ['device', 'location']);
+   * meters.forEach(meter => {
+   *   console.log(meter.device.manufacturer);
+   *   console.log(meter.location.name);
+   * });
+   */
+  static async batchLoadRelationships(instances, relationshipNames, options = {}) {
+    if (!instances || instances.length === 0) {
+      return;
+    }
+
+    for (const relationshipName of relationshipNames) {
+      const relatedMap = await this.batchLoadRelationship(instances, relationshipName, options);
+      
+      // Assign related data to instances
+      instances.forEach(instance => {
+        const primaryKeyValue = instance[this.primaryKey];
+        instance[relationshipName] = relatedMap.get(primaryKeyValue);
+      });
+    }
+  }
 }
 
 module.exports = BaseModel;

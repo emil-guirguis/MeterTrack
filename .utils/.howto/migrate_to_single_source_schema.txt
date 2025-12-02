@@ -1,0 +1,112 @@
+# How to Migrate to Single Source Schema System
+
+## Overview
+
+Instead of defining schemas in both backend and frontend, define them ONCE in the backend and have the frontend fetch them via API.
+
+## Quick Start
+
+### 1. Update Your Backend Model
+
+```javascript
+// client/backend/src/models/Meter.js
+const { defineSchema, field, FieldTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+
+class Meter extends BaseModel {
+  // Add this static getter
+  static get schema() {
+    return defineSchema({
+      entityName: 'Meter',
+      tableName: 'meter',
+      description: 'Meter entity description',
+      
+      formFields: {
+        meterId: field({
+          type: FieldTypes.STRING,
+          default: '',
+          required: true,
+          label: 'Meter ID',
+          dbField: 'name', // Maps to database column
+        }),
+        // ... more fields
+      },
+      
+      entityFields: {
+        id: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: true,
+        }),
+        // ... more read-only fields
+      },
+    });
+  }
+}
+```
+
+### 2. Register Model in Schema Routes
+
+```javascript
+// client/backend/src/routes/schema.js
+const models = {
+  meter: require('../models/Meter'),
+  // Add your other models here
+};
+```
+
+### 3. Add Schema Routes to Server
+
+```javascript
+// client/backend/src/server.js
+const schemaRoutes = require('./routes/schema');
+app.use('/api/schema', schemaRoutes);
+```
+
+### 4. Update Frontend to Use Dynamic Schema
+
+```typescript
+// client/frontend/src/features/meters/MeterForm.tsx
+import { useSchema } from '@framework/forms/utils/schemaLoader';
+
+export const MeterForm = ({ meter, onSubmit }) => {
+  // Fetch schema from backend
+  const { schema, loading, error } = useSchema('meter');
+  
+  // Use schema to render form dynamically
+  // See MeterFormDynamic.tsx for complete example
+};
+```
+
+## Migration Checklist
+
+- [ ] Add schema definition to backend model
+- [ ] Register model in schema routes
+- [ ] Add schema routes to server
+- [ ] Test schema API endpoint: GET /api/schema/meter
+- [ ] Update frontend to use useSchema() hook
+- [ ] Remove duplicate frontend schema definition
+- [ ] Test form with dynamic schema
+- [ ] Verify validation works
+- [ ] Verify data transformation works
+
+## Benefits
+
+✅ No duplicate definitions
+✅ Backend is single source of truth
+✅ Frontend always in sync
+✅ Less code to maintain
+✅ Automatic validation
+✅ Type-safe transformations
+
+## Testing
+
+```bash
+# Test schema API
+curl http://localhost:3001/api/schema/meter
+
+# Should return schema JSON
+```
+
+## Documentation
+
+See: SINGLE-SOURCE-SCHEMA-SYSTEM.md for complete documentation

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const User = require('../models/User');
+const User = require('../models/UserWithSchema');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -36,47 +36,57 @@ router.get('/', [
       'filter.status': filterStatus
     } = req.query;
 
-    // Build PostgreSQL query filters
-    const filters = {};
-
-    // Apply filters
-    if (filterRole) filters.role = filterRole;
-    if (filterStatus) filters.status = filterStatus;
-
-    // Apply search - PostgreSQL version with ILIKE
+    // Build where clause for filtering
+    const where = {};
+    if (filterRole) where.role = filterRole;
+    if (filterStatus) where.status = filterStatus;
     if (search) {
-      // Pass search directly to the model
+      where.name = { like: `%${search}%` };
     }
+
+    // Map sortBy to database column names
+    const sortKeyMap = {
+      name: 'name',
+      email: 'email',
+      role: 'role',
+      status: 'status',
+      createdAt: 'created_at'
+    };
+    const orderColumn = sortKeyMap[sortBy] || 'name';
+    const orderDirection = sortOrder.toUpperCase();
 
     // Execute query with pagination using PostgreSQL model
     const offset = (page - 1) * pageSize;
     const result = await User.findAll({
-      filters,
-      sortBy,
-      sortOrder,
+      where,
+      order: [[orderColumn, orderDirection]],
       limit: parseInt(pageSize),
-      offset,
-      search
+      offset
     });
+
+    // Handle different result structures
+    const users = result?.rows || [];
+    const total = result?.pagination?.totalItems || 0;
 
     res.json({
       success: true,
       data: {
-        items: result.users,
-        total: result.total,
+        items: users,
+        total: total,
         page: parseInt(page),
         pageSize: parseInt(pageSize),
-        totalPages: Math.ceil(result.total / pageSize),
-        hasMore: offset + result.users.length < result.total
+        totalPages: Math.ceil(total / pageSize),
+        hasMore: offset + users.length < total
       }
     });
   } catch (error) {
-    console.error('Get users error:', error);
-    console.error('Error stack:', error.stack);
+    const err = /** @type {Error} */ (error);
+    console.error('Get users error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch users',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
@@ -98,7 +108,8 @@ router.get('/:id', requirePermission('user:read'), async (req, res) => {
       data: user
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Get user error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch user'
@@ -133,7 +144,8 @@ router.post('/', [
       message: 'User created successfully'
     });
   } catch (error) {
-    console.error('Create user error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Create user error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to create user'
@@ -182,7 +194,8 @@ router.put('/:id', [
       message: 'User updated successfully'
     });
   } catch (error) {
-    console.error('Update user error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Update user error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to update user'
@@ -236,7 +249,8 @@ router.put('/:id/password', [
       message: 'Password updated successfully'
     });
   } catch (error) {
-    console.error('Change password error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Change password error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to change password'
@@ -265,7 +279,8 @@ router.delete('/:id', requirePermission('user:delete'), async (req, res) => {
       message: 'User deleted successfully'
     });
   } catch (error) {
-    console.error('Delete user error:', error);
+    const err = /** @type {Error} */ (error);
+    console.error('Delete user error:', err);
     res.status(500).json({
       success: false,
       message: 'Failed to delete user'

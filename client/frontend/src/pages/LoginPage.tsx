@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import LoginForm from '../components/auth/LoginForm';
 import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,9 +15,16 @@ const LoginPage: React.FC = () => {
   // Get the intended destination from location state or default to dashboard
   const from = (location.state as any)?.from?.pathname || '/dashboard';
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (but NOT if user explicitly logged out)
   useEffect(() => {
+    // Don't redirect if user explicitly logged out
+    if (authService.hasLogoutFlag()) {
+      console.log('🚫 Logout flag detected, staying on login page');
+      return;
+    }
+    
     if (isAuthenticated && !isLoading) {
+      console.log('✅ Already authenticated, redirecting to:', from);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, from]);
@@ -26,8 +34,8 @@ const LoginPage: React.FC = () => {
     navigate(from, { replace: true });
   };
 
-  // Don't render login form if already authenticated
-  if (isAuthenticated) {
+  // Don't render login form if already authenticated (unless user explicitly logged out)
+  if (isAuthenticated && !authService.hasLogoutFlag()) {
     return null;
   }
 

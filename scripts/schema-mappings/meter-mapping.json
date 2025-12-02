@@ -1,0 +1,156 @@
+{
+  "tableName": "meter",
+  "customFormFields": {
+    "meterId": {
+      "dbField": "name",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Meter ID"
+    },
+    "serialNumber": {
+      "dbField": "serial_number",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Serial Number"
+    },
+    "device": {
+      "dbField": null,
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Device Manufacturer",
+      "comment": "Populated from device relationship"
+    },
+    "model": {
+      "dbField": null,
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Model",
+      "comment": "Populated from device relationship"
+    },
+    "device_id": {
+      "dbField": "device_id",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "Device ID"
+    },
+    "ip": {
+      "dbField": "ip",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "label": "IP Address"
+    },
+    "portNumber": {
+      "dbField": "port",
+      "type": "number",
+      "default": 502,
+      "required": true,
+      "label": "Port Number"
+    },
+    "slaveId": {
+      "dbField": null,
+      "type": "number",
+      "default": 1,
+      "required": false,
+      "label": "Slave ID",
+      "comment": "Modbus slave ID, not in database"
+    },
+    "type": {
+      "dbField": "type",
+      "type": "string",
+      "default": "electric",
+      "required": true,
+      "label": "Meter Type"
+    },
+    "location": {
+      "dbField": null,
+      "type": "string",
+      "default": "",
+      "required": false,
+      "label": "Location",
+      "comment": "Computed from location relationship"
+    },
+    "description": {
+      "dbField": "notes",
+      "type": "string",
+      "default": "",
+      "required": false,
+      "label": "Description"
+    },
+    "register_map": {
+      "dbField": "register_map",
+      "type": "object",
+      "default": null,
+      "required": false,
+      "label": "Register Map"
+    }
+  },
+  "entityFields": {
+    "id": {
+      "dbField": "id",
+      "type": "string",
+      "readOnly": true
+    },
+    "locationId": {
+      "dbField": "location_id",
+      "type": "string"
+    },
+    "locationName": {
+      "dbField": null,
+      "type": "string",
+      "comment": "Computed from location relationship"
+    },
+    "status": {
+      "dbField": "status",
+      "type": "string",
+      "enumValues": ["active", "inactive", "maintenance"],
+      "default": "active"
+    },
+    "installDate": {
+      "dbField": "installation_date",
+      "type": "date"
+    },
+    "configuration": {
+      "dbField": null,
+      "type": "object",
+      "comment": "Computed configuration object"
+    },
+    "lastReading": {
+      "dbField": null,
+      "type": "object",
+      "readOnly": true,
+      "comment": "Computed from readings relationship"
+    },
+    "notes": {
+      "dbField": "notes",
+      "type": "string"
+    },
+    "createdAt": {
+      "dbField": "created_at",
+      "type": "date",
+      "readOnly": true
+    },
+    "updatedAt": {
+      "dbField": "updated_at",
+      "type": "date",
+      "readOnly": true
+    },
+    "createdBy": {
+      "dbField": null,
+      "type": "object",
+      "readOnly": true,
+      "comment": "User relationship"
+    },
+    "updatedBy": {
+      "dbField": null,
+      "type": "object",
+      "readOnly": true,
+      "comment": "User relationship"
+    }
+  }
+}

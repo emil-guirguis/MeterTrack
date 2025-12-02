@@ -5,7 +5,7 @@ import type { UseResponsiveResult } from '../types/ui';
 const BREAKPOINTS = {
   mobile: 768,
   tablet: 1024,
-  desktop: 1440
+  desktop: Infinity // Always show sidebar on desktop
 } as const;
 
 // Sidebar-specific breakpoint for when to show sidebar elements in header
@@ -172,10 +172,25 @@ export const useResponsive = (): UseResponsiveResult => {
     
     window.addEventListener('orientationchange', handleOrientationChange, options);
 
+    // Listen for fullscreen changes
+    const handleFullscreenChange = () => {
+      // Small delay to ensure viewport has updated after fullscreen change
+      setTimeout(handleResize, 100);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange); // Safari
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange); // Firefox
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange); // IE/Edge
+
     // Cleanup function
     return () => {
       window.removeEventListener('resize', debouncedHandleResize);
       window.removeEventListener('orientationchange', handleOrientationChange);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }

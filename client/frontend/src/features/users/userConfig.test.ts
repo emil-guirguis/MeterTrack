@@ -79,7 +79,7 @@ describe('User Schema Migration', () => {
         client: 'test-client',
         role: 'viewer',
         permissions: [],
-        status: 'active',
+        active: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -88,7 +88,7 @@ describe('User Schema Migration', () => {
       expect(user.name).toBe('Test User');
       expect(user.email).toBe('test@example.com');
       expect(user.role).toBe('viewer');
-      expect(user.status).toBe('active');
+      expect(user.active).toBe(true);
     });
 
     it('should enforce UserRole enum values', () => {
@@ -101,7 +101,7 @@ describe('User Schema Migration', () => {
           client: 'test',
           role,
           permissions: [],
-          status: 'active',
+          active: true,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -109,9 +109,9 @@ describe('User Schema Migration', () => {
       });
     });
 
-    it('should enforce status enum values', () => {
-      const statuses: Array<'active' | 'inactive'> = ['active', 'inactive'];
-      statuses.forEach(status => {
+    it('should enforce active boolean values', () => {
+      const activeStates: boolean[] = [true, false];
+      activeStates.forEach(active => {
         const user: User = {
           id: '1',
           name: 'Test',
@@ -119,11 +119,11 @@ describe('User Schema Migration', () => {
           client: 'test',
           role: 'viewer',
           permissions: [],
-          status,
+          active,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        expect(user.status).toBe(status);
+        expect(user.active).toBe(active);
       });
     });
 
@@ -135,7 +135,7 @@ describe('User Schema Migration', () => {
         client: 'test',
         role: 'viewer',
         permissions: [],
-        status: 'active',
+        active: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

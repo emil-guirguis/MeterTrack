@@ -71,62 +71,6 @@
   margin-left: 0; /* No sidebar margin on mobile */
 }
 
-/* Breadcrumbs */
-.app-layout__breadcrumbs {
-  padding: 1rem 0 0 0.5rem;
-  background-color: var(--color-surface, #ffffff);
-  border-bottom: 1px solid var(--color-border, #e0e0e0);
-  width: 100%;
-}
-
-.breadcrumb-list {
-  display: flex;
-  align-items: center;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 0.875rem;
-}
-
-.breadcrumb-item {
-  display: flex;
-  align-items: center;
-}
-
-.breadcrumb-link {
-  display: flex;
-  align-items: center;
-  color: var(--color-text-secondary, #666);
-  text-decoration: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.breadcrumb-link:hover {
-  color: var(--color-primary, #007bff);
-  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.1));
-}
-
-.breadcrumb-current {
-  display: flex;
-  align-items: center;
-  color: var(--color-text-primary, #333);
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-}
-
-.breadcrumb-separator {
-  margin: 0 0.5rem;
-  color: var(--color-text-disabled, #999);
-}
-
-.breadcrumb-link .icon,
-.breadcrumb-current .icon {
-  margin-right: 0.5rem;
-  font-size: 1rem;
-}
-
 
 .page-title {
   margin: 0;
@@ -237,23 +181,6 @@
   .app-layout__page-content {
     padding: 0.5rem 0.25rem 0.5rem 0.25rem;
   }
-
-  .app-layout__breadcrumbs {
-    padding: 0.75rem 0.25rem 0 0.25rem;
-  }
-
-  .breadcrumb-list {
-    font-size: 0.8rem;
-  }
-
-  /* Ensure touch targets are at least 44px for accessibility */
-  .breadcrumb-link,
-  .breadcrumb-current {
-    padding: 0.5rem 0.75rem;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-  }
 }
 
 @media (max-width: 480px) {
@@ -280,24 +207,5 @@
   .breadcrumb-current {
     padding: 0.5rem 0.5rem;
     min-height: 44px;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .app-layout__breadcrumbs,
-
-  .breadcrumb-link:hover {
-    outline: 2px solid var(--color-primary, #007bff);
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .app-layout__content,
-  .loading-spinner,
-  .breadcrumb-link {
-    transition: none;
-    animation: none;
   }
 }

@@ -6,7 +6,7 @@
 const db = require('../config/database');
 const notificationScheduler = require('./NotificationScheduler');
 const meterDataAnalyzer = require('./MeterDataAnalyzer');
-const Meter = require('../models/Meter');
+const Meter = require('../models/MeterWithSchema');
 
 /**
  * @typedef {Object} MeterWithMeterId

@@ -38,6 +38,7 @@ export function DataTable<T extends Record<string, any>>({
 
   // Sort data
   const sortedData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
     if (!sortConfig) return data;
     
     return [...data].sort((a, b) => {

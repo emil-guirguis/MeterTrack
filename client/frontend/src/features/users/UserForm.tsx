@@ -1,500 +1,422 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+/**
+ * Dynamic User Form
+ * 
+ * This form loads its schema from the backend API instead of
+ * having a hardcoded schema definition.
+ * 
+ * Benefits:
+ * - No duplicate schema definitions
+ * - Schema changes in backend automatically reflect in frontend
+ * - Single source of truth
+ */
+
+import React, { useState } from 'react';
+import { useSchema } from '@framework/forms/utils/schemaLoader';
+import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
+import { createFormSchema } from '@framework/forms/utils/formSchema';
+import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import { useUsersEnhanced } from './usersStore';
 import type { User } from '../../types/auth';
-import { UserRole, Permission, ROLE_PERMISSIONS } from '../../types/auth';
+import '@framework/forms/components/BaseForm.css';
 import './UserForm.css';
 
 interface UserFormProps {
-  user?: User | null;
-  onSubmit: (userData: Partial<User>) => Promise<void>;
+  user?: User;
+  onSubmit?: (data: any) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
-  error?: string | null;
-}
-
-interface UserFormData {
-  name: string;
-  email: string;
-  role: UserRole;
-  status: 'active' | 'inactive';
-  password?: string;
-  confirmPassword?: string;
-  sendInvitation: boolean;
-  customPermissions: Permission[];
-}
-
-interface ValidationErrors {
-  name?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
-  role?: string;
 }
 
 export const UserForm: React.FC<UserFormProps> = ({
   user,
-  onSubmit,
+  onSubmit: legacyOnSubmit,
   onCancel,
   loading = false,
-  error,
 }) => {
-  const { user: currentUser, checkPermission } = useAuth();
-  const isEditing = !!user;
+  // Load schema from backend
+  const { schema, loading: schemaLoading, error: schemaError } = useSchema('user');
   
-  // Form state
-  const [formData, setFormData] = useState<UserFormData>({
-    name: user?.name || '',
-    email: user?.email || '',
-    role: user?.role || UserRole.VIEWER,
-    status: user?.status || 'active',
-    password: '',
-    confirmPassword: '',
-    sendInvitation: !isEditing,
-    customPermissions: user?.permissions || [],
+  const users = useUsersEnhanced();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Use the framework hook for form management with optimistic updates
+  const form = useEntityFormWithStore<User, any>({
+    entity: user,
+    store: users,
+    entityToFormData: (userData) => {
+      if (!schema) return {};
+      const formSchema = createFormSchema(schema.formFields);
+      return formSchema.fromApi(userData);
+    },
+    getDefaultFormData: () => {
+      if (!schema) return {};
+      const formSchema = createFormSchema(schema.formFields);
+      return formSchema.getDefaults();
+    },
+    formDataToEntity: (formData) => {
+      if (!schema) return {};
+      const formSchema = createFormSchema(schema.formFields);
+      const apiData = formSchema.toApi(formData);
+      // Remove fields that shouldn't be sent to the API
+      const { id, createdat, updatedat, createdAt, updatedAt, ...cleanData } = apiData;
+      return cleanData;
+    },
+    updateStrategy: 'optimistic',
+    onSuccess: async (savedEntity, mode) => {
+      console.log(`[UserForm] ${mode} successful:`, savedEntity.id);
+      // Call legacy onSubmit if provided for backward compatibility
+      if (legacyOnSubmit) {
+        await legacyOnSubmit(savedEntity);
+      }
+      onCancel(); // Close the form
+    },
+    onError: (error, mode) => {
+      console.error(`[UserForm] ${mode} failed:`, error);
+    },
   });
 
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [generatedPassword, setGeneratedPassword] = useState('');
+  const isFormDisabled = loading || form.isSubmitting;
 
-  // Check permissions
-  const canManageRoles = checkPermission(Permission.USER_UPDATE) && 
-    (currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.MANAGER);
-  const canSetCustomPermissions = currentUser?.role === UserRole.ADMIN;
-
-  // Update form when user prop changes
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        password: '',
-        confirmPassword: '',
-        sendInvitation: false,
-        customPermissions: user.permissions,
-      });
-    }
-  }, [user]);
-
-  // Generate random password
-  const generatePassword = useCallback(() => {
-    const length = 12;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
+  // Validation
+  const validateForm = (): boolean => {
+    if (!schema) return false;
     
-    // Ensure at least one of each type
-    password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]; // Uppercase
-    password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]; // Lowercase
-    password += '0123456789'[Math.floor(Math.random() * 10)]; // Number
-    password += '!@#$%^&*'[Math.floor(Math.random() * 8)]; // Special char
-    
-    // Fill the rest randomly
-    for (let i = 4; i < length; i++) {
-      password += charset[Math.floor(Math.random() * charset.length)];
-    }
-    
-    // Shuffle the password
-    const shuffled = password.split('').sort(() => Math.random() - 0.5).join('');
-    
-    setGeneratedPassword(shuffled);
-    setFormData(prev => ({
-      ...prev,
-      password: shuffled,
-      confirmPassword: shuffled,
-    }));
-  }, []);
+    const newErrors: Record<string, string> = {};
 
-  // Handle form field changes
-  const handleFieldChange = useCallback((field: keyof UserFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear validation error for this field
-    if (validationErrors[field as keyof ValidationErrors]) {
-      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  }, [validationErrors]);
+    Object.entries(schema.formFields).forEach(([fieldName, fieldDef]) => {
+      // Skip password hash field - it's read-only
+      if (fieldName === 'passwordHash') return;
 
-  // Handle role change - update permissions automatically
-  const handleRoleChange = useCallback((role: UserRole) => {
-    const rolePermissions = ROLE_PERMISSIONS[role] || [];
-    setFormData(prev => ({
-      ...prev,
-      role,
-      customPermissions: rolePermissions,
-    }));
-  }, []);
+      const value = form.formData[fieldName];
+      const backendFieldDef = fieldDef as BackendFieldDefinition;
 
-  // Handle permission toggle
-  const handlePermissionToggle = useCallback((permission: Permission) => {
-    setFormData(prev => ({
-      ...prev,
-      customPermissions: prev.customPermissions.includes(permission)
-        ? prev.customPermissions.filter(p => p !== permission)
-        : [...prev.customPermissions, permission],
-    }));
-  }, []);
-
-  // Validate form
-  const validateForm = useCallback((): boolean => {
-    const errors: ValidationErrors = {};
-
-    // Name validation
-    if (!formData.name.trim()) {
-      errors.name = 'Name is required';
-    } else if (formData.name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters';
-    }
-
-    // Email validation
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    // Password validation (only for new users or when password is provided)
-    if (!isEditing || formData.password) {
-      if (!formData.password) {
-        errors.password = 'Password is required';
-      } else if (formData.password.length < 4) {
-        errors.password = 'Password must be at least 4 characters';
-      } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-        errors.password = 'Password must contain uppercase, lowercase, and number';
+      // Required check
+      if (backendFieldDef.required && (value === undefined || value === null || value === '')) {
+        newErrors[fieldName] = `${backendFieldDef.label} is required`;
+        return;
       }
 
-      if (formData.password !== formData.confirmPassword) {
-        errors.confirmPassword = 'Passwords do not match';
+      // Type-specific validation
+      if (value !== undefined && value !== null && value !== '') {
+        // String validation
+        if (backendFieldDef.type === 'string' && typeof value === 'string') {
+          if (backendFieldDef.minLength && value.length < backendFieldDef.minLength) {
+            newErrors[fieldName] = `${backendFieldDef.label} must be at least ${backendFieldDef.minLength} characters`;
+          }
+          if (backendFieldDef.maxLength && value.length > backendFieldDef.maxLength) {
+            newErrors[fieldName] = `${backendFieldDef.label} must be at most ${backendFieldDef.maxLength} characters`;
+          }
+          if (backendFieldDef.pattern && !new RegExp(backendFieldDef.pattern).test(value)) {
+            newErrors[fieldName] = `${backendFieldDef.label} format is invalid`;
+          }
+        }
+
+        // Email validation
+        if (backendFieldDef.type === 'email' && typeof value === 'string') {
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            newErrors[fieldName] = 'Please enter a valid email address';
+          }
+        }
+
+        // Enum validation
+        if (backendFieldDef.enumValues && !backendFieldDef.enumValues.includes(value)) {
+          newErrors[fieldName] = `${backendFieldDef.label} must be one of: ${backendFieldDef.enumValues.join(', ')}`;
+        }
+      }
+    });
+
+    // Password validation for new users
+    if (!user) {
+      if (!password) {
+        newErrors.password = 'Password is required';
+      } else if (password.length < 4) {
+        newErrors.password = 'Password must be at least 4 characters';
+      }
+
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
       }
     }
 
-    // Role validation
-    if (!formData.role) {
-      errors.role = 'Role is required';
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [formData, isEditing]);
-
-  // Handle form submission
-  const handleSubmit = useCallback(async () => {
-    if (!validateForm()) return;
-
-    const userData: Partial<User> = {
-      name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
-      role: formData.role,
-      status: formData.status,
-      permissions: formData.customPermissions,
-    };
-
-    // Include password for new users or when password is changed
-    if (!isEditing || formData.password) {
-      (userData as any).password = formData.password;
-      (userData as any).sendInvitation = formData.sendInvitation;
-    }
-
-    await onSubmit(userData);
-  }, [formData, validateForm, onSubmit, isEditing]);
-
-
-
-  // Get available permissions grouped by category
-  const permissionGroups = {
-    'User Management': [
-      Permission.USER_CREATE,
-      Permission.USER_READ,
-      Permission.USER_UPDATE,
-      Permission.USER_DELETE,
-    ],
-    'Location Management': [
-      Permission.LOCATION_CREATE,
-      Permission.LOCATION_READ,
-      Permission.LOCATION_UPDATE,
-      Permission.LOCATION_DELETE,
-    ],
-    'Contact Management': [
-      Permission.CONTACT_CREATE,
-      Permission.CONTACT_READ,
-      Permission.CONTACT_UPDATE,
-      Permission.CONTACT_DELETE,
-    ],
-    'Meter Management': [
-      Permission.METER_CREATE,
-      Permission.METER_READ,
-      Permission.METER_UPDATE,
-      Permission.METER_DELETE,
-    ],
-    'Settings & Templates': [
-      Permission.SETTINGS_READ,
-      Permission.SETTINGS_UPDATE,
-      Permission.TEMPLATE_CREATE,
-      Permission.TEMPLATE_READ,
-      Permission.TEMPLATE_UPDATE,
-      Permission.TEMPLATE_DELETE,
-    ],
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  return (
-    <div className="user-form">
-      {error && (
-        <div className="user-form__error">
-          <span className="user-form__error-icon">⚠️</span>
-          <span>{error}</span>
-        </div>
-      )}
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-      {/* Basic Information */}
+    if (!validateForm() || form.isSubmitting) {
+      return;
+    }
+
+    try {
+      await form.handleSubmit();
+    } catch (error) {
+      console.error('Form submission error:', error);
+    }
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    form.setFormData((prev: any) => ({
+      ...prev,
+      [field]: value,
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Render field based on schema definition
+  const renderField = (fieldName: string, fieldDef: any) => {
+    // Skip password hash field - it's managed separately
+    if (fieldName === 'passwordHash' || fieldName === 'lastLogin') return null;
+
+    const value = form.formData[fieldName];
+    const error = errors[fieldName];
+
+    // Boolean field (checkbox)
+    if (fieldDef.type === 'boolean') {
+      return (
+        <div key={fieldName} className="user-form__field">
+          <label htmlFor={fieldName} className="user-form__label">
+            <input
+              type="checkbox"
+              id={fieldName}
+              checked={value || false}
+              onChange={(e) => handleInputChange(fieldName, e.target.checked)}
+              disabled={isFormDisabled}
+              className="user-form__checkbox"
+            />
+            {fieldDef.label}
+            {fieldDef.required && <span className="user-form__required">*</span>}
+          </label>
+          {error && <span className="user-form__error">{error}</span>}
+          {fieldDef.description && (
+            <div className="user-form__helper-text">{fieldDef.description}</div>
+          )}
+        </div>
+      );
+    }
+
+    // Select field for enums
+    if (fieldDef.enumValues) {
+      return (
+        <div key={fieldName} className="user-form__field">
+          <label htmlFor={fieldName} className="user-form__label">
+            {fieldDef.label}
+            {fieldDef.required && <span className="user-form__required">*</span>}
+          </label>
+          <select
+            id={fieldName}
+            value={value || ''}
+            onChange={(e) => handleInputChange(fieldName, e.target.value)}
+            className={`user-form__select ${error ? 'user-form__input--error' : ''}`}
+            disabled={isFormDisabled}
+          >
+            <option value="">Select {fieldDef.label}</option>
+            {fieldDef.enumValues.map((enumValue: string) => (
+              <option key={enumValue} value={enumValue}>
+                {enumValue.charAt(0).toUpperCase() + enumValue.slice(1)}
+              </option>
+            ))}
+          </select>
+          {error && <span className="user-form__error">{error}</span>}
+          {fieldDef.description && (
+            <div className="user-form__helper-text">{fieldDef.description}</div>
+          )}
+        </div>
+      );
+    }
+
+    // Email field
+    if (fieldDef.type === 'email') {
+      return (
+        <div key={fieldName} className="user-form__field">
+          <label htmlFor={fieldName} className="user-form__label">
+            {fieldDef.label}
+            {fieldDef.required && <span className="user-form__required">*</span>}
+          </label>
+          <input
+            type="email"
+            id={fieldName}
+            value={value || ''}
+            onChange={(e) => handleInputChange(fieldName, e.target.value)}
+            className={`user-form__input ${error ? 'user-form__input--error' : ''}`}
+            placeholder={fieldDef.placeholder}
+            maxLength={fieldDef.maxLength}
+            disabled={isFormDisabled}
+          />
+          {error && <span className="user-form__error">{error}</span>}
+          {fieldDef.description && (
+            <div className="user-form__helper-text">{fieldDef.description}</div>
+          )}
+        </div>
+      );
+    }
+
+    // Array field (permissions)
+    if (fieldDef.type === 'array' && fieldName === 'permissions') {
+      // For now, skip rendering permissions - can be enhanced later
+      return null;
+    }
+
+    // Text field (default)
+    return (
+      <div key={fieldName} className="user-form__field">
+        <label htmlFor={fieldName} className="user-form__label">
+          {fieldDef.label}
+          {fieldDef.required && <span className="user-form__required">*</span>}
+        </label>
+        <input
+          type="text"
+          id={fieldName}
+          value={value || ''}
+          onChange={(e) => handleInputChange(fieldName, e.target.value)}
+          className={`user-form__input ${error ? 'user-form__input--error' : ''}`}
+          placeholder={fieldDef.placeholder}
+          maxLength={fieldDef.maxLength}
+          disabled={isFormDisabled}
+        />
+        {error && <span className="user-form__error">{error}</span>}
+        {fieldDef.description && (
+          <div className="user-form__helper-text">{fieldDef.description}</div>
+        )}
+      </div>
+    );
+  };
+
+  // Loading state
+  if (schemaLoading) {
+    return (
+      <div className="user-form base-form">
+        <div className="form-loading">Loading form schema...</div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (schemaError) {
+    return (
+      <div className="user-form base-form">
+        <div className="form-error-banner">
+          <span className="error-icon">⚠️</span>
+          <span>Failed to load form schema: {schemaError.message}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!schema) {
+    return null;
+  }
+
+  // Group fields by section for better organization
+  const basicInfoFields = ['name', 'email'];
+  const roleAccessFields = ['role', 'status'];
+
+  return (
+    <form onSubmit={handleSubmit} className="user-form base-form">
       <div className="user-form__section">
         <h3 className="user-form__section-title">Basic Information</h3>
         
-        <div className="user-form__row">
-          <div className="user-form__field">
-            <label htmlFor="name" className="user-form__label">
-              Full Name <span className="user-form__required">*</span>
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleFieldChange('name', e.target.value)}
-              placeholder="Enter full name"
-              required
-              disabled={loading}
-              className={`user-form__input ${validationErrors.name ? 'user-form__input--error' : ''}`}
-            />
-            {validationErrors.name && (
-              <span className="user-form__error">{validationErrors.name}</span>
-            )}
-          </div>
-
-          <div className="user-form__field">
-            <label htmlFor="email" className="user-form__label">
-              Email Address <span className="user-form__required">*</span>
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleFieldChange('email', e.target.value)}
-              placeholder="Enter email address"
-              required
-              disabled={loading}
-              className={`user-form__input ${validationErrors.email ? 'user-form__input--error' : ''}`}
-            />
-            {validationErrors.email && (
-              <span className="user-form__error">{validationErrors.email}</span>
-            )}
-          </div>
-        </div>
+        {basicInfoFields.map(fieldName => {
+          const fieldDef = schema.formFields[fieldName];
+          return fieldDef ? renderField(fieldName, fieldDef) : null;
+        })}
       </div>
 
-      {/* Role and Status */}
       <div className="user-form__section">
         <h3 className="user-form__section-title">Role & Access</h3>
         
-        <div className="user-form__row">
-          <div className="user-form__field">
-            <label htmlFor="role" className="user-form__label">
-              Role <span className="user-form__required">*</span>
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={(e) => handleRoleChange(e.target.value as UserRole)}
-              required
-              disabled={loading || !canManageRoles}
-              className={`user-form__select ${validationErrors.role ? 'user-form__select--error' : ''}`}
-            >
-              <option value={UserRole.VIEWER}>Viewer - Read-only access</option>
-              <option value={UserRole.TECHNICIAN}>Technician - meter management</option>
-              <option value={UserRole.MANAGER}>Manager - Full business operations</option>
-              {currentUser?.role === UserRole.ADMIN && (
-                <option value={UserRole.ADMIN}>Administrator - Full system access</option>
-              )}
-            </select>
-            {validationErrors.role && (
-              <span className="user-form__error">{validationErrors.role}</span>
-            )}
-          </div>
-
-          <div className="user-form__field">
-            <label htmlFor="status" className="user-form__label">Status</label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={(e) => handleFieldChange('status', e.target.value)}
-              disabled={loading}
-              className="user-form__select"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
+        {roleAccessFields.map(fieldName => {
+          const fieldDef = schema.formFields[fieldName];
+          return fieldDef ? renderField(fieldName, fieldDef) : null;
+        })}
       </div>
 
-      {/* Password Section */}
-      {(!isEditing || showAdvanced) && (
+      {!user && (
         <div className="user-form__section">
-          <h3 className="user-form__section-title">
-            {isEditing ? 'Change Password' : 'Password'}
-          </h3>
+          <h3 className="user-form__section-title">Password</h3>
           
-          <div className="user-form__password-generator">
-            <button
-              type="button"
-              onClick={generatePassword}
-              className="user-form__generate-btn"
-              disabled={loading}
-            >
-              🎲 Generate Secure Password
-            </button>
-            {generatedPassword && (
-              <div className="user-form__generated-password">
-                <span>Generated: </span>
-                <code>{generatedPassword}</code>
-              </div>
-            )}
+          <div className="user-form__field">
+            <label htmlFor="password" className="user-form__label">
+              Password <span className="user-form__required">*</span>
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) {
+                  setErrors(prev => ({ ...prev, password: '' }));
+                }
+              }}
+              className={`user-form__input ${errors.password ? 'user-form__input--error' : ''}`}
+              placeholder="Enter password"
+              disabled={isFormDisabled}
+            />
+            {errors.password && <span className="user-form__error">{errors.password}</span>}
           </div>
 
-          <div className="user-form__row">
-            <div className="user-form__field">
-              <label htmlFor="password" className="user-form__label">
-                Password {!isEditing && <span className="user-form__required">*</span>}
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleFieldChange('password', e.target.value)}
-                placeholder="Enter password"
-                required={!isEditing}
-                disabled={loading}
-                className={`user-form__input ${validationErrors.password ? 'user-form__input--error' : ''}`}
-              />
-              {validationErrors.password && (
-                <span className="user-form__error">{validationErrors.password}</span>
-              )}
-            </div>
-
-            <div className="user-form__field">
-              <label htmlFor="confirmPassword" className="user-form__label">
-                Confirm Password {!isEditing && <span className="user-form__required">*</span>}
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
-                placeholder="Confirm password"
-                required={!isEditing}
-                disabled={loading}
-                className={`user-form__input ${validationErrors.confirmPassword ? 'user-form__input--error' : ''}`}
-              />
-              {validationErrors.confirmPassword && (
-                <span className="user-form__error">{validationErrors.confirmPassword}</span>
-              )}
-            </div>
-          </div>
-
-          {!isEditing && (
-            <div className="user-form__field">
-              <label className="user-form__checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={formData.sendInvitation}
-                  onChange={(e) => handleFieldChange('sendInvitation', e.target.checked)}
-                  disabled={loading}
-                />
-                <span>Send email invitation with login credentials</span>
-              </label>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Advanced Options */}
-      {isEditing && !showAdvanced && (
-        <div className="user-form__section">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(true)}
-            className="user-form__advanced-toggle"
-            disabled={loading}
-          >
-            ⚙️ Advanced Options
-          </button>
-        </div>
-      )}
-
-      {/* Custom Permissions */}
-      {canSetCustomPermissions && (
-        <div className="user-form__section">
-          <h3 className="user-form__section-title">Custom Permissions</h3>
-          <p className="user-form__section-description">
-            Override default role permissions with custom access controls.
-          </p>
-          
-          <div className="user-form__permissions">
-            {Object.entries(permissionGroups).map(([groupName, permissions]) => (
-              <div key={groupName} className="user-form__permission-group">
-                <h4 className="user-form__permission-group-title">{groupName}</h4>
-                <div className="user-form__permission-list">
-                  {permissions.map(permission => (
-                    <label key={permission} className="user-form__permission-item">
-                      <input
-                        type="checkbox"
-                        checked={formData.customPermissions.includes(permission)}
-                        onChange={() => handlePermissionToggle(permission)}
-                        disabled={loading}
-                      />
-                      <span className="user-form__permission-label">
-                        {permission.replace(':', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="user-form__field">
+            <label htmlFor="confirmPassword" className="user-form__label">
+              Confirm Password <span className="user-form__required">*</span>
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errors.confirmPassword) {
+                  setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                }
+              }}
+              className={`user-form__input ${errors.confirmPassword ? 'user-form__input--error' : ''}`}
+              placeholder="Confirm password"
+              disabled={isFormDisabled}
+            />
+            {errors.confirmPassword && <span className="user-form__error">{errors.confirmPassword}</span>}
           </div>
         </div>
       )}
 
-      {/* Form Actions */}
       <div className="user-form__actions">
         <button
           type="button"
           onClick={onCancel}
+          disabled={isFormDisabled}
           className="user-form__btn user-form__btn--secondary"
-          disabled={loading}
         >
           Cancel
         </button>
         <button
-          type="button"
-          onClick={handleSubmit}
+          type="submit"
+          disabled={isFormDisabled}
           className="user-form__btn user-form__btn--primary"
-          disabled={loading}
         >
-          {loading ? (
+          {form.isSubmitting ? (
             <>
-              <span className="user-form__spinner"></span>
-              {isEditing ? 'Updating...' : 'Creating...'}
+              <span className="user-form__spinner" />
+              {user ? 'Updating...' : 'Creating...'}
             </>
           ) : (
-            isEditing ? 'Update User' : 'Create User'
+            user ? 'Update User' : 'Create User'
           )}
         </button>
       </div>
-    </div>
+    </form>
   );
 };
+
+export default UserForm;
+

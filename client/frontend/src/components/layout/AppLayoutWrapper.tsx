@@ -10,7 +10,7 @@ import React from 'react';
 import { AppLayout } from '@framework/layout';
 import type { LayoutProps, MenuItem, AppLayoutConfig } from '@framework/layout';
 import { registerIconMappings } from '@framework/shared/utils/iconHelper';
-import { useAuth } from '../../store/slices/authSlice';
+import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useUI } from '../../store/slices/uiSlice';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -131,7 +131,13 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
   const user = mockUser;
   const { logout: authLogout } = useAuth();
   const logout = () => {
+    console.log('🚪 Logout button clicked');
+    
+    // Call logout which clears tokens and sets logout flag
     authLogout();
+    
+    // Redirect to login page
+    console.log('🔄 Redirecting to login page');
     window.location.href = '/login';
   };
   const checkPermission = () => true; // Mock always returns true

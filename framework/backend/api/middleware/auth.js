@@ -31,9 +31,21 @@ function requireAuth(req, res, next) {
     const secret = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secret);
 
+    // Extract user data from token
+    // Handle both formats: { user: {...} } and flat structure
+    const userData = decoded.user || decoded;
+    
+    // Ensure tenant_id is available at user level
+    // Check both decoded.tenant_id and decoded.user.tenant_id
+    const tenantId = decoded.user?.tenant_id || decoded.tenant_id;
+    
     // Attach auth context to request
     req.auth = {
-      user: decoded.user || decoded,
+      user: {
+        ...userData,
+        // Ensure tenant_id is always available at user level
+        tenant_id: tenantId || userData.tenant_id
+      },
       token
     };
 
@@ -89,8 +101,18 @@ function optionalAuth(req, res, next) {
     const secret = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, secret);
 
+    // Extract user data from token
+    const userData = decoded.user || decoded;
+    
+    // Ensure tenant_id is available at user level
+    const tenantId = decoded.user?.tenant_id || decoded.tenant_id;
+
     req.auth = {
-      user: decoded.user || decoded,
+      user: {
+        ...userData,
+        // Ensure tenant_id is always available at user level
+        tenant_id: tenantId || userData.tenant_id
+      },
       token
     };
 
@@ -172,6 +194,7 @@ function requireRoles(requiredRoles) {
 
 /**
  * Generate JWT token
+ * Automatically includes tenant_id from user record if present
  * @param {Object} payload - Token payload
  * @param {Object} [options] - Token options
  * @returns {string} JWT token
@@ -183,7 +206,27 @@ function generateToken(payload, options = {}) {
     ...options
   };
 
-  return jwt.sign(payload, secret, defaultOptions);
+  // Ensure tenant_id is included in the payload if it exists in user data
+  let tokenPayload = payload;
+  
+  // If payload has a user object, ensure tenant_id is included
+  if (payload.user && payload.user.tenant_id) {
+    tokenPayload = {
+      ...payload,
+      user: {
+        ...payload.user,
+        tenant_id: payload.user.tenant_id
+      }
+    };
+  } else if (payload.tenant_id) {
+    // If tenant_id is at root level, keep it
+    tokenPayload = {
+      ...payload,
+      tenant_id: payload.tenant_id
+    };
+  }
+
+  return jwt.sign(tokenPayload, secret, defaultOptions);
 }
 
 module.exports = {

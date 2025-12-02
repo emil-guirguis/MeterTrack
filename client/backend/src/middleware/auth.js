@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+const User = require('../models/UserWithSchema');
 const db = require('../config/database');
 
 // Verify JWT token
@@ -9,7 +9,12 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+    console.log('[AUTH] Request to:', req.method, req.path);
+    console.log('[AUTH] Authorization header:', authHeader ? `${authHeader.substring(0, 30)}...` : 'missing');
+    console.log('[AUTH] Token extracted:', token ? `${token.substring(0, 20)}...` : 'missing');
+
     if (!token) {
+      console.log('[AUTH] No token provided, returning 401');
       return res.status(401).json({
         success: false,
         message: 'Access token required'
@@ -17,7 +22,12 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('[AUTH] Token decoded successfully, userId:', decoded.userId);
     const user = await User.findById(decoded.userId);
+    console.log('[AUTH] User found:', user ? user.email : 'not found');
+    console.log('[AUTH] User tenant_id:', user ? user.tenant_id : 'N/A');
+    console.log('[AUTH] User tenantId:', user ? user.tenantId : 'N/A');
+    console.log('[AUTH] User keys:', user ? Object.keys(user) : 'N/A');
     
     if (!user) {
       return res.status(401).json({
@@ -26,7 +36,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    if (user.status !== 'active') {
+    // Check if user is active (status is a boolean field)
+    if (!user.active) {
       return res.status(401).json({
         success: false,
         message: 'Account is inactive'
@@ -36,20 +47,28 @@ const authenticateToken = async (req, res, next) => {
     // Remove password hash before attaching to request
     delete user.passwordhash;
     req.user = user;
+    
+    // Also set req.auth for compatibility with tenant context middleware
+    req.auth = {
+      user: user
+    };
+    
     next();
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired'
-      });
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
+    if (error instanceof Error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Token expired'
+        });
+      }
+      
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token'
+        });
+      }
     }
 
     console.error('Auth middleware error:', error);
@@ -68,6 +87,11 @@ const requirePermission = (permission) => {
         success: false,
         message: 'Authentication required'
       });
+    }
+
+    // Admin users bypass permission checks
+    if (req.user.role === 'admin') {
+      return next();
     }
 
     const rawPerms = req.user.permissions;
@@ -130,6 +154,7 @@ const getSiteIdFromApiKey = async (apiKey) => {
       return null;
     }
     
+    // @ts-ignore - rows is an array of objects with id property
     return result.rows[0].id;
   } catch (error) {
     console.error('Error getting site ID from API key:', error);

@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const Location = require('../models/Location');
-const Meter = require('../models/Meter');
+const Location = require('../models/LocationWithSchema');
+const Meter = require('../models/MeterWithSchema');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -18,30 +18,30 @@ function mapLocationToResponse(b) {
     type: b.type,
     status: b.status,
     address: {
-      street: b.address_street,
-      city: b.address_city,
-      state: b.address_state,
-      zipCode: b.address_zip_code,
-      country: b.address_country
+      street: b.street,
+      city: b.city,
+      state: b.state,
+      zipCode: b.zip,
+      country: b.country
     },
     contact: {
-      primaryContact: b.contact_primarycontact,
-      email: b.contact_email,
-      phone: b.contact_phone,
-      website: b.contact_website
+      primaryContact: b.contact_id,
+      email: null,
+      phone: null,
+      website: null
     },
     // Keep backward compatible aliases expected by frontend
     contactInfo: {
-      primaryContact: b.contact_primarycontact,
-      email: b.contact_email,
-      phone: b.contact_phone,
-      website: b.contact_website
+      primaryContact: b.contact_id,
+      email: null,
+      phone: null,
+      website: null
     },
-    totalFloors: b.totalfloors,
+    totalFloors: null,
     squareFootage: b.square_footage,
-    description: b.description,
+    description: null,
     notes: b.notes,
-    meterCount: b.meter_count,
+    meterCount: null,
     createdAt: b.created_at,
     updatedAt: b.updated_at
   };
@@ -78,37 +78,52 @@ router.get('/', [
 
     const numericPage = parseInt(page);
     const numericPageSize = parseInt(pageSize);
-    const skip = (numericPage - 1) * numericPageSize;
+    const offset = (numericPage - 1) * numericPageSize;
 
-    // Use PG model findAll with filters
-    const filters = {
-      type: filterType || undefined,
-      status: filterStatus || undefined,
-      search: search || undefined
-    };
+    // Build where clause for filtering
+    const where = {};
+    if (filterType) where.type = filterType;
+    if (filterStatus) where.status = filterStatus;
+    if (search) {
+      // Search in name, city, or state
+      where.name = { like: `%${search}%` };
+    }
 
-    const allLocations = await Location.findAll(filters);
-    
-    // Sort in-memory
+    // Map sortBy to database column names
     const sortKeyMap = {
       name: 'name',
-      city: 'address_city',
-      state: 'address_state',
+      city: 'city',
+      state: 'state',
       type: 'type',
       status: 'status',
-      createdAt: 'createdat'
+      createdAt: 'created_at'
     };
-    const key = sortKeyMap[sortBy] || 'name';
-    const sorted = allLocations.sort((a, b) => {
-      const va = (a[key] ?? '').toString().toLowerCase();
-      const vb = (b[key] ?? '').toString().toLowerCase();
-      if (va < vb) return sortOrder === 'desc' ? 1 : -1;
-      if (va > vb) return sortOrder === 'desc' ? -1 : 1;
-      return 0;
+    const orderColumn = sortKeyMap[sortBy] || 'name';
+    const orderDirection = sortOrder.toUpperCase();
+
+    // Use BaseModel's findAll with proper options
+    console.log('🔍 Location findAll called with:', {
+      where,
+      order: [[orderColumn, orderDirection]],
+      limit: numericPageSize,
+      offset
     });
 
-    const total = sorted.length;
-    const location = sorted.slice(skip, skip + numericPageSize).map(mapLocationToResponse);
+    const result = await Location.findAll({
+      where,
+      order: [[orderColumn, orderDirection]],
+      limit: numericPageSize,
+      offset
+    });
+
+    console.log('✅ Location findAll result:', {
+      rowCount: result.rows?.length,
+      total: result.pagination?.totalItems,
+      hasRows: !!result.rows
+    });
+
+    const location = result.rows.map(mapLocationToResponse);
+    const total = result.pagination.totalItems;
 
     res.json({
       success: true,
@@ -193,23 +208,18 @@ router.post('/', [
     // Map request body to PG fields
     const toCreate = {
       name: payload.name,
-      address_street: payload.address.street,
-      address_city: payload.address.city,
-      address_state: payload.address.state,
-      address_zip_code: payload.address.zipCode,
-      address_country: payload.address.country ?? 'USA',
-      contact_primarycontact: payload.contactInfo?.primaryContact,
-      contact_email: payload.contactInfo.email,
-      contact_phone: payload.contactInfo.phone,
-      contact_website: payload.contactInfo?.website,
+      street: payload.address.street,
+      street2: payload.address.street2,
+      city: payload.address.city,
+      state: payload.address.state,
+      zip: payload.address.zipCode,
+      country: payload.address.country ?? 'USA',
+      contact_id: payload.contactInfo?.primaryContact,
       type: payload.type,
       status: payload.status || 'active',
-      totalfloors: payload.totalFloors,
-      totalunits: payload.totalUnits,
-      yearbuilt: payload.yearBuilt,
-      squarefootage: payload.squareFootage,
-      description: payload.description,
-      notes: payload.notes
+      square_footage: payload.squareFootage,
+      notes: payload.notes,
+      active: true
     };
 
     const location = await Location.create(toCreate);
@@ -265,24 +275,18 @@ router.put('/:id', [
     if (payload.name !== undefined) updates.name = payload.name;
     if (payload.type !== undefined) updates.type = payload.type;
     if (payload.status !== undefined) updates.status = payload.status;
-    if (payload.totalFloors !== undefined) updates.totalfloors = payload.totalFloors;
-    if (payload.totalUnits !== undefined) updates.totalunits = payload.totalUnits;
-    if (payload.yearBuilt !== undefined) updates.yearbuilt = payload.yearBuilt;
-    if (payload.squareFootage !== undefined) updates.squarefootage = payload.squareFootage;
-    if (payload.description !== undefined) updates.description = payload.description;
+    if (payload.squareFootage !== undefined) updates.square_footage = payload.squareFootage;
     if (payload.notes !== undefined) updates.notes = payload.notes;
     if (payload.address) {
-      if (payload.address.street !== undefined) updates.address_street = payload.address.street;
-      if (payload.address.city !== undefined) updates.address_city = payload.address.city;
-      if (payload.address.state !== undefined) updates.address_state = payload.address.state;
-      if (payload.address.zipCode !== undefined) updates.address_zip_code = payload.address.zipCode;
-      if (payload.address.country !== undefined) updates.address_country = payload.address.country;
+      if (payload.address.street !== undefined) updates.street = payload.address.street;
+      if (payload.address.street2 !== undefined) updates.street2 = payload.address.street2;
+      if (payload.address.city !== undefined) updates.city = payload.address.city;
+      if (payload.address.state !== undefined) updates.state = payload.address.state;
+      if (payload.address.zipCode !== undefined) updates.zip = payload.address.zipCode;
+      if (payload.address.country !== undefined) updates.country = payload.address.country;
     }
     if (payload.contactInfo) {
-      if (payload.contactInfo.primaryContact !== undefined) updates.contact_primarycontact = payload.contactInfo.primaryContact;
-      if (payload.contactInfo.email !== undefined) updates.contact_email = payload.contactInfo.email;
-      if (payload.contactInfo.phone !== undefined) updates.contact_phone = payload.contactInfo.phone;
-      if (payload.contactInfo.website !== undefined) updates.contact_website = payload.contactInfo.website;
+      if (payload.contactInfo.primaryContact !== undefined) updates.contact_id = payload.contactInfo.primaryContact;
     }
 
     const updated = await current.update(updates);
@@ -310,8 +314,8 @@ router.delete('/:id', requirePermission('location:delete'), async (req, res) => 
     }
 
     // Check if location has associated meters
-    const meters = await Meter.findAll({ filters: { location_id: req.params.id } });
-    const meterCount = meters?.meters?.length || 0;
+    const metersResult = await Meter.findAll({ where: { location_id: req.params.id } });
+    const meterCount = metersResult?.rows?.length || 0;
 
     if (meterCount > 0) {
       return res.status(400).json({
@@ -380,7 +384,8 @@ router.patch('/bulk-status', [
 // Get location statistics
 router.get('/stats', requirePermission('location:read'), async (req, res) => {
   try {
-    const all = await Location.findAll();
+    const result = await Location.findAll();
+    const all = result.rows || [];
     const total = all.length;
     const active = all.filter(b => b.status === 'active').length;
     const inactive = all.filter(b => b.status === 'inactive').length;

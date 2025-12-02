@@ -138,6 +138,16 @@ class AuthService {
     tokenStorage.clearTokens();
   }
 
+  // Set logout flag to prevent auto-login
+  setLogoutFlag(): void {
+    tokenStorage.setLogoutFlag();
+  }
+
+  // Check if user explicitly logged out
+  hasLogoutFlag(): boolean {
+    return tokenStorage.hasLogoutFlag();
+  }
+
   // Check if user is authenticated (has valid token)
   isAuthenticated(): boolean {
     return tokenStorage.isTokenValid();

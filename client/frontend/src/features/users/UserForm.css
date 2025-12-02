@@ -261,7 +261,6 @@
 .user-form__permission-label {
   font-size: 0.875rem;
   color: var(--color-text-primary);
-  user-select: none;
 }
 
 /* Form Actions */

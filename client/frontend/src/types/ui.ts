@@ -63,16 +63,10 @@ export interface BreakpointConfig {
 export interface LayoutProps {
   children: ReactNode;
   title?: string;
-  breadcrumbs?: BreadcrumbItem[];
   actions?: ReactNode;
   loading?: boolean;
 }
 
-export interface BreadcrumbItem {
-  label: string;
-  path?: string;
-  icon?: string;
-}
 
 export interface HeaderProps {
   title?: string;
@@ -259,12 +253,10 @@ export interface RouteConfig {
   requiredPermission?: string;
   requiredRole?: string;
   title?: string;
-  breadcrumb?: string;
 }
 
 export interface NavigationState {
   currentPath: string;
-  breadcrumbs: BreadcrumbItem[];
   title: string;
   canGoBack: boolean;
 }
@@ -394,11 +386,11 @@ export interface ActionButtonProps extends ButtonProps {
 export interface HeaderLayout {
   left: {
     visible: boolean;
-    elements: ('menu-toggle' | 'brand' | 'breadcrumbs')[];
+    elements: ('menu-toggle' | 'brand' )[];
   };
   center: {
     visible: boolean;
-    content: 'title' | 'search' | 'breadcrumbs' | null;
+    content: 'title' | 'search'| null;
   };
   right: {
     visible: boolean;

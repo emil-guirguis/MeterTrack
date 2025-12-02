@@ -4,8 +4,8 @@
  */
 
 const db = require('../config/database');
-const MeterReading = require('../models/MeterReading');
-const Meter = require('../models/Meter');
+const MeterReading = require('../models/MeterReadingsWithSchema');
+const Meter = require('../models/MeterWithSchema');
 
 class AutoMeterCollectionService {
     constructor() {

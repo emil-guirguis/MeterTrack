@@ -86,7 +86,7 @@ vi.mock('../components/contacts/ContactList', () => ({
   ),
 }));
 
-vi.mock('../components/contacts/ContactForm', () => ({
+vi.mock('../features/contacts/ContactForm', () => ({
   ContactForm: ({ contact, onCancel }: any) => (
     <div data-testid="contact-form">
       <div data-testid="form-mode">{contact ? 'edit' : 'create'}</div>

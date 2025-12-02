@@ -3,7 +3,7 @@
  * Creates default email templates for the facility management system
  */
 
-const EmailTemplate = require('../models/EmailTemplate');
+const EmailTemplate = require('../models/EmailTemplatesWithSchema');
 
 class EmailTemplateSeeder {
     /**

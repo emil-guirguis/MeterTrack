@@ -9,8 +9,6 @@ export { ContactList } from './ContactList';
 export { ContactManagementPage } from './ContactManagementPage';
 export { useContactsEnhanced, useContacts, useContactsStore } from './contactsStore';
 export {
-  contactFormSchema,
-  countryOptions,
   contactColumns,
   contactFilters,
   contactStats,

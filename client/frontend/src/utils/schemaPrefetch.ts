@@ -1,0 +1,58 @@
+/**
+ * Schema Prefetch Utility
+ * 
+ * Prefetches commonly used schemas on app startup to improve performance
+ */
+
+import { prefetchSchemas } from '@framework/forms/utils/schemaLoader';
+
+/**
+ * List of entities to prefetch on app startup
+ * Add entities that are frequently accessed
+ */
+const ENTITIES_TO_PREFETCH = [
+  'contact',
+  'device',
+  'location',
+  'meter',
+  'meter_reading',
+  'user',
+  'tenant',
+];
+
+/**
+ * Prefetch schemas on app startup
+ * Call this in your main App component or index file
+ * 
+ * @returns Promise that resolves when prefetch is complete
+ */
+export async function prefetchAppSchemas(): Promise<void> {
+  try {
+    console.log('[Schema Prefetch] Starting schema prefetch...');
+    const startTime = Date.now();
+    
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    
+    await prefetchSchemas(ENTITIES_TO_PREFETCH, { baseUrl: apiUrl });
+    
+    const duration = Date.now() - startTime;
+    console.log(`[Schema Prefetch] Completed in ${duration}ms`);
+  } catch (error) {
+    console.error('[Schema Prefetch] Failed to prefetch schemas:', error);
+    // Don't throw - app should still work even if prefetch fails
+  }
+}
+
+/**
+ * Prefetch schemas for a specific feature
+ * Useful for lazy-loaded routes
+ * 
+ * @param entityNames - Array of entity names to prefetch
+ */
+export async function prefetchFeatureSchemas(entityNames: string[]): Promise<void> {
+  try {
+    await prefetchSchemas(entityNames);
+  } catch (error) {
+    console.error('[Schema Prefetch] Failed to prefetch feature schemas:', error);
+  }
+}

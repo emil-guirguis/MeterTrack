@@ -7,7 +7,6 @@ export type * from './types';
 export * from './utils';
 
 // Export store slices
-export * from './slices/authSlice';
 export * from './slices/uiSlice';
 
 // Export simple store for basic functionality
@@ -24,11 +23,10 @@ export { SyncManager, globalSyncManager, useSyncStats, withOfflineSupport } from
 export { withApiCall, withTokenRefresh } from './middleware/apiMiddleware';
 
 // Re-export commonly used hooks
-export { useAuth } from './slices/authSlice';
+export { useAuth } from '../hooks/useAuth'; // Use Context-based auth
 export { useUI } from './slices/uiSlice';
 
 // Store initialization and middleware
-import { useAuthStore } from './slices/authSlice';
 import { useUIStore } from './slices/uiSlice';
 
 import { globalCache } from './cache/cacheManager';
@@ -91,11 +89,10 @@ export const handleStoreError = (error: unknown, context: string) => {
 
 // Store persistence utilities
 export const clearAllStores = () => {
-  // Clear auth store
-  useAuthStore.getState().logout();
+  // Note: Auth is now handled by AuthContext, not Zustand
+  // Clear auth via authService if needed
   
   // Reset UI store
-
   useUIStore.setState({
     ...useUIStore.getState(),
     notifications: [],
@@ -113,10 +110,7 @@ export const clearAllStores = () => {
 export const hydrateStores = (initialState?: any) => {
   if (!initialState) return;
   
-  // Hydrate auth store
-  if (initialState.auth) {
-    useAuthStore.setState(initialState.auth);
-  }
+  // Note: Auth hydration is handled by AuthContext
   
   // Hydrate UI store
   if (initialState.ui) {
@@ -125,4 +119,4 @@ export const hydrateStores = (initialState?: any) => {
 };
 
 // Export store instances for direct access (use sparingly)
-export { useAuthStore, useUIStore };
+export { useUIStore };

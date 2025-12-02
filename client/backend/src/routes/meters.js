@@ -1,7 +1,7 @@
 // @ts-nocheck
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
-const Meter = require('../models/Meter');
+const Meter = require('../models/MeterWithSchema');
 const DeviceService = require('../services/deviceService');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 const {

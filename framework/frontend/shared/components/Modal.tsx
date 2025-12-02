@@ -85,13 +85,9 @@ export const Modal: React.FC<ModalProps> = ({
         `.trim()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
       >
         {/* Header */}
         <div className="modal__header">
-          <h2 id="modal-title" className="modal__title">
-            {title}
-          </h2>
           <button
             type="button"
             className="modal__close"

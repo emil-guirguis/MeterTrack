@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import AppLayout from '../AppLayout';
-import { useAuthStore } from '../../../store/slices/authSlice';
 import { useUIStore } from '../../../store/slices/uiSlice';
 import type { User } from '../../../types/auth';
 
@@ -20,8 +19,8 @@ const mockUser: User = {
   updatedAt: new Date()
 };
 
-// Mock Zustand stores
-vi.mock('../../../store/slices/authSlice', () => ({
+// Mock auth hook (Context-based)
+vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({
     user: mockUser,
     isAuthenticated: true,
@@ -29,15 +28,10 @@ vi.mock('../../../store/slices/authSlice', () => ({
     error: null,
     login: vi.fn(),
     logout: vi.fn(),
+    refreshToken: vi.fn(),
     checkPermission: vi.fn(() => true),
     hasRole: vi.fn(() => true),
   }),
-  useAuthStore: vi.fn(() => ({
-    user: mockUser,
-    isAuthenticated: true,
-    isLoading: false,
-    error: null,
-  }))
 }));
 
 vi.mock('../../../store/slices/uiSlice', () => ({

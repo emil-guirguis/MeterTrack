@@ -1,9 +1,9 @@
 /**
  * Device Service for PostgreSQL
- * Maps database fields to frontend fields
+ * Uses DeviceWithSchema model
  */
 
-const db = require('../config/database');
+const Device = require('../models/DeviceWithSchema');
 
 class DeviceService {
   /**
@@ -38,20 +38,12 @@ class DeviceService {
       }
     }
 
-    // Validate manufacturer field
-    if (!isUpdate || deviceData.hasOwnProperty('manufacturer')) {
-      if (deviceData.manufacturer && typeof deviceData.manufacturer !== 'string') {
-        errors.push('Device model number must be a string');
-      } else if (deviceData.manufacturer && deviceData.manufacturer.length > 255) {
-        errors.push('Device model number cannot exceed 255 characters');
-      }
-    }
-
     // Validate model_number field
-    if (!isUpdate || deviceData.hasOwnProperty('model_number')) {
-      if (deviceData.model_number && typeof deviceData.model_number !== 'string') {
+    if (!isUpdate || deviceData.hasOwnProperty('modelNumber') || deviceData.hasOwnProperty('model_number')) {
+      const modelNumber = deviceData.modelNumber || deviceData.model_number;
+      if (modelNumber && typeof modelNumber !== 'string') {
         errors.push('Device model number must be a string');
-      } else if (deviceData.model_number && deviceData.model_number.length > 255) {
+      } else if (modelNumber && modelNumber.length > 255) {
         errors.push('Device model number cannot exceed 255 characters');
       }
     }
@@ -110,8 +102,10 @@ class DeviceService {
    */
   static async getAllDevices() {
     try {
-      const result = await db.query('SELECT * FROM device ORDER BY manufacturer ASC');
-      return result.rows.map(this.formatDevice);
+      const result = await Device.findAll({
+        orderBy: 'manufacturer ASC'
+      });
+      return result.rows;
     } catch (error) {
       console.error('Error fetching devices:', error);
       throw this.createDatabaseError(error, 'device retrieval');
@@ -128,11 +122,8 @@ class DeviceService {
     }
 
     try {
-      const result = await db.query('SELECT * FROM device WHERE id = $1', [id]);
-      if (result.rows.length === 0) {
-        return null;
-      }
-      return this.formatDevice(result.rows[0]);
+      const device = await Device.findById(id);
+      return device;
     } catch (error) {
       console.error('Error fetching device by ID:', error);
       throw this.createDatabaseError(error, 'device retrieval');
@@ -143,27 +134,16 @@ class DeviceService {
    * Create new device
    */
   static async createDevice(deviceData) {
-    // Map frontend fields (manufacturer, model_number) to database fields
-    const mappedData = {
-      type: deviceData.type,
-      manufacturer: deviceData.manufacturer,
-      model_number: deviceData.model_number,
-      description: deviceData.description
-    };
-
     // Validate input data
-    const validationErrors = this.validateDeviceInput(mappedData);
+    const validationErrors = this.validateDeviceInput(deviceData);
     if (validationErrors.length > 0) {
       throw this.createValidationError(validationErrors);
     }
 
     try {
-      const { type, manufacturer, description, model_number } = mappedData;
-      const result = await db.query(
-        'INSERT INTO device (type, manufacturer, description, model_number) VALUES ($1, $2, $3, $4) RETURNING *',
-        [type.trim(), manufacturer.trim(), description || null, model_number || null]
-      );
-      return this.formatDevice(result.rows[0]);
+      const device = new Device(deviceData);
+      await device.save();
+      return device;
     } catch (error) {
       console.error('Error creating device:', error);
       throw this.createDatabaseError(error, 'device creation');
@@ -179,74 +159,20 @@ class DeviceService {
       throw this.createValidationError(['Device ID is required']);
     }
 
-    // Map frontend fields to database fields
-    const mappedData = {};
-    if (updateData.hasOwnProperty('type')) {
-      mappedData.type = updateData.type;
-    }
-    if (updateData.hasOwnProperty('manufacturer')) {
-      mappedData.manufacturer = updateData.manufacturer;
-    }
-    if (updateData.hasOwnProperty('model_number')) {
-      mappedData.model_number = updateData.model_number;
-    }
-    if (updateData.hasOwnProperty('description')) {
-      mappedData.description = updateData.description;
-    }
-
     // Validate input data for update
-    const validationErrors = this.validateDeviceInput(mappedData, true);
+    const validationErrors = this.validateDeviceInput(updateData, true);
     if (validationErrors.length > 0) {
       throw this.createValidationError(validationErrors);
     }
 
     try {
-      // Build dynamic update query based on provided fields
-      const updateFields = [];
-      const values = [];
-      let paramIndex = 1;
-
-      if (mappedData.hasOwnProperty('type')) {
-        updateFields.push(`type = $${paramIndex}`);
-        values.push(mappedData.type.trim());
-        paramIndex++;
-      }
-      if (mappedData.hasOwnProperty('manufacturer')) {
-        updateFields.push(`manufacturer = $${paramIndex}`);
-        values.push(mappedData.manufacturer.trim());
-        paramIndex++;
-      }
-
-      if (mappedData.hasOwnProperty('model_number')) {
-        updateFields.push(`model_number = $${paramIndex}`);
-        values.push(mappedData.model_number || null);
-        paramIndex++;
-      }
-
-      if (mappedData.hasOwnProperty('description')) {
-        updateFields.push(`description = $${paramIndex}`);
-        values.push(mappedData.description || null);
-        paramIndex++;
-      }
-
-      if (updateFields.length === 0) {
-        throw this.createValidationError(['No valid fields provided for update']);
-      }
-
-      // Add updated timestamp
-      updateFields.push(`updatedat = CURRENT_TIMESTAMP`);
-
-      // Add ID parameter
-      values.push(id);
-      const query = `UPDATE device SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
-
-      const result = await db.query(query, values);
-
-      if (result.rows.length === 0) {
+      const device = await Device.findById(id);
+      if (!device) {
         return null;
       }
 
-      return this.formatDevice(result.rows[0]);
+      await device.update(updateData);
+      return device;
     } catch (error) {
       console.error('Error updating device:', error);
       if (error && typeof error === 'object' && 'code' in error && error.code === 'VALIDATION_ERROR') {
@@ -266,30 +192,17 @@ class DeviceService {
     }
 
     try {
-      const result = await db.query('DELETE FROM device WHERE id = $1 RETURNING *', [id]);
-      return result.rows.length > 0;
+      const device = await Device.findById(id);
+      if (!device) {
+        return false;
+      }
+      
+      await device.delete();
+      return true;
     } catch (error) {
       console.error('Error deleting device:', error);
       throw this.createDatabaseError(error, 'device deletion');
     }
-  }
-
-  /**
-   * Format device data for frontend compatibility
-   * Maps database fields to frontend fields
-   */
-  static formatDevice(dbRow) {
-    if (!dbRow) return null;
-
-    return {
-      id: dbRow.id,
-      type: dbRow.type,
-      manufacturer: dbRow.manufacturer,
-      modelNumber: dbRow.model_number,
-      description: dbRow.description,
-      createdAt: dbRow.created_at,
-      updatedAt: dbRow.updated_at
-    };
   }
 }
 

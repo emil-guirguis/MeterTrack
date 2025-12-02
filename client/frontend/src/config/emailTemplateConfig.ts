@@ -87,19 +87,19 @@ export const emailTemplateFilters: FilterDefinition[] = [
 export const emailTemplateStats: StatDefinition<EmailTemplate>[] = [
   {
     label: 'Active Templates',
-    value: (items) => items.filter(t => t.status === 'active').length,
+    value: (items) => Array.isArray(items) ? items.filter(t => t.status === 'active').length : 0,
   },
   {
     label: 'Inactive Templates',
-    value: (items) => items.filter(t => t.status === 'inactive').length,
+    value: (items) => Array.isArray(items) ? items.filter(t => t.status === 'inactive').length : 0,
   },
   {
     label: 'Draft Templates',
-    value: (items) => items.filter(t => t.status === 'draft').length,
+    value: (items) => Array.isArray(items) ? items.filter(t => t.status === 'draft').length : 0,
   },
   {
     label: 'Total Templates',
-    value: (items) => items.length,
+    value: (items) => Array.isArray(items) ? items.length : 0,
   },
 ];
 

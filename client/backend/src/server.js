@@ -20,11 +20,15 @@ const emailRoutes = require('./routes/emails');
 const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const syncRoutes = require('./routes/sync');
+const schemaRoutes = require('./routes/schema');
 // const modbusRoutes = require('./routes/modbus'); // Temporarily disabled
 // const directMeterRoutes = require('./routes/directMeter'); // Temporarily disabled
 const devicesRoutes = require('./routes/device');
 const autoCollectionRoutes = require('./routes/autoCollection');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
+
+// Import tenant isolation middleware
+const { tenantContext } = require('../../../framework/backend/api/middleware/tenantContext');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -66,17 +70,12 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Handle preflight requests explicitly
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200);
-});
+app.options('*', cors());
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -115,7 +114,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     console.log('✅ Threading system initialization completed');
 
     // Initialize auto meter collection service (requires threading service)
-    await initializeAutoMeterCollection();
+    // TEMPORARILY DISABLED - service methods are commented out
+    // await initializeAutoMeterCollection();
   } catch (error) {
     console.error('❌ Database connection error:', error.message);
     process.exit(1);
@@ -414,25 +414,30 @@ function setupThreadingEventHandlers() {
   });
 }
 
+// Import auth middleware for global application
+const { authenticateToken } = require('./middleware/auth');
+
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/location', locationRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/meters', meterRoutes);
-app.use('/api/meter-readings', meterReadingRoutes);
-// Alias without hyphen to match frontend service paths
-app.use('/api/meterreadings', meterReadingRoutes);
-app.use('/api/templates', templateRoutes);
-app.use('/api/emails', emailRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/sync', syncRoutes);
-// app.use('/api/modbus', modbusRoutes); // Temporarily disabled
-// app.use('/api', directMeterRoutes); // Temporarily disabled
-app.use('/api/device', devicesRoutes);
-app.use('/api/auto-collection', autoCollectionRoutes);
-// app.use('/api/threading', threadingRoutes); // TEMPORARILY DISABLED
+
+// Apply authentication middleware globally to all protected routes
+// This must run BEFORE tenant context middleware
+app.use('/api/users', authenticateToken, tenantContext, userRoutes);
+app.use('/api/location', authenticateToken, tenantContext, locationRoutes);
+app.use('/api/contacts', authenticateToken, tenantContext, contactRoutes);
+app.use('/api/meters', authenticateToken, tenantContext, meterRoutes);
+app.use('/api/meterreading', authenticateToken, tenantContext, meterReadingRoutes);
+app.use('/api/templates', authenticateToken, tenantContext, templateRoutes);
+app.use('/api/emails', authenticateToken, tenantContext, emailRoutes);
+app.use('/api/settings', authenticateToken, tenantContext, settingsRoutes);
+app.use('/api/upload', authenticateToken, tenantContext, uploadRoutes);
+app.use('/api/sync', authenticateToken, tenantContext, syncRoutes);
+app.use('/api/schema', authenticateToken, tenantContext, schemaRoutes);
+// app.use('/api/modbus', authenticateToken, tenantContext, modbusRoutes); // Temporarily disabled
+// app.use('/api', authenticateToken, tenantContext, directMeterRoutes); // Temporarily disabled
+app.use('/api/device', authenticateToken, tenantContext, devicesRoutes);
+app.use('/api/auto-collection', authenticateToken, tenantContext, autoCollectionRoutes);
+// app.use('/api/threading', authenticateToken, tenantContext, threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -558,8 +563,8 @@ app.get('/api/test/db-status', async (req, res) => {
     const sampleUsers = await User.findAll({ limit: 1 });
     
     // Get some sample data from meter readings table
-    const meterReadingCount = await db.query('SELECT COUNT(*) as count FROM meterreadings');
-    const sampleReading = await db.query('SELECT meterid, reading_value, reading_date FROM meterreadings LIMIT 1');
+    const meterReadingCount = await db.query('SELECT COUNT(*) as count FROM meter_reading');
+    const sampleReading = await db.query('SELECT meterid, reading_value, reading_date FROM meter_reading LIMIT 1');
     
     res.json({
       success: true,
@@ -642,6 +647,16 @@ app.post('/api/test/create-user', async (req, res) => {
 app.use((error, req, res, next) => {
   console.error('Error:', error);
   
+  // Handle tenant context errors
+  if (error.message && error.message.includes('Tenant context')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Tenant context error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
   // Handle PostgreSQL-specific errors
   if (error.code === '23505') {
     return res.status(400).json({
@@ -671,7 +686,8 @@ app.use((error, req, res, next) => {
     success: false,
     message: process.env.NODE_ENV === 'production' 
       ? 'Internal server error' 
-      : error.message
+      : error.message,
+    timestamp: new Date().toISOString()
   });
 });
 

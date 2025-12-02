@@ -9,7 +9,6 @@ export { DeviceList } from './DeviceList';
 export { DeviceManagementPage } from './DeviceManagementPage';
 export { useDevicesEnhanced, useDevice, useDeviceStore } from './devicesStore';
 export {
-  deviceFormSchema,
   deviceColumns,
   deviceFilters,
   deviceStats,

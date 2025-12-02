@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { AppLayout } from '../../components/layout';
+import { AppLayoutWrapper as AppLayout } from '../../components/layout';
 import { FormModal } from '@framework/shared/components';
 import { UserList } from '../../features/users/UserList';
 import { UserForm } from '../../features/users/UserForm';
@@ -109,8 +109,6 @@ export const UserManagementPage: React.FC = () => {
           <UserForm
             onSubmit={handleCreateSubmit}
             onCancel={handleModalClose}
-            loading={users.loading}
-            error={users.error || undefined}
           />
         </FormModal>
 
@@ -126,11 +124,9 @@ export const UserManagementPage: React.FC = () => {
           size="lg"
         >
           <UserForm
-            user={selectedUser}
+            user={selectedUser || undefined}
             onSubmit={handleUpdateSubmit}
             onCancel={handleModalClose}
-            loading={users.loading}
-            error={users.error || undefined}
           />
         </FormModal>
 
@@ -185,8 +181,8 @@ const UserDetails: React.FC<UserDetailsProps> = ({ user, onEdit }) => {
           </div>
           <div className="user-details__field">
             <label className="user-details__label">Status</label>
-            <span className={`user-details__status user-details__status--${user.status}`}>
-              {user.status === 'active' ? '✅ Active' : '❌ Inactive'}
+            <span className={`user-details__status user-details__status--${user.active}`}>
+              {user.active  ? '✅ Active' : '❌ Inactive'}
             </span>
           </div>
         </div>

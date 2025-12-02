@@ -4,7 +4,6 @@ import type { LayoutProps, MenuItem } from '../types';
 import { Header } from './Header.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { MobileNav } from './MobileNav.tsx';
-import { Breadcrumb } from './Breadcrumb.tsx';
 import './AppLayout.css';
 
 export interface AppLayoutConfig {
@@ -92,7 +91,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   // Generate page title and breadcrumbs from route if not provided
   const pageTitle = title || (getPageTitle ? getPageTitle(location.pathname) : 'Dashboard');
-  const pageBreadcrumbs = breadcrumbs || (generateBreadcrumbs ? generateBreadcrumbs(location.pathname) : []);
 
   // Set document title
   if (usePageTitle) {
@@ -177,13 +175,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
         {/* Content Area */}
         <main className={`app-layout__content ${!isMobile && sidebarCollapsed ? 'sidebar-collapsed' : ''} ${isMobile ? 'mobile' : ''}`}>
-          {/* Breadcrumbs */}
-          {pageBreadcrumbs && pageBreadcrumbs.length > 1 && (
-            <div className="app-layout__breadcrumbs">
-              <Breadcrumb items={pageBreadcrumbs} />
-            </div>
-          )}
-
           {/* Page Content */}
           <div className="app-layout__page-content">
             {loading ? (

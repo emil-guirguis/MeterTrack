@@ -102,8 +102,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('🔄 Initializing authentication...');
+      console.log('📍 Current URL:', window.location.href);
+      console.log('🗄️ LocalStorage explicit_logout:', localStorage.getItem('explicit_logout'));
+      console.log('🗄️ LocalStorage auth_token:', localStorage.getItem('auth_token'));
+      console.log('🗄️ SessionStorage auth_token:', sessionStorage.getItem('auth_token'));
+      
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
+        
+        // Check if user explicitly logged out - FIRST priority
+        if (authService.hasLogoutFlag()) {
+          console.log('🚪 User explicitly logged out, clearing any remaining tokens and skipping auto-login');
+          // Ensure tokens are cleared even if logout didn't complete properly
+          authService.clearStoredToken();
+          dispatch({ type: 'SET_LOADING', payload: false });
+          return;
+        }
         
         // Check if user has a stored token
         const token = authService.getStoredToken();
@@ -185,9 +199,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const authResponse = await authService.login(credentials);
       console.log('📦 Auth response received:', authResponse);
       
-      // Store tokens
+      // Store tokens in tokenStorage
       authService.storeTokens(authResponse.token, authResponse.refreshToken, authResponse.expiresIn, credentials.rememberMe);
       console.log('💾 Tokens stored successfully');
+      console.log('🔑 Token in storage:', authService.getStoredToken());
       
       dispatch({ type: 'LOGIN_SUCCESS', payload: authResponse.user });
       console.log('✅ Login completed successfully');
@@ -202,15 +217,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = (): void => {
     try {
-      // Clear stored tokens
-      authService.clearStoredToken();
+      console.log('🚪 Logging out user...');
       
-      // Call logout API if needed
+      // Clear stored tokens FIRST
+      authService.clearStoredToken();
+      console.log('🗑️ Tokens cleared');
+      
+      // Set logout flag to prevent auto-login
+      authService.setLogoutFlag();
+      console.log('🚩 Logout flag set');
+      
+      // Dispatch logout to clear state
+      dispatch({ type: 'LOGOUT' });
+      console.log('✅ Logout state updated');
+      
+      // Call logout API if needed (don't wait for it)
       authService.logout().catch((error: unknown) => {
         console.error('Logout API call failed:', error);
       });
-      
-      dispatch({ type: 'LOGOUT' });
     } catch (error) {
       console.error('Logout error:', error);
       // Still dispatch logout to clear local state

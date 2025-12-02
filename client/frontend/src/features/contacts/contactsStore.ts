@@ -8,6 +8,7 @@
 import type { Contact } from './contactConfig';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
+import { tokenStorage } from '../../utils/tokenStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -43,21 +44,36 @@ interface ContactListResponse {
 
 class ContactAPI {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    // Get token from tokenStorage (which is synced by authService)
+    const token = tokenStorage.getToken();
+    
+    console.log('[ContactAPI] Making request to:', endpoint);
+    console.log('[ContactAPI] Token available:', !!token);
+    console.log('[ContactAPI] Token value:', token ? `${token.substring(0, 20)}...` : 'null');
+    
+    if (!token) {
+      console.error('[ContactAPI] No authentication token available');
+      throw new Error('No authentication token available');
+    }
     
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        Authorization: `Bearer ${token}`,
         ...options.headers,
       },
       ...options,
     };
 
+    console.log('[ContactAPI] Request headers:', config.headers);
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    
+    console.log('[ContactAPI] Response status:', response.status);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('[ContactAPI] Error response:', errorData);
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 

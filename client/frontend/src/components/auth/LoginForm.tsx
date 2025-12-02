@@ -160,6 +160,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                 error={hasFieldError('email')}
                 helperText={getFieldError('email')}
                 disabled={isSubmitting || isLoading}
+                InputLabelProps={{
+                  shrink: credentials.email.length > 0 || undefined,
+                }}
                 sx={{ mb: 2 }}
               />
 
@@ -178,6 +181,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                 error={hasFieldError('password')}
                 helperText={getFieldError('password')}
                 disabled={isSubmitting || isLoading}
+                InputLabelProps={{
+                  shrink: credentials.password.length > 0 || undefined,
+                }}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -260,7 +266,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
         {/* Footer */}
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            © 2025 Device Management System. All rights reserved.
+            © 2025 MeterIt Pro. All rights reserved.
           </Typography>
         </Box>
       </Box>

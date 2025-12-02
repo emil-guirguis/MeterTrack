@@ -4,6 +4,7 @@
  */
 
 const { logger } = require('../../shared/utils/logging');
+const tenantUtils = require('../utils/tenantUtils');
 
 class BaseController {
   /**
@@ -33,6 +34,53 @@ class BaseController {
     this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.delete = this.delete.bind(this);
+    this.getTenantId = this.getTenantId.bind(this);
+    this.verifyTenantOwnership = this.verifyTenantOwnership.bind(this);
+    this.validateTenantContext = this.validateTenantContext.bind(this);
+  }
+
+  /**
+   * Get the current tenant ID from request context
+   * Validates that tenant context exists and is valid
+   * @param {import('../types/request').ExtendedRequest} req - Express request
+   * @returns {string|null} Tenant ID or null if not available
+   */
+  getTenantId(req) {
+    return tenantUtils.getTenantId(req);
+  }
+
+  /**
+   * Verify that a resource belongs to the current tenant
+   * Prevents cross-tenant access by checking resource ownership
+   * @param {import('../types/request').ExtendedRequest} req - Express request
+   * @param {string|number} resourceId - Resource ID to verify
+   * @param {Object} model - Sequelize model to query
+   * @returns {Promise<boolean>} True if resource belongs to tenant, false otherwise
+   */
+  async verifyTenantOwnership(req, resourceId, model) {
+    return tenantUtils.verifyTenantOwnership(req, resourceId, model);
+  }
+
+  /**
+   * Validate that request has valid tenant context
+   * Rejects requests without valid tenant context with 401 Unauthorized
+   * @param {import('../types/request').ExtendedRequest} req - Express request
+   * @param {import('express').Response} res - Express response
+   * @returns {boolean} True if tenant context is valid, false otherwise
+   */
+  validateTenantContext(req, res) {
+    const tenantId = this.getTenantId(req);
+
+    if (!tenantId) {
+      this.logger.warn('Request rejected: missing or invalid tenant context', {
+        userId: req.auth?.user?.id,
+        timestamp: new Date().toISOString()
+      });
+      this.sendError(res, 'Tenant context not found', 401);
+      return false;
+    }
+
+    return true;
   }
 
   /**

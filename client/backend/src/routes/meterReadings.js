@@ -126,7 +126,7 @@ function toFrontendReading(pg) {
   return base;
 }
 const { query, validationResult } = require('express-validator');
-const MeterReading = require('../models/MeterReading');
+const MeterReading = require('../models/MeterReadingsWithSchema');
 const db = require('../config/database');
 
 // Get all meter readings with filtering and pagination

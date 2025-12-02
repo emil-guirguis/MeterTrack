@@ -2,10 +2,10 @@
  * Meter Configuration
  * 
  * Centralized configuration for Meter entity including:
- * - Form schema (field definitions, validation, API mapping)
  * - List columns, filters, stats
  * - Bulk actions and export configuration
  * 
+ * Schema is now loaded dynamically from the backend API.
  * This configuration is shared between MeterForm and MeterList components.
  */
 
@@ -13,8 +13,6 @@ import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
 import { Permission } from '../../types/auth';
-import { field } from '@framework/forms/utils/formSchema';
-import { defineEntitySchema } from '@framework/forms/utils/entitySchema';
 import {
   createStatusColumn,
   createStandardStatusActions,
@@ -22,79 +20,8 @@ import {
 } from '../../config/listHelpers';
 
 // ============================================================================
-// UNIFIED SCHEMA DEFINITION
+// TYPE DEFINITIONS
 // ============================================================================
-
-/**
- * Meter entity schema - single source of truth for Meter entity
- * Defines form fields, entity fields, and legacy field mappings
- */
-export const meterSchema = defineEntitySchema({
-  formFields: {
-    meterId: field({ type: 'string', default: '', required: true, label: 'Meter ID' }),
-    serialNumber: field({ type: 'string', default: '', required: true, label: 'Serial Number' }),
-    device: field({ type: 'string', default: '', required: true, label: 'Device Manufacturer' }),
-    model: field({ type: 'string', default: '', required: true, label: 'Model' }),
-    device_id: field({ type: 'string', default: '', required: true, label: 'Device ID' }),
-    ip: field({ type: 'string', default: '', required: true, label: 'IP Address' }),
-    portNumber: field({ type: 'number', default: 502, required: true, label: 'Port Number' }),
-    slaveId: field({ type: 'number', default: 1, label: 'Slave ID' }),
-    type: field({ 
-      type: 'string', 
-      default: 'electric', 
-      required: true, 
-      label: 'Meter Type'
-    }),
-    location: field({ type: 'string', default: '', label: 'Location' }),
-    description: field({ type: 'string', default: '', label: 'Description' }),
-    register_map: field({ type: 'string' as any, default: null, label: 'Register Map' }),
-  },
-  
-  entityFields: {
-    id: { type: 'string' as const, default: '', readOnly: true },
-    locationId: { type: 'string' as const, default: undefined },
-    locationName: { type: 'string' as const, default: undefined },
-    status: { 
-      type: 'string' as const,
-      enumValues: ['active', 'inactive', 'maintenance'] as const,
-      default: 'active' as const
-    },
-    installDate: { type: 'date' as const, default: new Date() },
-    configuration: { 
-      type: 'string' as any, 
-      default: {
-        readingInterval: 15,
-        units: 'kWh',
-        multiplier: 1,
-        registers: [],
-        communicationProtocol: 'modbus',
-        baudRate: 9600,
-        slaveId: 1,
-        ipAddress: '',
-        port: 502,
-      }
-    },
-    lastReading: { 
-      type: 'string' as any, 
-      default: undefined,
-      readOnly: true
-    },
-    notes: { type: 'string' as const, default: '' },
-    createdAt: { type: 'date' as const, default: new Date(), readOnly: true },
-    updatedAt: { type: 'date' as const, default: new Date(), readOnly: true },
-    createdBy: { type: 'string' as any, default: undefined, readOnly: true },
-    updatedBy: { type: 'string' as any, default: undefined, readOnly: true },
-  },
-  
-  entityName: 'Meter',
-  description: 'Meter entity for managing electric, gas, water, and other utility meters',
-} as const);
-
-/**
- * Meter form schema - exported for backward compatibility
- * Used by MeterForm component
- */
-export const meterFormSchema = meterSchema.form;
 
 /**
  * MeterConfig type for configuration object
@@ -148,9 +75,9 @@ export interface RegisterMap {
 }
 
 /**
- * Meter TypeScript type - inferred from schema with explicit entity fields
+ * Meter TypeScript type
  */
-export type Meter = typeof meterSchema._entityType & {
+export type Meter = {
   id: string;
   meterId: string;
   serialNumber: string;

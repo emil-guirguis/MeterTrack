@@ -1,0 +1,27 @@
+/**
+ * Meter Reading List Styles
+ * Inherits from framework DataList component
+ */
+
+.meter-reading-list {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Meter ID styling */
+.meter-reading-list .font-mono {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+}
+
+/* Quality badge styling */
+.meter-reading-list .badge--uppercase {
+  text-transform: capitalize;
+}
+
+/* Muted text for null values */
+.meter-reading-list .text-muted {
+  color: var(--color-text-secondary, #6b7280);
+  font-style: italic;
+}

@@ -17,7 +17,8 @@ class BaseService {
       logger: customLogger,
       searchFields = [],
       defaultIncludes = [],
-      defaultOrder = [['createdAt', 'DESC']]
+      defaultOrder = [['createdAt', 'DESC']],
+      tenantIdField = 'tenant_id'
     } = config;
 
     if (!model) {
@@ -29,14 +30,34 @@ class BaseService {
     this.searchFields = searchFields;
     this.defaultIncludes = defaultIncludes;
     this.defaultOrder = defaultOrder;
+    this.tenantIdField = tenantIdField;
+  }
+
+  /**
+   * Merge tenant_id into WHERE clause if provided
+   * @private
+   * @param {Object} where - Existing WHERE clause
+   * @param {string|null} tenantId - Tenant ID to add
+   * @returns {Object} Merged WHERE clause
+   */
+  _mergeTenantFilter(where, tenantId) {
+    if (!tenantId) {
+      return where;
+    }
+
+    return {
+      ...where,
+      [this.tenantIdField]: tenantId
+    };
   }
 
   /**
    * Find all items with pagination and filtering
    * @param {import('../../shared/types/common').QueryOptions} options - Query options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ListServiceResult>}
    */
-  async findAll(options = {}) {
+  async findAll(options = {}, tenantId = null) {
     try {
       const {
         page = 1,
@@ -48,10 +69,13 @@ class BaseService {
       } = options;
 
       // Build WHERE clause
-      const where = buildWhereClause(filters, {
+      let where = buildWhereClause(filters, {
         search,
         searchFields: this.searchFields
       });
+
+      // Merge tenant filter if provided
+      where = this._mergeTenantFilter(where, tenantId);
 
       // Build ORDER clause
       const order = sortBy ? buildOrderClause(sortBy, sortOrder) : this.defaultOrder;
@@ -96,11 +120,15 @@ class BaseService {
    * Find a single item by ID
    * @param {string|number} id - Item ID
    * @param {import('../types/service').ServiceFindOptions} [options] - Find options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async findById(id, options = {}) {
+  async findById(id, options = {}, tenantId = null) {
     try {
-      const item = await this.model.findByPk(id, {
+      const where = tenantId ? { id, [this.tenantIdField]: tenantId } : { id };
+
+      const item = await this.model.findOne({
+        where,
         include: options.include || this.defaultIncludes,
         ...options
       });
@@ -129,12 +157,16 @@ class BaseService {
    * Find a single item by conditions
    * @param {Object} where - WHERE conditions
    * @param {import('../types/service').ServiceFindOptions} [options] - Find options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async findOne(where, options = {}) {
+  async findOne(where, options = {}, tenantId = null) {
     try {
+      // Merge tenant filter if provided
+      const mergedWhere = this._mergeTenantFilter(where, tenantId);
+
       const item = await this.model.findOne({
-        where,
+        where: mergedWhere,
         include: options.include || this.defaultIncludes,
         ...options
       });
@@ -163,11 +195,17 @@ class BaseService {
    * Create a new item
    * @param {Object} data - Item data
    * @param {Object} [options] - Create options
+   * @param {string|null} [tenantId] - Optional tenant ID to include in creation
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async create(data, options = {}) {
+  async create(data, options = {}, tenantId = null) {
     try {
-      const item = await this.model.create(data, options);
+      // Include tenant_id in data if provided
+      const dataWithTenant = tenantId
+        ? { ...data, [this.tenantIdField]: tenantId }
+        : data;
+
+      const item = await this.model.create(dataWithTenant, options);
 
       return {
         success: true,
@@ -187,11 +225,14 @@ class BaseService {
    * @param {string|number} id - Item ID
    * @param {Object} data - Update data
    * @param {Object} [options] - Update options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async update(id, data, options = {}) {
+  async update(id, data, options = {}, tenantId = null) {
     try {
-      const item = await this.model.findByPk(id);
+      const where = tenantId ? { id, [this.tenantIdField]: tenantId } : { id };
+
+      const item = await this.model.findOne({ where });
 
       if (!item) {
         return {
@@ -219,11 +260,14 @@ class BaseService {
    * Delete an item
    * @param {string|number} id - Item ID
    * @param {Object} [options] - Delete options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async delete(id, options = {}) {
+  async delete(id, options = {}, tenantId = null) {
     try {
-      const item = await this.model.findByPk(id);
+      const where = tenantId ? { id, [this.tenantIdField]: tenantId } : { id };
+
+      const item = await this.model.findOne({ where });
 
       if (!item) {
         return {
@@ -251,11 +295,17 @@ class BaseService {
    * Bulk create items
    * @param {Array<Object>} items - Array of items to create
    * @param {Object} [options] - Create options
+   * @param {string|null} [tenantId] - Optional tenant ID to include in all items
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async bulkCreate(items, options = {}) {
+  async bulkCreate(items, options = {}, tenantId = null) {
     try {
-      const created = await this.model.bulkCreate(items, options);
+      // Include tenant_id in all items if provided
+      const itemsWithTenant = tenantId
+        ? items.map(item => ({ ...item, [this.tenantIdField]: tenantId }))
+        : items;
+
+      const created = await this.model.bulkCreate(itemsWithTenant, options);
 
       return {
         success: true,
@@ -274,14 +324,19 @@ class BaseService {
   /**
    * Bulk update items
    * @param {import('../types/service').BulkOperationOptions} options - Bulk operation options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async bulkUpdate(options) {
+  async bulkUpdate(options, tenantId = null) {
     try {
       const { ids, data, transaction } = options;
 
+      const where = tenantId
+        ? { id: ids, [this.tenantIdField]: tenantId }
+        : { id: ids };
+
       const [count] = await this.model.update(data, {
-        where: { id: ids },
+        where,
         transaction
       });
 
@@ -302,14 +357,19 @@ class BaseService {
   /**
    * Bulk delete items
    * @param {import('../types/service').BulkOperationOptions} options - Bulk operation options
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async bulkDelete(options) {
+  async bulkDelete(options, tenantId = null) {
     try {
       const { ids, transaction } = options;
 
+      const where = tenantId
+        ? { id: ids, [this.tenantIdField]: tenantId }
+        : { id: ids };
+
       const count = await this.model.destroy({
-        where: { id: ids },
+        where,
         transaction
       });
 
@@ -330,11 +390,15 @@ class BaseService {
   /**
    * Count items matching conditions
    * @param {Object} [where] - WHERE conditions
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<import('../types/service').ServiceResult>}
    */
-  async count(where = {}) {
+  async count(where = {}, tenantId = null) {
     try {
-      const count = await this.model.count({ where });
+      // Merge tenant filter if provided
+      const mergedWhere = this._mergeTenantFilter(where, tenantId);
+
+      const count = await this.model.count({ where: mergedWhere });
 
       return {
         success: true,
@@ -352,11 +416,15 @@ class BaseService {
   /**
    * Check if item exists
    * @param {Object} where - WHERE conditions
+   * @param {string|null} [tenantId] - Optional tenant ID for filtering
    * @returns {Promise<boolean>}
    */
-  async exists(where) {
+  async exists(where, tenantId = null) {
     try {
-      const count = await this.model.count({ where, limit: 1 });
+      // Merge tenant filter if provided
+      const mergedWhere = this._mergeTenantFilter(where, tenantId);
+
+      const count = await this.model.count({ where: mergedWhere, limit: 1 });
       return count > 0;
     } catch (error) {
       this.logger.error('Error in exists:', error);

@@ -15,6 +15,7 @@ class TokenStorage {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly TOKEN_DATA_KEY = 'token_data';
   private readonly EXPIRES_AT_KEY = 'token_expires_at';
+  private readonly LOGOUT_FLAG_KEY = 'explicit_logout';
   private rememberMe = false;
 
   /**
@@ -37,6 +38,9 @@ class TokenStorage {
     
     // Store complete token data
     storage.setItem(this.TOKEN_DATA_KEY, JSON.stringify(tokenData));
+    
+    // Clear logout flag when storing new tokens (user is logging in)
+    this.clearLogoutFlag();
   }
 
   /**
@@ -114,12 +118,40 @@ class TokenStorage {
    * Clear all stored tokens
    */
   clearTokens(): void {
+    console.log('🗑️ Clearing all tokens from storage');
     // Clear from both localStorage and sessionStorage
     [localStorage, sessionStorage].forEach(storage => {
       storage.removeItem(this.TOKEN_KEY);
       storage.removeItem(this.REFRESH_TOKEN_KEY);
       storage.removeItem(this.TOKEN_DATA_KEY);
+      storage.removeItem(this.EXPIRES_AT_KEY);
     });
+    console.log('✅ All tokens cleared');
+  }
+
+  /**
+   * Set logout flag to prevent auto-login after explicit logout
+   */
+  setLogoutFlag(): void {
+    console.log('🚩 Setting logout flag');
+    localStorage.setItem(this.LOGOUT_FLAG_KEY, 'true');
+  }
+
+  /**
+   * Clear logout flag (called on successful login)
+   */
+  clearLogoutFlag(): void {
+    console.log('🏳️ Clearing logout flag');
+    localStorage.removeItem(this.LOGOUT_FLAG_KEY);
+  }
+
+  /**
+   * Check if user explicitly logged out
+   */
+  hasLogoutFlag(): boolean {
+    const hasFlag = localStorage.getItem(this.LOGOUT_FLAG_KEY) === 'true';
+    console.log('🔍 Checking logout flag:', hasFlag);
+    return hasFlag;
   }
 
   /**

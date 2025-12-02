@@ -60,7 +60,7 @@ export interface User {
   client: string;
   role: UserRole;
   permissions: Permission[];
-  status: 'active' | 'inactive';
+  active: boolean;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;

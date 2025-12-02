@@ -77,9 +77,9 @@ export const useUsersEnhanced = () => {
     ...users,
     
     // Additional computed values
-    activeUsers: users.items.filter(user => user.status === 'active'),
-    inactiveUsers: users.items.filter(user => user.status === 'inactive'),
-    adminUsers: users.items.filter(user => user.role === 'admin'),
+    // activeUsers: users.items.filter(user => user.active),
+    // inactiveUsers: users.items.filter(user => user.active ),
+    // adminUsers: users.items.filter(user => user.role === 'admin'),
     
     // Enhanced actions with notifications
     createUser: async (data: Partial<User>) => {

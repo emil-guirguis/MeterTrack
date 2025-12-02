@@ -248,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
                     role="menuitem"
                   >
                     {getIconElement('lock', 'icon')}
-                    Sign Out
+                    Log Out
                   </button>
                 </div>
                 <div className="user-menu-divider" role="separator"></div>

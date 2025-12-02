@@ -2,10 +2,10 @@
  * Location Configuration
  * 
  * Centralized configuration for Location entity including:
- * - Form schema (field definitions, validation, API mapping)
  * - List columns, filters, stats
  * - Bulk actions and export configuration
  * 
+ * Schema is now loaded dynamically from the backend API.
  * This configuration is shared between LocationForm and LocationList components.
  */
 
@@ -13,9 +13,6 @@ import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
 import { Permission } from '../../types/auth';
-import { field } from '@framework/forms/utils/formSchema';
-import { defineEntitySchema } from '@framework/forms/utils/entitySchema';
-import type { Location } from '../../types/entities';
 import {
   createTwoLineColumn,
   createStatusColumn,
@@ -23,66 +20,7 @@ import {
   createStandardStatusActions,
   createExportAction,
 } from '../../config/listHelpers';
-
-// ============================================================================
-// UNIFIED SCHEMA DEFINITION
-// ============================================================================
-
-/**
- * Location entity schema - single source of truth for Location entity
- * Defines form fields, entity fields, and legacy field mappings
- */
-export const locationSchema = defineEntitySchema({
-  formFields: {
-    name: field({ type: 'string', default: '', required: true, label: 'Location Name' }),
-    type: field({ 
-      type: 'string', 
-      default: 'office', 
-      required: true, 
-      label: 'Location Type'
-    }),
-    status: field({ 
-      type: 'string', 
-      default: 'active', 
-      required: true, 
-      label: 'Status'
-    }),
-    // Address fields (nested object)
-    'address.street': field({ type: 'string', default: '', required: true, label: 'Street Address' }),
-    'address.city': field({ type: 'string', default: '', required: true, label: 'City' }),
-    'address.state': field({ type: 'string', default: '', required: true, label: 'State' }),
-    'address.zipCode': field({ type: 'string', default: '', required: true, label: 'ZIP Code' }),
-    'address.country': field({ type: 'string', default: 'US', required: true, label: 'Country' }),
-    // Contact info fields (nested object)
-    'contactInfo.email': field({ type: 'email', default: '', required: true, label: 'Email' }),
-    'contactInfo.phone': field({ type: 'phone', default: '', required: true, label: 'Phone' }),
-    'contactInfo.website': field({ type: 'url', default: '', label: 'Website' }),
-    'contactInfo.primaryContact': field({ type: 'string', default: '', label: 'Primary Contact' }),
-    // Optional location details
-    squareFootage: field({ type: 'number', default: undefined, label: 'Square Footage' }),
-    yearBuilt: field({ type: 'number', default: undefined, label: 'Year Built' }),
-    totalFloors: field({ type: 'number', default: undefined, label: 'Total Floors' }),
-    totalUnits: field({ type: 'number', default: undefined, label: 'Total Units' }),
-    description: field({ type: 'string', default: '', label: 'Description' }),
-    notes: field({ type: 'string', default: '', label: 'Notes' }),
-  },
-  
-  entityFields: {
-    id: { type: 'string' as const, default: '', readOnly: true },
-    meterCount: { type: 'number' as const, default: 0, readOnly: true },
-    createdAt: { type: 'date' as const, default: new Date(), readOnly: true },
-    updatedAt: { type: 'date' as const, default: new Date(), readOnly: true },
-  },
-  
-  entityName: 'Location',
-  description: 'Location entity for managing physical locations including offices, warehouses, and other facilities',
-} as const);
-
-/**
- * Location form schema - exported for backward compatibility
- * Used by LocationForm component
- */
-export const locationFormSchema = locationSchema.form;
+import type { Location } from '../../types/entities';
 
 // ============================================================================
 // LIST CONFIGURATION
@@ -218,21 +156,21 @@ export const locationFilters: FilterDefinition[] = [
 export const locationStats: StatDefinition<Location>[] = [
   {
     label: 'Active Locations',
-    value: (items, store) => store?.activeLocations?.length ?? items.filter(l => l.status === 'active').length,
+    value: (items, store) => store?.activeLocations?.length ?? (Array.isArray(items) ? items.filter(l => l.status === 'active').length : 0),
   },
   {
     label: 'Office Locations',
-    value: (items, store) => store?.officeLocations?.length ?? items.filter(l => l.type === 'office').length,
+    value: (items, store) => store?.officeLocations?.length ?? (Array.isArray(items) ? items.filter(l => l.type === 'office').length : 0),
   },
   {
     label: 'Warehouses',
-    value: (items, store) => store?.warehouseLocations?.length ?? items.filter(l => l.type === 'warehouse').length,
+    value: (items, store) => store?.warehouseLocations?.length ?? (Array.isArray(items) ? items.filter(l => l.type === 'warehouse').length : 0),
   },
   {
     label: 'Total Sq Ft',
     value: (items, store) => {
-      const total = store?.totalSquareFootage ?? items.reduce((sum, l) => sum + (l.squareFootage || 0), 0);
-      return total.toLocaleString();
+      const total = store?.totalSquareFootage ?? (Array.isArray(items) ? items.reduce((sum, l) => sum + (l.squareFootage || 0), 0) : 0);
+      return typeof total === 'number' ? total.toLocaleString() : total;
     },
   },
 ];
