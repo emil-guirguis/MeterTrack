@@ -43,7 +43,7 @@ export const UserForm: React.FC<UserFormProps> = ({
 
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<User, any>({
-    entity: user,
+    entity: schema ? user : undefined, // Only pass entity when schema is ready
     store: users,
     entityToFormData: (userData) => {
       if (!schema) return {};

@@ -213,4 +213,122 @@ describe('BaseModel', () => {
       expect(ModelWithoutTimestamps.timestamps).toBe(false);
     });
   });
+
+  describe('Schema Field Detection', () => {
+    it('should merge schema fields with extracted fields', () => {
+      const { defineSchema, field, FieldTypes } = require('./SchemaDefinition');
+
+      class ModelWithSchema extends BaseModel {
+        constructor(data = {}) {
+          super(data);
+          this.id = data.id;
+          this.name = data.name;
+          this.tenantId = data.tenantId;
+        }
+
+        static get tableName() {
+          return 'schema_test_table';
+        }
+
+        static get primaryKey() {
+          return 'id';
+        }
+
+        static get schema() {
+          return defineSchema({
+            entityName: 'SchemaTest',
+            tableName: 'schema_test_table',
+            formFields: {
+              name: field({
+                type: FieldTypes.STRING,
+                required: true,
+                label: 'Name',
+                dbField: 'name'
+              })
+            },
+            entityFields: {
+              id: field({
+                type: FieldTypes.NUMBER,
+                readOnly: true,
+                label: 'ID',
+                dbField: 'id'
+              }),
+              tenantId: field({
+                type: FieldTypes.NUMBER,
+                readOnly: true,
+                label: 'Tenant ID',
+                dbField: 'tenant_id'
+              })
+            }
+          });
+        }
+      }
+
+      const fields = ModelWithSchema._getFields();
+      const fieldNames = fields.map(f => f.name);
+
+      // Should have both extracted and schema fields
+      expect(fieldNames).toContain('id');
+      expect(fieldNames).toContain('name');
+      expect(fieldNames).toContain('tenantId');
+
+      // Should detect tenantId field
+      const tenantIdField = fields.find(f => f.name === 'tenantId');
+      expect(tenantIdField).toBeDefined();
+      expect(tenantIdField.dbField).toBe('tenant_id');
+    });
+
+    it('should detect tenantId field for tenant filtering', () => {
+      const { defineSchema, field, FieldTypes } = require('./SchemaDefinition');
+
+      class TenantModel extends BaseModel {
+        constructor(data = {}) {
+          super(data);
+          this.id = data.id;
+          this.name = data.name;
+          this.tenant_id = data.tenant_id;
+        }
+
+        static get tableName() {
+          return 'tenant_table';
+        }
+
+        static get primaryKey() {
+          return 'id';
+        }
+
+        static get schema() {
+          return defineSchema({
+            entityName: 'TenantEntity',
+            tableName: 'tenant_table',
+            formFields: {
+              name: field({
+                type: FieldTypes.STRING,
+                required: true,
+                label: 'Name'
+              })
+            },
+            entityFields: {
+              id: field({
+                type: FieldTypes.NUMBER,
+                readOnly: true,
+                label: 'ID'
+              }),
+              tenant_id: field({
+                type: FieldTypes.NUMBER,
+                readOnly: true,
+                label: 'Tenant ID'
+              })
+            }
+          });
+        }
+      }
+
+      const fields = TenantModel._getFields();
+      
+      // Check that tenantId or tenant_id field is detected
+      const hasTenantIdField = fields.some(f => f.name === 'tenantId' || f.name === 'tenant_id');
+      expect(hasTenantIdField).toBe(true);
+    });
+  });
 });

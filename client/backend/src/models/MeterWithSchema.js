@@ -21,10 +21,16 @@ class Meter extends BaseModel {
 
   // ===== Static Configuration =====
   
+  /**
+   * @override
+   */
   static get tableName() {
     return 'meter';
   }
 
+  /**
+   * @override
+   */
   static get primaryKey() {
     return 'id';
   }
@@ -51,6 +57,7 @@ class Meter extends BaseModel {
   /**
    * Schema definition - exposed to frontend via API
    * This is the ONLY place where fields are defined!
+   * @override
    */
   static get schema() {
     return defineSchema({
@@ -274,6 +281,15 @@ class Meter extends BaseModel {
           label: 'Updated By',
           dbField: null,
           description: 'User relationship',
+        }),
+        
+        tenantId: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: true,
+          label: 'Tenant ID',
+          dbField: 'tenant_id',
+          description: 'Tenant identifier for multi-tenancy',
         }),
       },
       

@@ -27,7 +27,8 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
     const options = {
       where,
       limit: parseInt(limit),
-      offset: (parseInt(page) - 1) * parseInt(limit)
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      tenantId: req.user?.tenantId // Automatic tenant filtering
     };
 
     // Get contacts

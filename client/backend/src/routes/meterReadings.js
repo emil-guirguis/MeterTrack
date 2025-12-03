@@ -148,6 +148,15 @@ router.get('/', [
       });
     }
 
+    // Validate tenant context is present
+    const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!userTenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: tenant context required'
+      });
+    }
+
     const {
       page = 1,
       pageSize = 20,
@@ -160,12 +169,20 @@ router.get('/', [
     const numericPageSize = parseInt(pageSize);
     const skip = (numericPage - 1) * numericPageSize;
 
-    // Map filters to PG
-    const filters = {
-      meterid: meterId || undefined
-    };
+    // Map filters to PG, excluding undefined values
+    const filters = {};
+    if (meterId !== undefined && meterId !== '') {
+      filters.meterid = meterId;
+    }
 
-    const all = await MeterReading.findAll(filters);
+    const result = await MeterReading.findAll({
+      where: filters,
+      tenantId: userTenantId,
+      limit: numericPageSize,
+      offset: skip
+    });
+
+    const all = result.rows || [];
 
     const sortKeyMap = {
       timestamp: 'createdat',
@@ -189,8 +206,8 @@ router.get('/', [
       return 0;
     });
 
-    const total = sorted.length;
-    const pageItems = sorted.slice(skip, skip + numericPageSize).map(toFrontendReading);
+    const total = result.pagination?.total || sorted.length;
+    const pageItems = sorted.map(toFrontendReading);
 
     res.json({
       success: true,
@@ -217,8 +234,21 @@ router.get('/', [
 // Get recent readings for dashboard (chronological order)
 router.get('/recent', requirePermission('meter:read'), async (req, res) => {
   try {
+    // Validate tenant context is present
+    const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!userTenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: tenant context required'
+      });
+    }
+
     const { limit = 20 } = req.query;
-    const items = await MeterReading.findAll({ limit: parseInt(limit) });
+    const result = await MeterReading.findAll({ 
+      limit: parseInt(limit),
+      tenantId: userTenantId
+    });
+    const items = result.rows || [];
     // Items are ordered DESC by reading_date in model; ensure recency
     const sorted = items.sort((a, b) => {
       const aData = /** @type {any} */ (a);
@@ -241,15 +271,25 @@ router.get('/recent', requirePermission('meter:read'), async (req, res) => {
 // Get latest readings for dashboard (per meter)
 router.get('/latest', requirePermission('meter:read'), async (req, res) => {
   try {
-    // Latest per meter using DISTINCT ON
+    // Validate tenant context is present
+    const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!userTenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: tenant context required'
+      });
+    }
+
+    // Latest per meter using DISTINCT ON, filtered by tenant
     const sql = `
-      SELECT DISTINCT ON (meterid) *
-      FROM meterreadings
+      SELECT DISTINCT ON (meter_id) *
+      FROM meter_reading
       WHERE (status IS NULL OR status = 'active')
-      ORDER BY meterid, createdat DESC
+        AND tenant_id = $1
+      ORDER BY meter_id, createdat DESC
       LIMIT 10
     `;
-    const result = await db.query(sql);
+    const result = await db.query(sql, [userTenantId]);
     // Sort by reading_date desc for nicer display
     const rows = /** @type {any[]} */ (result.rows);
     const sorted = rows.sort((a, b) => (new Date(a.reading_date || a.createdat).getTime() - new Date(b.reading_date || b.createdat).getTime()));
@@ -272,12 +312,30 @@ router.get('/:id', requirePermission('meter:read'), async (req, res, next) => {
     if (req.params.id === 'meter' || req.params.id === 'stats' || req.params.id === 'latest' || req.params.id === 'recent') {
       return next();
     }
+
+    // Validate tenant context is present
+    const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!userTenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: tenant context required'
+      });
+    }
+
     const reading = await MeterReading.findById(req.params.id);
 
     if (!reading) {
       return res.status(404).json({
         success: false,
         message: 'Meter reading not found'
+      });
+    }
+
+    // Verify the reading belongs to the user's tenant
+    if (reading.tenant_id !== userTenantId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: reading does not belong to your tenant'
       });
     }
 
@@ -311,16 +369,33 @@ router.get('/meter/:meterId', [
       });
     }
 
+    // Validate tenant context is present
+    const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!userTenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: tenant context required'
+      });
+    }
+
     const { meterId } = req.params;
     const { limit = 100, startDate, endDate } = req.query;
 
     const options = {
       limit: parseInt(limit),
       start_date: startDate ? new Date(startDate) : undefined,
-      end_date: endDate ? new Date(endDate) : undefined
+      end_date: endDate ? new Date(endDate) : undefined,
+      tenantId: userTenantId
     };
 
-    const readings = await MeterReading.findByMeterId(meterId, options);
+    // Use findAll with meterId filter instead of findByMeterId
+    const result = await MeterReading.findAll({
+      where: { meterid: meterId },
+      tenantId: userTenantId,
+      limit: parseInt(limit)
+    });
+
+    const readings = result.rows || [];
 
     res.json({ success: true, data: readings.map(toFrontendReading) });
   } catch (error) {
@@ -336,18 +411,29 @@ router.get('/meter/:meterId', [
 // Get meter statistics
 router.get('/stats/summary', requirePermission('meter:read'), async (req, res) => {
   try {
+    // Validate tenant context is present
+    const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!userTenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: tenant context required'
+      });
+    }
+
     // Compute stats from PG schema; prefer shorthand columns when present, fallback to unit-based aggregation
+    // Filter by tenant_id to ensure data isolation
     const sql = `
       SELECT 
         COUNT(*)::int AS total_readings,
-        COUNT(DISTINCT meterid)::int AS unique_meters,
+        COUNT(DISTINCT meter_id)::int AS unique_meters,
         COALESCE(SUM(kwh), 0)::float AS total_kwh,
         COALESCE(SUM(kvah), 0)::float AS total_kvah,
         COALESCE(SUM(kvarh), 0)::float AS total_kvarh
-      FROM meterreadings
+      FROM meter_reading
       WHERE (status IS NULL OR status = 'active')
+        AND tenant_id = $1
     `;
-    const result = await db.query(sql);
+    const result = await db.query(sql, [userTenantId]);
     const row = /** @type {any} */ (result.rows[0] || {});
 
     const data = {
@@ -362,6 +448,7 @@ router.get('/stats/summary', requirePermission('meter:read'), async (req, res) =
       uniqueMeters: Number(row.unique_meters || 0)
     };
 
+    console.log('📊 Meter Statistics:', data);
     res.json({ success: true, data });
   } catch (error) {
     const err = /** @type {Error} */ (error);

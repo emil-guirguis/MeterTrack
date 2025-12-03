@@ -23,7 +23,7 @@ class PostgresDB {
             console.log('User:', process.env.POSTGRES_USER);
             console.log('Password length:', process.env.POSTGRES_PASSWORD?.length);
             console.log('==================================');
-            
+
             this.pool = new Pool({
                 host: process.env.POSTGRES_HOST,
                 port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
@@ -44,7 +44,7 @@ class PostgresDB {
             this.isConnected = true;
             console.log(`✅ Connected to PostgreSQL -> db: ${process.env.POSTGRES_DB} host: ${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}`);
             console.log(`Database connection established at: ${result.rows[0].now}`);
-            
+
             return this.pool;
         } catch (error) {
             const err = /** @type {Error} */ (error);
@@ -71,16 +71,30 @@ class PostgresDB {
         if (!this.pool) {
             throw new Error('Database not connected. Call connect() first.');
         }
+
+        // Log all queries to console
+        console.log(`=== Select ${'='.repeat(120)}`);
+        console.log(`${text} ........ `,
+            params?.length > 0 && `PARAMS:${JSON.stringify(params, null, 2).replace(/\s/g, '')}`
+        );
+
+
         const client = await this.pool.connect();
         try {
+            const startTime = Date.now();
             const result = await client.query(text, params);
+            const duration = Date.now() - startTime;
+
+            console.log(`QUERY RESULT: ${result.rowCount} rows returned in ${duration}ms`);
+
             return result;
         } catch (error) {
             const err = /** @type {Error} */ (error);
-            console.error('SQL Error:', err.message);
+            console.error('SQL ERROR:', err.message);
             throw error;
         } finally {
             client.release();
+            console.log(`=== Select End ${'='.repeat(120)}`);
         }
     }
 
@@ -88,6 +102,7 @@ class PostgresDB {
      * Execute a transaction
      */
     async transaction(callback) {
+        console.log('='.repeat(120));
         const client = await this.getClient();
         try {
             await client.query('BEGIN');
@@ -100,6 +115,7 @@ class PostgresDB {
         } finally {
             client.release();
         }
+        console.log('='.repeat(120));
     }
 
     /**

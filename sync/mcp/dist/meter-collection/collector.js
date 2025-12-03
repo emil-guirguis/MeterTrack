@@ -303,7 +303,7 @@ export class MeterCollector {
           value,
           unit,
           is_synchronized
-        FROM meter_readings
+        FROM meter_reading
         WHERE meter_external_id = $1
         ORDER BY timestamp DESC
         LIMIT $2
@@ -330,7 +330,7 @@ export class MeterCollector {
           MAX(value) as max_value,
           MIN(timestamp) as first_reading,
           MAX(timestamp) as last_reading
-        FROM meter_readings
+        FROM meter_reading
         WHERE meter_external_id = $1
           AND timestamp >= NOW() - INTERVAL '${hours} hours'
         GROUP BY data_point

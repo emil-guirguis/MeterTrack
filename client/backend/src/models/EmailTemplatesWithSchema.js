@@ -16,16 +16,25 @@ class EmailTemplates extends BaseModel {
         EmailTemplates.schema.initializeFromData(this, data);
     }
     
+    /**
+     * @override
+     */
     static get tableName() {
         return 'email_templates';
     }
     
+    /**
+     * @override
+     */
     static get primaryKey() {
         return 'id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
     
+    /**
+     * @override
+     */
     static get schema() {
         return defineSchema({
             entityName: 'EmailTemplates',
@@ -131,6 +140,13 @@ class EmailTemplates extends BaseModel {
                     readOnly: true,
                     label: 'Updatedat',
                     dbField: 'updatedat',
+                }),
+                tenantId: field({
+                    type: FieldTypes.NUMBER,
+                    default: null,
+                    readOnly: true,
+                    label: 'Tenant ID',
+                    dbField: 'tenant_id',
                 })
             },
             

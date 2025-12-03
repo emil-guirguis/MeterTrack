@@ -16,16 +16,25 @@ class MeterMaps extends BaseModel {
         MeterMaps.schema.initializeFromData(this, data);
     }
     
+    /**
+     * @override
+     */
     static get tableName() {
         return 'meter_maps';
     }
     
+    /**
+     * @override
+     */
     static get primaryKey() {
         return 'id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
     
+    /**
+     * @override
+     */
     static get schema() {
         return defineSchema({
             entityName: 'MeterMaps',
@@ -89,6 +98,13 @@ class MeterMaps extends BaseModel {
                     readOnly: true,
                     label: 'Created At',
                     dbField: 'created_at',
+                }),
+                tenantId: field({
+                    type: FieldTypes.NUMBER,
+                    default: null,
+                    readOnly: true,
+                    label: 'Tenant ID',
+                    dbField: 'tenant_id',
                 })
             },
             

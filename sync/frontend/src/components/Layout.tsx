@@ -11,14 +11,14 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import SyncIcon from '@mui/icons-material/Sync';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 
 const drawerWidth = 240;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
   { text: 'Sync Status', icon: <SyncIcon />, path: '/sync-status' },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
 ];
 
 export default function Layout() {

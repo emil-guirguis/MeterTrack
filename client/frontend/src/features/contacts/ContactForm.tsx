@@ -39,12 +39,16 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   const contacts = useContactsEnhanced();
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Use the framework hook for form management with optimistic updates
+  // Don't initialize form until schema is loaded
+  // This prevents the race condition where entityToFormData is called before schema loads
   const form = useEntityFormWithStore<Contact, any>({
-    entity: contact,
+    entity: schema ? contact : undefined, // Only pass entity when schema is ready
     store: contacts,
     entityToFormData: (contactData) => {
-      if (!schema) return {};
+      if (!schema) {
+        console.warn('[ContactForm] entityToFormData called without schema - this should not happen');
+        return {};
+      }
       const formSchema = createFormSchema(schema.formFields);
       return formSchema.fromApi(contactData);
     },

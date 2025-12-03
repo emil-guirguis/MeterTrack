@@ -16,20 +16,29 @@ class MeterReadings extends BaseModel {
         MeterReadings.schema.initializeFromData(this, data);
     }
     
+    /**
+     * @override
+     */
     static get tableName() {
-        return 'meter_readings';
+        return 'meter_reading';
     }
     
+    /**
+     * @override
+     */
     static get primaryKey() {
         return 'id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
     
+    /**
+     * @override
+     */
     static get schema() {
         return defineSchema({
             entityName: 'MeterReadings',
-            tableName: 'meter_readings',
+            tableName: 'meter_reading',
             description: 'MeterReadings entity',
             
             // Form fields - user can edit these

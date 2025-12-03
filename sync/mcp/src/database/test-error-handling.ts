@@ -75,7 +75,7 @@ async function testQueryErrorHandling() {
       },
       {
         operation: 'queryMeterReadings',
-        details: { table: 'meter_readings' },
+        details: { table: 'meter_reading' },
       }
     );
     

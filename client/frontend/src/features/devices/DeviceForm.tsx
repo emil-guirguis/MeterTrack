@@ -41,7 +41,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
 
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<Device, any>({
-    entity: device,
+    entity: schema ? device : undefined, // Only pass entity when schema is ready
     store: devices,
     entityToFormData: (deviceData) => {
       if (!schema) return {};

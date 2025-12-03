@@ -29,23 +29,31 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       let data;
       if (fetchAll) {
         // Fetch all readings with pagination (get more data)
+        console.log('🔄 Fetching meter readings with pagination...');
         const response = await meterReadingService.getMeterReadings({
           page: 1,
           pageSize: Math.max(maxItems * 2, 100), // Get at least 100 or double maxItems
           sortBy: 'timestamp',
           sortOrder: 'desc'
         });
+        console.log('✅ Meter readings response:', response);
         data = response.items;
       } else {
         // Fetch just the latest readings
+        console.log('🔄 Fetching latest readings...');
         data = await meterReadingService.getLatestReadings();
+        console.log('✅ Latest readings response:', data);
       }
 
       // Sort by timestamp descending (newest first)
       const sortedData = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      console.log('📊 Sorted data:', sortedData);
       setReadings(sortedData.slice(0, maxItems));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch meter readings');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch meter readings';
+      console.error('❌ Error fetching meter readings:', err);
+      console.error('❌ Error message:', errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

@@ -6,16 +6,28 @@ const db = require('../config/database');
 const router = express.Router();
 
 /**
+ * Helper function to log SQL queries
+ */
+const logQuery = (query, params = []) => {
+  console.log('\n=== SQL QUERY ===');
+  console.log('Query:', query);
+  if (params && params.length > 0) {
+    console.log('Parameters:', params);
+  }
+  console.log('==================\n');
+};
+
+/**
  * POST /api/sync/auth
  * Authenticate Sync and verify API key
  */
 router.post('/auth', authenticateSyncServer, async (req, res) => {
   try {
     // If middleware passes, authentication is successful
-    const result = await db.query(
-      'SELECT id, name FROM sites WHERE id = $1',
-      [req.siteId]
-    );
+    const query = 'SELECT id, name FROM sites WHERE id = $1';
+    const params = [req.siteId];
+    logQuery(query, params);
+    const result = await db.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -25,20 +37,28 @@ router.post('/auth', authenticateSyncServer, async (req, res) => {
     }
 
     const site = result.rows[0];
+    if (!site) {
+      return res.status(404).json({
+        success: false,
+        message: 'Site not found'
+      });
+    }
 
     res.json({
       success: true,
       message: 'Authentication successful',
       site: {
-        id: site.id,
-        name: site.name
+        id: site['id'],
+        name: site['name']
       }
     });
   } catch (error) {
     console.error('Sync auth error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
-      message: 'Authentication error'
+      message: 'Authentication error',
+      error: errorMessage
     });
   }
 });
@@ -89,44 +109,45 @@ router.post(
         for (const reading of readings) {
           try {
             // Find or create meter
-            let meterResult = await client.query(
-              'SELECT id FROM meter WHERE site_id = $1 AND external_id = $2',
-              [siteId, reading.meter_external_id]
-            );
+            const meterQuery = 'SELECT id FROM meter WHERE site_id = $1 AND external_id = $2';
+            const meterParams = [siteId, reading.meter_external_id];
+            logQuery(meterQuery, meterParams);
+            let meterResult = await client.query(meterQuery, meterParams);
 
             let meterId;
             if (meterResult.rows.length === 0) {
               // Create meter if it doesn't exist
-              const insertMeterResult = await client.query(
-                `INSERT INTO meter (site_id, external_id, name, created_at) 
+              const insertMeterQuery = `INSERT INTO meter (site_id, external_id, name, created_at) 
                  VALUES ($1, $2, $3, NOW()) 
-                 RETURNING id`,
-                [siteId, reading.meter_external_id, reading.meter_external_id]
-              );
-              meterId = insertMeterResult.rows[0].id;
+                 RETURNING id`;
+              const insertMeterParams = [siteId, reading.meter_external_id, reading.meter_external_id];
+              logQuery(insertMeterQuery, insertMeterParams);
+              const insertMeterResult = await client.query(insertMeterQuery, insertMeterParams);
+              meterId = insertMeterResult.rows[0] && insertMeterResult.rows[0].id;
             } else {
-              meterId = meterResult.rows[0].id;
+              meterId = meterResult.rows[0] && meterResult.rows[0].id;
             }
 
             // Insert meter reading
-            await client.query(
-              `INSERT INTO meter_readings (meter_id, timestamp, data_point, value, unit, created_at)
-               VALUES ($1, $2, $3, $4, $5, NOW())`,
-              [
-                meterId,
-                reading.timestamp,
-                reading.data_point,
-                reading.value,
-                reading.unit || null
-              ]
-            );
+            const readingQuery = `INSERT INTO meter_reading (meter_id, timestamp, data_point, value, unit, created_at)
+               VALUES ($1, $2, $3, $4, $5, NOW())`;
+            const readingParams = [
+              meterId,
+              reading.timestamp,
+              reading.data_point,
+              reading.value,
+              reading.unit || null
+            ];
+            logQuery(readingQuery, readingParams);
+            await client.query(readingQuery, readingParams);
 
             insertedCount++;
           } catch (error) {
             console.error('Error inserting reading:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             errors.push({
               meter_external_id: reading.meter_external_id,
-              error: error.message
+              error: errorMessage
             });
             skippedCount++;
           }
@@ -144,10 +165,11 @@ router.post(
       });
     } catch (error) {
       console.error('Batch upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({
         success: false,
         message: 'Batch upload error',
-        error: error.message
+        error: errorMessage
       });
     }
   }
@@ -162,10 +184,10 @@ router.get('/config', authenticateSyncServer, async (req, res) => {
     const siteId = req.siteId;
 
     // Get site information
-    const siteResult = await db.query(
-      'SELECT id, name FROM sites WHERE id = $1',
-      [siteId]
-    );
+    const siteQuery = 'SELECT id, name FROM sites WHERE id = $1';
+    const siteParams = [siteId];
+    logQuery(siteQuery, siteParams);
+    const siteResult = await db.query(siteQuery, siteParams);
 
     if (siteResult.rows.length === 0) {
       return res.status(404).json({
@@ -175,28 +197,35 @@ router.get('/config', authenticateSyncServer, async (req, res) => {
     }
 
     // Get meters for this site
-    const metersResult = await db.query(
-      `SELECT id, external_id, name, bacnet_device_id, bacnet_ip 
+    const metersQuery = `SELECT id, external_id, name, bacnet_device_id, bacnet_ip 
        FROM meter 
-       WHERE site_id = $1`,
-      [siteId]
-    );
+       WHERE site_id = $1`;
+    const metersParams = [siteId];
+    logQuery(metersQuery, metersParams);
+    const metersResult = await db.query(metersQuery, metersParams);
 
     const site = siteResult.rows[0];
-    const meters = metersResult.rows;
+    if (!site) {
+      return res.status(404).json({
+        success: false,
+        message: 'Site not found'
+      });
+    }
+
+    const meters = metersResult.rows || [];
 
     res.json({
       success: true,
       config: {
         site: {
-          id: site.id,
-          name: site.name
+          id: site['id'],
+          name: site['name']
         },
         meters: meters.map(meter => ({
-          external_id: meter.external_id,
-          name: meter.name,
-          bacnet_device_id: meter.bacnet_device_id,
-          bacnet_ip: meter.bacnet_ip
+          external_id: meter['external_id'],
+          name: meter['name'],
+          bacnet_device_id: meter['bacnet_device_id'],
+          bacnet_ip: meter['bacnet_ip']
         })),
         sync_interval_minutes: 5,
         batch_size: 1000
@@ -204,10 +233,11 @@ router.get('/config', authenticateSyncServer, async (req, res) => {
     });
   } catch (error) {
     console.error('Config download error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       message: 'Config download error',
-      error: error.message
+      error: errorMessage
     });
   }
 });
@@ -219,13 +249,12 @@ router.get('/config', authenticateSyncServer, async (req, res) => {
 router.post('/heartbeat', authenticateSyncServer, async (req, res) => {
   try {
     const siteId = req.siteId;
-    const { status, queue_size, last_collection } = req.body;
 
     // Update last heartbeat timestamp
-    await db.query(
-      'UPDATE sites SET last_heartbeat = NOW() WHERE id = $1',
-      [siteId]
-    );
+    const heartbeatQuery = 'UPDATE sites SET last_heartbeat = NOW() WHERE id = $1';
+    const heartbeatParams = [siteId];
+    logQuery(heartbeatQuery, heartbeatParams);
+    await db.query(heartbeatQuery, heartbeatParams);
 
     res.json({
       success: true,
@@ -234,10 +263,11 @@ router.post('/heartbeat', authenticateSyncServer, async (req, res) => {
     });
   } catch (error) {
     console.error('Heartbeat error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       message: 'Heartbeat error',
-      error: error.message
+      error: errorMessage
     });
   }
 });

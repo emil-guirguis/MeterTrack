@@ -103,8 +103,9 @@ const locationsService = {
       const result = await api.getLocations(params);
       return {
         items: result.items,
-        total: result.total,
-        hasMore: result.page * result.pageSize < result.total,
+        total: result.pagination?.totalItems || 0,
+        hasMore: result.pagination?.hasNextPage || false,
+        pagination: result.pagination,
       };
     });
   },

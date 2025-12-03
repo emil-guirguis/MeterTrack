@@ -113,29 +113,32 @@ router.get('/', [
       where,
       order: [[orderColumn, orderDirection]],
       limit: numericPageSize,
-      offset
+      offset,
+      tenantId: req.user?.tenantId // Automatic tenant filtering
     });
 
-    console.log('✅ Location findAll result:', {
+    console.log('✅ Location .result:', {
       rowCount: result.rows?.length,
-      total: result.pagination?.totalItems,
+      total: result.pagination?.total,
       hasRows: !!result.rows
     });
 
     const location = result.rows.map(mapLocationToResponse);
-    const total = result.pagination.totalItems;
+    const total = result.pagination.total || 0;
+    const totalPages = result.pagination.totalPages || 1;
+    const currentPage = result.pagination.currentPage || numericPage;
 
     res.json({
       success: true,
       data: {
         items: location,
         pagination: {
-          currentPage: numericPage,
+          currentPage,
           pageSize: numericPageSize,
           totalItems: total,
-          totalPages: Math.ceil(total / numericPageSize),
-          hasNextPage: numericPage < Math.ceil(total / numericPageSize),
-          hasPreviousPage: numericPage > 1
+          totalPages,
+          hasNextPage: result.pagination.hasNextPage || false,
+          hasPreviousPage: result.pagination.hasPreviousPage || false
         }
       }
     });
@@ -314,7 +317,10 @@ router.delete('/:id', requirePermission('location:delete'), async (req, res) => 
     }
 
     // Check if location has associated meters
-    const metersResult = await Meter.findAll({ where: { location_id: req.params.id } });
+    const metersResult = await Meter.findAll({ 
+      where: { location_id: req.params.id },
+      tenantId: req.user?.tenantId
+    });
     const meterCount = metersResult?.rows?.length || 0;
 
     if (meterCount > 0) {
@@ -384,7 +390,7 @@ router.patch('/bulk-status', [
 // Get location statistics
 router.get('/stats', requirePermission('location:read'), async (req, res) => {
   try {
-    const result = await Location.findAll();
+    const result = await Location.findAll({ tenantId: req.user?.tenantId });
     const all = result.rows || [];
     const total = all.length;
     const active = all.filter(b => b.status === 'active').length;

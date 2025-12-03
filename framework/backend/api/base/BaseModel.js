@@ -77,7 +77,48 @@ class BaseModel {
     this._validateConfiguration();
 
     // Extract fields from constructor using modelHelpers
-    this._fields = extractFields(this);
+    let fields = extractFields(this);
+    
+    // Also include fields from schema if available
+    if (this.schema) {
+      // Build a map of all schema fields (both form and entity fields)
+      const schemaFields = {};
+      
+      // Add form fields from schema
+      if (this.schema.schema && this.schema.schema.formFields) {
+        Object.assign(schemaFields, this.schema.schema.formFields);
+      }
+      
+      // Add entity fields from schema
+      if (this.schema.schema && this.schema.schema.entityFields) {
+        Object.assign(schemaFields, this.schema.schema.entityFields);
+      }
+      
+      // Merge schema fields with extracted fields, preferring schema definitions
+      const fieldMap = new Map();
+      
+      // Add extracted fields first
+      fields.forEach(f => fieldMap.set(f.name, f));
+      
+      // Add/override with schema fields
+      Object.entries(schemaFields).forEach(([name, fieldDef]) => {
+        // Convert schema field definition to BaseModel field format
+        const dbField = fieldDef.dbField || name;
+        fieldMap.set(name, {
+          name,
+          column: dbField,
+          type: fieldDef.type,
+          required: fieldDef.required || false,
+          readOnly: fieldDef.readOnly || false,
+          default: fieldDef.default,
+          ...fieldDef
+        });
+      });
+      
+      fields = Array.from(fieldMap.values());
+    }
+
+    this._fields = fields;
 
     return this._fields;
   }
@@ -154,6 +195,16 @@ class BaseModel {
       `Add: static get primaryKey() { return 'id'; }`,
       { model: this.name }
     );
+  }
+
+  /**
+   * Get schema configuration for this model
+   * Can be overridden by child classes to define schema
+   * 
+   * @returns {Object|null} Schema configuration object
+   */
+  static get schema() {
+    return null;
   }
 
   /**
@@ -508,6 +559,19 @@ class BaseModel {
       // Get fields and validate configuration
       const fields = this._getFields();
       
+      // Automatically apply tenant filtering if model has tenantId field
+      // and tenantId is provided in options
+      const hasTenantIdField = fields.some(f => f.name === 'tenantId' || f.name === 'tenant_id');
+      console.log(`[BaseModel.findAll] ${this.name} - hasTenantIdField:`, hasTenantIdField, 'tenantId:', options.tenantId);
+      console.log(`[BaseModel.findAll] ${this.name} - options:`, JSON.stringify(options, null, 2));
+      if (hasTenantIdField && options.tenantId !== undefined) {
+        options.where = options.where || {};
+        options.where.tenant_id = options.tenantId;
+        console.log(`[BaseModel.findAll] ${this.name} - Applied tenant filter, where:`, options.where);
+      } else if (hasTenantIdField && options.tenantId === undefined) {
+        console.log(`[BaseModel.findAll] ${this.name} - WARNING: tenantId field exists but tenantId not provided in options!`);
+      }
+      
       // Build SELECT query
       const queryOptions = {
         ...options,
@@ -545,8 +609,8 @@ class BaseModel {
       let currentPage = 1;
       
       if (limit) {
-        // Execute count query to get total records
-        const countResult = await this.count(options.where || {});
+        // Execute count query to get total records (pass tenantId if available)
+        const countResult = await this.count(options.where || {}, { tenantId: options.tenantId });
         total = countResult;
         totalPages = Math.ceil(total / limit);
         currentPage = Math.floor(offset / limit) + 1;
@@ -581,11 +645,19 @@ class BaseModel {
    * const totalMeters = await Meter.count();
    * const activeMeters = await Meter.count({ status: 'active' });
    */
-  static async count(where = {}) {
+  static async count(where = {}, options = {}) {
     let sql = '';
     let values = [];
     
     try {
+      // Automatically apply tenant filtering if model has tenantId field
+      const fields = this._getFields();
+      const hasTenantIdField = fields.some(f => f.name === 'tenantId' || f.name === 'tenant_id');
+      if (hasTenantIdField && options.tenantId !== undefined) {
+        where = where || {};
+        where.tenant_id = options.tenantId;
+      }
+      
       // Build WHERE clause
       let whereClause = '';
       
@@ -1037,9 +1109,10 @@ class BaseModel {
         const modelPath = `../../../../client/backend/src/models/${modelName}`;
         return require(modelPath);
       } catch (error2) {
+        const errorMessage = error2 instanceof Error ? error2.message : String(error2);
         throw new ConfigurationError(
           `Cannot load related model '${modelName}'. Make sure the model file exists.`,
-          { modelName, error: error.message }
+          { modelName, error: errorMessage }
         );
       }
     }
@@ -1297,13 +1370,13 @@ class BaseModel {
     }
 
     const ModelClass = this;
-    const schema = ModelClass.schema;
+    const relationships = ModelClass.relationships;
     
-    if (!schema || !schema.relationships || !schema.relationships[relationshipName]) {
-      throw new Error(`Relationship '${relationshipName}' not defined in schema`);
+    if (!relationships || !relationships[relationshipName]) {
+      throw new Error(`Relationship '${relationshipName}' not defined in ${ModelClass.name}`);
     }
 
-    const relationship = schema.relationships[relationshipName];
+    const relationship = relationships[relationshipName];
     const RelatedModel = require(`../../../client/backend/src/models/${relationship.model}WithSchema`);
     
     const results = new Map();

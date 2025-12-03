@@ -34,7 +34,10 @@ class User extends BaseModel {
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
     
-    static get schema() {
+    /**
+     * @override
+     */
+        static get schema() {
         return defineSchema({
             entityName: 'User',
             tableName: 'users',

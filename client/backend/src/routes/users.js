@@ -61,12 +61,13 @@ router.get('/', [
       where,
       order: [[orderColumn, orderDirection]],
       limit: parseInt(pageSize),
-      offset
+      offset,
+      tenantId: req.user?.tenantId // Automatic tenant filtering
     });
 
     // Handle different result structures
     const users = result?.rows || [];
-    const total = result?.pagination?.totalItems || 0;
+    const total = result?.pagination?.total || 0;
 
     res.json({
       success: true,

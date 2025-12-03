@@ -41,7 +41,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({
 
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<Location, any>({
-    entity: location,
+    entity: schema ? location : undefined, // Only pass entity when schema is ready
     store: locations,
     entityToFormData: (locationData) => {
       if (!schema) return {};

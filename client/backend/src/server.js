@@ -426,7 +426,7 @@ app.use('/api/users', authenticateToken, tenantContext, userRoutes);
 app.use('/api/location', authenticateToken, tenantContext, locationRoutes);
 app.use('/api/contacts', authenticateToken, tenantContext, contactRoutes);
 app.use('/api/meters', authenticateToken, tenantContext, meterRoutes);
-app.use('/api/meterreading', authenticateToken, tenantContext, meterReadingRoutes);
+app.use('/api/meterreadings', authenticateToken, tenantContext, meterReadingRoutes);
 app.use('/api/templates', authenticateToken, tenantContext, templateRoutes);
 app.use('/api/emails', authenticateToken, tenantContext, emailRoutes);
 app.use('/api/settings', authenticateToken, tenantContext, settingsRoutes);

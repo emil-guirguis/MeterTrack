@@ -75,7 +75,7 @@ async function testUploadSyncManager() {
         
         // Insert test meter readings with actual schema
         await localPool.query(`
-          INSERT INTO meter_readings (
+          INSERT INTO meter_reading (
             meter_id, createdat, energy, power, voltage, current, 
             frequency, tenant_id, is_synchronized
           )
@@ -109,7 +109,7 @@ async function testUploadSyncManager() {
       logger.info('\n=== Verifying Remote Database ===');
       const remotePool = connectionManager.getRemotePool();
       const remoteResult = await remotePool.query(
-        `SELECT COUNT(*) as count FROM meter_readings WHERE createdat >= NOW() - INTERVAL '2 hours'`
+        `SELECT COUNT(*) as count FROM meter_reading WHERE createdat >= NOW() - INTERVAL '2 hours'`
       );
       logger.info(`Remote database has ${remoteResult.rows[0].count} recent meter readings`);
     }

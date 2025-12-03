@@ -49,6 +49,7 @@ router.get('/', [
 
     // Build where clause for filtering
     const where = {};
+    
     if (filterStatus) {
       where.status = filterStatus;
     }
@@ -67,26 +68,29 @@ router.get('/', [
     const orderDirection = sortOrder.toUpperCase();
 
     // Use BaseModel's findAll with proper options
+    // Tenant filtering is automatically applied by BaseModel if tenantId is provided
     const result = await Meter.findAll({
       where,
-      include: ['device', 'location'],
       order: [[orderColumn, orderDirection]],
       limit: numericPageSize,
-      offset
+      offset,
+      tenantId: req.user?.tenantId // Framework will automatically filter by tenant
     });
 
     // Map results to frontend format
     const itemsPage = result.rows.map(m => ({
       id: m.id,
       meterId: m.meterid,
-      serialNumber: m.serial_number || m.serial_number,
+      serialNumber: m.serial_number || m.serialnumber,
       device: m.device_name || null,
       model: m.device_description || null,
+      device_id: m.device_id,
       type: m.type,
       status: m.status,
-      location: m.Location,
-      createdAt: m.created_at || m.created_at,
-      updatedAt: m.updated_at || m.updated_at,
+      location: m.location_name || null,
+      location_id: m.location_id,
+      createdAt: m.created_at,
+      updatedAt: m.updated_at,
       register_map: m.register_map ?? null,
       configuration: undefined,
       lastReading: null
@@ -101,7 +105,7 @@ router.get('/', [
         pagination: {
           currentPage: numericPage,
           pageSize: numericPageSize,
-          totalItems: result.pagination.totalItems,
+          totalItems: result.pagination.total,
           totalPages,
           hasNextPage: numericPage < totalPages,
           hasPreviousPage: numericPage > 1
@@ -136,10 +140,8 @@ router.get('/', [
 // Get meter by ID
 router.get('/:id', requirePermission('meter:read'), async (req, res) => {
   try {
-    // Use BaseModel's findById with relationship includes
-    const meter = await Meter.findById(req.params.id, {
-      include: ['device', 'location']
-    });
+    // Use BaseModel's findById without relationships first
+    const meter = await Meter.findById(req.params.id);
     
     if (!meter) {
       return res.status(404).json({
@@ -148,17 +150,41 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
       });
     }
 
+    // Fetch related device and location separately if needed
+    let deviceName = null;
+    let deviceModel = null;
+    let locationName = null;
+
+    if (meter.device_id) {
+      const Device = require('../models/DeviceWithSchema');
+      const device = await Device.findById(meter.device_id);
+      if (device) {
+        deviceName = device.manufacturer;
+        deviceModel = device.model_number;
+      }
+    }
+
+    if (meter.location_id) {
+      const Location = require('../models/LocationWithSchema');
+      const location = await Location.findById(meter.location_id);
+      if (location) {
+        locationName = location.name;
+      }
+    }
+
     const data = {
       id: meter.id,
       meterId: meter.meterid,
-      serialNumber: meter.serial_number || meter.serial_number,
-      device: meter.device_name || null,
-      model: meter.device_description || null,
+      serialNumber: meter.serial_number || meter.serialnumber,
+      device: deviceName,
+      model: deviceModel,
+      device_id: meter.device_id,
       type: meter.type,
       status: meter.status,
-      location: meter.fullLocation,
-      createdAt: meter.created_at || meter.created_at,
-      updatedAt: meter.updated_at || meter.updated_at,
+      location: locationName,
+      location_id: meter.location_id,
+      createdAt: meter.created_at,
+      updatedAt: meter.updated_at,
       register_map: meter.register_map ?? null,
       configuration: undefined,
       lastReading: null
@@ -216,10 +242,11 @@ router.post('/', [
     const deviceName = (req.body.device || req.body.brand || '').trim();
     if (!resolvedDeviceId && (deviceName || req.body.model)) {
       const deviceDescription = (req.body.model || '').trim() || null;
+      const tenantId = req.user?.tenantId;
       if (deviceName) {
         try {
           // Try to find existing device by manufacturer and model_number
-          const allDevices = await DeviceService.getAllDevices();
+          const allDevices = await DeviceService.getAllDevices(tenantId);
           let existingDevice = allDevices.find(device => 
             device.manufacturer === deviceName && 
             (device.model_number === deviceDescription || (!device.model_number && !deviceDescription))
@@ -245,7 +272,7 @@ router.post('/', [
           console.error('Error resolving device:', error);
           // If device creation fails due to duplicate manufacturer, try to find it again
           if (error.message.includes('already exists')) {
-            const allDevices = await DeviceService.getAllDevices();
+            const allDevices = await DeviceService.getAllDevices(tenantId);
             const existingDevice = allDevices.find(device => device.manufacturer === deviceName);
             if (existingDevice) {
               resolvedDeviceId = existingDevice.id;
@@ -379,12 +406,13 @@ router.put('/:id', [
     // Resolve device_id: accept device_id directly, or device/brand and model strings and upsert into devices table
     let resolvedDeviceId = req.body.device_id || null;
     const deviceName = (req.body.device || req.body.brand || '').trim();
+    const tenantId = req.user?.tenantId;
     if (!resolvedDeviceId && (deviceName || req.body.model)) {
       const deviceDescription = (req.body.model || '').trim() || null;
       if (deviceName) {
         try {
           // Try to find existing device by manufacturer and model_number
-          const allDevices = await DeviceService.getAllDevices();
+          const allDevices = await DeviceService.getAllDevices(tenantId);
           let existingDevice = allDevices.find(device => 
             device.manufacturer === deviceName && 
             (device.model_number === deviceDescription || (!device.model_number && !deviceDescription))
@@ -410,7 +438,7 @@ router.put('/:id', [
           console.error('Error resolving device during update:', error);
           // If device creation fails due to duplicate manufacturer, try to find it again
           if (error.message.includes('already exists')) {
-            const allDevices = await DeviceService.getAllDevices();
+            const allDevices = await DeviceService.getAllDevices(tenantId);
             const existingDevice = allDevices.find(device => device.manufacturer === deviceName);
             if (existingDevice) {
               resolvedDeviceId = existingDevice.id;

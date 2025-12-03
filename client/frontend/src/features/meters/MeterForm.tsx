@@ -10,7 +10,7 @@
  * - Single source of truth
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSchema } from '@framework/forms/utils/schemaLoader';
 import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
 import { createFormSchema } from '@framework/forms/utils/formSchema';
@@ -46,14 +46,25 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   const canCreate = checkPermission(Permission.METER_CREATE);
   const canUpdate = checkPermission(Permission.METER_UPDATE);
 
+  // Debug logging
+  console.log('[MeterForm] Received meter prop:', meter);
+  console.log('[MeterForm] Schema loaded:', !!schema);
+  console.log('[MeterForm] Schema loading:', schemaLoading);
+
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<Meter, any>({
-    entity: meter,
+    entity: meter, // Always pass meter so form initializes correctly
     store: meters,
     entityToFormData: (meterData) => {
-      if (!schema) return {};
+      console.log('[MeterForm] entityToFormData called with:', meterData);
+      if (!schema) {
+        console.warn('[MeterForm] Schema not loaded, returning empty object');
+        return {};
+      }
       const formSchema = createFormSchema(schema.formFields);
-      return formSchema.fromApi(meterData);
+      const formData = formSchema.fromApi(meterData);
+      console.log('[MeterForm] Transformed to form data:', formData);
+      return formData;
     },
     getDefaultFormData: () => {
       if (!schema) return {};
@@ -83,6 +94,17 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   });
 
   const isFormDisabled = loading || form.isSubmitting;
+
+  // When schema finishes loading, reinitialize form data if we have a meter
+  useEffect(() => {
+    if (schema && meter && !schemaLoading) {
+      console.log('[MeterForm] Schema loaded, reinitializing form data for meter:', meter.id);
+      const formSchema = createFormSchema(schema.formFields);
+      const formData = formSchema.fromApi(meter);
+      console.log('[MeterForm] Manually setting form data:', formData);
+      form.setFormData(formData);
+    }
+  }, [meter?.id, schemaLoading]);
 
   // Validation
   const validateForm = (): boolean => {

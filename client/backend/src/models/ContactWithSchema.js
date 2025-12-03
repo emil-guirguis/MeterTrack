@@ -6,15 +6,15 @@
  */
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
-const { defineSchema, field, FieldTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
 
 class Contact extends BaseModel {
-    constructor(contactData = {}) {
-        super(contactData);
+    constructor(data = {}) {
+        super(data);
 
         // Auto-initialize all fields from schema
         // This eliminates the need to manually list every field!
-        Contact.schema.initializeFromData(this, contactData);
+        Contact.schema.initializeFromData(this, data);
     }
 
     /**
@@ -31,11 +31,8 @@ class Contact extends BaseModel {
         return 'id';
     }
 
-    // ===== SCHEMA DEFINITION (Single Source of Truth) =====
-
     /**
-     * Schema definition - exposed to frontend via API
-     * This is the ONLY place where fields are defined!
+     * @override
      */
     static get schema() {
         return defineSchema({

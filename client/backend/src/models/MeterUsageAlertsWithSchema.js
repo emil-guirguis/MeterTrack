@@ -16,16 +16,25 @@ class MeterUsageAlerts extends BaseModel {
         MeterUsageAlerts.schema.initializeFromData(this, data);
     }
     
+    /**
+     * @override
+     */
     static get tableName() {
         return 'meter_usage_alerts';
     }
     
+    /**
+     * @override
+     */
     static get primaryKey() {
         return 'id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
     
+    /**
+     * @override
+     */
     static get schema() {
         return defineSchema({
             entityName: 'MeterUsageAlerts',
@@ -94,6 +103,13 @@ class MeterUsageAlerts extends BaseModel {
                     readOnly: true,
                     label: 'Updated At',
                     dbField: 'updated_at',
+                }),
+                tenantId: field({
+                    type: FieldTypes.NUMBER,
+                    default: null,
+                    readOnly: true,
+                    label: 'Tenant ID',
+                    dbField: 'tenant_id',
                 })
             },
             

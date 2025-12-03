@@ -16,16 +16,25 @@ class MeterMaintenance extends BaseModel {
         MeterMaintenance.schema.initializeFromData(this, data);
     }
     
+    /**
+     * @override
+     */
     static get tableName() {
         return 'meter_maintenance';
     }
     
+    /**
+     * @override
+     */
     static get primaryKey() {
         return 'id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
     
+    /**
+     * @override
+     */
     static get schema() {
         return defineSchema({
             entityName: 'MeterMaintenance',
@@ -44,6 +53,13 @@ class MeterMaintenance extends BaseModel {
                     readOnly: true,
                     label: 'Id',
                     dbField: 'id',
+                }),
+                tenantId: field({
+                    type: FieldTypes.NUMBER,
+                    default: null,
+                    readOnly: true,
+                    label: 'Tenant ID',
+                    dbField: 'tenant_id',
                 })
             },
             

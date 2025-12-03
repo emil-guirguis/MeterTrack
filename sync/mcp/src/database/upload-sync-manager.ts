@@ -125,7 +125,7 @@ export class UploadSyncManager {
       async () => {
         const result = await this.localPool.query(
           `SELECT *
-           FROM meter_readings
+           FROM meter_reading
            WHERE is_synchronized = false
            ORDER BY createdat ASC
            LIMIT $1`,
@@ -179,7 +179,7 @@ export class UploadSyncManager {
       }
 
       const insertQuery = `
-        INSERT INTO meter_readings (${columns.join(', ')})
+        INSERT INTO meter_reading (${columns.join(', ')})
         VALUES ${placeholders.join(', ')}
       `;
 
@@ -238,7 +238,7 @@ export class UploadSyncManager {
 
       // Delete readings by IDs
       const result = await client.query(
-        `DELETE FROM meter_readings
+        `DELETE FROM meter_reading
          WHERE id = ANY($1::uuid[])`,
         [readingIds]
       );
@@ -285,7 +285,7 @@ export class UploadSyncManager {
   async getQueueSize(): Promise<number> {
     try {
       const result = await this.localPool.query(
-        'SELECT COUNT(*) as count FROM meter_readings WHERE is_synchronized = false'
+        'SELECT COUNT(*) as count FROM meter_reading WHERE is_synchronized = false'
       );
       return parseInt(result.rows[0].count, 10);
     } catch (error) {

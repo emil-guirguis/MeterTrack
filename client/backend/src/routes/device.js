@@ -65,7 +65,16 @@ function handleError(res, error) {
 // Get all devices
 router.get('/', async (req, res) => {
   try {
-    const device = await DeviceService.getAllDevices();
+    const tenantId = req.user?.tenantId || req.user?.tenant_id;
+    console.log('[Device Route] req.user:', {
+      id: req.user?.id,
+      email: req.user?.email,
+      tenantId: req.user?.tenantId,
+      tenant_id: req.user?.tenant_id,
+      allKeys: req.user ? Object.keys(req.user) : []
+    });
+    console.log('[Device Route] Using tenantId:', tenantId);
+    const device = await DeviceService.getAllDevices(tenantId);
     res.json({ 
       success: true, 
       data: device,

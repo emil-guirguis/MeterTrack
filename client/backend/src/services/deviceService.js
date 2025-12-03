@@ -100,10 +100,11 @@ class DeviceService {
   /**
    * Get all devices
    */
-  static async getAllDevices() {
+  static async getAllDevices(tenantId = null) {
     try {
       const result = await Device.findAll({
-        orderBy: 'manufacturer ASC'
+        orderBy: 'manufacturer ASC',
+        tenantId
       });
       return result.rows;
     } catch (error) {
