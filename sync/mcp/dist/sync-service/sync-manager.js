@@ -303,3 +303,4 @@ export function createSyncManagerFromEnv(database, apiClient) {
     };
     return new SyncManager(config);
 }
+//# sourceMappingURL=sync-manager.js.map

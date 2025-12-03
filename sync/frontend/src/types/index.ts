@@ -20,6 +20,12 @@ export interface MeterReading {
   created_at: string;
 }
 
+export interface TenantStatus {
+  is_connected: boolean;
+  last_sync_at: string | null;
+  queue_size: number;
+  sync_errors: TenantError[];
+}
 export interface SyncStatus {
   is_connected: boolean;
   last_sync_at: string | null;
@@ -34,10 +40,31 @@ export interface SyncError {
   synced_at: string;
 }
 
+export interface TenantError {
+  id: number;
+  batch_size: number;
+  error_message: string;
+  synced_at: string;
+}
 export interface MeterStatus {
   meter_external_id: string;
   meter_name: string;
   is_connected: boolean;
   last_reading_at: string | null;
   last_error: string | null;
+}
+
+export interface TenantInfo {
+  id: number;
+  name: string;
+  url?: string;
+  street?: string;
+  street2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  active?: boolean;
+  created_at: string;
+  updated_at?: string;
 }

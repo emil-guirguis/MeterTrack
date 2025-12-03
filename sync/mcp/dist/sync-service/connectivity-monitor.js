@@ -143,3 +143,4 @@ export class ConnectivityMonitor extends EventEmitter {
         return this.status.isConnected;
     }
 }
+//# sourceMappingURL=connectivity-monitor.js.map

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Meter, MeterReading, TenantStatus, SyncStatus, MeterStatus } from '../types';
+import { Meter, MeterReading, TenantStatus, SyncStatus, MeterStatus, TenantInfo } from '../types';
 
 interface AppState {
   meters: Meter[];
@@ -7,6 +7,7 @@ interface AppState {
   tenantStatus: TenantStatus | null;
   syncStatus: SyncStatus | null;
   meterStatuses: MeterStatus[];
+  tenantInfo: TenantInfo | null;
   isLoading: boolean;
   error: string | null;
 
@@ -15,6 +16,7 @@ interface AppState {
   setTenantStatus: (status: TenantStatus) => void;
   setSyncStatus: (status: SyncStatus) => void;
   setMeterStatuses: (statuses: MeterStatus[]) => void;
+  setTenantInfo: (info: TenantInfo | null) => void;
   setLoading: (loading: boolean) => void;
   setTenantError: (error: string | null) => void;
   setError: (error: string | null) => void;
@@ -26,6 +28,7 @@ export const useAppStore = create<AppState>((set) => ({
   tenantStatus: null,
   syncStatus: null,
   meterStatuses: [],
+  tenantInfo: null,
   isLoading: false,
   error: null,
 
@@ -34,6 +37,7 @@ export const useAppStore = create<AppState>((set) => ({
   setTenantStatus: (tenantStatus) => set({ tenantStatus }),
   setSyncStatus: (syncStatus) => set({ syncStatus }),
   setMeterStatuses: (meterStatuses) => set({ meterStatuses }),
+  setTenantInfo: (tenantInfo) => set({ tenantInfo }),
   setLoading: (isLoading) => set({ isLoading }),
   setTenantError: (error) => set({ error }),
   setError: (error) => set({ error }),

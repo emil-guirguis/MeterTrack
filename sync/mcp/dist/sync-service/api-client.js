@@ -201,3 +201,4 @@ export function createApiClientFromEnv() {
     };
     return new ClientSystemApiClient(config);
 }
+//# sourceMappingURL=api-client.js.map

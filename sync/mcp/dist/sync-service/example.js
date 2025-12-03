@@ -16,7 +16,7 @@ async function main() {
     const syncManager = createSyncManagerFromEnv(database, apiClient);
     // Test database connection
     console.log('2. Testing database connection...');
-    const dbConnected = await database.testConnection();
+    const dbConnected = await database.testConnectionLocal();
     console.log(`   Database: ${dbConnected ? '✓ Connected' : '✗ Failed'}`);
     if (!dbConnected) {
         console.error('Cannot proceed without database connection');
@@ -114,3 +114,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(1);
     });
 }
+//# sourceMappingURL=example.js.map

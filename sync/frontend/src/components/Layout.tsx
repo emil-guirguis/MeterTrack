@@ -10,9 +10,11 @@ import {
   ListItemText,
   Toolbar,
   Typography,
+  Tooltip,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import { useAppStore } from '../stores/useAppStore';
 
 const drawerWidth = 240;
 
@@ -24,6 +26,7 @@ const menuItems = [
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { tenantInfo } = useAppStore();
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -51,17 +54,30 @@ export default function Layout() {
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            {menuItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  selected={location.pathname === item.path}
-                  onClick={() => navigate(item.path)}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+            {menuItems.map((item) => {
+              // Disable Dashboard tab if no tenant is connected
+              const isDisabled = item.path === '/dashboard' && !tenantInfo;
+              
+              return (
+                <ListItem key={item.text} disablePadding>
+                  <Tooltip 
+                    title={isDisabled ? 'Connect your account first' : ''} 
+                    placement="right"
+                  >
+                    <span style={{ width: '100%' }}>
+                      <ListItemButton
+                        selected={location.pathname === item.path}
+                        onClick={() => !isDisabled && navigate(item.path)}
+                        disabled={isDisabled}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText primary={item.text} />
+                      </ListItemButton>
+                    </span>
+                  </Tooltip>
+                </ListItem>
+              );
+            })}
           </List>
         </Box>
       </Drawer>

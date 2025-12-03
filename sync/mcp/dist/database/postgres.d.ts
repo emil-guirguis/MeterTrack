@@ -4,7 +4,7 @@
  * Provides connection management and query methods for the Sync Database.
  * Handles meters, meter_readings, and sync_log tables.
  */
-import { PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
 export interface Meter {
     id: number;
     external_id: string;
@@ -35,6 +35,21 @@ export interface SyncLog {
     error_message?: string;
     synced_at: Date;
 }
+export interface Tenant {
+    id: number;
+    name: string;
+    external_id?: string;
+    url?: string;
+    street?: string;
+    street2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    active?: boolean;
+    created_at: Date;
+    updated_at?: Date;
+}
 export interface DatabaseConfig {
     host: string;
     port: number;
@@ -49,9 +64,23 @@ export declare class SyncDatabase {
     private pool;
     constructor(config: DatabaseConfig);
     /**
-     * Test database connectivity
+     * Test local database connectivity
      */
-    testConnection(): Promise<boolean>;
+    testConnectionLocal(): Promise<boolean>;
+    /**
+     * Test remote database connectivity
+     */
+    testConnectionRemote(remotePool: Pool): Promise<boolean>;
+    /**
+     * Validate that the tenant table exists and contains valid data
+     *
+     * Returns:
+     * - false if table doesn't exist
+     * - false if table has zero records (sync database not set up yet)
+     * - true if table has exactly one record (valid state)
+     * - throws error if table has more than one record (database may be corrupted)
+     */
+    validateTenantTable(): Promise<Tenant | null>;
     /**
      * Close all database connections
      */
@@ -139,6 +168,37 @@ export declare class SyncDatabase {
      * Delete old synchronized readings (cleanup)
      */
     deleteOldSynchronizedReadings(daysOld?: number): Promise<number>;
+    /**
+     * Get tenant information
+     */
+    getTenant(): Promise<Tenant | null>;
+    /**
+     * Synchronize tenant from remote database to local database
+     *
+     * Queries the remote database for a tenant record by ID and upserts it to the local database.
+     * Preserves the original tenant ID from the remote database.
+     *
+     * @param remotePool - Connection pool to the remote database
+     * @param tenantId - The ID of the tenant to synchronize
+     * @returns The synchronized tenant record
+     * @throws Error if the remote database query fails or tenant is not found
+     */
+    syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<Tenant>;
+    /**
+     * Create or update tenant information
+     */
+    upsertTenant(tenant: {
+        name: string;
+        external_id?: string;
+        url?: string;
+        street?: string;
+        street2?: string;
+        city?: string;
+        state?: string;
+        zip?: string;
+        country?: string;
+        active?: boolean;
+    }): Promise<Tenant>;
     /**
      * Log a sync operation
      */

@@ -59,7 +59,7 @@ router.post('/login', [
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     console.log('[AUTH DEBUG] Password valid:', isPasswordValid);
-    
+
     if (!isPasswordValid) {
       // Improved error logging to include user email when password hash is missing
       // @ts-ignore - passwordHash is dynamically set by schema initialization
@@ -81,7 +81,7 @@ router.post('/login', [
         message: 'Account is inactive'
       });
     }
-    
+
     console.log('[AUTH DEBUG] All checks passed, generating tokens');
 
     // Update last login - DISABLED due to column name mismatch
@@ -97,27 +97,57 @@ router.post('/login', [
     // Calculate expiration time
     const expiresIn = rememberMe ? 7 * 24 * 60 * 60 : 60 * 60; // 7 days or 1 hour
 
+    // Get user's tenant information
+    let tenant = null;
+    try {
+      // @ts-ignore - id is dynamically set by schema initialization
+      const userId = user.id;
+      const tenantResult = await require('../config/database').query(
+        'SELECT * FROM tenant WHERE id = (SELECT tenant_id FROM users WHERE id = $1)',
+        [userId]
+      );
+      if (tenantResult.rows.length > 0) {
+        // Cast database row to object type
+        const tenantRow = /** @type {Record<string, any>} */ (tenantResult.rows[0]);
+        tenant = {
+          id: tenantRow.id,
+          name: tenantRow.name,
+          url: tenantRow.url,
+          address: tenantRow.street,
+          address2: tenantRow.street2,
+          city: tenantRow.city,
+          state: tenantRow.state,
+          zip: tenantRow.zip,
+          country: tenantRow.country,
+          active: tenantRow.active,
+          created_at: tenantRow.created_at,
+          updated_at: tenantRow.updated_at,
+        };
+      }
+    } catch (err) {
+      console.error('Error fetching tenant:', err);
+    }
+
     res.json({
       success: true,
-      data: {
-        user: {
-          // @ts-ignore - properties are dynamically set by schema initialization
-          id: user.id,
-          // @ts-ignore
-          email: user.email,
-          // @ts-ignore
-          name: user.name,
-          // @ts-ignore
-          role: user.role,
-          // @ts-ignore
-          permissions: user.permissions,
-          // @ts-ignore
-          active: user.active
-        },
-        token,
-        refreshToken,
-        expiresIn
-      }
+      user: {
+        // @ts-ignore - properties are dynamically set by schema initialization
+        id: user.id,
+        // @ts-ignore
+        email: user.email,
+        // @ts-ignore
+        name: user.name,
+        // @ts-ignore
+        role: user.role,
+        // @ts-ignore
+        permissions: user.permissions,
+        // @ts-ignore
+        status: user.active ? 'active' : 'inactive'
+      },
+      tenant: tenant,
+      token,
+      refreshToken,
+      expiresIn
     });
   } catch (error) {
     const err = /** @type {Error} */ (error);

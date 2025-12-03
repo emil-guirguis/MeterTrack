@@ -170,14 +170,14 @@ class Tenant extends BaseModel {
                 contacts: relationship({
                     type: RelationshipTypes.HAS_MANY,
                     model: 'Contact',
-                    foreignKey: 'tenant_id',
+                    foreignKey: 'contact_id',
                     autoLoad: false,
                     as: 'contacts',
                 }),
                 devices: relationship({
                     type: RelationshipTypes.HAS_MANY,
                     model: 'Device',
-                    foreignKey: 'tenant_id',
+                    foreignKey: 'device_id',
                     autoLoad: false,
                     as: 'devices',
                 }),

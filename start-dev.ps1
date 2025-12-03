@@ -29,13 +29,10 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd sync\frontend;
 
 Write-Host ""
 Write-Host "✅ All servers are starting up!" -ForegroundColor Green
-Write-Host ""
 Write-Host "🔗 Server URLs:" -ForegroundColor Cyan
 Write-Host "   Client Backend:   http://localhost:3001" -ForegroundColor White
 Write-Host "   Client Frontend:  http://localhost:5173" -ForegroundColor White
 Write-Host "   Sync MCP API:     http://localhost:3002" -ForegroundColor White
 Write-Host "   Sync Frontend:    http://localhost:5174" -ForegroundColor White
-Write-Host ""
-Write-Host "💡 Tip: Keep this window open to see startup status" -ForegroundColor Gray
 Write-Host "Press any key to exit this script (servers will continue running)..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

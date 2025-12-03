@@ -23,13 +23,13 @@ import SyncIcon from '@mui/icons-material/Sync';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import { useAppStore } from '../stores/useAppStore';
-import { syncApi } from '../api/services';
+import { syncApi, tenantApi } from '../api/services';
+import CompanyInfoCard from '../components/CompanyInfoCard';
 
-const POLLING_INTERVAL = parseInt(import.meta.env.VITE_POLLING_INTERVAL || '5000');
+const POLLING_INTERVAL = parseInt(import.meta.env.VITE_POLLING_INTERVAL || '500000');
 
 export default function SyncStatus() {
-  const { tenantStatus, setTenantStatus, setTenantError } = useAppStore();
-  const { syncStatus, setSyncStatus, setError } = useAppStore();
+  const { syncStatus, setSyncStatus, tenantInfo, setTenantInfo, setError } = useAppStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -38,8 +38,12 @@ export default function SyncStatus() {
   const fetchSyncStatus = async () => {
     try {
       const status = await syncApi.getStatus();
-      setTenantStatus(status);
       setSyncStatus(status);
+      
+      // Fetch and update tenant data during polling
+      const tenantData = await tenantApi.getTenantInfo();
+      setTenantInfo(tenantData);
+      
       setLastUpdate(new Date());
       setError(null);
     } catch (err) {
@@ -107,33 +111,11 @@ export default function SyncStatus() {
       {/* Status Overview */}
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2} mb={2}>
-                {syncStatus?.is_connected ? (
-                  <CloudDoneIcon color="success" fontSize="large" />
-                ) : (
-                  <CloudOffIcon color="error" fontSize="large" />
-                )}
-                <Box>
-                  <Typography variant="h6">Company Info</Typography>
-                  <Chip
-                    icon={syncStatus?.is_connected ? <CheckCircleIcon /> : <ErrorIcon />}
-                    label={syncStatus?.is_connected ? 'Connected' : 'Disconnected'}
-                    color={syncStatus?.is_connected ? 'success' : 'error'}
-                    size="small"
-                  />
-                </Box>
-              </Box>
-              {!syncStatus?.is_connected && (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  Unable to reach Client System. Readings are being queued locally.
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+          <CompanyInfoCard />
         </Grid>
 
+        {/* Only show other cards if tenant is connected */}
+        {tenantInfo && <>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -225,10 +207,12 @@ export default function SyncStatus() {
             </CardContent>
           </Card>
         </Grid>
+        </>}
       </Grid>
 
-      {/* Sync Error Logs */}
-      <Card>
+      {/* Sync Error Logs - Only show if tenant is connected */}
+      {tenantInfo && (
+        <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Recent Sync Errors
@@ -264,7 +248,8 @@ export default function SyncStatus() {
             <Alert severity="success">No sync errors in recent history</Alert>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      )}
     </Box>
   );
 }

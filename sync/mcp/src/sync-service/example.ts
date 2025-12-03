@@ -20,7 +20,7 @@ async function main() {
 
   // Test database connection
   console.log('2. Testing database connection...');
-  const dbConnected = await database.testConnection();
+  const dbConnected = await database.testConnectionLocal();
   console.log(`   Database: ${dbConnected ? '✓ Connected' : '✗ Failed'}`);
 
   if (!dbConnected) {

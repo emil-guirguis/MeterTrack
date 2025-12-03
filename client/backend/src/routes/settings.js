@@ -8,18 +8,27 @@ router.use(authenticateToken);
 // Get company settings
 router.get('/company', requirePermission('settings:read'), async (req, res) => {
   try {
-    const settings = await SettingsService.getCompanySettings();
+    const tenantId = req.user.tenant_id || req.user.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant ID not found in user context'
+      });
+    }
+    
+    const settings = await SettingsService.getCompanySettings(tenantId);
     
     res.json({ 
       success: true, 
       data: settings 
     });
-  } catch (error) {
-    console.error('Error fetching company settings:', error);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Error fetching company settings:', err);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch company settings',
-      error: error.message 
+      error: errorMessage 
     });
   }
 });
@@ -27,22 +36,31 @@ router.get('/company', requirePermission('settings:read'), async (req, res) => {
 // Update company settings
 router.put('/company', requirePermission('settings:update'), async (req, res) => {
   try {
+    const tenantId = req.user.tenant_id || req.user.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant ID not found in user context'
+      });
+    }
+    
     console.log('Updating company settings with data:', req.body);
     const dbData = SettingsService.formatForDatabase(req.body);
-    const settings = await SettingsService.updateCompanySettings(dbData);
+    const settings = await SettingsService.updateCompanySettings(tenantId, dbData);
     
     res.json({ 
       success: true, 
       data: settings,
       message: 'Company settings updated successfully'
     });
-  } catch (error) {
-    console.error('Error updating company settings:', error);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Error updating company settings:', err);
     
     res.status(500).json({ 
       success: false, 
       message: 'Failed to update company settings',
-      error: error.message 
+      error: errorMessage 
     });
   }
 });
@@ -50,18 +68,27 @@ router.put('/company', requirePermission('settings:update'), async (req, res) =>
 // Legacy endpoint for backward compatibility
 router.get('/', requirePermission('settings:read'), async (req, res) => {
   try {
-    const settings = await SettingsService.getCompanySettings();
+    const tenantId = req.user.tenant_id || req.user.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant ID not found in user context'
+      });
+    }
+    
+    const settings = await SettingsService.getCompanySettings(tenantId);
     
     res.json({ 
       success: true, 
       data: { company: settings } 
     });
-  } catch (error) {
-    console.error('Error fetching settings:', error);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Error fetching settings:', err);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch settings',
-      error: error.message 
+      error: errorMessage 
     });
   }
 });

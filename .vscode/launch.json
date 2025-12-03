@@ -2,62 +2,29 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Backend API",
+      "name": "Debug Sync MCP Server",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/backend/src/server.js",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "NODE_ENV": "development"
-      },
+      "program": "${workspaceFolder}/sync/mcp/dist/index.js",
+      "restart": true,
+      "runtimeArgs": ["--nolazy"],
+      "protocol": "inspector",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "outputCapture": "std",
       "console": "integratedTerminal",
-      "restart": true,
-      "runtimeArgs": [
-        "--inspect"
+      "cwd": "${workspaceFolder}/sync/mcp",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/sync/mcp/dist/**/*.js"],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/sync/mcp/**",
+        "!**/node_modules/**"
       ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
-    },
-    {
-      "name": "Port Scanner",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/modbus-register-scanner/dist/index.js",
-      "args": [
-        "scan",
-        "--host",
-        "10.10.10.11",
-        "--start-address",
-        "4000",
-        "--end-address",
-        "4021",
-        "--function-codes",
-        "3,4",
-        "--timeout",
-        "3000",
-        "--format",
-        "both",
-        "--output",
-        "device-10-10-10-11-scan"
-      ],
-      "cwd": "${workspaceFolder}/modbus-register-scanner",
       "env": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "LOG_LEVEL": "debug"
       },
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Attach to Backend",
-      "type": "node",
-      "request": "attach",
-      "port": 9229,
-      "restart": true,
-      "localRoot": "${workspaceFolder}/backend",
-      "remoteRoot": ".",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "preLaunchTask": "build-sync-mcp"
     }
   ]
 }

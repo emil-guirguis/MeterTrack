@@ -16,6 +16,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import dotenv from 'dotenv';
 import winston from 'winston';
+import { Pool } from 'pg';
 import { SyncDatabase, createDatabaseFromEnv } from './database/postgres.js';
 import { MeterCollector, CollectorConfig } from './meter-collection/collector.js';
 import { SyncManager, createSyncManagerFromEnv } from './sync-service/sync-manager.js';
@@ -87,24 +88,89 @@ class SyncMcpServer {
   }
 
   /**
+   * Create a remote database pool from environment variables
+   */
+  private createRemoteDatabasePool(): Pool {
+    const remotePool = new Pool({
+      host: process.env.POSTGRES_CLIENT_HOST || 'localhost',
+      port: parseInt(process.env.POSTGRES_CLIENT_PORT || '5432', 10),
+      database: process.env.POSTGRES_CLIENT_DB || 'postgres',
+      user: process.env.POSTGRES_CLIENT_USER || 'postgres',
+      password: process.env.POSTGRES_CLIENT_PASSWORD || '',
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+
+    remotePool.on('error', (err) => {
+      console.error('Unexpected error on remote database idle client', err);
+    });
+
+    return remotePool;
+  }
+
+  /**
+   * Synchronize tenant from remote database
+   */
+  private async syncTenantFromRemote(remotePool: Pool): Promise<void> {
+    try {
+      const tenantId = parseInt(process.env.TENANT_ID || '0', 10);
+      
+      if (tenantId === 0) {
+        console.warn('⚠️  [Services] TENANT_ID not configured, skipping tenant sync');
+        return;
+      }
+
+      console.log(`🔄 [Services] Synchronizing tenant ${tenantId} from remote database...`);
+      const tenant = await this.database.syncTenantFromRemote(remotePool, tenantId);
+      console.log(`✅ [Services] Tenant synchronized successfully:`, JSON.stringify(tenant, null, 2));
+    } catch (error) {
+      console.error('❌ [Services] Failed to synchronize tenant:', error);
+      // Log error but don't fail initialization - tenant sync is important but not critical
+      logger.error('Tenant sync error:', error);
+    }
+  }
+
+  /**
    * Initialize services
    */
   private async initializeServices(): Promise<void> {
     if (this.isInitialized) {
+      console.log('ℹ️  [Services] Already initialized, skipping...');
       return;
     }
 
+    let remotePool: Pool | undefined;
+
     try {
-      logger.info('Initializing Sync MCP services...');
+      console.log('\n🔧 [Services] Initializing Sync MCP services...');
 
       // Test database connection
-      const dbConnected = await this.database.testConnection();
+      console.log('🔗 [Services] Testing database connection...');
+      const dbConnected = await this.database.testConnectionLocal();
       if (!dbConnected) {
         throw new Error('Failed to connect to Sync Database');
       }
-      logger.info('Database connection established');
+      console.log('✅ [Services] Database connection established');
+
+      // Validate tenant table exists
+      console.log('📋 [Services] Validating tenant table...');
+      const tenantData = await this.database.validateTenantTable();
+      if (tenantData === null) {
+        // Table exists but is empty - this is OK, we'll sync from remote
+        console.log('⚠️  [Services] Tenant table is empty - will sync from remote database');
+      } else if (tenantData) {
+        // Table has valid data
+        console.log('✅ [Services] Tenant table validated with existing data');
+      }
+
+      // Synchronize tenant from remote database
+      console.log('🔗 [Services] Connecting to remote database for tenant sync...');
+      remotePool = this.createRemoteDatabasePool();
+      await this.syncTenantFromRemote(remotePool);
 
       // Initialize Meter Collector
+      console.log('📊 [Services] Initializing Meter Collector...');
       const collectorConfig: CollectorConfig = {
         bacnet: {
           interface: process.env.BACNET_INTERFACE || '0.0.0.0',
@@ -117,9 +183,10 @@ class SyncMcpServer {
       };
 
       this.meterCollector = new MeterCollector(collectorConfig, this.database, logger);
-      logger.info('Meter Collector initialized');
+      console.log('✅ [Services] Meter Collector initialized');
 
       // Initialize Sync Manager
+      console.log('🔄 [Services] Initializing Sync Manager...');
       const apiClient = new ClientSystemApiClient({
         apiUrl: process.env.CLIENT_API_URL || '',
         apiKey: process.env.CLIENT_API_KEY || '',
@@ -127,21 +194,28 @@ class SyncMcpServer {
       });
 
       this.syncManager = createSyncManagerFromEnv(this.database, apiClient);
-      logger.info('Sync Manager initialized');
+      console.log('✅ [Services] Sync Manager initialized');
 
       // Start Sync Manager (for scheduled sync)
+      console.log('▶️  [Services] Starting Sync Manager...');
       await this.syncManager.start();
-      logger.info('Sync Manager started');
+      console.log('✅ [Services] Sync Manager started');
 
       // Initialize Local API Server
+      console.log('🌐 [Services] Initializing Local API Server...');
       this.apiServer = await createAndStartLocalApiServer(this.database, this.syncManager);
-      logger.info('Local API Server started');
+      console.log('✅ [Services] Local API Server started');
 
       this.isInitialized = true;
-      logger.info('All services initialized successfully');
+      console.log('✅ [Services] All services initialized successfully\n');
     } catch (error) {
-      logger.error('Failed to initialize services:', error);
+      console.error('❌ [Services] Failed to initialize services:', error);
       throw error;
+    } finally {
+      // Close remote pool after initialization
+      if (remotePool) {
+        await this.closeRemotePool(remotePool);
+      }
     }
   }
 
@@ -472,11 +546,18 @@ class SyncMcpServer {
    * Start the MCP server
    */
   async start(): Promise<void> {
+    console.log('\n🚀 [MCP] Starting Sync MCP Server...');
+    
+    // Initialize services immediately (including Local API Server)
+    console.log('🔧 [MCP] Initializing services before connecting transport...');
+    await this.initializeServices();
+    
     const transport = new StdioServerTransport();
+    console.log('🔌 [MCP] Connecting to stdio transport...');
     await this.server.connect(transport);
     
-    logger.info('Sync MCP Server started');
-    logger.info('Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status');
+    console.log('✅ [MCP] Sync MCP Server started');
+    console.log('📋 [MCP] Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status');
   }
 
   /**
@@ -500,6 +581,18 @@ class SyncMcpServer {
     await this.database.close();
 
     logger.info('Sync MCP Server shutdown complete');
+  }
+
+  /**
+   * Close remote database pool
+   */
+  private async closeRemotePool(remotePool: Pool): Promise<void> {
+    try {
+      await remotePool.end();
+      console.log('✅ [Services] Remote database pool closed');
+    } catch (error) {
+      console.error('❌ [Services] Error closing remote database pool:', error);
+    }
   }
 }
 

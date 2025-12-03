@@ -2,17 +2,21 @@ const db = require('../config/database');
 
 class SettingsService {
   /**
-   * Get company settings from PostgreSQL
+   * Get company settings from PostgreSQL filtered by tenant ID
+   * @param {number} tenantId - The tenant ID from the authenticated user
    */
-  static async getCompanySettings() {
+  static async getCompanySettings(tenantId) {
     try {
-      const result = await db.query('SELECT * FROM tenant LIMIT 1');
-      
-      if (result.rows.length === 0) {
-        // Create default settings if none exist
-        return await this.createDefaultSettings();
+      if (!tenantId) {
+        throw new Error('Tenant ID is required');
       }
-      
+
+      const result = await db.query('SELECT * FROM tenant WHERE id = $1', [tenantId]);
+
+      if (result.rows.length === 0) {
+        throw new Error('Tenant record not found. Please contact support.');
+      }
+
       return this.formatSettings(result.rows[0]);
     } catch (error) {
       console.error('Error fetching company settings:', error);
@@ -21,66 +25,28 @@ class SettingsService {
   }
 
   /**
-   * Update company settings
+   * Update company settings filtered by tenant ID
+   * @param {number} tenantId - The tenant ID from the authenticated user
+   * @param {object} updateData - The data to update
    */
-  static async updateCompanySettings(updateData) {
+  static async updateCompanySettings(tenantId, updateData) {
     try {
-      // Check if settings exist
-      const existingResult = await db.query('SELECT id FROM tenant LIMIT 1');
-      
-      if (existingResult.rows.length === 0) {
-        // Create new settings
-        return await this.createSettings(updateData);
-      } else {
-        // Update existing settings
-        const settingsId = existingResult.rows[0].id;
-        return await this.updateSettings(settingsId, updateData);
+      if (!tenantId) {
+        throw new Error('Tenant ID is required');
       }
-    } catch (error) {
-      console.error('Error updating company settings:', error);
-      throw error;
-    }
-  }
 
-  /**
-   * Create default settings
-   */
-  static async createDefaultSettings() {
-    const defaultSettings = {
-      name: 'Your Company Name',
-      url: 'https://yourcompany.com',
-      street: '123 Main Street',
-      street2: '',
-      city: 'Your City',
-      state: 'Your State',
-      zip: '12345',
-      country: 'USA',
-      active: true
-    };
+      const existingResult = await db.query('SELECT id FROM tenant WHERE id = $1', [tenantId]);
 
-    return await this.createSettings(defaultSettings);
-  }
+      if (existingResult.rows.length === 0) {
+        throw new Error('Tenant record not found. Please contact support.');
+      }
 
-  /**
-   * Create new settings record
-   */
-  static async createSettings(settingsData) {
-    try {
-      const fields = Object.keys(settingsData);
-      const values = Object.values(settingsData);
-      const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
-      
-      const query = `
-        INSERT INTO tenant (${fields.join(', ')})
-        VALUES (${placeholders})
-        RETURNING *
-      `;
-      
-      const result = await db.query(query, values);
-      return this.formatSettings(result.rows[0]);
-    } catch (error) {
-      console.error('Error creating company settings:', error);
-      throw error;
+      // @ts-ignore - rows is an array of objects with id property
+      const settingsId = existingResult.rows[0].id;
+      return await this.updateSettings(settingsId, updateData);
+    } catch (err) {
+      console.error('Error updating company settings:', err);
+      throw err;
     }
   }
 
@@ -92,14 +58,14 @@ class SettingsService {
       const fields = Object.keys(updateData);
       const values = Object.values(updateData);
       const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
-      
+
       const query = `
         UPDATE tenant 
         SET ${setClause}
         WHERE id = $1
         RETURNING *
       `;
-      
+
       const result = await db.query(query, [settingsId, ...values]);
       return this.formatSettings(result.rows[0]);
     } catch (error) {
@@ -116,7 +82,6 @@ class SettingsService {
 
     return {
       id: dbRow.id,
-      // Company info
       name: dbRow.name,
       url: dbRow.url,
       address: {
@@ -127,7 +92,6 @@ class SettingsService {
         zipCode: dbRow.zip,
         country: dbRow.country
       },
-      // System config (placeholder for compatibility)
       systemConfig: {
         timezone: 'America/New_York',
         currency: 'USD',
