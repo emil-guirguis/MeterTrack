@@ -48,7 +48,7 @@ export async function getSiteStatus(args: GetSiteStatusArgs) {
         MAX(mr.timestamp) as last_reading_timestamp
       FROM sites s
       LEFT JOIN meters m ON s.id = m.site_id
-      LEFT JOIN meter_readings mr ON m.id = mr.meter_id
+      LEFT JOIN meter_reading mr ON m.id = mr.meter_id
       ${whereClause}
       GROUP BY s.id, s.name, s.last_heartbeat, s.is_active, s.created_at
       ORDER BY s.name

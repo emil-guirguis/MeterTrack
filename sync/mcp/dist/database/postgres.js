@@ -2,7 +2,7 @@
  * PostgreSQL Database Client for Sync
  *
  * Provides connection management and query methods for the Sync Database.
- * Handles meters, meter_readings, and sync_log tables.
+ * Handles meters, meter_reading, and sync_log tables.
  */
 import { Pool } from 'pg';
 export class SyncDatabase {
@@ -171,7 +171,7 @@ export class SyncDatabase {
      * Insert a single meter reading
      */
     async insertReading(reading) {
-        const result = await this.pool.query(`INSERT INTO meter_readings (meter_external_id, timestamp, data_point, value, unit)
+        const result = await this.pool.query(`INSERT INTO meter_reading(meter_id, timestamp, data_point, value, unit)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`, [
             reading.meter_external_id,
@@ -193,17 +193,20 @@ export class SyncDatabase {
         try {
             await client.query('BEGIN');
             let insertedCount = 0;
-            for (const reading of readings) {
-                await client.query(`INSERT INTO meter_readings (meter_external_id, timestamp, data_point, value, unit)
-           VALUES ($1, $2, $3, $4, $5)`, [
-                    reading.meter_external_id,
-                    reading.timestamp,
-                    reading.data_point,
-                    reading.value,
-                    reading.unit,
-                ]);
-                insertedCount++;
-            }
+            // for (const reading of readings) {
+            //   await client.query(
+            //     `INSERT INTO meter_reading (meter_external_id, timestamp, data_point, value, unit)
+            //      VALUES ($1, $2, $3, $4, $5)`,
+            //     [
+            //       reading.meter_external_id,
+            //       reading.timestamp,
+            //       reading.data_point,
+            //       reading.value,
+            //       reading.unit,
+            //     ]
+            //   );
+            //   insertedCount++;
+            // }
             await client.query('COMMIT');
             return insertedCount;
         }
@@ -219,7 +222,7 @@ export class SyncDatabase {
      * Get unsynchronized readings for sync
      */
     async getUnsynchronizedReadings(limit = 1000) {
-        const result = await this.pool.query(`SELECT * FROM meter_readings 
+        const result = await this.pool.query(`SELECT * FROM meter_reading
        WHERE is_synchronized = false 
        ORDER BY created_at ASC 
        LIMIT $1`, [limit]);
@@ -229,7 +232,7 @@ export class SyncDatabase {
      * Get readings by meter and time range
      */
     async getReadingsByMeterAndTimeRange(meterExternalId, startTime, endTime) {
-        const result = await this.pool.query(`SELECT * FROM meter_readings 
+        const result = await this.pool.query(`SELECT * FROM meter_reading
        WHERE meter_external_id = $1 
          AND timestamp >= $2 
          AND timestamp <= $3 
@@ -240,7 +243,7 @@ export class SyncDatabase {
      * Get recent readings (last N hours)
      */
     async getRecentReadings(hours = 24) {
-        const query = `SELECT * FROM meter_readings 
+        const query = `SELECT * FROM meter_reading
        WHERE timestamp >= NOW() - INTERVAL '${hours} hours'
        ORDER BY timestamp DESC`;
         console.log('\n🔍 [SQL] Querying recent readings:', query);
@@ -255,7 +258,7 @@ export class SyncDatabase {
         if (readingIds.length === 0) {
             return 0;
         }
-        const result = await this.pool.query(`UPDATE meter_readings 
+        const result = await this.pool.query(`UPDATE meter_reading
        SET is_synchronized = true 
        WHERE id = ANY($1::int[])`, [readingIds]);
         return result.rowCount || 0;
@@ -267,7 +270,7 @@ export class SyncDatabase {
         if (readingIds.length === 0) {
             return 0;
         }
-        const result = await this.pool.query(`DELETE FROM meter_readings 
+        const result = await this.pool.query(`DELETE FROM meter_reading
        WHERE id = ANY($1::int[]) AND is_synchronized = true`, [readingIds]);
         return result.rowCount || 0;
     }
@@ -278,7 +281,7 @@ export class SyncDatabase {
         if (readingIds.length === 0) {
             return 0;
         }
-        const result = await this.pool.query(`UPDATE meter_readings 
+        const result = await this.pool.query(`UPDATE meter_reading
        SET retry_count = retry_count + 1 
        WHERE id = ANY($1::int[])`, [readingIds]);
         return result.rowCount || 0;
@@ -287,7 +290,7 @@ export class SyncDatabase {
      * Get count of unsynchronized readings
      */
     async getUnsynchronizedCount() {
-        const query = 'SELECT COUNT(*) as count FROM meter_readings WHERE is_synchronized = false';
+        const query = 'SELECT COUNT(*) as count FROM meter_reading WHERE is_synchronized = false';
         console.log('\n🔍 [SQL] Counting unsynchronized readings:', query);
         const result = await this.pool.query(query);
         const count = parseInt(result.rows[0].count, 10);
@@ -298,7 +301,7 @@ export class SyncDatabase {
      * Delete old synchronized readings (cleanup)
      */
     async deleteOldSynchronizedReadings(daysOld = 7) {
-        const result = await this.pool.query(`DELETE FROM meter_readings 
+        const result = await this.pool.query(`DELETE FROM meter_reading
        WHERE is_synchronized = true 
          AND created_at < NOW() - INTERVAL '${daysOld} days'`);
         return result.rowCount || 0;
@@ -457,6 +460,7 @@ export class SyncDatabase {
             let paramIndex = 2;
             // Try to update all fields, but handle missing columns gracefully
             const fieldsToUpdate = [
+                { name: 'tenant_id', value: tenant.id },
                 { name: 'url', value: tenant.url },
                 { name: 'street', value: tenant.street },
                 { name: 'street2', value: tenant.street2 },
@@ -491,9 +495,10 @@ export class SyncDatabase {
         else {
             // Try to insert with all columns first
             try {
-                const result = await this.pool.query(`INSERT INTO tenant (name, url, street, street2, city, state, zip, country, active) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+                const result = await this.pool.query(`INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
            RETURNING *`, [
+                    tenant.id,
                     tenant.name,
                     tenant.url || null,
                     tenant.street || null,

@@ -2,17 +2,14 @@ import { db } from '../database/client.js';
 import { logger } from '../utils/logger.js';
 
 interface QueryReadingsArgs {
-  site_id?: number;
   meter_id?: number;
-  external_id?: string;
-  data_point?: string;
   start_date?: string;
   end_date?: string;
   limit?: number;
 }
 
 interface ReadingRow {
-  reading_id: number;
+  tenant_id: number;
   timestamp: Date;
   data_point: string;
   value: number;
@@ -34,30 +31,11 @@ export async function queryReadings(args: QueryReadingsArgs) {
     const params: any[] = [];
     let paramIndex = 1;
 
-    if (args.site_id !== undefined) {
-      conditions.push(`s.id = $${paramIndex++}`);
-      params.push(args.site_id);
-    }
-
     if (args.meter_id !== undefined) {
       conditions.push(`m.id = $${paramIndex++}`);
       params.push(args.meter_id);
     }
 
-    if (args.external_id !== undefined) {
-      conditions.push(`m.external_id = $${paramIndex++}`);
-      params.push(args.external_id);
-    }
-
-    if (args.data_point !== undefined) {
-      conditions.push(`mr.data_point = $${paramIndex++}`);
-      params.push(args.data_point);
-    }
-
-    if (args.start_date !== undefined) {
-      conditions.push(`mr.timestamp >= $${paramIndex++}`);
-      params.push(args.start_date);
-    }
 
     if (args.end_date !== undefined) {
       conditions.push(`mr.timestamp <= $${paramIndex++}`);
@@ -80,7 +58,7 @@ export async function queryReadings(args: QueryReadingsArgs) {
         m.name as meter_name,
         s.id as site_id,
         s.name as site_name
-      FROM meter_readings mr
+      FROM meter_reading mr
       INNER JOIN meters m ON mr.meter_id = m.id
       INNER JOIN sites s ON m.site_id = s.id
       ${whereClause}
@@ -94,7 +72,6 @@ export async function queryReadings(args: QueryReadingsArgs) {
 
     const readings = result.rows.map(row => ({
       reading: {
-        id: row.reading_id,
         timestamp: row.timestamp,
         data_point: row.data_point,
         value: row.value,

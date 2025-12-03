@@ -108,7 +108,7 @@ export function SimpleTemplateExample() {
             style={{ marginLeft: '10px', padding: '5px' }}
           >
             <option value="general">General</option>
-            <option value="meter_readings">Meter Readings</option>
+            <option value="meter_reading">Meter Readings</option>
             <option value="meter_errors">Meter Errors</option>
             <option value="maintenance">Maintenance</option>
           </select>

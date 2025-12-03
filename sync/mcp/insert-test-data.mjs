@@ -64,7 +64,7 @@ async function insertTestData() {
     console.log(`\nInserting test meter readings for meter ID ${meterId}...`);
     
     const result = await pool.query(`
-      INSERT INTO meter_readings (
+      INSERT INTO meter_reading (
         id, meter_id, createdat, energy, power, voltage, current, 
         frequency, tenant_id, is_synchronized
       )
@@ -81,7 +81,7 @@ async function insertTestData() {
     
     // Check queue size
     const queueResult = await pool.query(
-      'SELECT COUNT(*) as count FROM meter_readings WHERE is_synchronized = false'
+      'SELECT COUNT(*) as count FROM meter_reading WHERE is_synchronized = false'
     );
     console.log(`\nCurrent queue size: ${queueResult.rows[0].count} unsynchronized readings`);
     

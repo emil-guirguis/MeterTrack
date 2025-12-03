@@ -72,9 +72,7 @@ router.post(
   authenticateSyncServer,
   [
     body('readings').isArray().withMessage('Readings must be an array'),
-    body('readings.*.meter_external_id').isString().notEmpty().withMessage('meter_external_id is required'),
-    body('readings.*.timestamp').isISO8601().withMessage('timestamp must be valid ISO8601 date'),
-    body('readings.*.data_point').isString().notEmpty().withMessage('data_point is required'),
+    // body('readings.*.timestamp').isISO8601().withMessage('timestamp must be valid ISO8601 date'),
     body('readings.*.value').isNumeric().withMessage('value must be numeric'),
     body('readings.*.unit').optional().isString()
   ],
@@ -109,7 +107,7 @@ router.post(
         for (const reading of readings) {
           try {
             // Find or create meter
-            const meterQuery = 'SELECT id FROM meter WHERE site_id = $1 AND external_id = $2';
+            const meterQuery = 'SELECT id FROM meter WHERE  tenant_id = $2';
             const meterParams = [siteId, reading.meter_external_id];
             logQuery(meterQuery, meterParams);
             let meterResult = await client.query(meterQuery, meterParams);

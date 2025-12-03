@@ -12,9 +12,6 @@ import dotenv from 'dotenv';
 import winston from 'winston';
 import { Pool } from 'pg';
 import { createDatabaseFromEnv } from './database/postgres.js';
-import { MeterCollector } from './meter-collection/collector.js';
-import { createSyncManagerFromEnv } from './sync-service/sync-manager.js';
-import { ClientSystemApiClient } from './sync-service/api-client.js';
 import { createAndStartLocalApiServer } from './api/server.js';
 // Load environment variables from root .env file first, then local .env
 // Use __dirname equivalent for ES modules
@@ -124,45 +121,44 @@ class SyncMcpServer {
             // Validate tenant table exists
             console.log('📋 [Services] Validating tenant table...');
             const tenantData = await this.database.validateTenantTable();
-            if (tenantData === null) {
-                // Table exists but is empty - this is OK, we'll sync from remote
-                console.log('⚠️  [Services] Tenant table is empty - will sync from remote database');
-            }
-            else if (tenantData) {
-                // Table has valid data
+            if (tenantData) {
                 console.log('✅ [Services] Tenant table validated with existing data');
             }
-            // Synchronize tenant from remote database
-            console.log('🔗 [Services] Connecting to remote database for tenant sync...');
-            remotePool = this.createRemoteDatabasePool();
-            await this.syncTenantFromRemote(remotePool);
-            // Initialize Meter Collector
-            console.log('📊 [Services] Initializing Meter Collector...');
-            const collectorConfig = {
-                bacnet: {
-                    interface: process.env.BACNET_INTERFACE || '0.0.0.0',
-                    port: parseInt(process.env.BACNET_PORT || '47808', 10),
-                    broadcastAddress: process.env.BACNET_BROADCAST_ADDRESS || '255.255.255.255',
-                },
-                collectionInterval: parseInt(process.env.COLLECTION_INTERVAL_SECONDS || '60', 10),
-                configPath: process.env.METER_CONFIG_PATH || 'config/meters.json',
-                autoStart: false, // Don't auto-start, wait for MCP tool call
-            };
-            this.meterCollector = new MeterCollector(collectorConfig, this.database, logger);
-            console.log('✅ [Services] Meter Collector initialized');
-            // Initialize Sync Manager
-            console.log('🔄 [Services] Initializing Sync Manager...');
-            const apiClient = new ClientSystemApiClient({
-                apiUrl: process.env.CLIENT_API_URL || '',
-                apiKey: process.env.CLIENT_API_KEY || '',
-                timeout: parseInt(process.env.API_TIMEOUT_MS || '30000', 10),
-            });
-            this.syncManager = createSyncManagerFromEnv(this.database, apiClient);
-            console.log('✅ [Services] Sync Manager initialized');
-            // Start Sync Manager (for scheduled sync)
-            console.log('▶️  [Services] Starting Sync Manager...');
-            await this.syncManager.start();
-            console.log('✅ [Services] Sync Manager started');
+            else if (tenantData === null) {
+                // Table exists but is empty - this is OK, we'll sync from remote
+                console.log('⚠️  [Services] Tenant table is empty');
+            }
+            // // Synchronize tenant from remote database
+            // console.log('🔗 [Services] Connecting to remote database for tenant sync...');
+            // remotePool = this.createRemoteDatabasePool();
+            // await this.syncTenantFromRemote(remotePool);
+            // // Initialize Meter Collector
+            // console.log('📊 [Services] Initializing Meter Collector...');
+            // const collectorConfig: CollectorConfig = {
+            //   bacnet: {
+            //     interface: process.env.BACNET_INTERFACE || '0.0.0.0',
+            //     port: parseInt(process.env.BACNET_PORT || '47808', 10),
+            //     broadcastAddress: process.env.BACNET_BROADCAST_ADDRESS || '255.255.255.255',
+            //   },
+            //   collectionInterval: parseInt(process.env.COLLECTION_INTERVAL_SECONDS || '60', 10),
+            //   configPath: process.env.METER_CONFIG_PATH || 'config/meters.json',
+            //   autoStart: false, // Don't auto-start, wait for MCP tool call
+            // };
+            // this.meterCollector = new MeterCollector(collectorConfig, this.database, logger);
+            // console.log('✅ [Services] Meter Collector initialized');
+            //   // Initialize Sync Manager
+            //   console.log('🔄 [Services] Initializing Sync Manager...');
+            //   const apiClient = new ClientSystemApiClient({
+            //     apiUrl: process.env.CLIENT_API_URL || '',
+            //     apiKey: process.env.CLIENT_API_KEY || '',
+            //     timeout: parseInt(process.env.API_TIMEOUT_MS || '30000', 10),
+            //   });
+            //   this.syncManager = createSyncManagerFromEnv(this.database, apiClient);
+            //   console.log('✅ [Services] Sync Manager initialized');
+            //   // Start Sync Manager (for scheduled sync)
+            //   console.log('▶️  [Services] Starting Sync Manager...');
+            //   await this.syncManager.start();
+            //   console.log('✅ [Services] Sync Manager started');
             // Initialize Local API Server
             console.log('🌐 [Services] Initializing Local API Server...');
             this.apiServer = await createAndStartLocalApiServer(this.database, this.syncManager);
@@ -179,6 +175,7 @@ class SyncMcpServer {
             if (remotePool) {
                 await this.closeRemotePool(remotePool);
             }
+            //   }
         }
     }
     /**
@@ -207,7 +204,7 @@ class SyncMcpServer {
                         return await this.handleGetSyncStatus();
                     case 'trigger_sync':
                         return await this.handleTriggerSync();
-                    case 'query_meter_readings':
+                    case 'query_meter_reading':
                         return await this.handleQueryMeterReadings(args);
                     case 'get_meter_status':
                         return await this.handleGetMeterStatus(args);
@@ -266,7 +263,7 @@ class SyncMcpServer {
                 },
             },
             {
-                name: 'query_meter_readings',
+                name: 'query_meter_reading',
                 description: 'Query local meter readings with optional filters',
                 inputSchema: {
                     type: 'object',
@@ -406,7 +403,7 @@ class SyncMcpServer {
         };
     }
     /**
-     * Tool Handler: query_meter_readings
+     * Tool Handler: query_meter_reading
      */
     async handleQueryMeterReadings(args) {
         const meterId = args.meter_id;
@@ -485,7 +482,7 @@ class SyncMcpServer {
         console.log('🔌 [MCP] Connecting to stdio transport...');
         await this.server.connect(transport);
         console.log('✅ [MCP] Sync MCP Server started');
-        console.log('📋 [MCP] Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_readings, get_meter_status');
+        console.log('📋 [MCP] Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_reading, get_meter_status');
     }
     /**
      * Shutdown the server

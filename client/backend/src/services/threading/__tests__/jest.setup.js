@@ -40,7 +40,7 @@ global.testUtils = {
     database: {
       url: 'postgresql://localhost:5432/test',
       database: 'test',
-      table: 'meter_readings'
+      table: 'meter_reading'
     },
     collectionInterval: 900000,
     autoStart: false,

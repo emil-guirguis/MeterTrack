@@ -2,7 +2,7 @@
  * PostgreSQL Database Client for Sync
  *
  * Provides connection management and query methods for the Sync Database.
- * Handles meters, meter_readings, and sync_log tables.
+ * Handles meters, meter_reading, and sync_log tables.
  */
 import { Pool, PoolClient, QueryResult } from 'pg';
 export interface Meter {
@@ -36,9 +36,9 @@ export interface SyncLog {
     synced_at: Date;
 }
 export interface Tenant {
+    tenant_id?: string;
     id: number;
     name: string;
-    external_id?: string;
     url?: string;
     street?: string;
     street2?: string;
@@ -188,8 +188,8 @@ export declare class SyncDatabase {
      * Create or update tenant information
      */
     upsertTenant(tenant: {
+        id: string;
         name: string;
-        external_id?: string;
         url?: string;
         street?: string;
         street2?: string;

@@ -757,3 +757,8 @@
 {"broadcastAddress":"255.255.255.255","interface":"0.0.0.0","level":"info","message":"BACnetClient initialized","port":47808,"timeout":6000,"timestamp":"2025-12-03T16:16:28.924Z"}
 {"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-03T16:33:27.666Z"}
 {"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-03T16:33:27.631Z"}
+{"broadcastAddress":"255.255.255.255","interface":"0.0.0.0","level":"info","message":"BACnetClient initialized","port":47808,"timeout":6000,"timestamp":"2025-12-03T19:24:51.212Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-03T19:57:17.760Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-03T20:06:08.566Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-03T20:11:29.628Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-03T20:11:59.897Z"}

@@ -41,5 +41,5 @@ async function runMigration(migrationFile) {
 }
 
 // Run the migration
-const migrationFile = process.argv[2] || '004_add_sync_columns_to_meter_readings.sql';
+const migrationFile = process.argv[2] || '004_add_sync_columns_to_.sql';
 runMigration(migrationFile).catch(() => process.exit(1));

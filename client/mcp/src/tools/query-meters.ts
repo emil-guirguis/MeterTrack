@@ -2,14 +2,14 @@ import { db } from '../database/client.js';
 import { logger } from '../utils/logger.js';
 
 interface QueryMetersArgs {
-  site_id?: number;
-  external_id?: string;
+  tenant_id?: number;
+  meter_id?: string;
   is_active?: boolean;
 }
 
 interface MeterRow {
-  meter_id: number;
-  meter_external_id: string;
+  tenant_id: number;
+  meter_id: string;
   meter_name: string;
   bacnet_device_id: number | null;
   bacnet_ip: string | null;
@@ -29,14 +29,14 @@ export async function queryMeters(args: QueryMetersArgs) {
     const params: any[] = [];
     let paramIndex = 1;
 
-    if (args.site_id !== undefined) {
+    if (args.tenant_id !== undefined) {
       conditions.push(`s.id = $${paramIndex++}`);
-      params.push(args.site_id);
+      params.push(args.tenant_id);
     }
 
-    if (args.external_id !== undefined) {
+    if (args.meter_id !== undefined) {
       conditions.push(`m.external_id = $${paramIndex++}`);
-      params.push(args.external_id);
+      params.push(args.meter_id);
     }
 
     if (args.is_active !== undefined) {
@@ -63,7 +63,7 @@ export async function queryMeters(args: QueryMetersArgs) {
         s.is_active as site_is_active,
         (
           SELECT MAX(timestamp) 
-          FROM meter_readings mr 
+          FROM meter_reading mr 
           WHERE mr.meter_id = m.id
         ) as last_reading_timestamp
       FROM meter m
@@ -77,7 +77,7 @@ export async function queryMeters(args: QueryMetersArgs) {
     const meters = result.rows.map(row => ({
       meter: {
         id: row.meter_id,
-        external_id: row.meter_external_id,
+        tenant_id: row.tenant_id,
         name: row.meter_name,
         bacnet_device_id: row.bacnet_device_id,
         bacnet_ip: row.bacnet_ip,

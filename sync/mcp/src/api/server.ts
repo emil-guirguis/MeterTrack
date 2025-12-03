@@ -111,10 +111,10 @@ export class LocalApiServer {
     // Create or update tenant information
     this.app.post('/api/local/tenant', async (req, res, next) => {
       try {
-        console.log('📥 [API] POST /api/local/tenant - Request received');
+        console.log('� [AP[I] POST /api/local/tenant - Request received');
         console.log('   Payload:', JSON.stringify(req.body, null, 2));
         
-        const { name, external_id, url, address, address2, city, state, zip, country, active } = req.body;
+        const { id, name, url, street, street2, city, state, zip, country, active } = req.body;
         
         if (!name) {
           console.error('❌ [API] POST /api/local/tenant - Missing required field: name');
@@ -122,11 +122,11 @@ export class LocalApiServer {
         }
 
         const tenant = await this.database.upsertTenant({
+          id,
           name,
-          external_id,
           url,
-          address,
-          address2,
+          street,
+          street2,
           city,
           state,
           zip,
@@ -134,7 +134,7 @@ export class LocalApiServer {
           active,
         });
 
-        console.log('📤 [API] POST /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
+        console.log('� [API] P]OST /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
         res.json(tenant);
         console.log('✅ [API] POST /api/local/tenant - Response sent successfully');
       } catch (error) {

@@ -24,6 +24,7 @@ import {
  * MeterReading TypeScript type
  */
 export interface MeterReading {
+  tenantid: string;
   id: string;
   meterId: string;
   timestamp: string | Date;
@@ -216,8 +217,9 @@ export const meterReadingStats: StatDefinition<MeterReading>[] = [
  * Export configuration for meter reading list
  */
 export const meterReadingExportConfig: ExportConfig<MeterReading> = {
-  filename: (date: string) => `meter_readings_export_${date}.csv`,
+  filename: (date: string) => `meter_reading_export_${date}.csv`,
   headers: [
+    'Tenant ID',
     'Meter ID',
     'Timestamp',
     'Energy (kWh)',
@@ -229,6 +231,7 @@ export const meterReadingExportConfig: ExportConfig<MeterReading> = {
     'Source',
   ],
   mapRow: (reading: MeterReading) => [
+    reading.tenantId,
     reading.meterId,
     new Date(reading.timestamp).toISOString(),
     reading.kWh?.toString() || '',

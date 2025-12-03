@@ -6,17 +6,27 @@ const CLIENT_API_URL = import.meta.env.VITE_CLIENT_API_URL || 'https://client.me
 
 export const metersApi = {
   getAll: async (): Promise<Meter[]> => {
-    const response = await apiClient.get<Meter[]>('/api/local/meters');
-    return response.data;
+    try {
+      const response = await apiClient.get<Meter[]>('/api/local/meters');
+      return response.data;
+    } catch (error) {
+      console.warn('⚠️ [Meters] Failed to fetch meters, returning empty array:', error);
+      return [];
+    }
   },
 };
 
 export const readingsApi = {
   getRecent: async (hours: number = 24): Promise<MeterReading[]> => {
-    const response = await apiClient.get<MeterReading[]>('/api/local/readings', {
-      params: { hours },
-    });
-    return response.data;
+    try {
+      const response = await apiClient.get<MeterReading[]>('/api/local/readings', {
+        params: { hours },
+      });
+      return response.data;
+    } catch (error) {
+      console.warn('⚠️ [Readings] Failed to fetch readings, returning empty array:', error);
+      return [];
+    }
   },
 };
 
@@ -135,8 +145,8 @@ export const tenantApi = {
       const payload = {
         name: tenantData.name,
         id: tenantData.id,
-        street: tenantData.address,
-        street2: tenantData.address2,
+        street: tenantData.street,
+        street2: tenantData.street2,
         city: tenantData.city,
         state: tenantData.state,
         zip: tenantData.zip,

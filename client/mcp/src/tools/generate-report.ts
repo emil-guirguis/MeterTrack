@@ -88,7 +88,7 @@ async function generateSummaryReport(args: GenerateReportArgs) {
       mr.unit
     FROM sites s
     INNER JOIN meters m ON s.id = m.site_id
-    INNER JOIN meter_readings mr ON m.id = mr.meter_id
+    INNER JOIN meter_reading mr ON m.id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
     GROUP BY s.id, s.name, mr.data_point, mr.unit
     ORDER BY s.name, mr.data_point
@@ -170,7 +170,7 @@ async function generateDetailedReport(args: GenerateReportArgs) {
       mr.unit
     FROM sites s
     INNER JOIN meters m ON s.id = m.site_id
-    INNER JOIN meter_readings mr ON m.id = mr.meter_id
+    INNER JOIN meter_reading mr ON m.id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
     ORDER BY s.name, m.name, mr.timestamp DESC
     LIMIT 10000
@@ -248,7 +248,7 @@ async function generateComparisonReport(args: GenerateReportArgs) {
       mr.unit
     FROM sites s
     INNER JOIN meters m ON s.id = m.site_id
-    INNER JOIN meter_readings mr ON m.id = mr.meter_id
+    INNER JOIN meter_reading mr ON m.id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
     GROUP BY s.id, s.name, mr.data_point, mr.unit
     ORDER BY s.name, mr.data_point
