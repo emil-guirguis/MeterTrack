@@ -31,6 +31,18 @@ export interface SyncStatus {
   last_sync_at: string | null;
   queue_size: number;
   sync_errors: SyncError[];
+  meter_sync?: MeterSyncStatus;
+}
+
+export interface MeterSyncStatus {
+  last_sync_at: string | null;
+  last_sync_success: boolean | null;
+  last_sync_error: string | null;
+  inserted_count: number;
+  updated_count: number;
+  deleted_count: number;
+  meter_count: number;
+  is_syncing: boolean;
 }
 
 export interface SyncError {

@@ -7,7 +7,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/sync-status" replace />} />
         <Route path="dashboard" element={<LocalDashboard />} />
         <Route path="sync-status" element={<SyncStatus />} />
       </Route>

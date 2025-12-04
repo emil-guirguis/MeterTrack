@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { Meter, MeterReading, SyncStatus, TenantInfo } from '../types';
+import { Meter, MeterReading, SyncStatus, TenantInfo, MeterSyncStatus } from '../types';
 import axios from 'axios';
 
 const CLIENT_API_URL = import.meta.env.VITE_CLIENT_API_URL || 'https://client.meterit.com/api';
@@ -38,6 +38,44 @@ export const syncApi = {
 
   triggerSync: async (): Promise<void> => {
     await apiClient.post('/api/local/sync-trigger');
+  },
+};
+
+export const meterSyncApi = {
+  getStatus: async (): Promise<MeterSyncStatus> => {
+    try {
+      const response = await apiClient.get<MeterSyncStatus>('/api/local/meter-sync-status');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Sync] Failed to fetch meter sync status:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 
+          error.message || 
+          'Failed to fetch meter sync status'
+        );
+      }
+      throw error;
+    }
+  },
+
+  triggerSync: async (): Promise<{ success: boolean; message: string; result?: any }> => {
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string; result?: any }>(
+        '/api/local/meter-sync-trigger'
+      );
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Sync] Failed to trigger meter sync:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 
+          error.message || 
+          'Failed to trigger meter sync'
+        );
+      }
+      throw error;
+    }
   },
 };
 

@@ -22,6 +22,7 @@ import { MeterCollector, CollectorConfig } from './meter-collection/collector.js
 import { SyncManager, createSyncManagerFromEnv } from './sync-service/sync-manager.js';
 import { ClientSystemApiClient } from './sync-service/api-client.js';
 import { LocalApiServer, createAndStartLocalApiServer } from './api/server.js';
+import { MeterSyncAgent } from './sync-service/meter-sync-agent.js';
 
 // Load environment variables from root .env file first, then local .env
 // Use __dirname equivalent for ES modules
@@ -65,7 +66,9 @@ class SyncMcpServer {
   private database: SyncDatabase;
   private meterCollector?: MeterCollector;
   private syncManager?: SyncManager;
+  private meterSyncAgent?: MeterSyncAgent;
   private apiServer?: LocalApiServer;
+  private remotePool?: Pool;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -153,6 +156,11 @@ class SyncMcpServer {
       }
       console.log('✅ [Services] Database connection established');
 
+      // Initialize database schema
+      console.log('🔧 [Services] Initializing database schema...');
+      await this.database.initialize();
+      console.log('✅ [Services] Database schema initialized');
+
       // Validate tenant table exists
       console.log('📋 [Services] Validating tenant table...');
       const tenantData = await this.database.validateTenantTable();
@@ -200,22 +208,37 @@ class SyncMcpServer {
       //   await this.syncManager.start();
       //   console.log('✅ [Services] Sync Manager started');
 
-        // Initialize Local API Server
-        console.log('🌐 [Services] Initializing Local API Server...');
-        this.apiServer = await createAndStartLocalApiServer(this.database, this.syncManager);
-        console.log('✅ [Services] Local API Server started');
+      // Initialize Meter Sync Agent
+      console.log('🔄 [Services] Initializing Meter Sync Agent...');
+      remotePool = this.createRemoteDatabasePool();
+      this.remotePool = remotePool; // Store for later cleanup
+      this.meterSyncAgent = new MeterSyncAgent({
+        database: this.database,
+        remotePool: remotePool,
+        syncIntervalMinutes: parseInt(process.env.METER_SYNC_INTERVAL_MINUTES || '60', 10),
+        enableAutoSync: process.env.METER_SYNC_AUTO_START !== 'false',
+      });
+      console.log('✅ [Services] Meter Sync Agent initialized');
 
-        this.isInitialized = true;
-        console.log('✅ [Services] All services initialized successfully\n');
-      } catch (error) {
-        console.error('❌ [Services] Failed to initialize services:', error);
-        throw error;
-    } finally {
-      // Close remote pool after initialization
+      // Start Meter Sync Agent
+      console.log('▶️  [Services] Starting Meter Sync Agent...');
+      await this.meterSyncAgent.start();
+      console.log('✅ [Services] Meter Sync Agent started');
+
+      // Initialize Local API Server
+      console.log('🌐 [Services] Initializing Local API Server...');
+      this.apiServer = await createAndStartLocalApiServer(this.database, this.syncManager, this.meterSyncAgent);
+      console.log('✅ [Services] Local API Server started');
+
+      this.isInitialized = true;
+      console.log('✅ [Services] All services initialized successfully\n');
+    } catch (error) {
+      console.error('❌ [Services] Failed to initialize services:', error);
+      // Close remote pool on error
       if (remotePool) {
         await this.closeRemotePool(remotePool);
       }
-      //   }
+      throw error;
     }
   }
 
@@ -574,8 +597,16 @@ class SyncMcpServer {
       await this.syncManager.stop();
     }
 
+    if (this.meterSyncAgent) {
+      await this.meterSyncAgent.stop();
+    }
+
     if (this.apiServer) {
       await this.apiServer.stop();
+    }
+
+    if (this.remotePool) {
+      await this.closeRemotePool(this.remotePool);
     }
 
     await this.database.close();

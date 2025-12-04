@@ -24,6 +24,85 @@ export class SyncDatabase {
         });
     }
     /**
+     * Initialize database schema
+     */
+    async initialize() {
+        try {
+            console.log('\n🔧 [SQL] Initializing database schema...');
+            // Create tenant table
+            await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS tenant (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          url VARCHAR(255),
+          street VARCHAR(255),
+          street2 VARCHAR(255),
+          city VARCHAR(100),
+          state VARCHAR(50),
+          zip VARCHAR(20),
+          country VARCHAR(100),
+          active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+            // Create meter table
+            await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS meter (
+          id VARCHAR(255) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          type VARCHAR(100),
+          serial_number VARCHAR(255),
+          installation_date VARCHAR(50),
+          device_id VARCHAR(255),
+          location_id VARCHAR(255),
+          ip VARCHAR(50),
+          port VARCHAR(10),
+          protocol VARCHAR(50),
+          status VARCHAR(50),
+          register_map JSONB,
+          notes TEXT,
+          active BOOLEAN DEFAULT true,
+          created_at VARCHAR(50),
+          updated_at VARCHAR(50)
+        )
+      `);
+            // Create meter_reading table
+            await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS meter_reading (
+          id SERIAL PRIMARY KEY,
+          meter_id VARCHAR(255) NOT NULL REFERENCES meter(id),
+          timestamp TIMESTAMP NOT NULL,
+          data_point VARCHAR(255),
+          value NUMERIC,
+          unit VARCHAR(50),
+          is_synchronized BOOLEAN DEFAULT false,
+          retry_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+            // Create sync_log table
+            await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS sync_log (
+          id SERIAL PRIMARY KEY,
+          batch_size INTEGER,
+          success BOOLEAN,
+          error_message TEXT,
+          synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+            // Create indexes
+            await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_meter_id ON meter_reading(meter_id)`);
+            await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_is_synchronized ON meter_reading(is_synchronized)`);
+            await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_sync_log_synced_at ON sync_log(synced_at)`);
+            console.log('✅ [SQL] Database schema initialized successfully');
+        }
+        catch (error) {
+            console.error('❌ [SQL] Failed to initialize database schema:', error);
+            throw error;
+        }
+    }
+    /**
      * Test local database connectivity
      */
     async testConnectionLocal() {
@@ -109,48 +188,46 @@ export class SyncDatabase {
      */
     async getMeters(activeOnly = true) {
         const query = activeOnly
-            ? 'SELECT * FROM meters WHERE is_active = true ORDER BY name'
-            : 'SELECT * FROM meters ORDER BY name';
+            ? 'SELECT * FROM meter WHERE active = true ORDER BY name'
+            : 'SELECT * FROM meter ORDER BY name';
         console.log('\n🔍 [SQL] Querying meters:', query);
         const result = await this.pool.query(query);
         console.log(`📋 [SQL] Query returned ${result.rows.length} meter(s)`);
         return result.rows;
     }
     /**
-     * Get meter by external ID
-     */
-    async getMeterByExternalId(externalId) {
-        const result = await this.pool.query('SELECT * FROM meters WHERE external_id = $1', [externalId]);
-        return result.rows[0] || null;
-    }
-    /**
-     * Get meter by ID
-     */
+    * Get meter by ID
+    */
     async getMeterById(id) {
-        const result = await this.pool.query('SELECT * FROM meters WHERE id = $1', [id]);
+        const result = await this.pool.query('SELECT * FROM meter WHERE id = $1', [id]);
         return result.rows[0] || null;
     }
     /**
      * Create or update a meter
      */
     async upsertMeter(meter) {
-        const result = await this.pool.query(`INSERT INTO meters (external_id, name, bacnet_device_id, bacnet_ip, config, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (external_id) 
-       DO UPDATE SET 
-         name = EXCLUDED.name,
-         bacnet_device_id = EXCLUDED.bacnet_device_id,
-         bacnet_ip = EXCLUDED.bacnet_ip,
-         config = EXCLUDED.config,
-         is_active = EXCLUDED.is_active,
-         updated_at = CURRENT_TIMESTAMP
+        const result = await this.pool.query(`INSERT INTO meter (id, name, type, serial_number, installation_date, device_id, location_id, 
+                          ip, port, protocol, status, register_map, notes, active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 
+              $8, $9, $10, $11, $12, $13, $14, $15, $16)
+       ON CONFLICT (id) 
        RETURNING *`, [
-            meter.external_id,
+            meter.id,
             meter.name,
-            meter.bacnet_device_id,
-            meter.bacnet_ip,
-            meter.config ? JSON.stringify(meter.config) : null,
-            meter.is_active !== undefined ? meter.is_active : true,
+            meter.type,
+            meter.serial_number,
+            meter.installation_date,
+            meter.device_id,
+            meter.location_id,
+            meter.ip,
+            meter.port,
+            meter.protocol,
+            meter.status,
+            meter.register_map ? JSON.stringify(meter.register_map) : null,
+            meter.notes,
+            meter.active !== undefined ? meter.active : true,
+            meter.created_at,
+            meter.updated_at,
         ]);
         return result.rows[0];
     }
@@ -158,13 +235,13 @@ export class SyncDatabase {
      * Update meter last reading timestamp
      */
     async updateMeterLastReading(externalId, timestamp) {
-        await this.pool.query('UPDATE meters SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE external_id = $2', [timestamp, externalId]);
+        await this.pool.query('UPDATE meter SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [timestamp, externalId]);
     }
     /**
      * Deactivate a meter
      */
     async deactivateMeter(externalId) {
-        await this.pool.query('UPDATE meters SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE external_id = $1', [externalId]);
+        await this.pool.query('UPDATE meter SET active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [externalId]);
     }
     // ==================== METER READING METHODS ====================
     /**

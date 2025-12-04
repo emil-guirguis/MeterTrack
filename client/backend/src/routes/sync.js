@@ -108,7 +108,7 @@ router.post(
           try {
             // Find or create meter
             const meterQuery = 'SELECT id FROM meter WHERE  tenant_id = $2';
-            const meterParams = [siteId, reading.meter_external_id];
+            const meterParams = [siteId, reading.meter_id];
             logQuery(meterQuery, meterParams);
             let meterResult = await client.query(meterQuery, meterParams);
 

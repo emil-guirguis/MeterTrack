@@ -6,7 +6,8 @@
  */
 
 import * as cron from 'node-cron';
-import { SyncDatabase, MeterReading } from '../database/postgres.js';
+import { SyncDatabase } from '../database/postgres.js';
+import { MeterReadingEntity } from '../types/entities.js';
 import { ClientSystemApiClient } from './api-client.js';
 import { ConnectivityMonitor } from './connectivity-monitor.js';
 
@@ -214,7 +215,7 @@ export class SyncManager {
    * Upload batch with exponential backoff retry logic
    */
   private async uploadBatchWithRetry(
-    readings: MeterReading[],
+    readings: MeterReadingEntity[],
     retryCount: number = 0
   ): Promise<{ success: boolean; error?: string }> {
     try {
@@ -326,12 +327,22 @@ export class SyncManager {
       // Update meters in database
       for (const meter of config.meters) {
         await this.database.upsertMeter({
-          external_id: meter.external_id,
-          name: meter.name,
-          bacnet_device_id: meter.bacnet_device_id,
-          bacnet_ip: meter.bacnet_ip,
-          config: meter.config,
-          is_active: true,
+              id: meter.id,
+              name: meter.name,
+              type: meter.type,
+              serial_number: meter.serial_number,
+              installation_date: meter.installation_date || new Date().toISOString(),
+              device_id: meter.device_id,
+              location_id: meter.location_id,
+              ip: meter.ip,
+              port: meter.port,
+              protocol: meter.protocol,
+              status: meter.status,
+              register_map: meter.register_map,
+              notes: meter.notes || '',
+              active: meter.active,
+              created_at: meter.created_at,
+              updated_at: meter.updated_at,
         });
       }
 

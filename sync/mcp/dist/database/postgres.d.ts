@@ -5,64 +5,14 @@
  * Handles meters, meter_reading, and sync_log tables.
  */
 import { Pool, PoolClient, QueryResult } from 'pg';
-export interface Meter {
-    id: number;
-    external_id: string;
-    name: string;
-    bacnet_device_id?: number;
-    bacnet_ip?: string;
-    config?: any;
-    last_reading_at?: Date;
-    is_active: boolean;
-    created_at: Date;
-    updated_at: Date;
-}
-export interface MeterReading {
-    id: number;
-    meter_external_id: string;
-    timestamp: Date;
-    data_point: string;
-    value: number;
-    unit?: string;
-    is_synchronized: boolean;
-    retry_count: number;
-    created_at: Date;
-}
-export interface SyncLog {
-    id: number;
-    batch_size: number;
-    success: boolean;
-    error_message?: string;
-    synced_at: Date;
-}
-export interface Tenant {
-    tenant_id?: string;
-    id: number;
-    name: string;
-    url?: string;
-    street?: string;
-    street2?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    country?: string;
-    active?: boolean;
-    created_at: Date;
-    updated_at?: Date;
-}
-export interface DatabaseConfig {
-    host: string;
-    port: number;
-    database: string;
-    user: string;
-    password: string;
-    max?: number;
-    idleTimeoutMillis?: number;
-    connectionTimeoutMillis?: number;
-}
+import { MeterEntity, MeterReadingEntity, SyncLog, TenantEntity, DatabaseConfig } from '../types/entities.js';
 export declare class SyncDatabase {
     private pool;
     constructor(config: DatabaseConfig);
+    /**
+     * Initialize database schema
+     */
+    initialize(): Promise<void>;
     /**
      * Test local database connectivity
      */
@@ -80,7 +30,7 @@ export declare class SyncDatabase {
      * - true if table has exactly one record (valid state)
      * - throws error if table has more than one record (database may be corrupted)
      */
-    validateTenantTable(): Promise<Tenant | null>;
+    validateTenantTable(): Promise<TenantEntity | null>;
     /**
      * Close all database connections
      */
@@ -88,26 +38,15 @@ export declare class SyncDatabase {
     /**
      * Get all meters
      */
-    getMeters(activeOnly?: boolean): Promise<Meter[]>;
+    getMeters(activeOnly?: boolean): Promise<MeterEntity[]>;
     /**
-     * Get meter by external ID
-     */
-    getMeterByExternalId(externalId: string): Promise<Meter | null>;
-    /**
-     * Get meter by ID
-     */
-    getMeterById(id: number): Promise<Meter | null>;
+    * Get meter by ID
+    */
+    getMeterById(id: number): Promise<MeterEntity | null>;
     /**
      * Create or update a meter
      */
-    upsertMeter(meter: {
-        external_id: string;
-        name: string;
-        bacnet_device_id?: number;
-        bacnet_ip?: string;
-        config?: any;
-        is_active?: boolean;
-    }): Promise<Meter>;
+    upsertMeter(meter: MeterEntity): Promise<MeterEntity>;
     /**
      * Update meter last reading timestamp
      */
@@ -125,29 +64,23 @@ export declare class SyncDatabase {
         data_point: string;
         value: number;
         unit?: string;
-    }): Promise<MeterReading>;
+    }): Promise<MeterReadingEntity>;
     /**
      * Batch insert meter readings
      */
-    batchInsertReadings(readings: Array<{
-        meter_external_id: string;
-        timestamp: Date;
-        data_point: string;
-        value: number;
-        unit?: string;
-    }>): Promise<number>;
+    batchInsertReadings(readings: Array<Omit<MeterReadingEntity, 'id' | 'created_at' | 'updated_at'>>): Promise<number>;
     /**
      * Get unsynchronized readings for sync
      */
-    getUnsynchronizedReadings(limit?: number): Promise<MeterReading[]>;
+    getUnsynchronizedReadings(limit?: number): Promise<MeterReadingEntity[]>;
     /**
      * Get readings by meter and time range
      */
-    getReadingsByMeterAndTimeRange(meterExternalId: string, startTime: Date, endTime: Date): Promise<MeterReading[]>;
+    getReadingsByMeterAndTimeRange(meterExternalId: string, startTime: Date, endTime: Date): Promise<MeterReadingEntity[]>;
     /**
      * Get recent readings (last N hours)
      */
-    getRecentReadings(hours?: number): Promise<MeterReading[]>;
+    getRecentReadings(hours?: number): Promise<MeterReadingEntity[]>;
     /**
      * Mark readings as synchronized
      */
@@ -171,7 +104,7 @@ export declare class SyncDatabase {
     /**
      * Get tenant information
      */
-    getTenant(): Promise<Tenant | null>;
+    getTenant(): Promise<TenantEntity | null>;
     /**
      * Synchronize tenant from remote database to local database
      *
@@ -183,7 +116,7 @@ export declare class SyncDatabase {
      * @returns The synchronized tenant record
      * @throws Error if the remote database query fails or tenant is not found
      */
-    syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<Tenant>;
+    syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<TenantEntity>;
     /**
      * Create or update tenant information
      */
@@ -198,7 +131,7 @@ export declare class SyncDatabase {
         zip?: string;
         country?: string;
         active?: boolean;
-    }): Promise<Tenant>;
+    }): Promise<TenantEntity>;
     /**
      * Log a sync operation
      */

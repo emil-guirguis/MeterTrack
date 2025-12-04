@@ -130,24 +130,26 @@ router.post('/login', [
 
     res.json({
       success: true,
-      user: {
-        // @ts-ignore - properties are dynamically set by schema initialization
-        id: user.id,
-        // @ts-ignore
-        email: user.email,
-        // @ts-ignore
-        name: user.name,
-        // @ts-ignore
-        role: user.role,
-        // @ts-ignore
-        permissions: user.permissions,
-        // @ts-ignore
-        status: user.active ? 'active' : 'inactive'
-      },
-      tenant: tenant,
-      token,
-      refreshToken,
-      expiresIn
+      data: {
+        user: {
+          // @ts-ignore - properties are dynamically set by schema initialization
+          id: user.id,
+          // @ts-ignore
+          email: user.email,
+          // @ts-ignore
+          name: user.name,
+          // @ts-ignore
+          role: user.role,
+          // @ts-ignore
+          permissions: user.permissions,
+          // @ts-ignore
+          status: user.active ? 'active' : 'inactive'
+        },
+        tenant: tenant,
+        token,
+        refreshToken,
+        expiresIn
+      }
     });
   } catch (error) {
     const err = /** @type {Error} */ (error);

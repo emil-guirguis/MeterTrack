@@ -372,7 +372,7 @@ export class MeterCollector {
       errorCount: this.errorCount,
       bacnetConnected: this.bacnetClient.getConnectionStatus(),
       collectionInterval: this.config.collectionInterval,
-      meterCount: this.meters.length,
+      count: this.meters.length,
       meters: meterStatuses,
       uptime: process.uptime()
     };

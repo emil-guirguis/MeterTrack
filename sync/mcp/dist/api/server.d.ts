@@ -6,16 +6,19 @@
  */
 import { SyncDatabase } from '../database/postgres.js';
 import { SyncManager } from '../sync-service/sync-manager.js';
+import { MeterSyncAgent } from '../sync-service/meter-sync-agent.js';
 export interface LocalApiServerConfig {
     port: number;
     database: SyncDatabase;
     syncManager?: SyncManager;
+    meterSyncAgent?: MeterSyncAgent;
 }
 export declare class LocalApiServer {
     private app;
     private port;
     private database;
     private syncManager?;
+    private meterSyncAgent?;
     private server?;
     constructor(config: LocalApiServerConfig);
     /**
@@ -46,4 +49,4 @@ export declare class LocalApiServer {
 /**
  * Create and start local API server from environment variables
  */
-export declare function createAndStartLocalApiServer(database: SyncDatabase, syncManager?: SyncManager): Promise<LocalApiServer>;
+export declare function createAndStartLocalApiServer(database: SyncDatabase, syncManager?: SyncManager, meterSyncAgent?: MeterSyncAgent): Promise<LocalApiServer>;

@@ -6,66 +6,7 @@
  */
 
 import { Pool, PoolClient, QueryResult } from 'pg';
-
-export interface Meter {
-  id: number;
-  external_id: string;
-  name: string;
-  bacnet_device_id?: number;
-  bacnet_ip?: string;
-  config?: any;
-  last_reading_at?: Date;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface MeterReading {
-  id: number;
-  meter_external_id: string;
-  timestamp: Date;
-  data_point: string;
-  value: number;
-  unit?: string;
-  is_synchronized: boolean;
-  retry_count: number;
-  created_at: Date;
-}
-
-export interface SyncLog {
-  id: number;
-  batch_size: number;
-  success: boolean;
-  error_message?: string;
-  synced_at: Date;
-}
-
-export interface Tenant {
-  tenant_id?: string;
-  id: number;
-  name: string;
-  url?: string;
-  street?: string;
-  street2?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-  active?: boolean;
-  created_at: Date;
-  updated_at?: Date;
-}
-
-export interface DatabaseConfig {
-  host: string;
-  port: number;
-  database: string;
-  user: string;
-  password: string;
-  max?: number;
-  idleTimeoutMillis?: number;
-  connectionTimeoutMillis?: number;
-}
+import { MeterEntity, MeterReadingEntity, SyncLog, TenantEntity, DatabaseConfig } from '../types/entities.js';
 
 export class SyncDatabase {
   private pool: Pool;
@@ -86,6 +27,91 @@ export class SyncDatabase {
     this.pool.on('error', (err) => {
       console.error('Unexpected error on idle client', err);
     });
+  }
+
+  /**
+   * Initialize database schema
+   */
+  async initialize(): Promise<void> {
+    try {
+      console.log('\n🔧 [SQL] Initializing database schema...');
+      
+      // Create tenant table
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS tenant (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          url VARCHAR(255),
+          street VARCHAR(255),
+          street2 VARCHAR(255),
+          city VARCHAR(100),
+          state VARCHAR(50),
+          zip VARCHAR(20),
+          country VARCHAR(100),
+          active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create meter table
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS meter (
+          id VARCHAR(255) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          type VARCHAR(100),
+          serial_number VARCHAR(255),
+          installation_date VARCHAR(50),
+          device_id VARCHAR(255),
+          location_id VARCHAR(255),
+          ip VARCHAR(50),
+          port VARCHAR(10),
+          protocol VARCHAR(50),
+          status VARCHAR(50),
+          register_map JSONB,
+          notes TEXT,
+          active BOOLEAN DEFAULT true,
+          created_at VARCHAR(50),
+          updated_at VARCHAR(50)
+        )
+      `);
+
+      // Create meter_reading table
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS meter_reading (
+          id SERIAL PRIMARY KEY,
+          meter_id VARCHAR(255) NOT NULL REFERENCES meter(id),
+          timestamp TIMESTAMP NOT NULL,
+          data_point VARCHAR(255),
+          value NUMERIC,
+          unit VARCHAR(50),
+          is_synchronized BOOLEAN DEFAULT false,
+          retry_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create sync_log table
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS sync_log (
+          id SERIAL PRIMARY KEY,
+          batch_size INTEGER,
+          success BOOLEAN,
+          error_message TEXT,
+          synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create indexes
+      await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_meter_id ON meter_reading(meter_id)`);
+      await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_is_synchronized ON meter_reading(is_synchronized)`);
+      await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_sync_log_synced_at ON sync_log(synced_at)`);
+
+      console.log('✅ [SQL] Database schema initialized successfully');
+    } catch (error) {
+      console.error('❌ [SQL] Failed to initialize database schema:', error);
+      throw error;
+    }
   }
 
   /**
@@ -129,25 +155,25 @@ export class SyncDatabase {
    * - true if table has exactly one record (valid state)
    * - throws error if table has more than one record (database may be corrupted)
    */
-  async validateTenantTable(): Promise<Tenant | null> {
+  async validateTenantTable(): Promise<TenantEntity | null> {
     try {
       const query = 'SELECT * FROM tenant';
       console.log('\n🔍 [SQL] Validating tenant table:', query);
       const result = await this.pool.query(query);
-      
+
       const rowCount = result.rows.length;
       console.log(`📋 [SQL] Tenant table query returned ${rowCount} row(s)`);
-      
+
       if (rowCount === 0) {
         console.warn('⚠️  [SQL] Tenant table exists but has no records - sync database not set up yet');
         return null;
       }
-      
+
       if (rowCount === 1) {
         console.log('✅ [SQL] Tenant table validation successful - found valid tenant record');
         return result.rows[0];
       }
-      
+
       // More than one record - database may be corrupted
       console.error(`❌ [SQL] Tenant table contains ${rowCount} records - database may be corrupted`);
       throw new Error(`Database integrity error: Tenant table contains ${rowCount} records instead of 1. Please contact support.`);
@@ -157,18 +183,18 @@ export class SyncDatabase {
         console.error('❌ [SQL] Tenant table does not exist in the database');
         return null;
       }
-      
+
       // Re-throw other errors (including corruption errors)
       if (error.message.includes('Database integrity error')) {
         throw error;
       }
-      
+
       console.error('❌ [SQL] Failed to validate tenant table:', error);
       return null;
     }
   }
 
-  
+
   /**
    * Close all database connections
    */
@@ -181,11 +207,11 @@ export class SyncDatabase {
   /**
    * Get all meters
    */
-  async getMeters(activeOnly: boolean = true): Promise<Meter[]> {
+  async getMeters(activeOnly: boolean = true): Promise<MeterEntity[]> {
     const query = activeOnly
-      ? 'SELECT * FROM meters WHERE is_active = true ORDER BY name'
-      : 'SELECT * FROM meters ORDER BY name';
-    
+      ? 'SELECT * FROM meter WHERE active = true ORDER BY name'
+      : 'SELECT * FROM meter ORDER BY name';
+
     console.log('\n🔍 [SQL] Querying meters:', query);
     const result = await this.pool.query(query);
     console.log(`📋 [SQL] Query returned ${result.rows.length} meter(s)`);
@@ -193,22 +219,11 @@ export class SyncDatabase {
   }
 
   /**
-   * Get meter by external ID
-   */
-  async getMeterByExternalId(externalId: string): Promise<Meter | null> {
+  * Get meter by ID
+  */
+  async getMeterById(id: number): Promise<MeterEntity | null> {
     const result = await this.pool.query(
-      'SELECT * FROM meters WHERE external_id = $1',
-      [externalId]
-    );
-    return result.rows[0] || null;
-  }
-
-  /**
-   * Get meter by ID
-   */
-  async getMeterById(id: number): Promise<Meter | null> {
-    const result = await this.pool.query(
-      'SELECT * FROM meters WHERE id = $1',
+      'SELECT * FROM meter WHERE id = $1',
       [id]
     );
     return result.rows[0] || null;
@@ -217,33 +232,31 @@ export class SyncDatabase {
   /**
    * Create or update a meter
    */
-  async upsertMeter(meter: {
-    external_id: string;
-    name: string;
-    bacnet_device_id?: number;
-    bacnet_ip?: string;
-    config?: any;
-    is_active?: boolean;
-  }): Promise<Meter> {
+  async upsertMeter(meter: MeterEntity): Promise<MeterEntity> {
     const result = await this.pool.query(
-      `INSERT INTO meters (external_id, name, bacnet_device_id, bacnet_ip, config, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (external_id) 
-       DO UPDATE SET 
-         name = EXCLUDED.name,
-         bacnet_device_id = EXCLUDED.bacnet_device_id,
-         bacnet_ip = EXCLUDED.bacnet_ip,
-         config = EXCLUDED.config,
-         is_active = EXCLUDED.is_active,
-         updated_at = CURRENT_TIMESTAMP
+      `INSERT INTO meter (id, name, type, serial_number, installation_date, device_id, location_id, 
+                          ip, port, protocol, status, register_map, notes, active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 
+              $8, $9, $10, $11, $12, $13, $14, $15, $16)
+       ON CONFLICT (id) 
        RETURNING *`,
       [
-        meter.external_id,
+        meter.id,
         meter.name,
-        meter.bacnet_device_id,
-        meter.bacnet_ip,
-        meter.config ? JSON.stringify(meter.config) : null,
-        meter.is_active !== undefined ? meter.is_active : true,
+        meter.type,
+        meter.serial_number,
+        meter.installation_date,
+        meter.device_id,
+        meter.location_id,
+        meter.ip,
+        meter.port,
+        meter.protocol,
+        meter.status,
+        meter.register_map ? JSON.stringify(meter.register_map) : null,
+        meter.notes,
+        meter.active !== undefined ? meter.active : true,
+        meter.created_at,
+        meter.updated_at,
       ]
     );
     return result.rows[0];
@@ -254,7 +267,7 @@ export class SyncDatabase {
    */
   async updateMeterLastReading(externalId: string, timestamp: Date): Promise<void> {
     await this.pool.query(
-      'UPDATE meters SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE external_id = $2',
+      'UPDATE meter SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [timestamp, externalId]
     );
   }
@@ -264,7 +277,7 @@ export class SyncDatabase {
    */
   async deactivateMeter(externalId: string): Promise<void> {
     await this.pool.query(
-      'UPDATE meters SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE external_id = $1',
+      'UPDATE meter SET active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
       [externalId]
     );
   }
@@ -280,7 +293,7 @@ export class SyncDatabase {
     data_point: string;
     value: number;
     unit?: string;
-  }): Promise<MeterReading> {
+  }): Promise<MeterReadingEntity> {
     const result = await this.pool.query(
       `INSERT INTO meter_reading(meter_id, timestamp, data_point, value, unit)
        VALUES ($1, $2, $3, $4, $5)
@@ -299,13 +312,7 @@ export class SyncDatabase {
   /**
    * Batch insert meter readings
    */
-  async batchInsertReadings(readings: Array<{
-    meter_external_id: string;
-    timestamp: Date;
-    data_point: string;
-    value: number;
-    unit?: string;
-  }>): Promise<number> {
+  async batchInsertReadings(readings: Array<Omit<MeterReadingEntity, 'id' | 'created_at' | 'updated_at'>>): Promise<number> {
     if (readings.length === 0) {
       return 0;
     }
@@ -314,7 +321,7 @@ export class SyncDatabase {
     try {
       await client.query('BEGIN');
 
-       let insertedCount = 0;
+      let insertedCount = 0;
       // for (const reading of readings) {
       //   await client.query(
       //     `INSERT INTO meter_reading (meter_external_id, timestamp, data_point, value, unit)
@@ -343,7 +350,7 @@ export class SyncDatabase {
   /**
    * Get unsynchronized readings for sync
    */
-  async getUnsynchronizedReadings(limit: number = 1000): Promise<MeterReading[]> {
+  async getUnsynchronizedReadings(limit: number = 1000): Promise<MeterReadingEntity[]> {
     const result = await this.pool.query(
       `SELECT * FROM meter_reading
        WHERE is_synchronized = false 
@@ -361,7 +368,7 @@ export class SyncDatabase {
     meterExternalId: string,
     startTime: Date,
     endTime: Date
-  ): Promise<MeterReading[]> {
+  ): Promise<MeterReadingEntity[]> {
     const result = await this.pool.query(
       `SELECT * FROM meter_reading
        WHERE meter_external_id = $1 
@@ -376,7 +383,7 @@ export class SyncDatabase {
   /**
    * Get recent readings (last N hours)
    */
-  async getRecentReadings(hours: number = 24): Promise<MeterReading[]> {
+  async getRecentReadings(hours: number = 24): Promise<MeterReadingEntity[]> {
     const query = `SELECT * FROM meter_reading
        WHERE timestamp >= NOW() - INTERVAL '${hours} hours'
        ORDER BY timestamp DESC`;
@@ -465,7 +472,7 @@ export class SyncDatabase {
   /**
    * Get tenant information
    */
-  async getTenant(): Promise<Tenant | null> {
+  async getTenant(): Promise<TenantEntity | null> {
     try {
       const query = 'SELECT * FROM tenant LIMIT 1';
       console.log('\n🔍 [SQL] Querying tenant:', query);
@@ -494,7 +501,7 @@ export class SyncDatabase {
    * @returns The synchronized tenant record
    * @throws Error if the remote database query fails or tenant is not found
    */
-  async syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<Tenant> {
+  async syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<TenantEntity> {
     try {
       // Query remote database for tenant record
       console.log(`\n🔍 [SYNC] Querying remote database for tenant ID: ${tenantId}`);
@@ -510,13 +517,13 @@ export class SyncDatabase {
 
       // Upsert to local database, preserving the original tenant ID
       console.log(`\n📝 [SYNC] Upserting tenant to local database with ID: ${remoteTenant.id}`);
-      
+
       // We need to handle the ID preservation specially since upsertTenant doesn't take an ID parameter
       // We'll use a direct query to preserve the ID
       const existing = await this.getTenant();
-      
-      let localTenant: Tenant;
-      
+
+      let localTenant: TenantEntity;
+
       if (existing) {
         // Update existing tenant, preserving the ID from remote
         const updateQuery = `UPDATE tenant 
@@ -532,7 +539,7 @@ export class SyncDatabase {
               updated_at = CURRENT_TIMESTAMP 
           WHERE id = $10 
           RETURNING *`;
-        
+
         try {
           const updateResult = await this.pool.query(updateQuery, [
             remoteTenant.name,
@@ -570,7 +577,7 @@ export class SyncDatabase {
         const insertQuery = `INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active) 
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
           RETURNING *`;
-        
+
         try {
           const insertResult = await this.pool.query(insertQuery, [
             remoteTenant.id,
@@ -620,16 +627,16 @@ export class SyncDatabase {
     zip?: string;
     country?: string;
     active?: boolean;
-  }): Promise<Tenant> {
+  }): Promise<TenantEntity> {
     // Since there should only be one tenant, we'll update if exists, insert if not
     const existing = await this.getTenant();
-    
+
     if (existing) {
       // Build dynamic UPDATE query based on available columns
       const updates: string[] = ['name = $1', 'updated_at = CURRENT_TIMESTAMP'];
       const values: any[] = [tenant.name];
       let paramIndex = 2;
-      
+
       // Try to update all fields, but handle missing columns gracefully
       const fieldsToUpdate = [
         { name: 'tenant_id', value: tenant.id },
@@ -642,17 +649,17 @@ export class SyncDatabase {
         { name: 'country', value: tenant.country },
         { name: 'active', value: tenant.active !== undefined ? tenant.active : true },
       ];
-      
+
       for (const field of fieldsToUpdate) {
         updates.push(`${field.name} = $${paramIndex}`);
         values.push(field.value || null);
         paramIndex++;
       }
-      
+
       values.push(existing.id);
-      
+
       const query = `UPDATE tenant SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
-      
+
       try {
         const result = await this.pool.query(query, values);
         return result.rows[0];

@@ -9,11 +9,13 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { SyncDatabase } from '../database/postgres.js';
 import { SyncManager } from '../sync-service/sync-manager.js';
+import { MeterSyncAgent } from '../sync-service/meter-sync-agent.js';
 
 export interface LocalApiServerConfig {
   port: number;
   database: SyncDatabase;
   syncManager?: SyncManager;
+  meterSyncAgent?: MeterSyncAgent;
 }
 
 export class LocalApiServer {
@@ -21,12 +23,14 @@ export class LocalApiServer {
   private port: number;
   private database: SyncDatabase;
   private syncManager?: SyncManager;
+  private meterSyncAgent?: MeterSyncAgent;
   private server?: any;
 
   constructor(config: LocalApiServerConfig) {
     this.port = config.port;
     this.database = config.database;
     this.syncManager = config.syncManager;
+    this.meterSyncAgent = config.meterSyncAgent;
     this.app = express();
 
     this.setupMiddleware();
@@ -245,6 +249,98 @@ export class LocalApiServer {
         next(error);
       }
     });
+
+    // Get meter sync status
+    this.app.get('/api/local/meter-sync-status', async (_req, res, next) => {
+      try {
+        console.log('📥 [API] GET /api/local/meter-sync-status - Request received');
+        
+        if (!this.meterSyncAgent) {
+          console.error('❌ [API] Meter sync agent not available');
+          return res.status(503).json({ 
+            error: 'Meter sync agent not available' 
+          });
+        }
+
+        const syncStatus = this.meterSyncAgent.getStatus();
+        
+        // Get meter count from database
+        let meterCount = 0;
+        try {
+          const meters = await this.database.getMeters(true);
+          meterCount = meters.length;
+        } catch (err) {
+          console.error('❌ [API] Error getting meter count:', err);
+        }
+
+        const response = {
+          last_sync_at: syncStatus.lastSyncTime || null,
+          last_sync_success: syncStatus.lastSyncSuccess !== undefined ? syncStatus.lastSyncSuccess : null,
+          last_sync_error: syncStatus.lastSyncError || null,
+          inserted_count: syncStatus.lastInsertedCount,
+          updated_count: syncStatus.lastUpdatedCount,
+          deleted_count: syncStatus.lastDeletedCount,
+          meter_count: meterCount,
+          is_syncing: syncStatus.isSyncing,
+        };
+
+        console.log(`📤 [API] GET /api/local/meter-sync-status - Returning:`, JSON.stringify(response, null, 2));
+        res.json(response);
+        console.log('✅ [API] GET /api/local/meter-sync-status - Response sent successfully');
+      } catch (error) {
+        console.error('❌ [API] GET /api/local/meter-sync-status - Error:', error);
+        next(error);
+      }
+    });
+
+    // Trigger manual meter sync
+    this.app.post('/api/local/meter-sync-trigger', async (_req, res, next) => {
+      try {
+        console.log('📥 [API] POST /api/local/meter-sync-trigger - Request received');
+        
+        if (!this.meterSyncAgent) {
+          console.error('❌ [API] Meter sync agent not available');
+          return res.status(503).json({ 
+            success: false,
+            message: 'Meter sync agent not available',
+          });
+        }
+
+        const syncStatus = this.meterSyncAgent.getStatus();
+        
+        if (syncStatus.isSyncing) {
+          console.warn('⚠️  [API] Meter sync is already in progress');
+          return res.status(409).json({ 
+            success: false,
+            message: 'Meter sync is already in progress',
+          });
+        }
+
+        // Trigger sync
+        console.log('🔄 [API] Triggering meter sync...');
+        const result = await this.meterSyncAgent.triggerSync();
+
+        const response = {
+          success: result.success,
+          message: result.success 
+            ? 'Meter sync completed successfully'
+            : `Meter sync failed: ${result.error}`,
+          result: {
+            inserted: result.inserted,
+            updated: result.updated,
+            deleted: result.deleted,
+            timestamp: result.timestamp,
+          },
+        };
+
+        console.log(`📤 [API] POST /api/local/meter-sync-trigger - Returning:`, JSON.stringify(response, null, 2));
+        res.json(response);
+        console.log('✅ [API] POST /api/local/meter-sync-trigger - Response sent successfully');
+      } catch (error) {
+        console.error('❌ [API] POST /api/local/meter-sync-trigger - Error:', error);
+        next(error);
+      }
+    });
   }
 
   /**
@@ -280,7 +376,9 @@ export class LocalApiServer {
           console.log(`   Tenant endpoint: http://localhost:${this.port}/api/local/tenant`);
           console.log(`   Meters endpoint: http://localhost:${this.port}/api/local/meters`);
           console.log(`   Readings endpoint: http://localhost:${this.port}/api/local/readings`);
-          console.log(`   Sync status endpoint: http://localhost:${this.port}/api/local/sync-status\n`);
+          console.log(`   Sync status endpoint: http://localhost:${this.port}/api/local/sync-status`);
+          console.log(`   Meter sync status endpoint: http://localhost:${this.port}/api/local/meter-sync-status`);
+          console.log(`   Meter sync trigger endpoint: http://localhost:${this.port}/api/local/meter-sync-trigger\n`);
           resolve();
         });
 
@@ -330,7 +428,8 @@ export class LocalApiServer {
  */
 export async function createAndStartLocalApiServer(
   database: SyncDatabase,
-  syncManager?: SyncManager
+  syncManager?: SyncManager,
+  meterSyncAgent?: MeterSyncAgent
 ): Promise<LocalApiServer> {
   const port = parseInt(process.env.LOCAL_API_PORT || '3002', 10);
 
@@ -338,6 +437,7 @@ export async function createAndStartLocalApiServer(
     port,
     database,
     syncManager,
+    meterSyncAgent,
   });
 
   await server.start();

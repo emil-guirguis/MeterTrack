@@ -6,51 +6,15 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { MeterReading } from '../database/postgres.js';
-
-export interface ApiClientConfig {
-  apiUrl: string;
-  apiKey: string;
-  timeout?: number;
-  maxRetries?: number;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  siteId?: string;
-  message?: string;
-}
-
-export interface BatchUploadRequest {
-  readings: Array<{
-    meter_external_id: string;
-    timestamp: string;
-    data_point: string;
-    value: number;
-    unit?: string;
-  }>;
-}
-
-export interface BatchUploadResponse {
-  success: boolean;
-  recordsProcessed: number;
-  message?: string;
-}
-
-export interface ConfigDownloadResponse {
-  meters: Array<{
-    external_id: string;
-    name: string;
-    bacnet_device_id?: number;
-    bacnet_ip?: string;
-    config?: any;
-  }>;
-}
-
-export interface HeartbeatResponse {
-  success: boolean;
-  timestamp: string;
-}
+import {
+  MeterReadingEntity,
+  ApiClientConfig,
+  AuthResponse,
+  BatchUploadRequest,
+  BatchUploadResponse,
+  ConfigDownloadResponse,
+  HeartbeatResponse,
+} from '../types/entities.js';
 
 export class ClientSystemApiClient {
   private client: AxiosInstance;
@@ -126,13 +90,13 @@ export class ClientSystemApiClient {
    * Upload batch of meter readings with retry logic
    */
   async uploadBatch(
-    readings: MeterReading[],
+    readings: MeterReadingEntity[],
     retryCount: number = 0
   ): Promise<BatchUploadResponse> {
     // Transform readings to API format
     const request: BatchUploadRequest = {
       readings: readings.map((r) => ({
-        meter_external_id: r.meter_external_id,
+        meter_id: r.meter_id,
         timestamp: r.timestamp.toISOString(),
         data_point: r.data_point,
         value: r.value,

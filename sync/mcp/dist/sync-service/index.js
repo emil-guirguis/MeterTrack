@@ -6,4 +6,5 @@
 export * from './api-client.js';
 export * from './sync-manager.js';
 export * from './connectivity-monitor.js';
+export * from './meter-sync-agent.js';
 //# sourceMappingURL=index.js.map

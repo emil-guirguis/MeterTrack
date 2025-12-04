@@ -241,12 +241,22 @@ export class SyncManager {
             // Update meters in database
             for (const meter of config.meters) {
                 await this.database.upsertMeter({
-                    external_id: meter.external_id,
+                    id: meter.id,
                     name: meter.name,
-                    bacnet_device_id: meter.bacnet_device_id,
-                    bacnet_ip: meter.bacnet_ip,
-                    config: meter.config,
-                    is_active: true,
+                    type: meter.type,
+                    serial_number: meter.serial_number,
+                    installation_date: meter.installation_date || new Date().toISOString(),
+                    device_id: meter.device_id,
+                    location_id: meter.location_id,
+                    ip: meter.ip,
+                    port: meter.port,
+                    protocol: meter.protocol,
+                    status: meter.status,
+                    register_map: meter.register_map,
+                    notes: meter.notes || '',
+                    active: meter.active,
+                    created_at: meter.created_at,
+                    updated_at: meter.updated_at,
                 });
             }
             console.log(`Updated ${config.meters.length} meters from configuration`);
