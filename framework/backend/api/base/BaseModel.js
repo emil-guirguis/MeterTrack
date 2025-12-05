@@ -630,6 +630,15 @@ class BaseModel {
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+      // If SQL wasn't built yet, include the options in the error context
+      const errorContext = {
+        operation: 'findAll',
+        model: this.name,
+        options: options,
+        sql: sql || 'SQL not built - error during query construction',
+        values: values
+      };
+      console.error('findAll error context:', JSON.stringify(errorContext, null, 2));
       this._handleDatabaseError(err, 'findAll', sql, values);
       throw err; // Ensure function returns
     }

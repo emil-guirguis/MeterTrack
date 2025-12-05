@@ -27,7 +27,7 @@ export interface Meter {
   model: string; // From device table
   device_id?: string; // For backend compatibility
   ip: string;
-  serialNumber: string;
+  serial_number: string;
   portNumber: number;
   slaveId?: number;
   location?: string;
@@ -83,7 +83,7 @@ export interface CreateMeterRequest {
   model: string;
   device_id: string;
   ip: string;
-  serialNumber: string;
+  serial_number: string;
   portNumber: number;
   slaveId?: number;
   location?: string;

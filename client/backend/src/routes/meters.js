@@ -4,6 +4,7 @@ const { body, validationResult, query } = require('express-validator');
 const Meter = require('../models/MeterWithSchema');
 const DeviceService = require('../services/deviceService');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
+const { SORT_KEY_MAP, transformMeterToResponse, buildValidationRules, normalizeRequestBody, transformCreatedMeterToResponse } = require('../config/meterFieldConfig');
 const {
   ValidationError,
   UniqueConstraintError,
@@ -16,6 +17,37 @@ const router = express.Router();
 
 // Apply authentication to all routes
 router.use(authenticateToken);
+
+// Get meter schema for form generation
+router.get('/schema', requirePermission('meter:read'), async (req, res) => {
+  try {
+    const { METER_FIELDS, getFormFields, getEntityFields } = require('../config/meterFieldConfig');
+    
+    const formFields = getFormFields();
+    const entityFields = getEntityFields();
+    
+    // Transform METER_FIELDS to schema format expected by frontend
+    const schema = {
+      entityName: 'Meter',
+      tableName: 'meter',
+      formFields: formFields,
+      entityFields: entityFields,
+      fields: METER_FIELDS,
+    };
+
+    res.json({
+      success: true,
+      data: schema,
+    });
+  } catch (error) {
+    console.error('Schema fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch schema',
+      error: error.message,
+    });
+  }
+});
 
 // Get all meters with filtering and pagination
 router.get('/', [
@@ -54,17 +86,8 @@ router.get('/', [
       where.status = filterStatus;
     }
 
-    // Map sortBy to database column names
-    const sortKeyMap = {
-      createdAt: 'created_at',
-      meterId: 'meterid',
-      meterid: 'meterid',
-      status: 'status',
-      type: 'type',
-      serialNumber: 'serial_number',
-      model: 'device_id'
-    };
-    const orderColumn = sortKeyMap[sortBy] || 'created_at';
+    // Map sortBy to database column names using centralized config
+    const orderColumn = SORT_KEY_MAP[sortBy] || 'created_at';
     const orderDirection = sortOrder.toUpperCase();
 
     // Use BaseModel's findAll with proper options
@@ -74,26 +97,38 @@ router.get('/', [
       order: [[orderColumn, orderDirection]],
       limit: numericPageSize,
       offset,
+      include: ['device', 'location'],
       tenantId: req.user?.tenantId // Framework will automatically filter by tenant
     });
 
     // Map results to frontend format
-    const itemsPage = result.rows.map(m => ({
-      id: m.id,
-      meterId: m.meterid,
-      serialNumber: m.serial_number || m.serialnumber,
-      device: m.device_name || null,
-      model: m.device_description || null,
-      device_id: m.device_id,
-      type: m.type,
-      status: m.status,
-      location: m.location_name || null,
-      location_id: m.location_id,
-      createdAt: m.created_at,
-      updatedAt: m.updated_at,
-      register_map: m.register_map ?? null,
-      configuration: undefined,
-      lastReading: null
+    // Fetch device and location data for each meter
+    const Device = require('../models/DeviceWithSchema');
+    const Location = require('../models/LocationWithSchema');
+    
+    const itemsPage = await Promise.all(result.rows.map(async (m) => {
+      // Get device and location info
+      let device = null;
+      let location = null;
+      
+      if (m.device_id) {
+        try {
+          device = await Device.findById(m.device_id);
+        } catch (err) {
+          console.error('[METERS LIST] Error fetching device:', err.message);
+        }
+      }
+      
+      if (m.location_id) {
+        try {
+          location = await Location.findById(m.location_id);
+        } catch (err) {
+          console.error('[METERS LIST] Error fetching location:', err.message);
+        }
+      }
+      
+      // Use centralized transformation function
+      return transformMeterToResponse(m, { device, location });
     }));
 
     const totalPages = result.pagination.totalPages;
@@ -150,45 +185,33 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
       });
     }
 
-    // Fetch related device and location separately if needed
-    let deviceName = null;
-    let deviceModel = null;
-    let locationName = null;
+    console.log('[METER DEBUG] Raw meter object keys:', Object.keys(meter));
+    console.log('[METER DEBUG] Meter data:', JSON.stringify(meter, null, 2));
+
+    // Fetch related device and location
+    let device = null;
+    let location = null;
 
     if (meter.device_id) {
       const Device = require('../models/DeviceWithSchema');
-      const device = await Device.findById(meter.device_id);
-      if (device) {
-        deviceName = device.manufacturer;
-        deviceModel = device.model_number;
+      try {
+        device = await Device.findById(meter.device_id);
+      } catch (err) {
+        console.error('[METER] Error fetching device:', err.message);
       }
     }
 
     if (meter.location_id) {
       const Location = require('../models/LocationWithSchema');
-      const location = await Location.findById(meter.location_id);
-      if (location) {
-        locationName = location.name;
+      try {
+        location = await Location.findById(meter.location_id);
+      } catch (err) {
+        console.error('[METER] Error fetching location:', err.message);
       }
     }
 
-    const data = {
-      id: meter.id,
-      meterId: meter.meterid,
-      serialNumber: meter.serial_number || meter.serialnumber,
-      device: deviceName,
-      model: deviceModel,
-      device_id: meter.device_id,
-      type: meter.type,
-      status: meter.status,
-      location: locationName,
-      location_id: meter.location_id,
-      createdAt: meter.created_at,
-      updatedAt: meter.updated_at,
-      register_map: meter.register_map ?? null,
-      configuration: undefined,
-      lastReading: null
-    };
+    // Use centralized transformation function
+    const data = transformMeterToResponse(meter, { device, location });
 
     res.json({ success: true, data });
 
@@ -212,20 +235,7 @@ router.get('/:id', requirePermission('meter:read'), async (req, res) => {
 });
 
 // Create new meter
-router.post('/', [
-  body('meterId').optional().isLength({ max: 50 }).trim(),
-  body('meterid').optional().isLength({ max: 50 }).trim(),
-  body('device_id').optional().isInt(),
-  body('device').optional().isLength({ max: 100 }).trim(),
-  body('model').optional().isLength({ max: 100 }).trim(),
-  body('serialNumber').optional().isLength({ max: 100 }).trim(),
-  body('serialnumber').optional().isLength({ max: 100 }).trim(),
-  body('type').optional().isIn(['electric','gas','water']),
-  body('status').optional().isIn(['active','inactive','maintenance']),
-  body('location').optional().isLength({ max: 200 }).trim(),
-  body('notes').optional().isLength({ max: 500 }).trim(),
-  body('register_map').optional().isObject()
-], requirePermission('meter:create'), async (req, res) => {
+router.post('/', buildValidationRules(), requirePermission('meter:create'), async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -284,22 +294,8 @@ router.post('/', [
       }
     }
 
-    const normalized = {
-      meterid: req.body.meterid || req.body.meterId,
-      name: req.body.name || req.body.meterId,
-      type: req.body.type,
-      device_id: resolvedDeviceId,
-      serialnumber: req.body.serialnumber || req.body.serialNumber,
-      status: req.body.status || 'active',
-      location_location: req.body.location_location || undefined,
-      location_floor: req.body.location_floor || undefined,
-      location_room: req.body.location_room || undefined,
-      location_description: req.body.location || req.body.location_description || undefined,
-      unit_of_measurement: req.body.unit_of_measurement || undefined,
-      multiplier: req.body.multiplier || 1,
-      notes: req.body.notes || undefined,
-      register_map: req.body.register_map || null
-    };
+    const normalized = normalizeRequestBody(req.body);
+    normalized.device_id = resolvedDeviceId;
 
     if (!normalized.meterid) {
       return res.status(400).json({ success: false, message: 'Meter ID is required' });
@@ -308,20 +304,7 @@ router.post('/', [
     // Use BaseModel's create method
     const created = await Meter.create(normalized);
 
-    const responseItem = {
-      id: created.id,
-      meterId: created.meterid,
-      device_id: created.device_id || null,
-      serialNumber: created.serial_number || created.serial_number,
-      device: created.device_name || null,
-      model: created.device_description || null,
-      type: created.type,
-      status: created.status,
-      location: created.fullLocation,
-      createdAt: created.created_at || created.created_at,
-      updatedAt: created.updated_at || created.updated_at,
-      register_map: created.register_map ?? null,
-    };
+    const responseItem = transformCreatedMeterToResponse(created);
 
     res.status(201).json({
       success: true,
@@ -374,20 +357,7 @@ router.post('/', [
 });
 
 // Update meter
-router.put('/:id', [
-  body('meterId').optional().isLength({ max: 50 }).trim(),
-  body('meterid').optional().isLength({ max: 50 }).trim(),
-  body('device_id').optional().isInt(),
-  body('device').optional().isLength({ max: 100 }).trim(),
-  body('model').optional().isLength({ max: 100 }).trim(),
-  body('serialNumber').optional().isLength({ max: 100 }).trim(),
-  body('serialnumber').optional().isLength({ max: 100 }).trim(),
-  body('type').optional().isIn(['electric','gas','water']),
-  body('status').optional().isIn(['active','inactive','maintenance']),
-  body('location').optional().isLength({ max: 200 }).trim(),
-  body('notes').optional().isLength({ max: 500 }).trim(),
-  body('register_map').optional().isObject()
-], requirePermission('meter:update'), async (req, res) => {
+router.put('/:id', buildValidationRules(), requirePermission('meter:update'), async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -450,38 +420,13 @@ router.put('/:id', [
       }
     }
 
-    const updateData = {
-      meterid: req.body.meterid || req.body.meterId,
-      type: req.body.type,
-      device_id: resolvedDeviceId,
-      serial_number: req.body.serialnumber || req.body.serialNumber,
-      status: req.body.status,
-      location_location: req.body.location_location,
-      location_floor: req.body.location_floor,
-      location_room: req.body.location_room,
-      location_description: req.body.location || req.body.location_description,
-      unit_of_measurement: req.body.unit_of_measurement,
-      multiplier: req.body.multiplier,
-      notes: req.body.notes,
-      register_map: req.body.register_map
-    };
+    const updateData = normalizeRequestBody(req.body);
+    updateData.device_id = resolvedDeviceId;
 
     // Use BaseModel's instance update method
     const updated = await meter.update(updateData);
 
-    const responseItem = {
-      id: updated.id,
-      meterId: updated.meterid,
-      serialNumber: updated.serial_number || updated.serialnumber,
-      device: updated.device_name || null,
-      model: updated.device_description || null,
-      type: updated.type,
-      status: updated.status,
-      location: updated.fullLocation,
-      createdAt: updated.created_at || updated.created_at,
-      updatedAt: updated.updated_at || updated.updated_at,
-      register_map: updated.register_map ?? null,
-    };
+    const responseItem = transformCreatedMeterToResponse(updated);
 
     res.json({ success: true, data: responseItem, message: 'Meter updated successfully' });
 

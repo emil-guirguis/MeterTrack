@@ -511,7 +511,7 @@ class MeterReadings extends BaseModel {
                     dbField: 'firmware_version',
                     maxLength: 100,
                 }),
-                serialNumber: field({
+                serial_number: field({
                     type: FieldTypes.STRING,
                     default: '',
                     required: false,

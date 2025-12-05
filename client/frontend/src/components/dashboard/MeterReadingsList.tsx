@@ -486,10 +486,10 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
       render: (_value: any, reading: DetailedMeterReading) => reading.firmwareVersion || ''
     },
     {
-      key: 'serialNumber',
+      key: 'serial_number',
       label: 'Serial Number',
       sortable: true,
-      render: (_value: any, reading: DetailedMeterReading) => reading.serialNumber || ''
+      render: (_value: any, reading: DetailedMeterReading) => reading.serial_number || ''
     },
     {
       key: 'alarmStatus',

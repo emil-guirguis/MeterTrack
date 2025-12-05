@@ -13,7 +13,10 @@ import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
 import { Permission } from '../../types/auth';
 import {
+  createStatusColumn,
   createTwoLineColumn,
+  createStandardStatusActions,
+  createExportAction,
 } from '../../config/listHelpers';
 
 // ============================================================================
@@ -54,7 +57,7 @@ export const deviceColumns: ColumnDefinition<Device>[] = [
       fallback: 'N/A',
     }
   ),
-  
+
   {
     key: 'model_number' as keyof Device,
     label: 'Model Number',
@@ -62,7 +65,7 @@ export const deviceColumns: ColumnDefinition<Device>[] = [
     responsive: 'hide-tablet',
     render: (_, device) => (device as any).model_number || 'N/A',
   },
-  
+
   {
     key: 'description' as keyof Device,
     label: 'Description',
@@ -86,7 +89,7 @@ export const deviceFilters: FilterDefinition[] = [
         .filter(Boolean)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
-      
+
       return uniqueValues.map(value => ({
         label: String(value),
         value: String(value),
@@ -94,7 +97,7 @@ export const deviceFilters: FilterDefinition[] = [
     },
     placeholder: 'All Types',
   },
-  
+
   {
     key: 'manufacturer',
     label: 'Manufacturer',
@@ -105,7 +108,7 @@ export const deviceFilters: FilterDefinition[] = [
         .filter(Boolean)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
-      
+
       return uniqueValues.map(value => ({
         label: String(value),
         value: String(value),
@@ -154,7 +157,7 @@ export function createDeviceBulkActions(
       icon: 'delete',
       color: 'error',
       confirm: true,
-      confirmMessage: (items: Device[]) => 
+      confirmMessage: (items: Device[]) =>
         `Are you sure you want to delete ${items.length} device(s)? This action cannot be undone.`,
       action: async (items: Device[]) => {
         const ids = items.map(item => item.id);

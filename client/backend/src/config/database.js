@@ -73,7 +73,7 @@ class PostgresDB {
         }
 
         // Log all queries to console
-        console.log(`=== Select ${'='.repeat(120)}`);
+        console.log(`*** Select ${'*'.repeat(60)}`);
         console.log(`${text} ........ `,
             params?.length > 0 && `PARAMS:${JSON.stringify(params, null, 2).replace(/\s/g, '')}`
         );
@@ -94,7 +94,7 @@ class PostgresDB {
             throw error;
         } finally {
             client.release();
-            console.log(`=== Select End ${'='.repeat(120)}`);
+            console.log(`***' Select End ${'*'.repeat(60)}`);
         }
     }
 

@@ -10,15 +10,13 @@
  * - Single source of truth
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSchema } from '@framework/forms/utils/schemaLoader';
 import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
 import { createFormSchema } from '@framework/forms/utils/formSchema';
 import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
 import { useMetersEnhanced } from './metersStore';
 import type { Meter } from './meterConfig';
-import { useAuth } from '../../hooks/useAuth';
-import { Permission } from '../../types/auth';
 import '@framework/forms/components/BaseForm.css';
 import './MeterForm.css';
 
@@ -35,36 +33,20 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   onCancel,
   loading = false,
 }) => {
-  const { checkPermission } = useAuth();
-  
   // Load schema from backend
   const { schema, loading: schemaLoading, error: schemaError } = useSchema('meter');
   
   const meters = useMetersEnhanced();
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const canCreate = checkPermission(Permission.METER_CREATE);
-  const canUpdate = checkPermission(Permission.METER_UPDATE);
-
-  // Debug logging
-  console.log('[MeterForm] Received meter prop:', meter);
-  console.log('[MeterForm] Schema loaded:', !!schema);
-  console.log('[MeterForm] Schema loading:', schemaLoading);
-
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<Meter, any>({
-    entity: meter, // Always pass meter so form initializes correctly
+    entity: schema ? meter : undefined, // Only pass entity when schema is ready
     store: meters,
     entityToFormData: (meterData) => {
-      console.log('[MeterForm] entityToFormData called with:', meterData);
-      if (!schema) {
-        console.warn('[MeterForm] Schema not loaded, returning empty object');
-        return {};
-      }
+      if (!schema) return {};
       const formSchema = createFormSchema(schema.formFields);
-      const formData = formSchema.fromApi(meterData);
-      console.log('[MeterForm] Transformed to form data:', formData);
-      return formData;
+      return formSchema.fromApi(meterData);
     },
     getDefaultFormData: () => {
       if (!schema) return {};
@@ -76,7 +58,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
       const formSchema = createFormSchema(schema.formFields);
       const apiData = formSchema.toApi(formData);
       // Remove fields that shouldn't be sent to the API
-      const { id, createdat, updatedat, createdAt, updatedAt, ...cleanData } = apiData;
+      const { id, active, createdat, updatedat, createdAt, updatedAt, ...cleanData } = apiData;
       return cleanData;
     },
     updateStrategy: 'optimistic',
@@ -92,19 +74,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
       console.error(`[MeterForm] ${mode} failed:`, error);
     },
   });
-
-  const isFormDisabled = loading || form.isSubmitting;
-
-  // When schema finishes loading, reinitialize form data if we have a meter
-  useEffect(() => {
-    if (schema && meter && !schemaLoading) {
-      console.log('[MeterForm] Schema loaded, reinitializing form data for meter:', meter.id);
-      const formSchema = createFormSchema(schema.formFields);
-      const formData = formSchema.fromApi(meter);
-      console.log('[MeterForm] Manually setting form data:', formData);
-      form.setFormData(formData);
-    }
-  }, [meter?.id, schemaLoading]);
 
   // Validation
   const validateForm = (): boolean => {
@@ -196,20 +165,45 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   const renderField = (fieldName: string, fieldDef: any) => {
     const value = form.formData[fieldName];
     const error = errors[fieldName];
+    const isFormDisabled = loading || form.isSubmitting;
+
+    // Boolean field (checkbox)
+    if (fieldDef.type === 'boolean') {
+      return (
+        <div key={fieldName} className="meter-form__field">
+          <label htmlFor={fieldName} className="meter-form__label">
+            <input
+              type="checkbox"
+              id={fieldName}
+              checked={value || false}
+              onChange={(e) => handleInputChange(fieldName, e.target.checked)}
+              disabled={isFormDisabled}
+              className="meter-form__checkbox"
+            />
+            {fieldDef.label}
+            {fieldDef.required && <span className="meter-form__required">*</span>}
+          </label>
+          {error && <span className="meter-form__error">{error}</span>}
+          {fieldDef.description && (
+            <div className="meter-form__helper-text">{fieldDef.description}</div>
+          )}
+        </div>
+      );
+    }
 
     // Select field for enums
     if (fieldDef.enumValues) {
       return (
-        <div key={fieldName} className="form-group">
-          <label htmlFor={fieldName}>
+        <div key={fieldName} className="meter-form__field">
+          <label htmlFor={fieldName} className="meter-form__label">
             {fieldDef.label}
-            {fieldDef.required && ' *'}
+            {fieldDef.required && <span className="meter-form__required">*</span>}
           </label>
           <select
             id={fieldName}
             value={value || ''}
             onChange={(e) => handleInputChange(fieldName, e.target.value)}
-            className={error ? 'form-control form-control--error' : 'form-control'}
+            className={`meter-form__select ${error ? 'meter-form__input--error' : ''}`}
             disabled={isFormDisabled}
           >
             <option value="">Select {fieldDef.label}</option>
@@ -219,56 +213,34 @@ export const MeterForm: React.FC<MeterFormProps> = ({
               </option>
             ))}
           </select>
-          {error && <div className="form-error">{error}</div>}
+          {error && <span className="meter-form__error">{error}</span>}
           {fieldDef.description && (
-            <div className="form-helper-text">{fieldDef.description}</div>
+            <div className="meter-form__helper-text">{fieldDef.description}</div>
           )}
         </div>
       );
     }
 
-    // Boolean field (checkbox)
-    if (fieldDef.type === 'boolean') {
+    // Textarea for description field
+    if (fieldName === 'description') {
       return (
-        <div key={fieldName} className="form-group form-group--checkbox">
-          <label htmlFor={fieldName}>
-            <input
-              type="checkbox"
-              id={fieldName}
-              checked={value || false}
-              onChange={(e) => handleInputChange(fieldName, e.target.checked)}
-              disabled={isFormDisabled}
-            />
-            <span>{fieldDef.label}</span>
-            {fieldDef.required && ' *'}
-          </label>
-          {error && <div className="form-error">{error}</div>}
-          {fieldDef.description && (
-            <div className="form-helper-text">{fieldDef.description}</div>
-          )}
-        </div>
-      );
-    }
-
-    // Date field
-    if (fieldDef.type === 'date') {
-      return (
-        <div key={fieldName} className="form-group">
-          <label htmlFor={fieldName}>
+        <div key={fieldName} className="meter-form__field">
+          <label htmlFor={fieldName} className="meter-form__label">
             {fieldDef.label}
-            {fieldDef.required && ' *'}
+            {fieldDef.required && <span className="meter-form__required">*</span>}
           </label>
-          <input
-            type="date"
+          <textarea
             id={fieldName}
-            value={value ? (typeof value === 'string' ? value.split('T')[0] : value) : ''}
+            value={value || ''}
             onChange={(e) => handleInputChange(fieldName, e.target.value)}
-            className={error ? 'form-control form-control--error' : 'form-control'}
+            className={`meter-form__textarea ${error ? 'meter-form__input--error' : ''}`}
+            placeholder={fieldDef.placeholder}
             disabled={isFormDisabled}
+            rows={4}
           />
-          {error && <div className="form-error">{error}</div>}
+          {error && <span className="meter-form__error">{error}</span>}
           {fieldDef.description && (
-            <div className="form-helper-text">{fieldDef.description}</div>
+            <div className="meter-form__helper-text">{fieldDef.description}</div>
           )}
         </div>
       );
@@ -277,37 +249,37 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     // Number field
     if (fieldDef.type === 'number') {
       return (
-        <div key={fieldName} className="form-group">
-          <label htmlFor={fieldName}>
+        <div key={fieldName} className="meter-form__field">
+          <label htmlFor={fieldName} className="meter-form__label">
             {fieldDef.label}
-            {fieldDef.required && ' *'}
+            {fieldDef.required && <span className="meter-form__required">*</span>}
           </label>
           <input
             type="number"
             id={fieldName}
             value={value || ''}
             onChange={(e) => handleInputChange(fieldName, parseInt(e.target.value) || 0)}
-            className={error ? 'form-control form-control--error' : 'form-control'}
+            className={`meter-form__input ${error ? 'meter-form__input--error' : ''}`}
             placeholder={fieldDef.placeholder}
             min={fieldDef.min}
             max={fieldDef.max}
             disabled={isFormDisabled}
           />
-          {error && <div className="form-error">{error}</div>}
+          {error && <span className="meter-form__error">{error}</span>}
           {fieldDef.description && (
-            <div className="form-helper-text">{fieldDef.description}</div>
+            <div className="meter-form__helper-text">{fieldDef.description}</div>
           )}
         </div>
       );
     }
 
-    // Object field (JSON textarea)
+    // Object field (JSON) - for registerMap
     if (fieldDef.type === 'object') {
       return (
-        <div key={fieldName} className="form-group">
-          <label htmlFor={fieldName}>
+        <div key={fieldName} className="meter-form__field">
+          <label htmlFor={fieldName} className="meter-form__label">
             {fieldDef.label}
-            {fieldDef.required && ' *'}
+            {fieldDef.required && <span className="meter-form__required">*</span>}
           </label>
           <textarea
             id={fieldName}
@@ -317,44 +289,18 @@ export const MeterForm: React.FC<MeterFormProps> = ({
                 const parsed = e.target.value ? JSON.parse(e.target.value) : null;
                 handleInputChange(fieldName, parsed);
               } catch {
-                // Keep the raw value if JSON is invalid
+                // Keep the text value for editing
                 handleInputChange(fieldName, e.target.value);
               }
             }}
-            className={error ? 'form-control form-control--error' : 'form-control'}
+            className={`meter-form__textarea ${error ? 'meter-form__input--error' : ''}`}
             placeholder={fieldDef.placeholder || 'Enter JSON object'}
-            rows={5}
             disabled={isFormDisabled}
+            rows={6}
           />
-          {error && <div className="form-error">{error}</div>}
+          {error && <span className="meter-form__error">{error}</span>}
           {fieldDef.description && (
-            <div className="form-helper-text">{fieldDef.description}</div>
-          )}
-        </div>
-      );
-    }
-
-    // Textarea for long text
-    if (fieldName.toLowerCase().includes('notes') || fieldName.toLowerCase().includes('description')) {
-      return (
-        <div key={fieldName} className="form-group">
-          <label htmlFor={fieldName}>
-            {fieldDef.label}
-            {fieldDef.required && ' *'}
-          </label>
-          <textarea
-            id={fieldName}
-            value={value || ''}
-            onChange={(e) => handleInputChange(fieldName, e.target.value)}
-            className={error ? 'form-control form-control--error' : 'form-control'}
-            placeholder={fieldDef.placeholder}
-            maxLength={fieldDef.maxLength}
-            rows={3}
-            disabled={isFormDisabled}
-          />
-          {error && <div className="form-error">{error}</div>}
-          {fieldDef.description && (
-            <div className="form-helper-text">{fieldDef.description}</div>
+            <div className="meter-form__helper-text">{fieldDef.description}</div>
           )}
         </div>
       );
@@ -362,24 +308,24 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
     // Text field (default)
     return (
-      <div key={fieldName} className="form-group">
-        <label htmlFor={fieldName}>
+      <div key={fieldName} className="meter-form__field">
+        <label htmlFor={fieldName} className="meter-form__label">
           {fieldDef.label}
-          {fieldDef.required && ' *'}
+          {fieldDef.required && <span className="meter-form__required">*</span>}
         </label>
         <input
           type="text"
           id={fieldName}
           value={value || ''}
           onChange={(e) => handleInputChange(fieldName, e.target.value)}
-          className={error ? 'form-control form-control--error' : 'form-control'}
+          className={`meter-form__input ${error ? 'meter-form__input--error' : ''}`}
           placeholder={fieldDef.placeholder}
           maxLength={fieldDef.maxLength}
           disabled={isFormDisabled}
         />
-        {error && <div className="form-error">{error}</div>}
+        {error && <span className="meter-form__error">{error}</span>}
         {fieldDef.description && (
-          <div className="form-helper-text">{fieldDef.description}</div>
+          <div className="meter-form__helper-text">{fieldDef.description}</div>
         )}
       </div>
     );
@@ -388,7 +334,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   // Loading state
   if (schemaLoading) {
     return (
-      <div className="meter-form">
+      <div className="meter-form base-form">
         <div className="form-loading">Loading form schema...</div>
       </div>
     );
@@ -397,7 +343,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   // Error state
   if (schemaError) {
     return (
-      <div className="meter-form">
+      <div className="meter-form base-form">
         <div className="form-error-banner">
           <span className="error-icon">⚠️</span>
           <span>Failed to load form schema: {schemaError.message}</span>
@@ -406,51 +352,69 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     );
   }
 
-  // Permission check
-  if (meter && !canUpdate) {
-    return <div className="error-message">You don't have permission to edit meters.</div>;
-  }
-
-  if (!meter && !canCreate) {
-    return <div className="error-message">You don't have permission to create meters.</div>;
-  }
-
   if (!schema) {
     return null;
   }
 
-  return (
-    <div className="meter-form">
-      <form onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3>Meter Information</h3>
-          <p className="form-section-description">{schema.description}</p>
-          
-          {/* Render all form fields dynamically from schema */}
-          {Object.entries(schema.formFields).map(([fieldName, fieldDef]) =>
-            renderField(fieldName, fieldDef)
-          )}
-        </div>
+  // Group fields by section for better organization
+  const basicInfoFields = ['type', 'manufacturer', 'model_number'];
+  const configFields = ['register_map'];
+  const additionalFields = ['description'];
 
-        <div className="form-actions">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="btn btn--secondary"
-            disabled={isFormDisabled}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn btn--primary"
-            disabled={isFormDisabled}
-          >
-            {form.isSubmitting ? 'Saving...' : meter ? 'Update Meter' : 'Create Meter'}
-          </button>
-        </div>
-      </form>
-    </div>
+  return (
+    <form onSubmit={handleSubmit} className="meter-form base-form">
+      <div className="meter-form__section">
+        <h3 className="meter-form__section-title">Basic Information</h3>
+        
+        {basicInfoFields.map(fieldName => {
+          const fieldDef = schema.formFields[fieldName];
+          return fieldDef ? renderField(fieldName, fieldDef) : null;
+        })}
+      </div>
+
+      <div className="meter-form__section">
+        <h3 className="meter-form__section-title">Configuration</h3>
+        
+        {configFields.map(fieldName => {
+          const fieldDef = schema.formFields[fieldName];
+          return fieldDef ? renderField(fieldName, fieldDef) : null;
+        })}
+      </div>
+
+      <div className="meter-form__section">
+        <h3 className="meter-form__section-title">Additional Information</h3>
+        
+        {additionalFields.map(fieldName => {
+          const fieldDef = schema.formFields[fieldName];
+          return fieldDef ? renderField(fieldName, fieldDef) : null;
+        })}
+      </div>
+
+      <div className="meter-form__actions">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading || form.isSubmitting}
+          className="meter-form__btn meter-form__btn--secondary"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading || form.isSubmitting}
+          className="meter-form__btn meter-form__btn--primary"
+        >
+          {form.isSubmitting ? (
+            <>
+              <span className="meter-form__spinner" />
+              {meter ? 'Updating...' : 'Creating...'}
+            </>
+          ) : (
+            meter ? 'Update Meter' : 'Create Meter'
+          )}
+        </button>
+      </div>
+    </form>
   );
 };
 

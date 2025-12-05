@@ -258,4 +258,76 @@ router.post('/logout', authenticateToken, async (req, res) => {
   }
 });
 
+// Bootstrap - Create first admin user (only works if no users exist)
+router.post('/bootstrap', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 4 }).withMessage('Password must be at least 4 characters'),
+  body('name').notEmpty().trim().withMessage('Name is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    // Check if any users exist
+    const existingUsers = await User.findAll({ limit: 1 });
+    if (existingUsers && existingUsers.rows && existingUsers.rows.length > 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bootstrap is only available when no users exist'
+      });
+    }
+
+    const { email, password, name } = req.body;
+
+    // Hash password
+    const passwordHash = await User.hashPassword(password);
+
+    // Create admin user
+    const user = await User.create({
+      email,
+      name,
+      passwordHash,
+      role: 'admin',
+      permissions: ['user:create', 'user:read', 'user:update', 'user:delete', 'meter:create', 'meter:read', 'meter:update', 'meter:delete'],
+      active: true
+    });
+
+    // Generate tokens
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    res.json({
+      success: true,
+      message: 'Admin user created successfully',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          permissions: user.permissions,
+          status: 'active'
+        },
+        token,
+        refreshToken,
+        expiresIn: 60 * 60
+      }
+    });
+  } catch (error) {
+    const err = /** @type {Error} */ (error);
+    console.error('Bootstrap error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Bootstrap failed',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
 module.exports = router;

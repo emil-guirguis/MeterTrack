@@ -44,6 +44,8 @@ const metersService = {
         throw new Error(data.message || 'Failed to fetch meters');
       }
 
+      console.log('[metersStore] Fetched meters data:', JSON.stringify(data.data.items, null, 2));
+
       return {
         items: data.data.items || [],
         total: data.data.pagination?.totalItems || 0,
@@ -263,10 +265,10 @@ export const useMetersEnhanced = () => {
     },
 
     // Bulk operations
-    bulkUpdateStatus: async (meterIds: string[], status: Meter['status']) => {
+    bulkUpdateStatus: async (meterIds: string[], status: string) => {
       return withApiCall(
         async () => {
-          const promises = meterIds.map(id => meters.updateItem(id, { status }));
+          const promises = meterIds.map(id => meters.updateItem(id, { status: status as Meter['status'] }));
           await Promise.all(promises);
         },
         {

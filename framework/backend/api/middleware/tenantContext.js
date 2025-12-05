@@ -65,25 +65,8 @@ function tenantContext(req, res, next) {
         });
       }
 
-      logger.warn('Invalid tenant_id format for user:', {
-        userId: req.auth.user.id,
-        tenantId,
-        timestamp: new Date().toISOString()
-      });
 
-      // Log tenant isolation violation
-      logTenantIsolationViolation({
-        violationType: 'INVALID_TENANT_CONTEXT',
-        userId: req.auth.user.id,
-        userTenantId: 'unknown',
-        message: 'Invalid tenant_id format in user record',
-        path: req.path,
-        method: req.method,
-        ip: req.ip,
-        additionalContext: {
-          tenantId
-        }
-      });
+
 
       return res.status(400).json({
         success: false,
@@ -100,21 +83,6 @@ function tenantContext(req, res, next) {
       }
     };
 
-    // Log successful tenant context extraction
-    logTenantContextEstablished({
-      userId: req.auth.user.id,
-      tenantId,
-      path: req.path,
-      method: req.method,
-      additionalContext: {}
-    });
-
-    // Log debug level info
-    logger.debug('Tenant context established:', {
-      userId: req.auth.user.id,
-      tenantId,
-      timestamp: new Date().toISOString()
-    });
 
     next();
   } catch (error) {

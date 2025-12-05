@@ -1,0 +1,20 @@
+mody by date every where 
+mod by id everywhere 
+
+created by date every where 
+created by id every where
+
+
+  createdBy: {
+    type: FieldTypes.OBJECT,
+    dbField: null,
+    readOnly: true,
+    label: 'Created By',
+  },
+  
+  updatedBy: {
+    type: FieldTypes.OBJECT,
+    dbField: null,
+    readOnly: true,
+    label: 'Updated By',
+  },

@@ -352,7 +352,6 @@ class AutoMeterCollectionService {
     //         deviceip: meterConfig.ip, // Database has both 'device_ip' and 'deviceip'
     //         port: meterConfig.port,
     //         slave_id: meterConfig.slaveId,
-    //         slaveid: meterConfig.slaveId, // Database has both 'slave_id' and 'slaveid'
             
     //         // Store all collected values
     //         voltage: voltage,
@@ -451,7 +450,7 @@ class AutoMeterCollectionService {
         // Map our reading object to the correct database column names
         const query = `
             INSERT INTO meterreadings (
-                meterid, timestamp, deviceip, slaveid, source, quality,
+                meterid, timestamp, deviceip,source, quality,
                 voltage, current, power, energy, frequency, powerfactor,
                 device_ip, port, slave_id, power_factor,
                 phase_a_voltage, phase_b_voltage, phase_c_voltage,
@@ -460,7 +459,7 @@ class AutoMeterCollectionService {
                 v, a, kw, kwh, data_quality, unit_of_measurement, status, createdat
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-                $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33
+                $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32
             )
             RETURNING id
         `;

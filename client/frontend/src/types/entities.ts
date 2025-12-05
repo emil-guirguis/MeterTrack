@@ -240,7 +240,7 @@ export interface DetailedMeterReading {
   // Device information
   deviceModel?: string;
   firmwareVersion?: string;
-  serialNumber?: string;
+  serial_number?: string;
   manufacturerCode?: number;
   
   // Meter configuration
@@ -275,7 +275,7 @@ export interface MeterReadingStats {
 export interface Meter {
   id: string;
   meterId: string; // User-friendly meter identifier
-  serialNumber: string;
+  serial_number: string;
   device: string; // Manufacturer/device name
   model: string; // Model number
   ip: string; // IP address for connection
@@ -316,7 +316,7 @@ export interface Device {
 } 
 export interface MeterCreateRequest {
   meterId: string;
-  serialNumber: string;
+  serial_number: string;
   device: string;
   model: string;
   ip: string;

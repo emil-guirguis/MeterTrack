@@ -180,7 +180,10 @@ function logTenantContextEstablished(options) {
     ...additionalContext
   };
 
-  logInfo(`Tenant context established for user ${userId} in tenant ${tenantId}`, context);
+  logInfo(
+    `Tenant context established - User ${userId} authenticated for tenant ${tenantId}`,
+    context
+  );
 }
 
 /**

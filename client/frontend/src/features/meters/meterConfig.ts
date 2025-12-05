@@ -18,124 +18,17 @@ import {
   createStandardStatusActions,
   createExportAction,
 } from '../../config/listHelpers';
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
-/**
- * MeterConfig type for configuration object
- */
-export interface MeterConfig {
-  readingInterval: number;
-  units: string;
-  multiplier: number;
-  registers?: number[];
-  communicationProtocol?: string;
-  baudRate?: number;
-  slaveId?: number;
-  ipAddress?: string;
-  port?: number;
-}
-
-/**
- * MeterReading type for last reading
- */
-export interface MeterReading {
-  value: number;
-  timestamp: Date;
-  unit: string;
-  quality: 'good' | 'estimated' | 'questionable';
-}
-
-/**
- * RegisterMap types for meter configuration
- */
-export interface RegisterMapField {
-  name: string;
-  register: number;
-  absoluteAddress: number;
-  description: string;
-  units?: string;
-  functionality?: string;
-  dataType: 'uint16' | 'uint32' | 'int16' | 'int32' | 'float32' | 'string';
-  readWrite: 'R' | 'W' | 'R/W';
-  bacnetObject?: string;
-  bacnetObjectType?: string;
-  bacnetObjectName?: string;
-  systemElement?: string;
-  valueRange?: string;
-  publicNotes?: string;
-  models?: string;
-}
-
-export interface RegisterMap {
-  description?: string;
-  fields: RegisterMapField[];
-}
-
-/**
- * Meter TypeScript type
- */
-export type Meter = {
-  id: string;
-  meterId: string;
-  serialNumber: string;
-  device: string;
-  model: string;
-  device_id: string;
-  ip: string;
-  portNumber: number;
-  slaveId?: number;
-  type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
-  locationId?: string;
-  locationName?: string;
-  location?: string;
-  configuration: MeterConfig;
-  lastReading?: MeterReading;
-  status: 'active' | 'inactive' | 'maintenance';
-  installDate: Date;
-  description?: string;
-  notes?: string;
-  register_map?: RegisterMap | null;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  updatedBy?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-};
-
-/**
- * Create meter request type for form submission
- */
-export interface CreateMeterRequest {
-  meterId: string;
-  device: string;
-  model: string;
-  device_id: string;
-  ip: string;
-  serialNumber: string;
-  portNumber: number;
-  slaveId?: number;
-  location?: string;
-  description?: string;
-  type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
-  register_map?: RegisterMap | null;
-}
-
-/**
- * Update meter request type
- */
-export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {
-  status?: 'active' | 'inactive' | 'maintenance';
-}
+import type {
+  Meter,
+  CreateMeterRequest,
+  UpdateMeterRequest,
+  MeterConfig,
+  MeterReading,
+  RegisterMap,
+  RegisterMapField,
+} from '../../config/meterFieldTypes';
+// Re-export types for use in other components
+export type { Meter, CreateMeterRequest, UpdateMeterRequest, MeterConfig, MeterReading, RegisterMap, RegisterMapField };
 
 // ============================================================================
 // LIST CONFIGURATION
@@ -147,44 +40,54 @@ export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {
  */
 export const meterColumns: ColumnDefinition<Meter>[] = [
   {
+    key: 'name' as keyof Meter,
+    label: 'Description',
+    sortable: false,
+    responsive: 'hide-mobile',
+    render: (value) => value || 'N/A',
+  },
+
+  {
+    key: 'type' as keyof Meter,
+    label: 'Type',
+    sortable: true,
+    responsive: 'hide-mobile',
+    render: (value) => {
+      if (!value) return 'N/A';
+      const typeLabels: Record<string, string> = {
+        electric: 'Electric',
+        gas: 'Gas',
+        water: 'Water',
+        steam: 'Steam',
+        other: 'Other',
+      };
+      return typeLabels[value] || value;
+    },
+  },
+
+  {
     key: 'location' as keyof Meter,
     label: 'Location',
     sortable: true,
     responsive: 'hide-mobile',
     render: (value) => value || 'Not specified',
   },
-  
+
   {
     key: 'ip' as keyof Meter,
-    label: 'Address',
+    label: 'IP Address',
     sortable: true,
-    render: (_, meter) => 
-      React.createElement('div', { className: 'table-cell--two-line' },
-        React.createElement('div', { className: 'table-cell__primary' },
-          `${meter.ip || 'Unknown'} ${meter.serialNumber || ''}`
-        )
-      ),
+    render: (value) => value || 'Unknown',
   },
-  
-  // Connection column - will be customized in the component to add test button
+
   {
-    key: 'configuration' as keyof Meter,
-    label: 'Connection',
-    sortable: false,
+    key: 'serial_number' as keyof Meter,
+    label: 'Serial Number',
+    sortable: true,
     responsive: 'hide-mobile',
-    render: (value) => {
-      const config = value as Meter['configuration'];
-      return React.createElement('div', { className: 'table-cell--two-line' },
-        React.createElement('div', { className: 'table-cell__primary' },
-          `${config?.ipAddress || 'Not configured'}:${config?.port || 502}`
-        ),
-        config?.ipAddress && React.createElement('div', { className: 'table-cell__secondary' },
-          `Slave ID: ${config?.slaveId || 1}`
-        )
-      );
-    },
+    render: (value) => value || 'N/A',
   },
-  
+
   createStatusColumn<Meter>('status', 'Status', {
     labels: {
       active: 'Active',
@@ -192,7 +95,7 @@ export const meterColumns: ColumnDefinition<Meter>[] = [
       maintenance: 'Maintenance',
     },
   }),
-  
+
   {
     key: 'lastReading' as keyof Meter,
     label: 'Last Reading',
@@ -226,10 +129,12 @@ export const meterFilters: FilterDefinition[] = [
       { label: 'Electric', value: 'electric' },
       { label: 'Gas', value: 'gas' },
       { label: 'Water', value: 'water' },
+      { label: 'Steam', value: 'steam' },
+      { label: 'Other', value: 'other' },
     ],
     placeholder: 'All Types',
   },
-  
+
   {
     key: 'status',
     label: 'Status',
@@ -241,7 +146,7 @@ export const meterFilters: FilterDefinition[] = [
     ],
     placeholder: 'All Statuses',
   },
-  
+
   {
     key: 'locationId',
     label: 'Location',
@@ -252,7 +157,7 @@ export const meterFilters: FilterDefinition[] = [
         .filter(Boolean)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
-      
+
       return locations.map(location => ({
         label: location as string,
         value: location as string,
@@ -274,7 +179,7 @@ export function createMeterBulkActions(
       'meter',
       'meters',
       store.bulkUpdateStatus,
-      { 
+      {
         requirePermission: Permission.METER_UPDATE,
         includeMaintenance: true,
       }
@@ -306,7 +211,7 @@ export const meterExportConfig: ExportConfig<Meter> = {
   mapRow: (meter: Meter) => [
     meter.location || '',
     meter.ip || '',
-    meter.serialNumber || '',
+    meter.serial_number || '',
     meter.type || '',
     meter.status,
     meter.configuration?.ipAddress || '',

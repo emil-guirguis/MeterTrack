@@ -9,12 +9,8 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    console.log('[AUTH] Request to:', req.method, req.path);
-    console.log('[AUTH] Authorization header:', authHeader ? `${authHeader.substring(0, 30)}...` : 'missing');
-    console.log('[AUTH] Token extracted:', token ? `${token.substring(0, 20)}...` : 'missing');
 
     if (!token) {
-      console.log('[AUTH] No token provided, returning 401');
       return res.status(401).json({
         success: false,
         message: 'Access token required'
@@ -22,12 +18,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('[AUTH] Token decoded successfully, userId:', decoded.userId);
     const user = await User.findById(decoded.userId);
-    console.log('[AUTH] User found:', user ? user.email : 'not found');
-    console.log('[AUTH] User tenant_id:', user ? user.tenant_id : 'N/A');
-    console.log('[AUTH] User tenantId:', user ? user.tenantId : 'N/A');
-    console.log('[AUTH] User keys:', user ? Object.keys(user) : 'N/A');
     
     if (!user) {
       return res.status(401).json({

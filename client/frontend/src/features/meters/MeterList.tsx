@@ -64,7 +64,7 @@ export const MeterList: React.FC<MeterListProps> = ({
       if (col.key === 'configuration') {
         return {
           ...col,
-          render: (value, meter) => (
+        render: (value: { ipAddress?: string; port?: number; slaveId?: number }, meter) => (
             <div className="table-cell--two-line">
               <div className="table-cell__primary">
                 {value?.ipAddress || 'Not configured'}:{value?.port || 502}
@@ -95,7 +95,6 @@ export const MeterList: React.FC<MeterListProps> = ({
   const auth = useAuth();
   
   // Debug: Log meter data
-  console.log('[MeterList] Meters data:', meters.list.items);
   console.log('[MeterList] Loading:', meters.list.loading);
   console.log('[MeterList] Error:', meters.list.error);
   
