@@ -5,7 +5,7 @@
 
 import React from 'react';
 import type { ColumnDefinition } from '../types/ui';
-import type { FilterDefinition, BulkActionConfig } from '@framework/lists/types/list';
+import type { FilterDefinition, BulkActionConfig } from '@framework/components/list/types/list';
 
 // Column helpers
 export function createTwoLineColumn<T>(

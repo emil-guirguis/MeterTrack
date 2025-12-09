@@ -25,7 +25,7 @@ import {
   FileDownload as ExportIcon,
   FileUpload as ImportIcon
 } from '@mui/icons-material';
-import { DataTable } from '@framework/lists/components';
+import { DataTable } from '@framework/components/list';
 import { SearchFilter } from '../common/SearchFilter';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import Toast from '../common/Toast';

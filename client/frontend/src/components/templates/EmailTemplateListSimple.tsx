@@ -1,6 +1,6 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components/DataList';
-import { useBaseList } from '../../../../../framework/frontend/lists/hooks/useBaseList';
+import { DataList } from '@framework/components/list/DataList';
+import { useBaseList } from '../../../../../framework/frontend/components/list/hooks/useBaseList';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import type { EmailTemplate } from '../../types/entities';
 import { Permission } from '../../types/auth';

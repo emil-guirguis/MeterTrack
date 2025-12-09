@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { DataList } from '@framework/lists/components';
+import { DataList } from '@framework/components/list';
 import { useMetersEnhanced } from './metersStore';
 import { useAuth } from '../../hooks/useAuth';
-import { useBaseList } from '@framework/lists/hooks';
+import { useBaseList } from '@framework/components/list/hooks';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
 import type { Meter } from './meterConfig';
 import { Permission } from '../../types/auth';
-import type { ColumnDefinition } from '@framework/lists/types';
+import type { ColumnDefinition } from '@framework/components/list/types';
 import { meterColumns, meterFilters, createMeterBulkActions, meterExportConfig } from './meterConfig';
 import './MeterList.css';
 import '../../components/common/ListStats.css';
@@ -25,6 +26,7 @@ export const MeterList: React.FC<MeterListProps> = ({
 }) => {
   const { checkPermission } = useAuth();
   const meters = useMetersEnhanced();
+  const { schema } = useSchema('meter');
 
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
 
@@ -58,9 +60,24 @@ export const MeterList: React.FC<MeterListProps> = ({
     }
   }, [canRead]);
 
-  // Customize columns to add connection test button
+  // Customize columns to add connection test button and filter by showon property
   const customColumns: ColumnDefinition<Meter>[] = useMemo(() => {
-    return meterColumns.map(col => {
+    // Filter columns based on showon property from schema
+    let filteredColumns = meterColumns;
+    
+    if (schema?.formFields) {
+      filteredColumns = meterColumns.filter(col => {
+        const fieldConfig = schema.formFields[col.key as string] as any;
+        // If field has showon property, only include if 'list' is in it
+        if (fieldConfig?.showon) {
+          return fieldConfig.showon.includes('list');
+        }
+        // If no showon property, include by default
+        return true;
+      });
+    }
+
+    return filteredColumns.map(col => {
       if (col.key === 'configuration') {
         return {
           ...col,
@@ -90,7 +107,7 @@ export const MeterList: React.FC<MeterListProps> = ({
       }
       return col;
     });
-  }, [canRead, testingConnection, handleTestConnection]);
+  }, [canRead, testingConnection, handleTestConnection, schema]);
 
   const auth = useAuth();
   

@@ -107,8 +107,8 @@ class Meter extends BaseModel {
 
   // ===== Custom Methods =====
 
-  static async findByMeterId(meterid) {
-    return this.findOne({ meterid });
+  static async findByMeterId(id) {
+    return this.findOne({ iid });
   }
 
   static async getStats() {

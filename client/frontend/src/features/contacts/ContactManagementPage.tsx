@@ -1,8 +1,7 @@
 import React from 'react';
-import { EntityManagementPage } from '@framework/shared/components/EntityManagementPage';
+import { EntityManagementPage, FormModal } from '@framework/shared/components';
 import { ContactList } from './ContactList';
 import { ContactForm } from './ContactForm';
-import { FormModal } from '@framework/shared/components/FormModal';
 import { useContactsEnhanced } from './contactsStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 import type { Contact } from './contactConfig';

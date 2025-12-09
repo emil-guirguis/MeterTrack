@@ -1,7 +1,7 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components/DataList';
+import { DataList } from '@framework/components/list/DataList';
 import { useContactsEnhanced } from './contactsStore';
-import { useBaseList } from '@framework/lists/hooks/useBaseList';
+import { useBaseList } from '@framework/components/list/hooks/useBaseList';
 import { useAuth } from '../../hooks/useAuth';
 import type { Contact } from './contactConfig';
 import { Permission } from '../../types/auth';
@@ -12,7 +12,7 @@ import {
   createContactBulkActions,
   contactExportConfig,
 } from './contactConfig';
-import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
+import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './ContactList.css';
 import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';

@@ -11,7 +11,7 @@
 
 import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
-import type { FilterDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
+import type { FilterDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
 import { Permission } from '../../types/auth';
 import {
   createStatusColumn,

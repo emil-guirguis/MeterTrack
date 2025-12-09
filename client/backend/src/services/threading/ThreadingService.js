@@ -178,7 +178,7 @@ class ThreadingService extends EventEmitter {
     const { meter, config, registers } = payload;
     
     this.logger.info('Collecting meter data', { 
-      meterid: meter.meterid, 
+      id: meter.id, 
       ip: config.ip, 
       port: config.port 
     });
@@ -217,7 +217,7 @@ class ThreadingService extends EventEmitter {
       });
       
       this.logger.info('Connected to Modbus device, reading registers', { 
-        meterid: meter.meterid 
+        id: meter.id 
       });
       
       // Read meter data from configured registers

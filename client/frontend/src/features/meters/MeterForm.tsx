@@ -10,14 +10,16 @@
  * - Single source of truth
  */
 
-import React, { useState } from 'react';
-import { useSchema } from '@framework/forms/utils/schemaLoader';
-import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
-import { createFormSchema } from '@framework/forms/utils/formSchema';
-import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import React, { useState, useRef } from 'react';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import type { BackendFieldDefinition } from '@framework/components/form/utils/schemaLoader';
+import { createFormSchema } from '@framework/components/form/utils/formSchema';
+import { useEntityFormWithStore } from '@framework/components/form/hooks/useEntityFormWithStore';
+import { BaseForm } from '@framework/components/form/BaseForm';
+import { JsonGridEditor } from '@framework/components/grid';
+import type { SidebarSectionProps } from '@framework/components/sidebar';
 import { useMetersEnhanced } from './metersStore';
 import type { Meter } from './meterConfig';
-import '@framework/forms/components/BaseForm.css';
 import './MeterForm.css';
 
 interface MeterFormProps {
@@ -38,6 +40,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   
   const meters = useMetersEnhanced();
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const registerMapFileInputRef = useRef<HTMLInputElement>(null);
 
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<Meter, any>({
@@ -83,11 +86,21 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
     Object.entries(schema.formFields).forEach(([fieldName, fieldDef]) => {
       const value = form.formData[fieldName];
-      const backendFieldDef = fieldDef as BackendFieldDefinition;
+      const backendFieldDef = fieldDef as BackendFieldDefinition & { validation?: boolean; showon?: string[] };
+
+      // Skip validation if field shouldn't appear in form
+      if (backendFieldDef.showon && !backendFieldDef.showon.includes('form')) {
+        return;
+      }
 
       // Required check
       if (backendFieldDef.required && (value === undefined || value === null || value === '')) {
         newErrors[fieldName] = `${backendFieldDef.label} is required`;
+        return;
+      }
+
+      // Skip additional validation if validation property is false
+      if (backendFieldDef.validation === false) {
         return;
       }
 
@@ -275,28 +288,47 @@ export const MeterForm: React.FC<MeterFormProps> = ({
 
     // Object field (JSON) - for registerMap
     if (fieldDef.type === 'object') {
+      // Convert empty/null values to empty array for grid display
+      const gridData = Array.isArray(value) ? value : (value ? [value] : []);
+      
+      // Use JsonGridEditor for all object fields
       return (
         <div key={fieldName} className="meter-form__field">
-          <label htmlFor={fieldName} className="meter-form__label">
-            {fieldDef.label}
-            {fieldDef.required && <span className="meter-form__required">*</span>}
-          </label>
-          <textarea
-            id={fieldName}
-            value={value ? JSON.stringify(value, null, 2) : ''}
-            onChange={(e) => {
-              try {
-                const parsed = e.target.value ? JSON.parse(e.target.value) : null;
-                handleInputChange(fieldName, parsed);
-              } catch {
-                // Keep the text value for editing
-                handleInputChange(fieldName, e.target.value);
-              }
-            }}
-            className={`meter-form__textarea ${error ? 'meter-form__input--error' : ''}`}
-            placeholder={fieldDef.placeholder || 'Enter JSON object'}
-            disabled={isFormDisabled}
-            rows={6}
+          <div className="meter-form__field-header">
+            <label className="meter-form__label">
+              {fieldDef.label}
+              {fieldDef.required && <span className="meter-form__required">*</span>}
+            </label>
+            <div className="meter-form__field-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => registerMapFileInputRef.current?.click()}
+                disabled={isFormDisabled}
+              >
+                📁 Import CSV
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  // Load default register map from device
+                  if (meter?.device_id) {
+                    // TODO: Fetch device defaults and populate grid
+                    console.log('Load defaults from device:', meter.device_id);
+                  }
+                }}
+                disabled={isFormDisabled}
+              >
+                ⚙️ Default from Device
+              </button>
+            </div>
+          </div>
+          <JsonGridEditor
+            data={gridData}
+            onChange={(updatedData) => handleInputChange(fieldName, updatedData)}
+            readOnly={isFormDisabled}
+            fileInputRef={registerMapFileInputRef}
           />
           {error && <span className="meter-form__error">{error}</span>}
           {fieldDef.description && (
@@ -356,65 +388,87 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     return null;
   }
 
-  // Group fields by section for better organization
-  const basicInfoFields = ['type', 'manufacturer', 'model_number'];
-  const configFields = ['register_map'];
-  const additionalFields = ['description'];
+  // Organize fields by section based on field names
+  const fieldSections: Record<string, string[]> = {
+    'Basic Information': [],
+    'Configuration': [],
+    'Network Settings': [],
+    'Additional Information': [],
+  };
+
+  // Categorize fields into sections, respecting showon property
+  Object.keys(schema.formFields).forEach(fieldName => {
+    const fieldDef = schema.formFields[fieldName] as any;
+    
+    // Skip fields that shouldn't appear in form
+    if (fieldDef.showon && !fieldDef.showon.includes('form')) {
+      return;
+    }
+    
+    if (['type', 'name', 'serial_number', 'device_id', 'device'].includes(fieldName)) {
+      fieldSections['Basic Information'].push(fieldName);
+    } else if (['register_map'].includes(fieldName)) {
+      fieldSections['Configuration'].push(fieldName);
+    } else if (['ip', 'port'].includes(fieldName)) {
+      fieldSections['Network Settings'].push(fieldName);
+    } else {
+      fieldSections['Additional Information'].push(fieldName);
+    }
+  });
+
+  // Build sidebar sections with actions
+  const sidebarSections: SidebarSectionProps[] = [
+    {
+      title: 'Actions',
+      content: (
+        <div className="list-sidebar__actions">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading || form.isSubmitting}
+          >
+            <span className="material-symbols-outlined">close</span>
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || form.isSubmitting}
+          >
+            <span className="material-symbols-outlined">save</span>
+            {meter ? 'Update Meter' : 'Create Meter'}
+          </button>
+        </div>
+      ),
+      collapsible: true,
+      defaultCollapsed: false,
+    },
+  ];
 
   return (
-    <form onSubmit={handleSubmit} className="meter-form base-form">
-      <div className="meter-form__section">
-        <h3 className="meter-form__section-title">Basic Information</h3>
-        
-        {basicInfoFields.map(fieldName => {
-          const fieldDef = schema.formFields[fieldName];
-          return fieldDef ? renderField(fieldName, fieldDef) : null;
-        })}
-      </div>
+    <BaseForm
+      onSubmit={handleSubmit}
+      className="meter-form"
+      sidebarSections={sidebarSections}
+    >
+      {Object.entries(fieldSections).map(([sectionTitle, fieldNames]) => {
+        // Only render section if it has fields
+        if (fieldNames.length === 0) {
+          return null;
+        }
 
-      <div className="meter-form__section">
-        <h3 className="meter-form__section-title">Configuration</h3>
-        
-        {configFields.map(fieldName => {
-          const fieldDef = schema.formFields[fieldName];
-          return fieldDef ? renderField(fieldName, fieldDef) : null;
-        })}
-      </div>
-
-      <div className="meter-form__section">
-        <h3 className="meter-form__section-title">Additional Information</h3>
-        
-        {additionalFields.map(fieldName => {
-          const fieldDef = schema.formFields[fieldName];
-          return fieldDef ? renderField(fieldName, fieldDef) : null;
-        })}
-      </div>
-
-      <div className="meter-form__actions">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading || form.isSubmitting}
-          className="meter-form__btn meter-form__btn--secondary"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading || form.isSubmitting}
-          className="meter-form__btn meter-form__btn--primary"
-        >
-          {form.isSubmitting ? (
-            <>
-              <span className="meter-form__spinner" />
-              {meter ? 'Updating...' : 'Creating...'}
-            </>
-          ) : (
-            meter ? 'Update Meter' : 'Create Meter'
-          )}
-        </button>
-      </div>
-    </form>
+        return (
+          <div key={sectionTitle} className="meter-form__section">
+            <h3 className="meter-form__section-title">{sectionTitle}</h3>
+            
+            {fieldNames.map(fieldName => {
+              const fieldDef = schema.formFields[fieldName];
+              return fieldDef ? renderField(fieldName, fieldDef) : null;
+            })}
+          </div>
+        );
+      })}
+    </BaseForm>
   );
 };
 

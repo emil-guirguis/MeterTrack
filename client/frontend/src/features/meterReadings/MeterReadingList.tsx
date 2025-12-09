@@ -1,7 +1,7 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components';
+import { DataList } from '@framework/components/list';
 import { useMeterReadingsEnhanced } from './meterReadingsStore';
-import { useBaseList } from '@framework/lists/hooks';
+import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import type { MeterReading } from './meterReadingConfig';
 import { Permission } from '../../types/auth';

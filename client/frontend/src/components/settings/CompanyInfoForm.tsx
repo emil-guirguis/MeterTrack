@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { CountrySelect } from '../common';
 import Toast from '../common/Toast';
-import { useBaseForm } from '../../../../../framework/frontend/forms/hooks/useBaseForm';
-import { FormSection } from '../../../../../framework/frontend/forms/components/FormSection';
-import { FormField } from '../../../../../framework/frontend/forms/components/FormField';
-import { FormActions } from '../../../../../framework/frontend/forms/components/FormActions';
-import { validators } from '../../../../../framework/frontend/forms/utils/validation';
+import { FormSection } from '@framework/components/form/FormSection';
+import { FormField } from '@framework/components/form/FormField';
+import { FormActions } from '@framework/components/form/FormActions';
 import './SettingsForm.css';
 
 export interface CompanyInfoFormProps {
@@ -18,40 +16,18 @@ export interface CompanyInfoFormProps {
 }
 
 const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onSubmit, onCancel, loading, error }) => {
-  // Use the framework's useBaseForm hook
-  const form = useBaseForm({
-    initialValues: values,
-    validationSchema: {
-      name: [validators.required('Company name is required')],
-      url: [validators.url('Please enter a valid URL')],
-      'address.zipCode': [validators.zipCode('Please enter a valid ZIP code')],
-    },
-    onSubmit: async (formValues) => {
-      // Sync form values back to parent
-      Object.keys(formValues).forEach(key => {
-        if (key.includes('.')) {
-          onChange(key, (formValues as any)[key]);
-        } else {
-          onChange(key, (formValues as any)[key]);
-        }
-      });
-      onSubmit();
-    },
-  });
-
-  // Sync parent values to form when they change
-  useEffect(() => {
-    form.setValues(values);
-  }, [values]);
-
   // Sync form changes back to parent
   const handleFieldChange = (field: string, value: any) => {
-    form.setFieldValue(field, value);
     onChange(field, value);
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  };
+
   return (
-    <form className="settings-form" onSubmit={form.handleSubmit}>
+    <form className="settings-form" onSubmit={handleSubmit}>
       {/* Show error as a toast notification */}
       {error && <Toast message={error} type="error" />}
       
@@ -59,27 +35,27 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
         <div className="settings-form__row">
           <div className="settings-form__field">
             <FormField
-              {...form.getFieldProps('name')}
+              name="name"
               label="Company Name"
               type="text"
               placeholder="Enter company name"
+              value={values.name || ''}
               required
               disabled={loading}
-              error={form.getFieldMeta('name').error}
-              touched={form.getFieldMeta('name').touched}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('name', e.target.value)}
+              onChange={(e: any) => handleFieldChange('name', e.target.value)}
+              onBlur={() => {}}
             />
           </div>
           <div className="settings-form__field">
             <FormField
-              {...form.getFieldProps('url')}
+              name="url"
               label="Website URL"
               type="url"
               placeholder="Enter website URL"
+              value={values.url || ''}
               disabled={loading}
-              error={form.getFieldMeta('url').error}
-              touched={form.getFieldMeta('url').touched}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('url', e.target.value)}
+              onChange={(e: any) => handleFieldChange('url', e.target.value)}
+              onBlur={() => {}}
             />
           </div>
         </div>
@@ -141,14 +117,14 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
         <div className="settings-form__row">
           <div className="settings-form__field">
             <FormField
-              {...form.getFieldProps('address.zipCode')}
+              name="address.zipCode"
               label="Zip Code"
               type="text"
               placeholder="Enter zip code"
+              value={values.address?.zipCode || ''}
               disabled={loading}
-              error={form.getFieldMeta('address.zipCode').error}
-              touched={form.getFieldMeta('address.zipCode').touched}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('address.zipCode', e.target.value)}
+              onChange={(e: any) => handleFieldChange('address.zipCode', e.target.value)}
+              onBlur={() => {}}
             />
           </div>
           <div className="settings-form__field">

@@ -11,13 +11,13 @@
  */
 
 import React, { useState } from 'react';
-import { useSchema } from '@framework/forms/utils/schemaLoader';
-import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
-import { createFormSchema } from '@framework/forms/utils/formSchema';
-import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import type { BackendFieldDefinition } from '@framework/components/form/utils/schemaLoader';
+import { createFormSchema } from '@framework/components/form/utils/formSchema';
+import { useEntityFormWithStore } from '@framework/components/form/hooks/useEntityFormWithStore';
 import { useLocationsEnhanced } from './locationsStore';
 import type { Location } from '../../types/entities';
-import '@framework/forms/components/BaseForm.css';
+import '@framework/components/form/BaseForm.css';
 import './LocationForm.css';
 
 interface LocationFormProps {

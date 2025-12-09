@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { Device } from './deviceConfig';
-import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import { useEntityFormWithStore } from '@framework/components/form/hooks/useEntityFormWithStore';
 import { useDevicesEnhanced } from './devicesStore';
-import '@framework/forms/components/BaseForm.css';
+import '@framework/components/form/BaseForm.css';
 import './DeviceForm.css';
 import { deviceFormSchema } from './deviceConfig';
 

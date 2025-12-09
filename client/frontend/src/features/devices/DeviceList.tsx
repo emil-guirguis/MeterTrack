@@ -1,7 +1,7 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components/DataList';
+import { DataList } from '@framework/components/list/DataList';
 import { useDevicesEnhanced } from './devicesStore';
-import { useBaseList } from '@framework/lists/hooks/useBaseList';
+import { useBaseList } from '@framework/components/list/hooks/useBaseList';
 import type { Device } from './deviceConfig';
 import { Permission } from '../../types/auth';
 import {
@@ -11,7 +11,7 @@ import {
   createDeviceBulkActions,
   deviceExportConfig,
 } from './deviceConfig';
-import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
+import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './DeviceList.css';
 import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';

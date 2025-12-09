@@ -564,7 +564,6 @@ app.get('/api/test/db-status', async (req, res) => {
     
     // Get some sample data from meter readings table
     const meterReadingCount = await db.query('SELECT COUNT(*) as count FROM meter_reading');
-    const sampleReading = await db.query('SELECT meterid, reading_value, reading_date FROM meter_reading LIMIT 1');
     
     res.json({
       success: true,

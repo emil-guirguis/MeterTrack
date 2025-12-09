@@ -10,7 +10,6 @@
  *   constructor(data = {}) {
  *     super(data);
  *     this.id = data.id;
- *     this.meterid = data.meterid;
  *     this.name = data.name;
  *   }
  * 
@@ -359,7 +358,7 @@ class BaseModel {
    * 
    * @example
    * const meter = await Meter.create({
-   *   meterid: 'M001',
+   *   id: 'M001',
    *   name: 'Main Meter',
    *   type: 'electric'
    * });
@@ -469,7 +468,7 @@ class BaseModel {
    * @returns {Promise<Object|null>} Model instance or null if not found
    * 
    * @example
-   * const meter = await Meter.findOne({ meterid: 'M001' });
+   * const meter = await Meter.findOne({ id: 'M001' });
    * const meterWithDevice = await Meter.findOne(
    *   { status: 'active' },
    *   { include: ['device'] }

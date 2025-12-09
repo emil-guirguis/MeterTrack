@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import type { Contact } from './contactConfig';
 import { contactFormSchema, countryOptions } from './contactConfig';
-import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import { useEntityFormWithStore } from '@framework/components/form/hooks/useEntityFormWithStore';
 import { useContactsEnhanced } from './contactsStore';
-import '@framework/forms/components/BaseForm.css';
+import '@framework/components/form/BaseForm.css';
 import './ContactForm.css';
 
 interface ContactFormProps {

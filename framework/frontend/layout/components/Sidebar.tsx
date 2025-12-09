@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { SidebarProps } from '../types';
-import { getIconElement } from '../../shared/utils/iconHelper';
+import { getIconElement } from '../../utils/iconHelper';
 import './Sidebar.css';
 
 /**

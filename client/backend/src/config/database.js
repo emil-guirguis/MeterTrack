@@ -16,24 +16,32 @@ class PostgresDB {
      */
     async connect() {
         try {
+            const host = process.env.POSTGRES_CLIENT_HOST || process.env.POSTGRES_HOST;
+            const port = process.env.POSTGRES_CLIENT_PORT || process.env.POSTGRES_PORT || '5432';
+            const database = process.env.POSTGRES_CLIENT_DB || process.env.POSTGRES_DB;
+            const user = process.env.POSTGRES_CLIENT_USER || process.env.POSTGRES_USER;
+            const password = process.env.POSTGRES_CLIENT_PASSWORD || process.env.POSTGRES_PASSWORD;
+
             console.log('=== DATABASE CONNECTION CONFIG ===');
-            console.log('Host:', process.env.POSTGRES_HOST);
-            console.log('Port:', process.env.POSTGRES_PORT);
-            console.log('Database:', process.env.POSTGRES_DB);
-            console.log('User:', process.env.POSTGRES_USER);
-            console.log('Password length:', process.env.POSTGRES_PASSWORD?.length);
+            console.log('Host:', host);
+            console.log('Port:', port);
+            console.log('Database:', database);
+            console.log('User:', user);
+            console.log('Password length:', password?.length);
             console.log('==================================');
 
             this.pool = new Pool({
-                host: process.env.POSTGRES_HOST,
-                port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-                database: process.env.POSTGRES_DB,
-                user: process.env.POSTGRES_USER,
-                password: process.env.POSTGRES_PASSWORD,
+                host: host,
+                port: parseInt(port, 10),
+                database: database,
+                user: user,
+                password: password,
                 ssl: { rejectUnauthorized: false },
                 max: 20, // Maximum number of clients in the pool
                 idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-                connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
+                connectionTimeoutMillis: 30000, // Return an error after 30 seconds if connection could not be established
+                statement_timeout: 30000, // Statement timeout
+                query_timeout: 30000, // Query timeout
             });
 
             // Test the connection
@@ -42,7 +50,10 @@ class PostgresDB {
             client.release();
 
             this.isConnected = true;
-            console.log(`✅ Connected to PostgreSQL -> db: ${process.env.POSTGRES_DB} host: ${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}`);
+            const displayHost = process.env.POSTGRES_CLIENT_HOST || process.env.POSTGRES_HOST;
+            const displayPort = process.env.POSTGRES_CLIENT_PORT || process.env.POSTGRES_PORT;
+            const displayDb = process.env.POSTGRES_CLIENT_DB || process.env.POSTGRES_DB;
+            console.log(`✅ Connected to PostgreSQL -> db: ${displayDb} host: ${displayHost}:${displayPort}`);
             console.log(`Database connection established at: ${result.rows[0].now}`);
 
             return this.pool;

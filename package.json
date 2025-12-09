@@ -4,7 +4,7 @@
   "description": "Full-stack device tracking application with dual-deployment architecture",
   "scripts": {
     "predev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./prepare-dev.ps1",
-    "dev": "concurrently -k -t -p \"[{name}]\" -n client-backend,client-frontend,sync-mcp,sync-frontend -c \"yellowBright,cyanBright,magentaBright,greenBright\" \"npm run client:backend\" \"npm run client:frontend\" \"npm run sync:mcp\" \"npm run sync:frontend\"",
+    "dev": "concurrently -k -t -p \"[{name}]\" -n client-backend,client-frontend -c \"yellowBright,cyanBright\" \"npm run client:backend\" \"npm run client:frontend\"",
     "dev:client": "concurrently -k -t -p \"[{name}]\" -n client-backend,client-frontend -c \"yellowBright,cyanBright\" \"npm run client:backend\" \"npm run client:frontend\"",
     "dev:sync": "concurrently -k -t -p \"[{name}]\" -n sync-mcp,sync-frontend -c \"magentaBright,greenBright\" \"npm run sync:mcp\" \"npm run sync:frontend\"",
     "client:backend": "cd client/backend && npm start",

@@ -1,8 +1,8 @@
 import React from 'react';
-import { EntityManagementPage } from '@framework/shared/components/EntityManagementPage';
+import { EntityManagementPage } from '@framework/shared/components';
 import { DeviceList } from './DeviceList';
 import { DeviceForm } from './DeviceForm';
-import { FormModal } from '@framework/shared/components/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { useDevicesEnhanced } from './devicesStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 
@@ -17,5 +17,6 @@ export const DeviceManagementPage: React.FC = () => (
     useStore={useDevicesEnhanced}
     LayoutComponent={AppLayoutWrapper}
     ModalComponent={FormModal}
+    formProps={{ modalSize: 'xl' }}
   />
 );

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { HeaderProps } from '../types';
 import { HamburgerIcon } from './HamburgerIcon';
-import { getIconElement } from '../../shared/utils/iconHelper';
-import { getAppVersion, formatVersion } from '../../shared/utils/version';
+import { getIconElement } from '../../utils/iconHelper';
+import { getAppVersion, formatVersion } from '../../utils/version';
 
 import './Header.css';
 

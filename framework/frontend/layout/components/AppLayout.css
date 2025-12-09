@@ -1,211 +1,109 @@
-/* AppLayout Styles */
+/* src/layout/AppLayout.css — FINAL VERSION (No empty space, perfect layout) */
+
 .app-layout {
-  --sidebar-width: 200px;
+  --header-height: 64px;
+  --sidebar-width: 240px;
   --sidebar-collapsed-width: 64px;
 
+  height: 100vh;
+  width: 100vw;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
   overflow: hidden;
-  background-color: var(--color-background, #f5f5f5);
-  /* Performance optimizations */
-  contain: layout style;
-  transform: translateZ(0);
-  backface-visibility: hidden;
+  background: var(--color-background, #f5f5f5);
+  font-family: system-ui, sans-serif;
 }
 
+/* Header */
+.app-header {
+  height: var(--header-height);
+  flex-shrink: 0;
+  z-index: 1000;
+}
+
+/* Body = Sidebar + Main */
 .app-layout__body {
-  display: flex;
   flex: 1;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  padding-top: var(--header-height, 64px); /* Account for fixed header */
-  overflow-x: visible; /* Allow horizontal expansion */
-  overflow-y: hidden; /* Prevent vertical overflow on body */
+  display: flex;
+  overflow: hidden;
 }
 
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: white;
+  border-right: 1px solid var(--color-border, #e5e7eb);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  height: calc(100vh - var(--header-height));
+}
+
+.app-layout.sidebar-collapsed .sidebar {
+  width: var(--sidebar-collapsed-width, 64px);
+  flex-basis: var(--sidebar-collapsed-width, 64px);
+}
+
+/* Main Area (new wrapper) */
+.app-layout__main {
+  flex: 1;
+  min-width: 0;                     /* Critical for flex overflow */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Content */
 .app-layout__content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-x: visible; /* Allow horizontal expansion */
-  overflow-y: auto; /* Keep vertical scrolling */
-  /* When a fixed sidebar is present, offset the content by its width so
-     the content sits to the right of the sidebar. Default (desktop)
-     uses the full sidebar width; collapsed state is handled below. */
-  margin-left: var(--sidebar-width, 280px);
-  transition: margin-left 0.25s ease, transform 0.25s ease;
-  /* Allow content to expand beyond viewport */
-  width: auto;
-  max-width: none;
-  /* Performance optimizations */
-  will-change: margin-left, transform;
-  contain: layout style;
-  transform: translateZ(0);
+  overflow: hidden;
 }
 
-/* When the layout root has the collapsed class, let the sidebar
-   width collapse and the content will naturally fill the rest. */
-.app-layout.sidebar-collapsed .sidebar {
-  width: var(--sidebar-collapsed-width);
-}
-
-/* When the layout root has the collapsed class, shift the content left
-   to match the collapsed sidebar width so the content expands correctly. */
-.app-layout.sidebar-collapsed .app-layout__content {
-  margin-left: var(--sidebar-collapsed-width, 64px);
-}
-
-/* If the content element itself is also given the collapsed class, honor it
-   so the layout works regardless of whether the class is applied to the
-   root or directly to the content element. */
-.app-layout__content.sidebar-collapsed {
-  margin-left: var(--sidebar-collapsed-width, 64px);
-}
-
-.app-layout__content.mobile {
-  margin-left: 0; /* No sidebar margin on mobile */
-}
-
-
-.page-title {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: var(--color-text-primary, #333);
-}
-
-.page-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-/* Page Content */
 .app-layout__page-content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: visible; /* Allow horizontal expansion for wide content */
-  padding: 0;
-  background-color: var(--color-background, #f5f5f5);
-  /* Ensure horizontal scrolling works for wide content */
-  min-width: 0; /* Allow flex item to shrink below content size */
-  min-height: 0; /* Allow flex item to shrink below content size */
-  /* Left-justify content right after sidebar */
-  align-items: flex-start;
-  /* Allow content to expand beyond viewport */
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: var(--color-background, #f9fafb);
   width: 100%;
-  max-width: none;
+  box-sizing: border-box;
 }
 
-/* Loading State */
+/* Loading */
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
-  color: var(--color-text-secondary, #666);
+  height: 400px;
+  color: #666;
 }
-
 .loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-border, #e0e0e0);
-  border-top: 3px solid var(--color-primary, #007bff);
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
-  /* Performance optimizations */
-  will-change: transform;
-  contain: strict;
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
-
 @keyframes spin {
-  0% { transform: rotate3d(0, 0, 1, 0deg); }
-  100% { transform: rotate3d(0, 0, 1, 360deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Mobile Overlay */
-.app-layout__overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 998;
-  opacity: 1;
-  transition: opacity 0.3s ease;
-  /* Performance optimizations */
-  will-change: opacity;
-  contain: strict;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* Responsive Design */
-/* Below desktop (1024px): No sidebar, so no margin */
+/* Mobile */
 @media (max-width: 1023px) {
-  .app-layout__content {
-    margin-left: 0 !important;
+  .sidebar {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    height: calc(100vh - var(--header-height));
+    z-index: 1100;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
   }
-
-  .app-layout__content.sidebar-collapsed {
-    margin-left: 0 !important;
-  }
-  
-  .app-layout.sidebar-collapsed .app-layout__content {
-    margin-left: 0 !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .page-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  /* Add minimal padding for mobile touch targets while maintaining full width utilization */
-  .app-layout__page-content {
-    padding: 0.5rem 0.25rem 0.5rem 0.25rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-title {
-    font-size: 1.25rem;
-  }
-
-  /* Maintain minimal padding for touch targets on very small screens */
-  .app-layout__page-content {
-    padding: 0.5rem 0.25rem 0.5rem 0.25rem;
-  }
-
-  .breadcrumb-list {
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .breadcrumb-separator {
-    margin: 0 0.25rem;
-  }
-
-  /* Ensure breadcrumb touch targets remain accessible on small screens */
-  .breadcrumb-link,
-  .breadcrumb-current {
-    padding: 0.5rem 0.5rem;
-    min-height: 44px;
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
   }
 }

@@ -11,10 +11,10 @@
 
 import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
-import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
+import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
 import { Permission, UserRole as UserRoleEnum, type Permission as PermissionType } from '../../types/auth';
-import { field } from '@framework/forms/utils/formSchema';
-import { defineEntitySchema } from '@framework/forms/utils/entitySchema';
+import { field } from '@framework/components/form/utils/formSchema';
+import { defineEntitySchema } from '@framework/components/form/utils/entitySchema';
 import {
   createTwoLineColumn,
   createStatusColumn,

@@ -1,17 +1,15 @@
 /* Sidebar Styles */
 .sidebar {
-  /* Fixed main navigation on the left/top */
-  position: fixed;
-  top: var(--header-height, 64px);
-  left: 0;
-  width: 200px;
-  height: calc(100vh - var(--header-height, 64px));
+  /* Desktop: flex layout (not fixed) */
+  position: relative;
+  width: auto;
+  min-width: 240px;
   background-color: var(--color-surface, #ffffff);
   border-right: 1px solid var(--color-border, #e0e0e0);
   display: flex;
   flex-direction: column;
   z-index: 1100;
-  transition: width 0.25s ease, transform 0.25s ease;
+  transition: width 0.25s ease, min-width 0.25s ease, transform 0.25s ease;
   overflow: hidden;
   /* Performance optimizations */
   will-change: width, transform;
@@ -21,7 +19,8 @@
 }
 
 .sidebar.collapsed {
-  width: var(--sidebar-collapsed-width, 64px);
+  width: 64px;
+  min-width: 64px;
 }
 
 /* Mobile: overlay the sidebar (fixed) */
@@ -274,11 +273,22 @@
 }
 
 /* Collapsed State Adjustments */
-.sidebar.collapsed .sidebar__brand,
+.sidebar.collapsed .sidebar__brand {
+  display: none;
+}
+
 .sidebar.collapsed .sidebar-label,
 .sidebar.collapsed .sidebar-badge,
-.sidebar.collapsed .sidebar-arrow,
+.sidebar.collapsed .sidebar-arrow {
+  display: none;
+}
+
 .sidebar.collapsed .sidebar-submenu {
+  display: none !important;
+  max-height: 0 !important;
+}
+
+.sidebar.collapsed .sidebar-submenu .sidebar-label {
   display: none;
 }
 
@@ -289,6 +299,18 @@
 
 .sidebar.collapsed .sidebar-icon {
   margin-right: 0;
+}
+
+.sidebar.collapsed .sidebar-link.has-children::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-primary, #007bff);
+  border-radius: 50%;
+  transform: translateY(-50%);
 }
 
 /* Temporary debug flash when handlers run */

@@ -1,7 +1,7 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components';
+import { DataList } from '@framework/components/list';
 import { useUsersEnhanced } from './usersStore';
-import { useBaseList } from '@framework/lists/hooks';
+import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import type { User } from '../../types/auth';
 import { Permission } from '../../types/auth';
@@ -12,7 +12,7 @@ import {
   createUserBulkActions,
   userExportConfig,
 } from './userConfig';
-import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
+import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './UserList.css';
 import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';

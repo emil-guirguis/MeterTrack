@@ -37,7 +37,6 @@ const METER_FIELDS = {
     sortable: false,
   },
   
- 
   name: {
     type: FieldTypes.STRING,
     dbField: 'name',
@@ -49,6 +48,7 @@ const METER_FIELDS = {
     pattern: '^[a-zA-Z0-9\\s-]+$',
     searchable: true,
     sortable: true,
+    showon: ['list', 'form'],
   },
   
   serial_number: {
@@ -61,6 +61,7 @@ const METER_FIELDS = {
     pattern: '^[a-zA-Z0-9-]+$',
     searchable: true,
     sortable: true,
+    showon: ['list', 'form'],
   },
   
   // Device relationship
@@ -81,6 +82,8 @@ const METER_FIELDS = {
     label: 'Device Manufacturer',
     searchable: true,
     sortable: false,
+    validation: true,
+    showon: ['list', 'form'],
   },
   
   model: {
@@ -90,6 +93,7 @@ const METER_FIELDS = {
     label: 'Model',
     searchable: true,
     sortable: false,
+    showon: ['list'],
   },
   
   // Network configuration
@@ -102,6 +106,7 @@ const METER_FIELDS = {
     pattern: '^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$',
     searchable: true,
     sortable: true,
+    showon: ['list', 'form'],
   },
   
   port: {
@@ -115,8 +120,8 @@ const METER_FIELDS = {
     max: 65535,
     searchable: false,
     sortable: true,
+    showon: ['list', 'form'],
   },
-  
   
   // Meter type and status
   type: {
@@ -129,6 +134,7 @@ const METER_FIELDS = {
     default: 'electric',
     searchable: true,
     sortable: true,
+    showon: ['list', 'form'],
   },
   
   status: {
@@ -140,6 +146,7 @@ const METER_FIELDS = {
     default: 'active',
     searchable: true,
     sortable: true,
+    showon: ['list', 'form'],
   },
   
   // Location
@@ -159,34 +166,28 @@ const METER_FIELDS = {
     label: 'Location',
     searchable: true,
     sortable: true,
+    validation: true,
+    showon: ['list', 'form'],
   },
   
-  locationName: {
+  location_name: {
     type: FieldTypes.STRING,
     dbField: null, // Computed from location relationship
     readOnly: true,
     label: 'Location Name',
     searchable: true,
     sortable: false,
+    showon: ['list', 'form'],
   },
   
-  // Meter configuration and readings
-  configuration: {
-    type: FieldTypes.OBJECT,
-    dbField: null, // Computed
-    readOnly: true,
-    label: 'Configuration',
-    searchable: false,
-    sortable: false,
-  },
-  
-  lastReading: {
+  last_reading: {
     type: FieldTypes.OBJECT,
     dbField: null, // Computed
     readOnly: true,
     label: 'Last Reading',
     searchable: false,
     sortable: false,
+    showon: ['list'],
   },
   
   register_map: {
@@ -195,17 +196,7 @@ const METER_FIELDS = {
     label: 'Register Map',
     searchable: false,
     sortable: false,
-  },
-  
-  // Metadata
-  description: {
-    type: FieldTypes.STRING,
-    dbField: 'notes',
-    label: 'Description',
-    placeholder: 'Enter description',
-    maxLength: 500,
-    searchable: true,
-    sortable: false,
+    showon: ['form'],
   },
   
   notes: {
@@ -216,6 +207,7 @@ const METER_FIELDS = {
     maxLength: 500,
     searchable: true,
     sortable: false,
+    showon: ['form'],
   },
   
   installation_date: {
@@ -225,6 +217,7 @@ const METER_FIELDS = {
     placeholder: 'Select date',
     searchable: false,
     sortable: true,
+    showon: ['form'],
   },
   
   // Audit fields
@@ -235,6 +228,7 @@ const METER_FIELDS = {
     label: 'Created At',
     searchable: false,
     sortable: true,
+    showon: ['form'],
   },
   
   updated_at: {
@@ -244,24 +238,7 @@ const METER_FIELDS = {
     label: 'Updated At',
     searchable: false,
     sortable: true,
-  },
-  
-  createdBy: {
-    type: FieldTypes.OBJECT,
-    dbField: null,
-    readOnly: true,
-    label: 'Created By',
-    searchable: false,
-    sortable: false,
-  },
-  
-  updatedBy: {
-    type: FieldTypes.OBJECT,
-    dbField: null,
-    readOnly: true,
-    label: 'Updated By',
-    searchable: false,
-    sortable: false,
+    showon: ['form'],
   },
   
   tenant_id: {
@@ -291,8 +268,6 @@ const FIELD_TO_DB_COLUMN = Object.entries(METER_FIELDS).reduce((acc, [fieldName,
  */
 const SORT_KEY_MAP = {
   createdAt: 'created_at',
-  meterId: 'meterid',
-  meterid: 'meterid',
   status: 'status',
   type: 'type',
   serialNumber: 'serial_number',
@@ -477,13 +452,11 @@ function transformMeterToResponse(meterData, relatedData = {}) {
 
   return {
     id: meterData.id,
-    name: meterData.name || meterData.meterid,
-    meterId: meterData.name || meterData.meterid,
-    serialNumber: serialNumber,
+    name: meterData.name,
     serial_number: serialNumber,
     device: device?.manufacturer || null,
     model: device?.model_number || null,
-    deviceDescription: device?.description || null,
+    device_description: device?.description || null,
     device_id: meterData.device_id,
     ip: meterData.ip,
     port: meterData.port,
@@ -514,8 +487,7 @@ function transformMeterToResponse(meterData, relatedData = {}) {
  */
 function normalizeRequestBody(reqBody) {
   return {
-    meterid: reqBody.meterid || reqBody.meterId,
-    name: reqBody.name || reqBody.meterId,
+    name: reqBody.name,
     type: reqBody.type,
     device_id: reqBody.device_id,
     serial_number: reqBody.serialnumber || reqBody.serialNumber || reqBody.serial_number,
@@ -541,7 +513,6 @@ function normalizeRequestBody(reqBody) {
 function transformCreatedMeterToResponse(meterData) {
   return {
     id: meterData.id,
-    meterId: meterData.meterid,
     name: meterData.name,
     serialNumber: meterData.serial_number,
     serial_number: meterData.serial_number,
@@ -583,38 +554,7 @@ const METER_ENUMS = {
  * Exported as strings for documentation
  */
 const TYPE_DEFINITIONS = {
-  Meter: {
-    id: 'string',
-    meterId: 'string',
-    name: 'string',
-    serialNumber: 'string',
-    serial_number: 'string',
-    device: 'string',
-    model: 'string',
-    device_id: 'string | number',
-    ip: 'string',
-    portNumber: 'number',
-    port: 'number',
-    slaveId: 'number',
-    slave_id: 'number',
-    type: "'electric' | 'gas' | 'water' | 'steam' | 'other'",
-    status: "'active' | 'inactive' | 'maintenance'",
-    location: 'string',
-    location_id: 'string | number',
-    locationName: 'string',
-    description: 'string',
-    notes: 'string',
-    register_map: 'RegisterMap | null',
-    configuration: 'MeterConfig',
-    lastReading: 'MeterReading',
-    installDate: 'Date',
-    createdAt: 'Date',
-    updatedAt: 'Date',
-    createdBy: 'object',
-    updatedBy: 'object',
-  },
   CreateMeterRequest: {
-    meterId: 'string',
     name: 'string',
     device: 'string',
     model: 'string',

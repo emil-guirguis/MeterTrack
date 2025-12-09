@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
 import { prefetchAppSchemas } from './utils/schemaPrefetch';
-import { invalidateExpiredCache } from '@framework/forms/utils/schemaLoader';
+import { invalidateExpiredCache } from '@framework/components/form/utils/schemaLoader';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
 

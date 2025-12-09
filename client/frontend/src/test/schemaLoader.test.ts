@@ -21,7 +21,7 @@ import {
   useSchema,
   type BackendSchema,
   type BackendFieldDefinition,
-} from '../../../../framework/frontend/forms/utils/schemaLoader';
+} from '../../../../framework/frontend/components/form/utils/schemaLoader';
 
 // Mock fetch globally
 const mockFetch = vi.fn();

@@ -463,8 +463,8 @@ class MeterDataAnalyzer {
     async getLatestReading(meterId) {
         const query = `
             SELECT reading_value, reading_date
-            FROM meterreadings
-            WHERE meterid = $1
+            FROM meter_reading
+            WHERE meter_id = $1
             ORDER BY reading_date DESC
             LIMIT 1
         `;
@@ -481,8 +481,8 @@ class MeterDataAnalyzer {
     async getRecentReadings(meterId, days) {
         const query = `
             SELECT reading_value, reading_date
-            FROM meterreadings
-            WHERE meterid = $1 
+            FROM meter_reading
+            WHERE meter_id = $1 
                 AND reading_date >= CURRENT_DATE - INTERVAL '${days} days'
             ORDER BY reading_date DESC
             LIMIT 100
@@ -566,7 +566,7 @@ class MeterDataAnalyzer {
                     severity: 'medium',
                     message: `Statistical anomaly detected (z-score: ${zScore.toFixed(2)})`,
                     data: {
-                        meter_id: reading.meterid,
+                        meter_id: reading.meter_id,
                         reading_value: value,
                         z_score: zScore,
                         average: stats.average,

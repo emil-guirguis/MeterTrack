@@ -1,5 +1,7 @@
 .meter-form {
   padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .meter-form__section {
@@ -133,4 +135,50 @@
 
 .meter-form__btn--secondary:hover:not(:disabled) {
   background-color: #e0e0e0;
+}
+
+.meter-form__field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.meter-form__field-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-secondary {
+  padding: 8px 12px;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e0e0e0;
+  border-color: #999;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Full-width field for register map grid */
+.meter-form__field:has(.json-grid-editor) {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.meter-form__section {
+  width: 100%;
 }

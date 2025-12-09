@@ -1,8 +1,8 @@
 import React from 'react';
-import { EntityManagementPage } from '@framework/shared/components/EntityManagementPage';
+import { EntityManagementPage } from '@framework/shared/components';
 import { LocationList } from './LocationList';
 import { LocationForm } from './LocationForm';
-import { FormModal } from '@framework/shared/components/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { useLocationsEnhanced } from './locationsStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 import type { Location } from '../../types/entities';

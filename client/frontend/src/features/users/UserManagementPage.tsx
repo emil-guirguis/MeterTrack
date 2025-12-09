@@ -1,8 +1,8 @@
 import React from 'react';
-import { EntityManagementPage } from '@framework/shared/components/EntityManagementPage';
+import { EntityManagementPage } from '@framework/shared/components';
 import { UserList } from './UserList';
 import { UserForm } from './UserForm';
-import { FormModal } from '@framework/shared/components/FormModal';
+import { FormModal } from '@framework/shared/components';
 import { useUsersEnhanced } from './usersStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 import type { User } from '../../types/auth';

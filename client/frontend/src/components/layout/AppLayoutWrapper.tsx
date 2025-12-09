@@ -9,7 +9,7 @@
 import React from 'react';
 import { AppLayout } from '@framework/layout';
 import type { LayoutProps, MenuItem, AppLayoutConfig } from '@framework/layout';
-import { registerIconMappings } from '@framework/shared/utils/iconHelper';
+import { registerIconMappings } from '@framework/utils/iconHelper';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useUI } from '../../store/slices/uiSlice';

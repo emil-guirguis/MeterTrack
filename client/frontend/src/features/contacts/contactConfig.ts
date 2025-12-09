@@ -10,7 +10,7 @@
  */
 
 import type { ColumnDefinition } from '../../types/ui';
-import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/lists/types/list';
+import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
 import { Permission } from '../../types/auth';
 import {
   createTwoLineColumn,

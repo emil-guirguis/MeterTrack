@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { RegisterMap, RegisterMapField } from './meterConfig';
-import { DataList } from '@framework/lists/components/DataList';
+import { DataList } from '@framework/components/list/DataList';
 import type { ColumnDefinition } from '../../types/ui';
 import { meterService, type MeterMapTemplate } from './meterService';
 import './RegisterMapEditor.css';

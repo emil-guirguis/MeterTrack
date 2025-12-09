@@ -10,14 +10,15 @@
  * - Single source of truth
  */
 
-import React, { useState } from 'react';
-import { useSchema } from '@framework/forms/utils/schemaLoader';
-import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
-import { createFormSchema } from '@framework/forms/utils/formSchema';
-import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import React, { useState, useRef } from 'react';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import type { BackendFieldDefinition } from '@framework/components/form/utils/schemaLoader';
+import { createFormSchema } from '@framework/components/form/utils/formSchema';
+import { useEntityFormWithStore } from '@framework/components/form/hooks/useEntityFormWithStore';
+import { JsonGridEditor } from '@framework/components/grid';
 import { useDevicesEnhanced } from './devicesStore';
 import type { Device } from './deviceConfig';
-import '@framework/forms/components/BaseForm.css';
+import '@framework/components/form/BaseForm.css';
 import './DeviceForm.css';
 
 interface DeviceFormProps {
@@ -38,6 +39,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   
   const devices = useDevicesEnhanced();
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const registerMapFileInputRef = useRef<HTMLInputElement>(null);
 
   // Use the framework hook for form management with optimistic updates
   const form = useEntityFormWithStore<Device, any>({
@@ -275,28 +277,47 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
 
     // Object field (JSON) - for registerMap
     if (fieldDef.type === 'object') {
+      // Convert empty/null values to empty array for grid display
+      const gridData = Array.isArray(value) ? value : (value ? [value] : []);
+      
+      // Use JsonGridEditor for all object fields
       return (
         <div key={fieldName} className="device-form__field">
-          <label htmlFor={fieldName} className="device-form__label">
-            {fieldDef.label}
-            {fieldDef.required && <span className="device-form__required">*</span>}
-          </label>
-          <textarea
-            id={fieldName}
-            value={value ? JSON.stringify(value, null, 2) : ''}
-            onChange={(e) => {
-              try {
-                const parsed = e.target.value ? JSON.parse(e.target.value) : null;
-                handleInputChange(fieldName, parsed);
-              } catch {
-                // Keep the text value for editing
-                handleInputChange(fieldName, e.target.value);
-              }
-            }}
-            className={`device-form__textarea ${error ? 'device-form__input--error' : ''}`}
-            placeholder={fieldDef.placeholder || 'Enter JSON object'}
-            disabled={isFormDisabled}
-            rows={6}
+          <div className="device-form__field-header">
+            <label className="device-form__label">
+              {fieldDef.label}
+              {fieldDef.required && <span className="device-form__required">*</span>}
+            </label>
+            <div className="device-form__field-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => registerMapFileInputRef.current?.click()}
+                disabled={isFormDisabled}
+              >
+                📁 Import CSV
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  // Load default register map from device
+                  if (device?.id) {
+                    // TODO: Fetch device defaults and populate grid
+                    console.log('Load defaults from device:', device.id);
+                  }
+                }}
+                disabled={isFormDisabled}
+              >
+                ⚙️ Default from Device
+              </button>
+            </div>
+          </div>
+          <JsonGridEditor
+            data={gridData}
+            onChange={(updatedData) => handleInputChange(fieldName, updatedData)}
+            readOnly={isFormDisabled}
+            fileInputRef={registerMapFileInputRef}
           />
           {error && <span className="device-form__error">{error}</span>}
           {fieldDef.description && (

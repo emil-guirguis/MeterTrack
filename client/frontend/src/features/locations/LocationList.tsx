@@ -1,7 +1,7 @@
 import React from 'react';
-import { DataList } from '@framework/lists/components';
+import { DataList } from '@framework/components/list';
 import { useLocationsEnhanced } from './locationsStore';
-import { useBaseList } from '@framework/lists/hooks';
+import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import { Permission } from '../../types/auth';
 import type { Location } from '../../types/entities';
@@ -12,7 +12,7 @@ import {
   createLocationBulkActions,
   locationExportConfig,
 } from './locationConfig';
-import { showConfirmation } from '@framework/shared/utils/confirmationHelper';
+import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './LocationList.css';
 
 interface LocationListProps {

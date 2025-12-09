@@ -11,13 +11,13 @@
  */
 
 import React, { useState } from 'react';
-import { useSchema } from '@framework/forms/utils/schemaLoader';
-import type { BackendFieldDefinition } from '@framework/forms/utils/schemaLoader';
-import { createFormSchema } from '@framework/forms/utils/formSchema';
-import { useEntityFormWithStore } from '@framework/forms/hooks/useEntityFormWithStore';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import type { BackendFieldDefinition } from '@framework/components/form/utils/schemaLoader';
+import { createFormSchema } from '@framework/components/form/utils/formSchema';
+import { useEntityFormWithStore } from '@framework/components/form/hooks/useEntityFormWithStore';
 import { useUsersEnhanced } from './usersStore';
 import type { User } from '../../types/auth';
-import '@framework/forms/components/BaseForm.css';
+import '@framework/components/form/BaseForm.css';
 import './UserForm.css';
 
 interface UserFormProps {

@@ -297,7 +297,7 @@ router.post('/', buildValidationRules(), requirePermission('meter:create'), asyn
     const normalized = normalizeRequestBody(req.body);
     normalized.device_id = resolvedDeviceId;
 
-    if (!normalized.meterid) {
+    if (!normalized.id) {
       return res.status(400).json({ success: false, message: 'Meter ID is required' });
     }
 
