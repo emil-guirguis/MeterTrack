@@ -83,6 +83,7 @@
   padding: 1.5rem;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
+  gap: 1rem;
 }
 
 .modal__title {
@@ -90,6 +91,40 @@
   font-size: 1.25rem;
   font-weight: 600;
   color: #333;
+  flex: 1;
+}
+
+.modal__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.modal__save-btn {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal__save-btn:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.modal__save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal__save-btn:focus {
+  outline: 2px solid #1565c0;
+  outline-offset: 2px;
 }
 
 .modal__close {

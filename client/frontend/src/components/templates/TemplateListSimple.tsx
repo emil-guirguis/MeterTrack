@@ -7,7 +7,6 @@ import type { EmailTemplate } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
 import './TemplateList.css';
-import '../common/ListStats.css';
 import '../common/TableCellStyles.css';
 
 interface TemplateListProps {

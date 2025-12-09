@@ -143,7 +143,6 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
 
   // Use default components if not provided
   const Layout = LayoutComponent || DefaultLayout;
-  const Modal = ModalComponent || DefaultModal;
 
   const modalTitle = editingEntity 
     ? `Edit ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`
@@ -165,15 +164,19 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
     ...formProps,
   };
 
+  const ModalComponent_ = ModalComponent || DefaultModal;
+
   return (
     <Layout title={title}>
       <div className="entity-management-page">
         <ListComponent {...listComponentProps} />
 
-        <Modal
+        <ModalComponent_
           isOpen={showForm}
           title={modalTitle}
           onClose={handleFormClose}
+          showSaveButton={true}
+          saveLabel="Save"
           size={formProps.modalSize || 'md'}
         >
           {showForm && (
@@ -182,7 +185,7 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
               {...formComponentProps}
             />
           )}
-        </Modal>
+        </ModalComponent_>
       </div>
     </Layout>
   );
@@ -202,6 +205,10 @@ const DefaultModal: React.FC<{
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  showSaveButton?: boolean;
+  saveLabel?: string;
+  size?: string;
+  [key: string]: any;
 }> = ({ isOpen, title, onClose, children }) => {
   if (!isOpen) return null;
   
@@ -210,7 +217,7 @@ const DefaultModal: React.FC<{
       <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', maxWidth: '600px', width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <h2>{title}</h2>
-          <button onClick={onClose}>×</button>
+          <button type="button" onClick={onClose}>×</button>
         </div>
         {children}
       </div>

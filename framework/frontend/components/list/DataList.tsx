@@ -1,6 +1,5 @@
 import { BaseList } from './BaseList';
 import type { BaseListProps } from './BaseList';
-import './ListFilters.css';
 import './DataList.css';
 
 /**

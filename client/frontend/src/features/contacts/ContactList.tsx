@@ -14,7 +14,6 @@ import {
 } from './contactConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './ContactList.css';
-import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';
 
 interface ContactListProps {

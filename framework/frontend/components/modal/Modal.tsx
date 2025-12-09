@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { useResponsive } from '../../hooks/useResponsive';
 import './Modal.css';
 
@@ -12,6 +12,9 @@ export interface ModalProps {
   loading?: boolean;
   error?: string;
   footer?: React.ReactNode;
+  onSave?: () => void;
+  saveLabel?: string;
+  showSaveButton?: boolean;
 }
 
 /**
@@ -40,7 +43,10 @@ export const Modal: React.FC<ModalProps> = ({
   fullScreen = false,
   loading = false,
   error,
-  footer
+  footer,
+  onSave,
+  saveLabel = 'Save',
+  showSaveButton = false,
 }) => {
   const { isMobile } = useResponsive();
 
@@ -88,15 +94,28 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Header */}
         <div className="modal__header">
-          <button
-            type="button"
-            className="modal__close"
-            onClick={onClose}
-            disabled={loading}
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
+          <h2 className="modal__title">{title}</h2>
+          <div className="modal__header-actions">
+            {showSaveButton && onSave && (
+              <button
+                type="button"
+                className="modal__save-btn"
+                onClick={onSave}
+                disabled={loading}
+              >
+                {saveLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              className="modal__close"
+              onClick={onClose}
+              disabled={loading}
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Error Display */}

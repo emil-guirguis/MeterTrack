@@ -14,7 +14,6 @@ import {
 } from './userConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './UserList.css';
-import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';
 
 interface UserListProps {

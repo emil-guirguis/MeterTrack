@@ -12,7 +12,6 @@ import {
   emailTemplateExportConfig,
 } from '../../config/emailTemplateConfig';
 import './TemplateList.css';
-import '../common/ListStats.css';
 import '../common/TableCellStyles.css';
 
 interface EmailTemplateListSimpleProps {

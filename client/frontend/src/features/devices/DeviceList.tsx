@@ -13,7 +13,6 @@ import {
 } from './deviceConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './DeviceList.css';
-import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';
 
 interface DeviceListProps {

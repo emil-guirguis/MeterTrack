@@ -3,7 +3,6 @@
 .user-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -215,7 +214,6 @@
 .user-form__permissions {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
 }
 
 .user-form__permission-group {

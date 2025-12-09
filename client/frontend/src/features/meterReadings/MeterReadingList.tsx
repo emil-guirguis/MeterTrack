@@ -12,7 +12,6 @@ import {
   meterReadingExportConfig,
 } from './meterReadingConfig';
 import './MeterReadingList.css';
-import '../../components/common/ListStats.css';
 import '../../components/common/TableCellStyles.css';
 
 interface MeterReadingListProps {

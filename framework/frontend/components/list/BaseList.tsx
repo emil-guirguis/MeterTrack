@@ -3,7 +3,7 @@ import { DataTable } from './DataTable';
 import { Sidebar } from '@framework/components/sidebar';
 import type { DataTableProps, ColumnDefinition, BulkAction } from './types/ui';
 import type { SidebarSectionProps } from '@framework/components/sidebar';
-import './ListFilters.css';
+import './BaseList.css';
 import './DataList.css';
 
 export interface BaseListProps<T> {
@@ -96,7 +96,7 @@ export function BaseList<T extends Record<string, any>>({
   return (
     <div className={`data-list ${className}`}>
       {filters && (
-        <div className="user-list__filters">{/* reuse existing filter styles */}
+        <div className="base-list__filters">{/* reuse existing filter styles */}
           {filters}
         </div>
       )}

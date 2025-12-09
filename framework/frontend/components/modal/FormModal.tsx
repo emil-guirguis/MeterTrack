@@ -7,10 +7,12 @@ export interface FormModalProps<T = any> {
   loading?: boolean;
   error?: string;
   onClose: () => void;
-  onSubmit: (data: T) => void | Promise<void>;
+  onSubmit?: (data: T) => void | Promise<void>;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   fullScreen?: boolean;
+  showSaveButton?: boolean;
+  saveLabel?: string;
 }
 
 /**
@@ -24,10 +26,23 @@ export function FormModal<T = any>({
   loading = false,
   error,
   onClose,
+  onSubmit,
   children,
   size = 'md',
   fullScreen = false,
+  showSaveButton = false,
+  saveLabel = 'Save',
 }: FormModalProps<T>) {
+  // Wrapper to handle form submission from modal save button
+  const handleSave = () => {
+    // The form inside will handle submission via its own submit handler
+    // This is just a trigger for the modal's save button
+    const form = document.querySelector('form');
+    if (form) {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -37,6 +52,9 @@ export function FormModal<T = any>({
       fullScreen={fullScreen}
       loading={loading}
       error={error}
+      onSave={handleSave}
+      showSaveButton={showSaveButton}
+      saveLabel={saveLabel}
     >
       {children}
     </Modal>
