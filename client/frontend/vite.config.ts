@@ -63,6 +63,12 @@ export default defineConfig({
     hmr: {
       overlay: true, // Show error overlay in browser
     },
+    fs: {
+      allow: [
+        '.',
+        '../../framework/frontend',
+      ],
+    },
   },
   // Log errors to terminal
   clearScreen: false, // Don't clear terminal on rebuild

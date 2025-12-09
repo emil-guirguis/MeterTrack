@@ -34,8 +34,7 @@ import {
   Help as HelpIcon
 } from '@mui/icons-material';
 
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import Toast from '../common/Toast';
+import { LoadingSpinner, Toast } from '@framework/components/common';
 import { TemplateEditor } from './TemplateEditor';
 import { templateService } from '../../services/templateService';
 import type { 

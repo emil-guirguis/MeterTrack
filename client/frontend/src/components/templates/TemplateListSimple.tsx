@@ -6,8 +6,8 @@ import { useAuth } from '../../hooks/useAuth';
 import type { EmailTemplate } from '../../types/entities';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition, BulkAction } from '../../types/ui';
+import '@framework/components/common/TableCellStyles.css';
 import './TemplateList.css';
-import '../common/TableCellStyles.css';
 
 interface TemplateListProps {
     onTemplateSelect?: (template: EmailTemplate) => void;

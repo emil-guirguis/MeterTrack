@@ -12,8 +12,8 @@ import {
   deviceExportConfig,
 } from './deviceConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
+import '@framework/components/common/TableCellStyles.css';
 import './DeviceList.css';
-import '../../components/common/TableCellStyles.css';
 
 interface DeviceListProps {
   onDeviceSelect?: (device: Device) => void;

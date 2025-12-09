@@ -11,8 +11,8 @@ import {
   meterReadingStats,
   meterReadingExportConfig,
 } from './meterReadingConfig';
+import '@framework/components/common/TableCellStyles.css';
 import './MeterReadingList.css';
-import '../../components/common/TableCellStyles.css';
 
 interface MeterReadingListProps {
   onMeterReadingSelect?: (reading: MeterReading) => void;

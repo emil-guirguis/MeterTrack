@@ -13,8 +13,7 @@ import {
   FormControlLabel,
   Alert
 } from '@mui/material';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import Toast from '../common/Toast';
+import { LoadingSpinner, Toast } from '@framework/components/common';
 
 interface EmailConfig {
   smtpHost: string;

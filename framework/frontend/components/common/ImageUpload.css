@@ -168,7 +168,6 @@
   margin: 0;
 }
 
-/* Responsive design */
 @media (max-width: 768px) {
   .image-upload__dropzone {
     min-height: 150px;
@@ -199,18 +198,15 @@
   }
 }
 
-/* Error state */
 .image-upload--error .image-upload__dropzone {
   border-color: var(--color-error, #ef4444);
   background: var(--color-error-light, #fef2f2);
 }
 
-/* Success state */
 .image-upload--success .image-upload__dropzone {
   border-color: var(--color-success, #10b981);
 }
 
-/* Focus styles for accessibility */
 .image-upload__dropzone:focus-within {
   outline: 2px solid var(--color-primary, #3b82f6);
   outline-offset: 2px;

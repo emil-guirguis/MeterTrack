@@ -10,7 +10,6 @@ interface CountrySelectProps {
   placeholder?: string;
 }
 
-// Common countries list
 const COUNTRIES = [
   { code: 'US', name: 'United States' },
   { code: 'CA', name: 'Canada' },
@@ -65,7 +64,6 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
   const [isValid, setIsValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Validate country selection
   useEffect(() => {
     if (required && !value) {
       setIsValid(false);
@@ -109,7 +107,6 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
   );
 };
 
-// Validation function for use in forms
 export const validateCountry = (value: string, required: boolean = false): { isValid: boolean; message: string } => {
   if (required && !value) {
     return { isValid: false, message: 'Country is required' };

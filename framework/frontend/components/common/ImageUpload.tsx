@@ -2,11 +2,11 @@ import React, { useState, useRef, useCallback } from 'react';
 import './ImageUpload.css';
 
 export interface ImageUploadProps {
-  value?: string; // Current image URL or base64
+  value?: string;
   onChange: (imageData: string) => void;
   onError?: (error: string) => void;
-  onUpload?: (file: File) => Promise<string>; // Optional upload handler
-  maxSize?: number; // Max file size in MB
+  onUpload?: (file: File) => Promise<string>;
+  maxSize?: number;
   acceptedTypes?: string[];
   placeholder?: string;
   disabled?: boolean;
@@ -18,7 +18,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onChange,
   onError,
   onUpload,
-  maxSize = 5, // 5MB default
+  maxSize = 5,
   acceptedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   placeholder = 'Drag and drop an image here, or click to select',
   disabled = false,
@@ -29,12 +29,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
-    // Check file type
     if (!acceptedTypes.includes(file.type)) {
       return `File type not supported. Please use: ${acceptedTypes.join(', ')}`;
     }
 
-    // Check file size
     const maxSizeBytes = maxSize * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       return `File size too large. Maximum size is ${maxSize}MB`;
@@ -54,11 +52,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
     try {
       if (onUpload) {
-        // Use custom upload handler if provided
         const uploadedUrl = await onUpload(file);
         onChange(uploadedUrl);
       } else {
-        // Convert to base64 for immediate preview
         const reader = new FileReader();
         reader.onload = (e) => {
           const result = e.target?.result as string;
@@ -70,7 +66,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           setIsUploading(false);
         };
         reader.readAsDataURL(file);
-        return; // Exit early for base64 conversion
+        return;
       }
       setIsUploading(false);
     } catch (error) {

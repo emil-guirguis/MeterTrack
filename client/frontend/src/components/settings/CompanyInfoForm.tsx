@@ -1,6 +1,5 @@
 import React from 'react';
-import { CountrySelect } from '../common';
-import Toast from '../common/Toast';
+import { CountrySelect, Toast } from '@framework/components/common';
 import { FormSection } from '@framework/components/form/FormSection';
 import { FormField } from '@framework/components/form/FormField';
 import { FormActions } from '@framework/components/form/FormActions';

@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import type { FormFieldProps } from '../../types/ui';
+import type { FormFieldProps } from '../list/types/ui';
 import './FormField.css';
 
 export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, FormFieldProps>(

@@ -102,7 +102,7 @@ vi.mock('../features/contacts/ContactForm', () => ({
   ),
 }));
 
-vi.mock('../components/common/FormModal', () => ({
+vi.mock('@framework/components/modal/FormModal', () => ({
   FormModal: ({ isOpen, title, children }: any) => (
     isOpen ? (
       <div data-testid="form-modal" role="dialog">

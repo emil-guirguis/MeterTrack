@@ -13,8 +13,8 @@ import {
   userExportConfig,
 } from './userConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
+import '@framework/components/common/TableCellStyles.css';
 import './UserList.css';
-import '../../components/common/TableCellStyles.css';
 
 interface UserListProps {
   onUserSelect?: (user: User) => void;

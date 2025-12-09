@@ -21,7 +21,7 @@ import {
   CheckCircle as SuccessIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import { LoadingSpinner } from '@framework/components/common';
 import { templateService } from '../../services/templateService';
 
 interface TemplateStats {

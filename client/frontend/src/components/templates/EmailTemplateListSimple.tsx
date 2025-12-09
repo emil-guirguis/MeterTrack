@@ -11,8 +11,8 @@ import {
   emailTemplateBulkActions,
   emailTemplateExportConfig,
 } from '../../config/emailTemplateConfig';
+import '@framework/components/common/TableCellStyles.css';
 import './TemplateList.css';
-import '../common/TableCellStyles.css';
 
 interface EmailTemplateListSimpleProps {
     onTemplateSelect?: (template: EmailTemplate) => void;

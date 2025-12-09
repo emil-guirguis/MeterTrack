@@ -25,10 +25,8 @@ import {
   FileDownload as ExportIcon,
   FileUpload as ImportIcon
 } from '@mui/icons-material';
-import { DataTable } from '../common/DataTable';
-import { SearchFilter } from '../common/SearchFilter';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import Toast from '../common/Toast';
+import { DataTable, LoadingSpinner, Toast } from '@framework/components/common';
+import { SearchFilter } from '@framework/components/common';
 import { templateService } from '../../services/templateService';
 import { useAuth } from '../../hooks/useAuth';
 import { Permission } from '../../types/auth';

@@ -26,9 +26,7 @@ import {
   FileUpload as ImportIcon
 } from '@mui/icons-material';
 import { DataTable } from '@framework/components/list';
-import { SearchFilter } from '../common/SearchFilter';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import Toast from '../common/Toast';
+import { SearchFilter, LoadingSpinner, Toast } from '@framework/components/common';
 import { templateService } from '../../services/templateService';
 import { useAuth } from '../../hooks/useAuth';
 import { Permission } from '../../types/auth';

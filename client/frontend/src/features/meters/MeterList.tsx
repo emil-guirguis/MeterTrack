@@ -8,8 +8,8 @@ import type { Meter } from './meterConfig';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition } from '@framework/components/list/types';
 import { meterColumns, meterFilters, createMeterBulkActions, meterExportConfig } from './meterConfig';
+import '@framework/components/common/TableCellStyles.css';
 import './MeterList.css';
-import '../../components/common/TableCellStyles.css';
 import { tokenStorage } from '../../utils/tokenStorage';
 
 interface MeterListProps {
