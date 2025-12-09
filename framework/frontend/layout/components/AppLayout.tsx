@@ -129,18 +129,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           )}
 
           {/* Page Content */}
-          <main className="app-layout__content">
-            <div className="app-layout__page-content">
-              {loading ? (
-                <div className="loading-container">
-                  <div className="loading-spinner" />
-                  <span>Loading...</span>
-                </div>
-              ) : (
-                children
-              )}
-            </div>
-          </main>
+          {children}
         </div>
       </div>
     </div>
