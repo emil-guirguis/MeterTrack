@@ -35,7 +35,7 @@ export class SyncDatabase {
   async initialize(): Promise<void> {
     try {
       console.log('\n🔧 [SQL] Initializing database schema...');
-      
+
       // Create tenant table
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS tenant (
@@ -233,33 +233,142 @@ export class SyncDatabase {
    * Create or update a meter
    */
   async upsertMeter(meter: MeterEntity): Promise<MeterEntity> {
-    const result = await this.pool.query(
-      `INSERT INTO meter (id, name, type, serial_number, installation_date, device_id, location_id, 
-                          ip, port, protocol, status, register_map, notes, active, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 
-              $8, $9, $10, $11, $12, $13, $14, $15, $16)
-       ON CONFLICT (id) 
-       RETURNING *`,
-      [
+    const meterId = meter?.id || 'UNKNOWN';
+    
+    try {
+      console.log(`\n🔄 [SYNC SQL] Starting upsert for meter: ${meterId}`);
+      console.log(`   Input data:`, JSON.stringify(meter, null, 2));
+
+      // Validate required fields
+      if (!meter) {
+        throw new Error('Meter object is required');
+      }
+
+      if (!meter.id) {
+        throw new Error('Meter ID is required for upsert');
+      }
+
+      if (!meter.name) {
+        throw new Error('Meter name is required for upsert');
+      }
+
+      // Validate data types
+      if (typeof meter.id !== 'string') {
+        throw new Error(`Meter ID must be a string, got ${typeof meter.id}`);
+      }
+
+      if (typeof meter.name !== 'string') {
+        throw new Error(`Meter name must be a string, got ${typeof meter.name}`);
+      }
+
+      // Trim and validate name length
+      const trimmedName = meter.name.trim();
+      if (trimmedName.length === 0) {
+        throw new Error('Meter name cannot be empty or whitespace only');
+      }
+
+      if (trimmedName.length > 255) {
+        throw new Error(`Meter name exceeds maximum length of 255 characters (got ${trimmedName.length})`);
+      }
+
+      // Validate register_map if provided
+      let registerMapJson: string | null = null;
+      if (meter.register_map) {
+        try {
+          registerMapJson = JSON.stringify(meter.register_map);
+          console.log(`   ✓ Register map validated (${registerMapJson.length} bytes)`);
+        } catch (error) {
+          const jsonError = error instanceof Error ? error.message : 'Unknown error';
+          throw new Error(`Invalid register_map JSON: ${jsonError}`);
+        }
+      }
+
+      // Prepare parameters with validation
+      const params = [
         meter.id,
-        meter.name,
-        meter.type,
-        meter.serial_number,
-        meter.installation_date,
-        meter.device_id,
-        meter.location_id,
-        meter.ip,
-        meter.port,
-        meter.protocol,
-        meter.status,
-        meter.register_map ? JSON.stringify(meter.register_map) : null,
-        meter.notes,
+        trimmedName,
+        meter.type || null,
+        meter.serial_number || null,
+        meter.installation_date || null,
+        meter.device_id || null,
+        meter.location_id || null,
+        meter.ip || null,
+        meter.port || null,
+        meter.protocol || null,
+        meter.status || null,
+        registerMapJson,
+        meter.notes || null,
         meter.active !== undefined ? meter.active : true,
-        meter.created_at,
-        meter.updated_at,
-      ]
-    );
-    return result.rows[0];
+        meter.created_at || new Date().toISOString(),
+        meter.updated_at || new Date().toISOString(),
+      ];
+
+      console.log(`   ✓ All validations passed`);
+      console.log(`   Executing INSERT/UPDATE query...`);
+
+      const result = await this.pool.query(
+        `INSERT INTO meter (id, name, type, serial_number, installation_date, device_id, location_id, 
+                            ip, port, protocol, status, register_map, notes, active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 
+                $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         ON CONFLICT (id) 
+         DO UPDATE SET
+           name = EXCLUDED.name,
+           type = EXCLUDED.type,
+           serial_number = EXCLUDED.serial_number,
+           installation_date = EXCLUDED.installation_date,
+           device_id = EXCLUDED.device_id,
+           location_id = EXCLUDED.location_id,
+           ip = EXCLUDED.ip,
+           port = EXCLUDED.port,
+           protocol = EXCLUDED.protocol,
+           status = EXCLUDED.status,
+           register_map = EXCLUDED.register_map,
+           notes = EXCLUDED.notes,
+           active = EXCLUDED.active,
+           updated_at = EXCLUDED.updated_at
+         RETURNING *`,
+        params
+      );
+
+      // Validate query result
+      if (!result) {
+        throw new Error('Query result is null or undefined');
+      }
+
+      if (!result.rows) {
+        throw new Error('Query result has no rows property');
+      }
+
+      if (result.rows.length === 0) {
+        throw new Error(`Upsert failed: No rows returned for meter ${meterId}`);
+      }
+
+      const upsertedMeter = result.rows[0];
+
+      // Validate returned meter
+      if (!upsertedMeter.id) {
+        throw new Error('Returned meter has no ID');
+      }
+
+      console.log(`✅ [SYNC SQL] Successfully upserted meter: ${meterId}`);
+      console.log(`   Returned data:`, JSON.stringify(upsertedMeter, null, 2));
+
+      return upsertedMeter;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : '';
+      
+      console.error(`\n❌ [SYNC SQL] FAILED to upsert meter: ${meterId}`);
+      console.error(`   Error Message: ${errorMessage}`);
+      if (errorStack) {
+        console.error(`   Stack Trace:\n${errorStack}`);
+      }
+      console.error(`   Meter Data:`, JSON.stringify(meter, null, 2));
+
+      // Re-throw with enhanced error message
+      throw new Error(`Failed to upsert meter ${meterId}: ${errorMessage}`);
+    }
   }
 
   /**
