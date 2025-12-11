@@ -561,14 +561,9 @@ class BaseModel {
       // Automatically apply tenant filtering if model has tenantId field
       // and tenantId is provided in options
       const hasTenantIdField = fields.some(f => f.name === 'tenantId' || f.name === 'tenant_id');
-      console.log(`[BaseModel.findAll] ${this.name} - hasTenantIdField:`, hasTenantIdField, 'tenantId:', options.tenantId);
-      console.log(`[BaseModel.findAll] ${this.name} - options:`, JSON.stringify(options, null, 2));
       if (hasTenantIdField && options.tenantId !== undefined) {
         options.where = options.where || {};
         options.where.tenant_id = options.tenantId;
-        console.log(`[BaseModel.findAll] ${this.name} - Applied tenant filter, where:`, options.where);
-      } else if (hasTenantIdField && options.tenantId === undefined) {
-        console.log(`[BaseModel.findAll] ${this.name} - WARNING: tenantId field exists but tenantId not provided in options!`);
       }
       
       // Build SELECT query

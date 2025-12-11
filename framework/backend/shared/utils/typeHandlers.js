@@ -187,8 +187,12 @@ function serializeValue(value, fieldType = null) {
     return value;
   }
   
-  // Handle strings - return as-is (parameterized queries handle escaping)
+  // Handle strings
   if (typeof value === 'string') {
+    // If field type is number and string is numeric, convert it
+    if (fieldType === 'number' && !isNaN(value) && value.trim() !== '') {
+      return parseInt(value, 10);
+    }
     return value;
   }
   

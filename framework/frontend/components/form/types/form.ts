@@ -181,6 +181,7 @@ export interface EntityFormReturn<TFormData> {
   isEditMode: boolean;
   updateField: (field: string, value: any) => void;
   resetForm: () => void;
+  dirtyFields: Set<string>;
 }
 
 /**

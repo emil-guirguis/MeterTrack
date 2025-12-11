@@ -1,29 +1,13 @@
+/* Meter Form Component Styles */
+
+/* Meter form inherits all base-form styles from framework */
+/* Only meter-specific overrides should be added here */
+
 .meter-form {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+  /* Inherits from .base-form in framework */
 }
 
-.meter-form__section {
-  margin-bottom: 24px;
-}
-
-.meter-form__section-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: #333;
-  border-bottom: 2px solid #1976d2;
-  padding-bottom: 8px;
-}
-
-.meter-form__row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
+/* Meter-specific: Register map field styling */
 .meter-form__field {
   margin-bottom: 16px;
 }
@@ -36,54 +20,8 @@
   font-size: 14px;
 }
 
-.meter-form__value {
-  display: block;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
 .meter-form__required {
   color: #d32f2f;
-}
-
-.meter-form__input,
-.meter-form__select,
-.meter-form__textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.meter-form__input:focus,
-.meter-form__select:focus,
-.meter-form__textarea:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
-}
-
-.meter-form__input--error,
-.meter-form__select--error,
-.meter-form__textarea--error {
-  border-color: #d32f2f;
-}
-
-.meter-form__input:disabled,
-.meter-form__select:disabled,
-.meter-form__textarea:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.meter-form__textarea {
-  resize: vertical;
-  min-height: 80px;
 }
 
 .meter-form__error {
@@ -93,48 +31,11 @@
   margin-top: 4px;
 }
 
-.meter-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-}
-
-.meter-form__btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 100px;
-}
-
-.meter-form__btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.meter-form__btn--primary {
-  background-color: #1976d2;
-  color: white;
-}
-
-.meter-form__btn--primary:hover:not(:disabled) {
-  background-color: #1565c0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.meter-form__btn--secondary {
-  background-color: #f5f5f5;
-  color: #333;
-}
-
-.meter-form__btn--secondary:hover:not(:disabled) {
-  background-color: #e0e0e0;
+.meter-form__helper-text {
+  display: block;
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .meter-form__field-header {
@@ -176,9 +77,5 @@
 /* Full-width field for register map grid */
 .meter-form__field:has(.json-grid-editor) {
   grid-column: 1 / -1;
-  width: 100%;
-}
-
-.meter-form__section {
   width: 100%;
 }

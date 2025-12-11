@@ -298,26 +298,9 @@ export class MeterSyncAgent {
   private async getRemoteMeters(tenantId: number): Promise<any[]> {
     try {
       const query = `
-        SELECT 
-          id,
-          name,
-          type,
-          serial_number,
-          installation_date,
-          device_id,
-          location_id,
-          ip,
-          port,
-          protocol,
-          status,
-          register_map,
-          notes,
-          active,
-          created_at,
-          updated_at
+        SELECT *
         FROM meter
         WHERE tenant_id = $1
-        ORDER BY name
       `;
 
       console.log(`🔍 [Meter Sync] Executing remote query for tenant ${tenantId}`);

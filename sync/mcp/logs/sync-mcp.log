@@ -811,3 +811,12 @@
 {"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-09T01:28:47.776Z"}
 {"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-09T02:22:50.532Z"}
 {"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-09T02:51:29.472Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-09T22:51:02.078Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-10T18:59:32.719Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-11T00:51:10.622Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-11T01:24:22.078Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-11T01:24:22.077Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-11T01:24:22.082Z"}
+{"level":"error","message":"Failed to start Sync MCP Server: Failed to connect to Sync Database","stack":"Error: Failed to connect to Sync Database\n    at SyncMcpServer.initializeServices (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:121:23)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async SyncMcpServer.start (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:499:9)","timestamp":"2025-12-11T01:32:13.571Z"}
+{"level":"error","message":"Failed to start Sync MCP Server: Failed to connect to Sync Database","stack":"Error: Failed to connect to Sync Database\n    at SyncMcpServer.initializeServices (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:121:23)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async SyncMcpServer.start (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:499:9)","timestamp":"2025-12-11T01:32:13.618Z"}
+{"level":"info","message":"Shutting down Sync MCP Server...","timestamp":"2025-12-11T01:40:37.048Z"}

@@ -12,7 +12,6 @@ import {
   deviceExportConfig,
 } from './deviceConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
-import '@framework/components/common/TableCellStyles.css';
 import './DeviceList.css';
 
 interface DeviceListProps {
@@ -28,11 +27,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
 }) => {
   const devices = useDevicesEnhanced();
 
-
-
-
-
-  // Custom delete handler for devices
   const handleDeviceDelete = (device: Device) => {
     showConfirmation({
       type: 'danger',
@@ -46,13 +40,11 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     });
   };
 
-  // Mock auth context that allows all permissions (temporary for development)
   const mockAuthContext = {
     checkPermission: () => true,
     user: { id: '1', name: 'Dev User' }
   };
 
-  // Initialize base list hook with device configuration
   const baseList = useBaseList<Device, any>({
     entityName: 'device',
     entityNamePlural: 'devices',
@@ -82,20 +74,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     authContext: mockAuthContext,
   });
 
-
-
-  // Safety check - ensure data is always an array
   const safeData = Array.isArray(baseList.data) ? baseList.data : [];
-
-  // Debug: Check data structure and permissions
-  console.log('DeviceList debug:', {
-    dataLength: safeData.length,
-    firstItem: safeData[0],
-    columns: baseList.columns,
-    canCreate: baseList.canCreate,
-    headerActions: baseList.renderHeaderActions(),
-    onDeviceCreate: onDeviceCreate,
-  });
 
   return (
     <div className="device-list">

@@ -11,18 +11,18 @@ const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = req
 class Device extends BaseModel {
     constructor(data = {}) {
         super(data);
-        
+
         // Auto-initialize all fields from schema
         Device.schema.initializeFromData(this, data);
     }
-    
+
     /**
      * @override
      */
     static get tableName() {
         return 'device';
     }
-    
+
     /**
      * @override
      */
@@ -31,7 +31,7 @@ class Device extends BaseModel {
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
-    
+
     /**
      * @override
      */
@@ -40,7 +40,9 @@ class Device extends BaseModel {
             entityName: 'Device',
             tableName: 'device',
             description: 'Device entity',
-            
+
+            customListColumns: {},
+
             // Form fields - user can edit these
             formFields: {
                 description: field({
@@ -50,14 +52,20 @@ class Device extends BaseModel {
                     label: 'Description',
                     dbField: 'description',
                     maxLength: 255,
+                    placeholder: 'Meter',
+                    filertable: ['main'],
+                    showOn: ['list', 'form'],
                 }),
                 manufacturer: field({
                     type: FieldTypes.STRING,
                     default: '',
-                    required: false,
+                    required: true,
                     label: 'Manufacturer',
                     dbField: 'manufacturer',
                     maxLength: 255,
+                    placeholder: 'Honeywell',
+                    filertable: ['true'],
+                    showOn: ['list', 'form'],
                 }),
                 modelNumber: field({
                     type: FieldTypes.STRING,
@@ -66,31 +74,38 @@ class Device extends BaseModel {
                     label: 'Model Number',
                     dbField: 'model_number',
                     maxLength: 255,
+                    placeholder: 'Model',
+                    showOn: ['list', 'form'],
                 }),
                 type: field({
                     type: FieldTypes.STRING,
                     default: '',
-                    required: false,
+                    required: true,
                     label: 'Type',
                     dbField: 'type',
                     maxLength: 255,
+                    enumValues: ['Electric', 'Gas', 'Water', 'Steam', 'Other'],
+                    placeholder: 'Electric',
+                    showOn: ['list', 'form'],
                 }),
                 registerMap: field({
-                    type: FieldTypes.OBJECT,
+                    type: FieldTypes.JSON,
                     default: null,
-                    required: false,
+                    required: true,
                     label: 'Register Map',
                     dbField: 'register_map',
+                    showOn: ['form'],
                 }),
                 active: field({
                     type: FieldTypes.BOOLEAN,
-                    default: false,
-                    required: false,
+                    default: true,
+                    required: true,
                     label: 'Active',
                     dbField: 'active',
+                    showOn: ['list', 'form'],
                 })
             },
-            
+
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
@@ -106,6 +121,7 @@ class Device extends BaseModel {
                     readOnly: true,
                     label: 'Created At',
                     dbField: 'created_at',
+                    showOn: ['form'],
                 }),
                 updatedAt: field({
                     type: FieldTypes.DATE,
@@ -113,6 +129,7 @@ class Device extends BaseModel {
                     readOnly: true,
                     label: 'Updated At',
                     dbField: 'updated_at',
+                    showOn: ['form'],
                 }),
                 tenantId: field({
                     type: FieldTypes.NUMBER,
@@ -122,7 +139,7 @@ class Device extends BaseModel {
                     dbField: 'tenant_id',
                 })
             },
-            
+
             // Relationships
             relationships: {
                 tenant: relationship({
@@ -131,14 +148,8 @@ class Device extends BaseModel {
                     foreignKey: 'tenant_id',
                     autoLoad: false,
                 }),
-                meters: relationship({
-                    type: RelationshipTypes.HAS_MANY,
-                    model: 'Meter',
-                    foreignKey: 'device_id',
-                    autoLoad: false,
-                }),
             },
-            
+
             validation: {},
         });
     }

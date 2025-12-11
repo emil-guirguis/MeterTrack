@@ -55,7 +55,8 @@
 
 .modal--md {
   width: 100%;
-  max-width: 600px;
+  max-width: 90vw;
+  min-width: 600px;
 }
 
 .modal--lg {
@@ -181,6 +182,7 @@
 .modal__content {
   padding: 1.5rem;
   overflow-y: auto;
+  overflow-x: auto;
   flex: 1;
 }
 

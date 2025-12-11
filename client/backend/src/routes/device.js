@@ -1,159 +1,130 @@
+// @ts-nocheck
 const express = require('express');
-const DeviceService = require('../services/DeviceService');
+const Device = require('../models/DeviceWithSchema.js');
+const { requirePermission } = require('../middleware/auth');
+
 const router = express.Router();
+// Note: authenticateToken is now applied globally in server.js
 
-/**
- * Standardized error response handler
- */
-function handleError(res, error) {
-  console.error('Device API Error:', error);
-
-  // Handle validation errors
-  if (error.code === 'VALIDATION_ERROR') {
-    return res.status(400).json({
-      success: false,
-      error: error.message,
-      code: 'VALIDATION_ERROR',
-      details: error.details
-    });
-  }
-
-  // Handle duplicate name errors
-  if (error.code === 'DUPLICATE_NAME') {
-    return res.status(409).json({
-      success: false,
-      error: error.message,
-      code: 'DUPLICATE_NAME'
-    });
-  }
-
-  // Handle foreign key constraint violations
-  if (error.code === 'FOREIGN_KEY_VIOLATION') {
-    return res.status(409).json({
-      success: false,
-      error: error.message,
-      code: 'FOREIGN_KEY_VIOLATION'
-    });
-  }
-
-  // Handle data too long errors
-  if (error.code === 'DATA_TOO_LONG') {
-    return res.status(400).json({
-      success: false,
-      error: error.message,
-      code: 'DATA_TOO_LONG'
-    });
-  }
-
-  // Handle database errors
-  if (error.code === 'DATABASE_ERROR') {
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-      code: 'DATABASE_ERROR'
-    });
-  }
-
-  // Handle generic errors
-  return res.status(500).json({
-    success: false,
-    error: 'An unexpected error occurred',
-    code: 'INTERNAL_ERROR'
-  });
-}
-
-// Get all devices
-router.get('/', async (req, res) => {
+// Get all devices with filtering and pagination
+router.get('/', requirePermission('device:read'), async (req, res) => {
   try {
-    const tenantId = req.user?.tenantId || req.user?.tenant_id;
-    console.log('[Device Route] req.user:', {
-      id: req.user?.id,
-      email: req.user?.email,
-      tenantId: req.user?.tenantId,
-      tenant_id: req.user?.tenant_id,
-      allKeys: req.user ? Object.keys(req.user) : []
-    });
-    console.log('[Device Route] Using tenantId:', tenantId);
-    const device = await DeviceService.getAllDevices(tenantId);
-    res.json({ 
-      success: true, 
-      data: device,
-      count: device.length
+    const {
+      page = 1,
+      limit = 25,
+      search,
+      active,
+      type
+    } = req.query;
+
+    // Build where clause for Device
+    const where = {};
+    if (search) where.description = search; // Assuming search by description
+    if (active !== undefined) where.active = active;
+    if (type) where.type = type;
+
+    // Build options for findAll
+    const options = {
+      where,
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      tenantId: req.user?.tenantId // Automatic tenant filtering
+    };
+
+    // Get devices
+    const result = await Device.findAll(options);
+
+    res.json({
+      success: true,
+      data: {
+        items: result.rows,
+        total: result.pagination.total,
+        page: parseInt(page),
+        pageSize: parseInt(limit),
+        totalPages: result.pagination.totalPages
+      }
     });
   } catch (error) {
-    handleError(res, error);
+    console.error('Error fetching devices:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch devices' });
   }
 });
 
-// Create a new device
-router.post('/', async (req, res) => {
+// Get single device by ID
+router.get('/:id', requirePermission('device:read'), async (req, res) => {
   try {
-    const device = await DeviceService.createDevice(req.body);
-    res.status(201).json({ 
-      success: true, 
-      data: device,
-      message: 'Device created successfully'
-    });
-  } catch (error) {
-    handleError(res, error);
-  }
-});
-
-// Get device by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const device = await DeviceService.getDeviceById(req.params.id);
+    const device = await Device.findById(req.params.id);
     if (!device) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Device not found',
-        code: 'NOT_FOUND'
-      });
+      return res.status(404).json({ success: false, message: 'Device not found' });
     }
     res.json({ success: true, data: device });
   } catch (error) {
-    handleError(res, error);
+    console.error('Error fetching device:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch device' });
   }
 });
 
-// Update a device
-router.put('/:id', async (req, res) => {
+// Create device
+router.post('/', requirePermission('device:create'), async (req, res) => {
   try {
-    const device = await DeviceService.updateDevice(req.params.id, req.body);
+    const device = new Device(req.body);
+    await device.save();
+    res.status(201).json({ success: true, data: device });
+  } catch (error) {
+    console.error('Error creating device:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: Object.values(error.errors).map(e => e.message)
+      });
+    }
+    res.status(500).json({ success: false, message: 'Failed to create device' });
+  }
+});
+
+// Update device
+router.put('/:id', requirePermission('device:update'), async (req, res) => {
+  try {
+    // Find the device first
+    const device = await Device.findById(req.params.id);
     if (!device) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Device not found',
-        code: 'NOT_FOUND'
+      return res.status(404).json({ success: false, message: 'Device not found' });
+    }
+    
+    // Update the device using instance method
+    await device.update(req.body);
+    
+    res.json({ success: true, data: device });
+  } catch (error) {
+    console.error('Error updating device:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: Object.values(error.errors).map(e => e.message)
       });
     }
-    res.json({ 
-      success: true, 
-      data: device,
-      message: 'Device updated successfully'
-    });
-  } catch (error) {
-    handleError(res, error);
+    res.status(500).json({ success: false, message: 'Failed to update device' });
   }
 });
 
-// Delete a device
-router.delete('/:id', async (req, res) => {
+// Delete device
+router.delete('/:id', requirePermission('device:delete'), async (req, res) => {
   try {
-    const deleted = await DeviceService.deleteDevice(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Device not found',
-        code: 'NOT_FOUND'
-      });
+    // Find the device first
+    const device = await Device.findById(req.params.id);
+    if (!device) {
+      return res.status(404).json({ success: false, message: 'Device not found' });
     }
-    res.json({ 
-      success: true,
-      message: 'Device deleted successfully'
-    });
+    
+    // Delete the device using instance method
+    await device.delete();
+    
+    res.json({ success: true, message: 'Device deleted successfully' });
   } catch (error) {
-    handleError(res, error);
+    console.error('Error deleting device:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete device' });
   }
 });
 

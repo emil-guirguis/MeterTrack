@@ -6,23 +6,23 @@
  */
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
-const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { defineSchema, field, FieldTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
 
 class Location extends BaseModel {
     constructor(data = {}) {
         super(data);
-        
+
         // Auto-initialize all fields from schema
         Location.schema.initializeFromData(this, data);
     }
-    
+
     /**
      * @override
      */
     static get tableName() {
         return 'location';
     }
-    
+
     /**
      * @override
      */
@@ -33,12 +33,27 @@ class Location extends BaseModel {
     /**
      * @override
      */
+    static get relationships() {
+        return {
+            device: {
+                type: 'belongsTo',
+                model: 'Contact',
+                foreignKey: 'contact_id',
+                targetKey: 'id'
+            },
+        };
+    }
+    /**
+     * @override
+     */
     static get schema() {
         return defineSchema({
             entityName: 'Location',
             tableName: 'location',
             description: 'Location entity',
-            
+
+            customListColumns: {},
+
             // Form fields - user can edit these
             formFields: {
                 name: field({
@@ -48,6 +63,9 @@ class Location extends BaseModel {
                     label: 'Name',
                     dbField: 'name',
                     maxLength: 200,
+                    placeholder: 'Location',
+                    filertable: ['main'],
+                    showOn: ['list', 'form'],
                 }),
                 street: field({
                     type: FieldTypes.STRING,
@@ -56,6 +74,8 @@ class Location extends BaseModel {
                     label: 'Street',
                     dbField: 'street',
                     maxLength: 200,
+                    placeholder: '1234 Street',
+                    showOn: ['form'],
                 }),
                 street2: field({
                     type: FieldTypes.STRING,
@@ -64,6 +84,8 @@ class Location extends BaseModel {
                     label: 'Street2',
                     dbField: 'street2',
                     maxLength: 100,
+                    placeholder: 'Unit A',
+                    showOn: ['form'],
                 }),
                 city: field({
                     type: FieldTypes.STRING,
@@ -72,6 +94,8 @@ class Location extends BaseModel {
                     label: 'City',
                     dbField: 'city',
                     maxLength: 100,
+                    placeholder: 'City',
+                    showOn: ['form'],
                 }),
                 state: field({
                     type: FieldTypes.STRING,
@@ -80,6 +104,8 @@ class Location extends BaseModel {
                     label: 'State',
                     dbField: 'state',
                     maxLength: 50,
+                    placeholder: 'State',
+                    showOn: ['form'],
                 }),
                 zip: field({
                     type: FieldTypes.STRING,
@@ -87,6 +113,8 @@ class Location extends BaseModel {
                     required: true,
                     label: 'Zip',
                     dbField: 'zip',
+                    placeholder: 'Zip',
+                    showOn: ['form'],
                     maxLength: 20,
                 }),
                 country: field({
@@ -96,6 +124,8 @@ class Location extends BaseModel {
                     label: 'Country',
                     dbField: 'country',
                     maxLength: 100,
+                    placeholder: 'USA',
+                    showOn: ['form'],
                 }),
                 type: field({
                     type: FieldTypes.STRING,
@@ -104,14 +134,17 @@ class Location extends BaseModel {
                     label: 'Type',
                     dbField: 'type',
                     maxLength: 20,
+                    enumValues: ['Warehouse', 'Apartment', 'Ofice', 'Retail', 'Hotel', 'Building', 'Other'],
+                    placeholder: 'Warehouse',
+                    showOn: ['list', 'form'],
                 }),
                 status: field({
-                    type: FieldTypes.STRING,
-                    default: '',
+                    type: FieldTypes.boo,
+                    default: true,
                     required: false,
-                    label: 'Status',
-                    dbField: 'status',
-                    maxLength: 20,
+                    label: 'Active',
+                    dbField: 'active',
+                    showOn: ['list', 'form'],
                 }),
                 squareFootage: field({
                     type: FieldTypes.NUMBER,
@@ -119,6 +152,7 @@ class Location extends BaseModel {
                     required: false,
                     label: 'Square Footage',
                     dbField: 'square_footage',
+                    showOn: ['form'],
                 }),
                 notes: field({
                     type: FieldTypes.STRING,
@@ -126,13 +160,17 @@ class Location extends BaseModel {
                     required: false,
                     label: 'Notes',
                     dbField: 'notes',
+                    showOn: ['form'],
                 }),
                 contactId: field({
                     type: FieldTypes.NUMBER,
                     default: 0,
                     required: false,
-                    label: 'Contact Id',
+                    label: 'Contact',
                     dbField: 'contact_id',
+                    validate: true,
+                    validationFields: ['name'],
+                    showOn: ['form'],
                 }),
                 active: field({
                     type: FieldTypes.BOOLEAN,
@@ -140,9 +178,10 @@ class Location extends BaseModel {
                     required: false,
                     label: 'Active',
                     dbField: 'active',
+                    showOn: ['form'],
                 })
             },
-            
+
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
@@ -158,6 +197,7 @@ class Location extends BaseModel {
                     readOnly: true,
                     label: 'Created At',
                     dbField: 'created_at',
+                    showOn: ['form'],
                 }),
                 updatedAt: field({
                     type: FieldTypes.DATE,
@@ -165,6 +205,7 @@ class Location extends BaseModel {
                     readOnly: true,
                     label: 'Updated At',
                     dbField: 'updated_at',
+                    showOn: ['form'],
                 }),
                 tenantId: field({
                     type: FieldTypes.NUMBER,
@@ -174,17 +215,8 @@ class Location extends BaseModel {
                     dbField: 'tenant_id',
                 })
             },
-            
-            // Relationships
-            relationships: {
-                meters: relationship({
-                    type: RelationshipTypes.HAS_MANY,
-                    model: 'Meter',
-                    foreignKey: 'location_id',
-                    autoLoad: false,
-                }),
-            },
-            
+
+
             validation: {},
         });
     }

@@ -35,10 +35,10 @@ export function FormModal<T = any>({
 }: FormModalProps<T>) {
   // Wrapper to handle form submission from modal save button
   const handleSave = () => {
-    // The form inside will handle submission via its own submit handler
-    // This is just a trigger for the modal's save button
-    const form = document.querySelector('form');
-    if (form) {
+    // Find all forms on the page and submit the last one (most recently added)
+    const forms = document.querySelectorAll('form');
+    if (forms.length > 0) {
+      const form = forms[forms.length - 1] as HTMLFormElement;
       form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     }
   };

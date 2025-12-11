@@ -20,6 +20,7 @@ export interface ContactInfo {
 export interface Location {
   id: string;
   name: string;
+  tenant_id: string | number;
   address: Address;
   contactInfo: ContactInfo;
   status: 'active' | 'inactive' | 'maintenance';

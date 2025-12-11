@@ -21,7 +21,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       style={{ '--spinner-size': `${size}px` } as React.CSSProperties}
     >
       <div className="loading-spinner__spinner" />
-      {message && (
+      {message && !fullScreen && (
         <p className="loading-spinner__message">{message}</p>
       )}
     </div>

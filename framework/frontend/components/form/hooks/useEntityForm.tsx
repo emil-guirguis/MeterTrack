@@ -100,6 +100,9 @@ export function useEntityForm<TEntity, TFormData>({
     initializeFormData(entity)
   );
   
+  // Track which fields have been modified (dirty fields)
+  const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
+  
   // Determine if we're in edit mode
   const isEditMode = entity !== undefined;
   
@@ -109,6 +112,7 @@ export function useEntityForm<TEntity, TFormData>({
    */
   useEffect(() => {
     setFormData(initializeFormData(entity));
+    setDirtyFields(new Set()); // Reset dirty fields when entity changes
   }, [entity]); // eslint-disable-line react-hooks/exhaustive-deps
   // Note: initializeFormData is intentionally excluded to prevent infinite loops
   // The function is stable and only depends on props that don't change
@@ -116,6 +120,7 @@ export function useEntityForm<TEntity, TFormData>({
   /**
    * Helper function to update a single field in the form data
    * Supports nested field names using dot notation (e.g., 'address.street')
+   * Also tracks which fields have been modified
    */
   const updateField = useCallback((field: string, value: any) => {
     setFormData(prev => {
@@ -140,6 +145,9 @@ export function useEntityForm<TEntity, TFormData>({
       // Handle simple field names
       return { ...prev, [field]: value };
     });
+    
+    // Mark field as dirty
+    setDirtyFields(prev => new Set([...prev, field]));
   }, []);
   
   /**
@@ -155,5 +163,6 @@ export function useEntityForm<TEntity, TFormData>({
     isEditMode,
     updateField,
     resetForm,
+    dirtyFields,
   };
 }

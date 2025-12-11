@@ -1,19 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { DataList } from '@framework/components/list/DataList';
 import { useContactsEnhanced } from './contactsStore';
 import { useBaseList } from '@framework/components/list/hooks/useBaseList';
 import { useAuth } from '../../hooks/useAuth';
-import type { Contact } from './contactConfig';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import { generateColumnsFromSchema, generateFiltersFromSchema } from '@framework/components/list/utils/schemaColumnGenerator';
+import type { Contact } from './types';
 import { Permission } from '../../types/auth';
 import {
-  contactColumns,
-  contactFilters,
   contactStats,
   createContactBulkActions,
   contactExportConfig,
-} from './contactConfig';
+} from './config';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
-import '@framework/components/common/TableCellStyles.css';
 import './ContactList.css';
 
 interface ContactListProps {
@@ -29,13 +28,26 @@ export const ContactList: React.FC<ContactListProps> = ({
 }) => {
   const contacts = useContactsEnhanced();
   const auth = useAuth();
-  
-  // Wrap bulkUpdateStatus to match expected signature
+  const { schema, loading: schemaLoading } = useSchema('contact');
+
+  // Generate columns and filters from schema
+  const columns = useMemo(() => {
+    if (!schema) return [];
+    return generateColumnsFromSchema<Contact>(schema.formFields, {
+      fieldOrder: ['name', 'company', 'role', 'phone',  'active'],
+      responsive: 'hide-mobile',
+    });
+  }, [schema]);
+
+  const filters = useMemo(() => {
+    if (!schema) return [];
+    return generateFiltersFromSchema(schema.formFields);
+  }, [schema]);
+
   const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
     await contacts.bulkUpdateStatus(ids, status as 'active' | 'inactive');
   };
 
-  // Custom delete handler for contacts
   const handleContactDelete = (contact: Contact) => {
     showConfirmation({
       type: 'danger',
@@ -49,7 +61,6 @@ export const ContactList: React.FC<ContactListProps> = ({
     });
   };
 
-  // Initialize base list hook with contact configuration
   const baseList = useBaseList<Contact, any>({
     entityName: 'contact',
     entityNamePlural: 'contacts',
@@ -70,8 +81,8 @@ export const ContactList: React.FC<ContactListProps> = ({
       update: Permission.CONTACT_UPDATE,
       delete: Permission.CONTACT_DELETE,
     },
-    columns: contactColumns,
-    filters: contactFilters,
+    columns,
+    filters,
     stats: contactStats,
     bulkActions: createContactBulkActions(
       { bulkUpdateStatus: bulkUpdateStatusWrapper },
@@ -83,20 +94,15 @@ export const ContactList: React.FC<ContactListProps> = ({
     authContext: auth,
   });
 
-  
-
-  // Safety check - ensure data is always an array
   const safeData = Array.isArray(baseList.data) ? baseList.data : [];
-  
-  // Debug: Check data structure and permissions
-  console.log('ContactList debug:', {
-    dataLength: safeData.length,
-    firstItem: safeData[0],
-    columns: baseList.columns,
-    canCreate: baseList.canCreate,
-    headerActions: baseList.renderHeaderActions(),
-    onContactCreate: onContactCreate,
-  });
+
+  if (schemaLoading) {
+    return (
+      <div className="contact-list">
+        <div className="loading-message">Loading contact schema...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="contact-list">

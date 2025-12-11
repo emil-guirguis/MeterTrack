@@ -173,7 +173,7 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
 
         <ModalComponent_
           isOpen={showForm}
-          title={modalTitle}
+          title={capitalizedEntity}
           onClose={handleFormClose}
           showSaveButton={true}
           saveLabel="Save"

@@ -15,26 +15,92 @@ const router = express.Router();
 
 // Import models with schema definitions
 // Add your models here as you create them
+// console.log('[SCHEMA ROUTES] Loading models...');
+
+// console.log('[SCHEMA ROUTES] Loading MeterReadingsWithSchema...');
 const meterReadingsModel = require('../models/MeterReadingsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterReadingsWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterWithSchema...');
+const meterModel = require('../models/MeterWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading ContactWithSchema...');
+const contactModel = require('../models/ContactWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ ContactWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading DeviceWithSchema...');
+const deviceModel = require('../models/DeviceWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ DeviceWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading LocationWithSchema...');
+const locationModel = require('../models/LocationWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ LocationWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading UserWithSchema...');
+const userModel = require('../models/UserWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ UserWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading TenantWithSchema...');
+const tenantModel = require('../models/TenantWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ TenantWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading EmailLogsWithSchema...');
+const emailLogsModel = require('../models/EmailLogsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ EmailLogsWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading EmailTemplatesWithSchema...');
+const emailTemplatesModel = require('../models/EmailTemplatesWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ EmailTemplatesWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterMaintenanceWithSchema...');
+const meterMaintenanceModel = require('../models/MeterMaintenanceWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterMaintenanceWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterMapsWithSchema...');
+const meterMapsModel = require('../models/MeterMapsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterMapsWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterMonitoringAlertsWithSchema...');
+const meterMonitoringAlertsModel = require('../models/MeterMonitoringAlertsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterMonitoringAlertsWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterStatusLogWithSchema...');
+const meterStatusLogModel = require('../models/MeterStatusLogWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterStatusLogWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterTriggersWithSchema...');
+const meterTriggersModel = require('../models/MeterTriggersWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterTriggersWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading MeterUsageAlertsWithSchema...');
+const meterUsageAlertsModel = require('../models/MeterUsageAlertsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterUsageAlertsWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] Loading NotificationLogsWithSchema...');
+const notificationLogsModel = require('../models/NotificationLogsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ NotificationLogsWithSchema loaded');
+
+// console.log('[SCHEMA ROUTES] ✅ All models loaded successfully');
 
 const models = {
-  meter: require('../models/MeterWithSchema'),
-  contact: require('../models/ContactWithSchema'),
-  device: require('../models/DeviceWithSchema'),
-  location: require('../models/LocationWithSchema'),
+  meter: meterModel,
+  contact: contactModel,
+  device: deviceModel,
+  location: locationModel,
   meterReadings: meterReadingsModel,
   meter_reading: meterReadingsModel, // Alias for frontend
-  user: require('../models/UserWithSchema'),
-  tenant: require('../models/TenantWithSchema'),
-  emailLogs: require('../models/EmailLogsWithSchema'),
-  emailTemplates: require('../models/EmailTemplatesWithSchema'),
-  meterMaintenance: require('../models/MeterMaintenanceWithSchema'),
-  meterMaps: require('../models/MeterMapsWithSchema'),
-  meterMonitoringAlerts: require('../models/MeterMonitoringAlertsWithSchema'),
-  meterStatusLog: require('../models/MeterStatusLogWithSchema'),
-  meterTriggers: require('../models/MeterTriggersWithSchema'),
-  meterUsageAlerts: require('../models/MeterUsageAlertsWithSchema'),
-  notificationLogs: require('../models/NotificationLogsWithSchema'),
+  user: userModel,
+  tenant: tenantModel,
+  emailLogs: emailLogsModel,
+  emailTemplates: emailTemplatesModel,
+  meterMaintenance: meterMaintenanceModel,
+  meterMaps: meterMapsModel,
+  meterMonitoringAlerts: meterMonitoringAlertsModel,
+  meterStatusLog: meterStatusLogModel,
+  meterTriggers: meterTriggersModel,
+  meterUsageAlerts: meterUsageAlertsModel,
+  notificationLogs: notificationLogsModel,
   // Add more models here
 };
 
@@ -68,7 +134,7 @@ router.get('/', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch schema list',
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -107,7 +173,7 @@ router.get('/:entity', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch schema',
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -147,7 +213,7 @@ router.post('/:entity/validate', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to validate data',
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });

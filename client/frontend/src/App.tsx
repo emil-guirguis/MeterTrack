@@ -4,7 +4,11 @@ import AppRoutes from './routes/AppRoutes';
 import { prefetchAppSchemas } from './utils/schemaPrefetch';
 import { invalidateExpiredCache } from '@framework/components/form/utils/schemaLoader';
 import { useAuth } from './hooks/useAuth';
+import { setupDebugConsole } from './utils/debugConsole';
 import './App.css';
+
+// Initialize debug console on app startup
+setupDebugConsole();
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();

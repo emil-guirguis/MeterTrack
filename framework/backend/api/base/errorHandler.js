@@ -385,7 +385,10 @@ function isValidType(value, expectedType) {
     case 'string':
       return actualType === 'string';
     case 'number':
-      return actualType === 'number' && !isNaN(value);
+      // Allow numbers and numeric strings (they can be coerced)
+      if (actualType === 'number') return !isNaN(value);
+      if (actualType === 'string') return !isNaN(value) && value.trim() !== '';
+      return false;
     case 'boolean':
       return actualType === 'boolean';
     case 'object':

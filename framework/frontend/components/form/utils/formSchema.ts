@@ -23,6 +23,8 @@ export interface FieldDefinition<TValue = any> {
   required?: boolean;
   /** Field label for UI */
   label?: string;
+  /** Where to show field (e.g., ['form', 'list']) */
+  showOn?: string[];
 }
 
 /**

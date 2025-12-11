@@ -8,10 +8,9 @@ export { ContactForm } from './ContactForm';
 export { ContactList } from './ContactList';
 export { ContactManagementPage } from './ContactManagementPage';
 export { useContactsEnhanced, useContacts, useContactsStore } from './contactsStore';
+export type { Contact } from './types';
 export {
-  contactColumns,
-  contactFilters,
   contactStats,
   createContactBulkActions,
   contactExportConfig,
-} from './contactConfig';
+} from './config';

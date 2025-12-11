@@ -94,8 +94,7 @@
 }
 
 /* Filters Container - white card with border */
-.entity-list__filters,
-.base-list__filters {
+.entity-list__filters {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -107,6 +106,8 @@
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
+
+/* .base-list__filters is defined in BaseList.css */
 
 /* Search Input */
 .entity-list__search,

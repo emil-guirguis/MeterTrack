@@ -13,7 +13,6 @@ import {
   userExportConfig,
 } from './userConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
-import '@framework/components/common/TableCellStyles.css';
 import './UserList.css';
 
 interface UserListProps {
@@ -29,8 +28,20 @@ export const UserList: React.FC<UserListProps> = ({
 }) => {
   const users = useUsersEnhanced();
   const auth = useAuth();
-  
-  // Initialize base list hook with user configuration
+
+  const handleUserDelete = (user: User) => {
+    showConfirmation({
+      type: 'warning',
+      title: 'Inactivate User',
+      message: `Inactivate user "${user.name}"?`,
+      confirmText: 'Inactivate',
+      onConfirm: async () => {
+        await users.updateItem(user.id, { status: 'inactive' });
+        await users.fetchItems();
+      }
+    });
+  };
+
   const baseList = useBaseList<User, any>({
     entityName: 'user',
     entityNamePlural: 'users',
@@ -65,22 +76,6 @@ export const UserList: React.FC<UserListProps> = ({
     onCreate: onUserCreate,
     authContext: auth,
   });
-
-  // Custom delete handler for inactivating users
-  const handleUserDelete = (user: User) => {
-    showConfirmation({
-      type: 'warning',
-      title: 'Inactivate User',
-      message: `Inactivate user "${user.name}"?`,
-      confirmText: 'Inactivate',
-      onConfirm: async () => {
-        // Update user's status to inactive
-        await users.updateItem(user.id, { status: 'inactive' });
-        // Refresh the list
-        await users.fetchItems();
-      }
-    });
-  };
 
   return (
     <div className="user-list">

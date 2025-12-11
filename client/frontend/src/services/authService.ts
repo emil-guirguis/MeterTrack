@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
 import type { LoginCredentials, AuthResponse, User } from '../types/auth';
+import type { Location } from '../types/entities';
 import { tokenStorage } from '../utils/tokenStorage';
 
 // API base URL - this would typically come from environment variables
@@ -67,7 +68,57 @@ class AuthService {
       console.log('🔐 Attempting login with:', { email: credentials.email, baseURL: this.apiClient.defaults.baseURL });
       const response: AxiosResponse<{ success: boolean; data: AuthResponse }> = await this.apiClient.post('/auth/login', credentials);
       console.log('✅ Login successful:', response.data);
-      return response.data.data;
+      
+      const authResponse = response.data.data;
+      
+      // Store tenant ID in localStorage for form validation field options
+      const tenantId = authResponse.user.client;
+      localStorage.setItem('tenantId', tenantId);
+      console.log('💾 Tenant ID stored in localStorage:', tenantId);
+      
+      // IMPORTANT: Store token FIRST before fetching locations
+      // The location endpoint requires authentication
+      console.log('💾 [AUTH] Storing token before fetching locations');
+      this.storeTokens(authResponse.token, authResponse.refreshToken, authResponse.expiresIn);
+      
+      // Fetch locations for the user's tenant
+      try {
+        console.log('📍 [AUTH] Fetching locations for tenant:', tenantId);
+        console.log('📍 [AUTH] API Base URL:', this.apiClient.defaults.baseURL);
+        
+        // Note: tenant filtering is automatic in the backend via req.user.tenantId
+        // We don't need to pass filter.tenant_id as a query parameter
+        const locationsResponse: AxiosResponse<{ success: boolean; data: { items: Location[]; pagination: any } }> = await this.apiClient.get(
+          `/location`
+        );
+        
+        console.log('📍 [AUTH] Location response received:', locationsResponse.status);
+        console.log('📍 [AUTH] Location response data:', locationsResponse.data);
+        
+        if (locationsResponse.data.success && locationsResponse.data.data?.items) {
+          authResponse.locations = locationsResponse.data.data.items;
+          console.log('✅ [AUTH] Locations fetched successfully:', authResponse.locations.length, 'locations');
+          authResponse.locations.forEach((loc: any, idx: number) => {
+            console.log(`  [${idx}] ID: ${loc.id}, Name: ${loc.name}, Tenant: ${loc.tenant_id}`);
+          });
+        } else {
+          console.warn('⚠️ [AUTH] Location response missing items:', locationsResponse.data);
+          authResponse.locations = [];
+        }
+      } catch (locationError) {
+        // Don't block login if location fetch fails
+        console.warn('⚠️ [AUTH] Failed to fetch locations, continuing with login:', locationError);
+        if (axios.isAxiosError(locationError)) {
+          console.error('❌ [AUTH] Location fetch error details:', {
+            status: locationError.response?.status,
+            data: locationError.response?.data,
+            message: locationError.message
+          });
+        }
+        authResponse.locations = [];
+      }
+      
+      return authResponse;
     } catch (error) {
       console.error('❌ Login error:', error);
       if (axios.isAxiosError(error)) {
@@ -85,6 +136,10 @@ class AuthService {
   // Logout method
   async logout(): Promise<void> {
     try {
+      // Clear tenant ID from localStorage
+      localStorage.removeItem('tenantId');
+      console.log('🗑️ Tenant ID cleared from localStorage');
+      
       await this.apiClient.post('/auth/logout');
     } catch (error) {
       // Log error but don't throw - logout should always succeed locally
@@ -116,6 +171,44 @@ class AuthService {
     } catch (error) {
       console.error('Token verification failed:', error);
       return null;
+    }
+  }
+
+  // Fetch locations for a specific tenant
+  async fetchLocations(tenantId: string): Promise<Location[]> {
+    try {
+      console.log('📍 [AUTH] fetchLocations() called for tenant:', tenantId);
+      console.log('📍 [AUTH] API Base URL:', this.apiClient.defaults.baseURL);
+      
+      // Note: tenant filtering is automatic in the backend via req.user.tenantId
+      // We don't need to pass filter.tenant_id as a query parameter
+      const response: AxiosResponse<{ success: boolean; data: { items: Location[]; pagination: any } }> = await this.apiClient.get(
+        `/location`
+      );
+      
+      console.log('📍 [AUTH] Location response status:', response.status);
+      console.log('📍 [AUTH] Location response data:', response.data);
+      
+      if (response.data.success && response.data.data?.items) {
+        console.log('✅ [AUTH] Locations fetched successfully:', response.data.data.items.length, 'locations');
+        response.data.data.items.forEach((loc: any, idx: number) => {
+          console.log(`  [${idx}] ID: ${loc.id}, Name: ${loc.name}, Tenant: ${loc.tenant_id}`);
+        });
+        return response.data.data.items;
+      } else {
+        console.warn('⚠️ [AUTH] Location response missing items:', response.data);
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ [AUTH] Failed to fetch locations:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ [AUTH] Location fetch error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      return [];
     }
   }
 

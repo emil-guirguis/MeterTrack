@@ -110,33 +110,49 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
       e.preventDefault();
     }
     
+    console.log('========================================');
+    console.log('[STORE SUBMIT] handleSubmit called');
+    console.log('[STORE SUBMIT] Entity:', JSON.stringify(entity, null, 2));
+    console.log('[STORE SUBMIT] Form data:', JSON.stringify(form.formData, null, 2));
+    console.log('========================================');
+    
     setIsSubmitting(true);
     setSubmitError(null);
     
     try {
       const mode = entity ? 'update' : 'create';
       
+      console.log('[STORE SUBMIT] Mode:', mode);
+      
       // Transform form data to entity data
       const entityData = formDataToEntity 
         ? formDataToEntity(form.formData)
         : (form.formData as unknown as Partial<TEntity>);
       
+      console.log('[STORE SUBMIT] Transformed entity data:', JSON.stringify(entityData, null, 2));
+      
       let savedEntity: TEntity;
       
       if (mode === 'update' && entity?.id) {
         // Update existing entity
+        console.log('[STORE SUBMIT] Updating entity with ID:', entity.id);
         const updateMethod = store[updateMethodName] || store.update;
         if (!updateMethod) {
           throw new Error(`Store does not have ${updateMethodName} or update method`);
         }
+        console.log('[STORE SUBMIT] Calling update method with data:', JSON.stringify(entityData, null, 2));
         savedEntity = await updateMethod.call(store, String(entity.id), entityData);
+        console.log('[STORE SUBMIT] Update successful, saved entity:', JSON.stringify(savedEntity, null, 2));
       } else {
         // Create new entity
+        console.log('[STORE SUBMIT] Creating new entity');
         const createMethod = store[createMethodName] || store.create;
         if (!createMethod) {
           throw new Error(`Store does not have ${createMethodName} or create method`);
         }
+        console.log('[STORE SUBMIT] Calling create method with data:', JSON.stringify(entityData, null, 2));
         savedEntity = await createMethod.call(store, entityData);
+        console.log('[STORE SUBMIT] Create successful, saved entity:', JSON.stringify(savedEntity, null, 2));
       }
       
       // Validate saved entity has required properties
@@ -187,14 +203,31 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
       
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+      
+      // Extract API error details if available
+      let errorMessage = err.message;
+      let apiErrors: any = null;
+      
+      if (err instanceof Error && 'response' in err) {
+        const response = (err as any).response;
+        if (response?.data?.errors) {
+          apiErrors = response.data.errors;
+          console.log('[STORE SUBMIT] API validation errors:', apiErrors);
+        }
+        if (response?.data?.message) {
+          errorMessage = response.data.message;
+        }
+      }
+      
       setSubmitError(err);
       
-      // Call error callback
+      // Call error callback with API errors
       if (onError) {
         onError(err, entity ? 'update' : 'create');
       }
       
-      console.error('Form submission error:', err);
+      console.error('[STORE SUBMIT] Form submission error:', err);
+      console.error('[STORE SUBMIT] API errors:', apiErrors);
       throw err; // Re-throw so caller can handle if needed
     } finally {
       setIsSubmitting(false);

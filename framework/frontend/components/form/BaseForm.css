@@ -18,11 +18,15 @@
   padding-top: 0;
   background: var(--color-background, #f9fafb);
   overflow: visible;
+  width: 100%;
 }
 
 .base-form__main {
   flex: 1;
-  min-width: 0;
+  min-width: auto;
+  max-width: none;
+  width: auto;
+  overflow-x: auto;
 }
 
 /* Form Sections - card-based sections with borders and shadows */
@@ -71,6 +75,12 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-text-primary, #111827);
+  transition: color 0.2s ease;
+}
+
+.base-form__label--error {
+  color: var(--color-error, #dc2626);
+  font-weight: 600;
 }
 
 /* Required Indicator */
@@ -303,10 +313,104 @@ textarea {
   }
 }
 
+/* Error Toast Notification */
+.form-error-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.form-error-toast__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--color-error, #dc2626);
+  color: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  max-width: 500px;
+  min-width: 300px;
+}
+
+.form-error-toast__icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.form-error-toast__message {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.form-error-toast__message strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.form-error-toast__details {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.form-error-toast__close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.form-error-toast__close:hover {
+  opacity: 1;
+}
+
+/* System Information Section - Read-only fields styling */
+.base-form__section:has(.base-form__field input:disabled) {
+  background: var(--color-background-alt, #f9fafb);
+  border-color: var(--color-border, #e5e7eb);
+  opacity: 0.85;
+}
+
+.base-form__section:has(.base-form__field input:disabled) .base-form__section-title {
+  color: var(--color-text-secondary, #6b7280);
+  font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .base-form {
     flex-direction: column;
+  }
+
+  .base-form__main {
+    max-width: 100%;
+    width: 100%;
   }
 
   .base-form__sidebar {

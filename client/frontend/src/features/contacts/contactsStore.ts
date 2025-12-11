@@ -5,9 +5,9 @@
  * Handles all contact-related data fetching, mutations, and state.
  */
 
-import type { Contact } from './contactConfig';
+import type { Contact } from './types';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
-import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
+import { withTokenRefresh } from '../../store/middleware/apiMiddleware';
 import { tokenStorage } from '../../utils/tokenStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
@@ -190,7 +190,6 @@ export const useContacts = createEntityHook(useContactsStore);
 
 export const useContactsEnhanced = () => {
   const contacts = useContacts();
-  
   const items = Array.isArray(contacts.items) ? contacts.items : [];
   
   return {
@@ -202,90 +201,6 @@ export const useContactsEnhanced = () => {
     vendors: items.filter(contact => contact.category === 'vendor'),
     activeContacts: items.filter(contact => contact.active),
     inactiveContacts: items.filter(contact => !contact.active),
-    
-    // Enhanced actions
-    createContact: async (data: Partial<Contact>) => {
-      return withApiCall(
-        () => contacts.createItem(data),
-        {
-          loadingKey: 'createContact',
-          showSuccessNotification: true,
-          successMessage: 'Contact created successfully',
-        }
-      );
-    },
-    
-    updateContact: async (id: string, data: Partial<Contact>) => {
-      return withApiCall(
-        () => contacts.updateItem(id, data),
-        {
-          loadingKey: 'updateContact',
-          showSuccessNotification: true,
-          successMessage: 'Contact updated successfully',
-        }
-      );
-    },
-    
-    deleteContact: async (id: string) => {
-      return withApiCall(
-        () => contacts.deleteItem(id),
-        {
-          loadingKey: 'deleteContact',
-          showSuccessNotification: true,
-          successMessage: 'Contact deleted successfully',
-        }
-      );
-    },
-    
-    // Bulk operations
-    bulkUpdateStatus: async (contactIds: string[], status: 'active' | 'inactive') => {
-      return withApiCall(
-        async () => {
-          const promises = contactIds.map(id => contacts.updateItem(id, { status }));
-          await Promise.all(promises);
-        },
-        {
-          loadingKey: 'bulkUpdateContacts',
-          showSuccessNotification: true,
-          successMessage: `${contactIds.length} contacts updated successfully`,
-        }
-      );
-    },
-    
-    bulkUpdateTags: async (contactIds: string[], tags: string[]) => {
-      return withApiCall(
-        async () => {
-          const promises = contactIds.map(id => contacts.updateItem(id, { tags }));
-          await Promise.all(promises);
-        },
-        {
-          loadingKey: 'bulkUpdateContactTags',
-          showSuccessNotification: true,
-          successMessage: `Tags updated for ${contactIds.length} contacts`,
-        }
-      );
-    },
-    
-    // Search and filter helpers
-    searchContacts: (query: string) => {
-      contacts.setSearch(query);
-      contacts.fetchItems();
-    },
-    
-    filterByType: (type: 'customer' | 'vendor') => {
-      contacts.setFilters({ ...contacts.list.filters, type });
-      contacts.fetchItems();
-    },
-    
-    filterByStatus: (status: string) => {
-      contacts.setFilters({ ...contacts.list.filters, status });
-      contacts.fetchItems();
-    },
-    
-    filterByIndustry: (industry: string) => {
-      contacts.setFilters({ ...contacts.list.filters, industry });
-      contacts.fetchItems();
-    },
     
     // Specialized queries
     getCustomers: () => items.filter(c => c.category === 'customer'),

@@ -22,6 +22,14 @@ interface ApiResponse<T> {
   count?: number;
 }
 
+interface DeviceListResponse {
+  items: Device[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 class DeviceAPI {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
@@ -46,8 +54,8 @@ class DeviceAPI {
   }
 
   async getAll(): Promise<Device[]> {
-    const response = await this.request<ApiResponse<Device[]>>('/device');
-    return response.data;
+    const response = await this.request<ApiResponse<DeviceListResponse>>('/device');
+    return response.data.items;
   }
 
   async getById(id: string): Promise<Device> {
@@ -138,71 +146,24 @@ export const useDevice = createEntityHook(useDeviceStore);
 
 export const useDevicesEnhanced = () => {
   const device = useDevice();
+  const items = Array.isArray(device.items) ? device.items : [];
 
   return {
     ...device,
+    items,
 
     // Computed values
     devicesByType: (type: string) =>
-      device.items.filter(d => d.type.toLowerCase().includes(type.toLowerCase())),
+      items.filter(d => d.type.toLowerCase().includes(type.toLowerCase())),
 
     devicesByManufacturer: (manufacturer: string) =>
-      device.items.filter(d => d.manufacturer.toLowerCase().includes(manufacturer.toLowerCase())),
+      items.filter(d => d.manufacturer.toLowerCase().includes(manufacturer.toLowerCase())),
 
     devicesByModel: (model: string) =>
-      device.items.filter(d => d.model_number?.toLowerCase().includes(model.toLowerCase())),
+      items.filter(d => d.model_number?.toLowerCase().includes(model.toLowerCase())),
 
     // Statistics
-    totalDevices: device.items.length,
-    uniqueManufacturers: [...new Set(device.items.map(d => d.manufacturer))].length,
-
-    // Enhanced actions
-    createDevice: async (data: Partial<Device>) => {
-      return withApiCall(
-        () => device.createItem(data),
-        {
-          loadingKey: 'createDevice',
-          showSuccessNotification: true,
-          successMessage: 'Device created successfully',
-        }
-      );
-    },
-
-    updateDevice: async (id: string, data: Partial<Device>) => {
-      return withApiCall(
-        () => device.updateItem(id, data),
-        {
-          loadingKey: 'updateDevice',
-          showSuccessNotification: true,
-          successMessage: 'Device updated successfully',
-        }
-      );
-    },
-
-    deleteDevice: async (id: string) => {
-      return withApiCall(
-        () => device.deleteItem(id),
-        {
-          loadingKey: 'deleteDevice',
-          showSuccessNotification: true,
-          successMessage: 'Device deleted successfully',
-        }
-      );
-    },
-
-    // Bulk operations
-    bulkDelete: async (ids: string[]) => {
-      return withApiCall(
-        async () => {
-          const promises = ids.map(id => device.deleteItem(id));
-          await Promise.all(promises);
-        },
-        {
-          loadingKey: 'bulkDeleteDevices',
-          showSuccessNotification: true,
-          successMessage: `${ids.length} devices deleted successfully`,
-        }
-      );
-    },
+    totalDevices: items.length,
+    uniqueManufacturers: [...new Set(items.map(d => d.manufacturer))].length,
   };
 };

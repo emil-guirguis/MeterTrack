@@ -6,15 +6,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1.5rem;
+  padding: 0.5rem;
   padding-top: 0;
   background-color: var(--color-background, #f9fafb);
 }
 
 .list__main-content {
   display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
   overflow: visible;
 }
 

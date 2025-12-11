@@ -94,13 +94,23 @@ const metersService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        const error = new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`) as any;
+        error.response = {
+          status: response.status,
+          data: errorData
+        };
+        throw error;
       }
 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to create meter');
+        const error = new Error(data.message || 'Failed to create meter') as any;
+        error.response = {
+          status: 400,
+          data: data
+        };
+        throw error;
       }
 
       return data.data;
@@ -121,13 +131,23 @@ const metersService = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        const error = new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`) as any;
+        error.response = {
+          status: response.status,
+          data: errorData
+        };
+        throw error;
       }
 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.message || 'Failed to update meter');
+        const error = new Error(data.message || 'Failed to update meter') as any;
+        error.response = {
+          status: 400,
+          data: data
+        };
+        throw error;
       }
 
       return data.data;

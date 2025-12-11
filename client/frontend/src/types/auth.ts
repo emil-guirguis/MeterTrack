@@ -77,6 +77,7 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   expiresIn: number;
+  locations?: any[]; // Locations for the user's tenant
 }
 
 export interface AuthState {
@@ -84,6 +85,7 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  locations: any[];
 }
 
 export interface AuthContextType extends AuthState {
@@ -92,6 +94,7 @@ export interface AuthContextType extends AuthState {
   refreshToken: () => Promise<void>;
   checkPermission: (permission: string) => boolean;
   hasRole: (role: UserRole) => boolean;
+  getLocationsByTenant: (tenantId: string) => any[];
 }
 
 // Role-based permission validation

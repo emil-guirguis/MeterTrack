@@ -8,7 +8,6 @@ import type { Meter } from './meterConfig';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition } from '@framework/components/list/types';
 import { meterColumns, meterFilters, createMeterBulkActions, meterExportConfig } from './meterConfig';
-import '@framework/components/common/TableCellStyles.css';
 import './MeterList.css';
 import { tokenStorage } from '../../utils/tokenStorage';
 
@@ -26,61 +25,44 @@ export const MeterList: React.FC<MeterListProps> = ({
   const { checkPermission } = useAuth();
   const meters = useMetersEnhanced();
   const { schema } = useSchema('meter');
-
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
-
-  // Check permissions
   const canRead = checkPermission(Permission.METER_READ);
 
-  // Test meter connection
   const handleTestConnection = useCallback(async (meter: Meter) => {
     if (!canRead) return;
-
     setTestingConnection(meter.id);
     try {
       const authToken = tokenStorage.getToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
       const response = await fetch(`/api/meters/${meter.id}/test-connection`, {
         method: 'POST',
         headers
       });
-
       const result = await response.json();
-
-      if (result.success && result.data.connected) {
-      } else {
+      if (!result.success || !result.data.connected) {
         alert(`Connection failed: ${result.data?.error || result.message}`);
       }
     } catch (error) {
+      console.error('Connection test error:', error);
     } finally {
       setTestingConnection(null);
     }
   }, [canRead]);
 
-  // Customize columns to add connection test button and filter by showon property
   const customColumns: ColumnDefinition<Meter>[] = useMemo(() => {
-    // Filter columns based on showon property from schema
     let filteredColumns = meterColumns;
-    
     if (schema?.formFields) {
       filteredColumns = meterColumns.filter(col => {
         const fieldConfig = schema.formFields[col.key as string] as any;
-        // If field has showon property, only include if 'list' is in it
-        if (fieldConfig?.showon) {
-          return fieldConfig.showon.includes('list');
-        }
-        // If no showon property, include by default
-        return true;
+        return !fieldConfig?.showon || fieldConfig.showon.includes('list');
       });
     }
-
     return filteredColumns.map(col => {
       if (col.key === 'configuration') {
         return {
           ...col,
-        render: (value: { ipAddress?: string; port?: number; slaveId?: number }, meter) => (
+          render: (value: { ipAddress?: string; port?: number; slaveId?: number }, meter) => (
             <div className="table-cell--two-line">
               <div className="table-cell__primary">
                 {value?.ipAddress || 'Not configured'}:{value?.port || 502}
@@ -109,17 +91,10 @@ export const MeterList: React.FC<MeterListProps> = ({
   }, [canRead, testingConnection, handleTestConnection, schema]);
 
   const auth = useAuth();
-  
-  // Debug: Log meter data
-  console.log('[MeterList] Loading:', meters.list.loading);
-  console.log('[MeterList] Error:', meters.list.error);
-  
-  // Wrap bulkUpdateStatus to match expected signature
   const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
     await meters.bulkUpdateStatus(ids, status as Meter['status']);
   };
 
-  // Initialize base list hook
   const baseList = useBaseList<Meter, any>({
     entityName: 'meter',
     entityNamePlural: 'meters',
@@ -127,13 +102,13 @@ export const MeterList: React.FC<MeterListProps> = ({
     features: {
       allowCreate: true,
       allowEdit: true,
-      allowDelete: false, // Meters typically shouldn't be deleted
+      allowDelete: false,
       allowBulkActions: true,
       allowExport: true,
       allowImport: false,
       allowSearch: true,
       allowFilters: true,
-      allowStats: false, // No stats for meters in current implementation
+      allowStats: false,
     },
     permissions: {
       create: Permission.METER_CREATE,

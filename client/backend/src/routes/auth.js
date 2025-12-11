@@ -83,6 +83,7 @@ router.post('/login', [
     }
 
     console.log('[AUTH DEBUG] All checks passed, generating tokens');
+    console.log('[AUTH DEBUG] User tenant ID:', user.tenantId);
 
     // Update last login - DISABLED due to column name mismatch
     // TODO: Fix lastLogin field mapping to correct database column
@@ -128,7 +129,7 @@ router.post('/login', [
       console.error('Error fetching tenant:', err);
     }
 
-    res.json({
+    const responseData = {
       success: true,
       data: {
         user: {
@@ -143,14 +144,25 @@ router.post('/login', [
           // @ts-ignore
           permissions: user.permissions,
           // @ts-ignore
-          status: user.active ? 'active' : 'inactive'
+          status: user.active ? 'active' : 'inactive',
+          // @ts-ignore - tenantId is dynamically set by schema initialization
+          client: user.tenantId
         },
         tenant: tenant,
         token,
         refreshToken,
         expiresIn
       }
+    };
+    
+    console.log('[AUTH DEBUG] Login response:', {
+      userId: responseData.data.user.id,
+      email: responseData.data.user.email,
+      client: responseData.data.user.client,
+      hasToken: !!responseData.data.token
     });
+    
+    res.json(responseData);
   } catch (error) {
     const err = /** @type {Error} */ (error);
     console.error('Login error:', err);
@@ -203,7 +215,9 @@ router.post('/refresh', [
           name: user.name,
           role: user.role,
           permissions: user.permissions,
-          active: user.active
+          active: user.active,
+          // @ts-ignore - tenantId is dynamically set by schema initialization
+          client: user.tenantId
         },
         token: newToken,
         refreshToken: newRefreshToken,
@@ -223,10 +237,17 @@ router.post('/refresh', [
 // Verify token
 router.get('/verify', authenticateToken, async (req, res) => {
   try {
+    // Map user object to include client field
+    const userResponse = {
+      ...req.user,
+      // @ts-ignore - tenantId is dynamically set by schema initialization
+      client: req.user.tenantId
+    };
+    
     res.json({
       success: true,
       data: {
-        user: req.user
+        user: userResponse
       }
     });
   } catch (error) {

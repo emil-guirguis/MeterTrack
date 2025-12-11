@@ -26,8 +26,7 @@ export const LocationList: React.FC<LocationListProps> = ({
 }) => {
   const locations = useLocationsEnhanced();
   const auth = useAuth();
-  
-  // Custom delete handler for locations
+
   const handleLocationDelete = (location: Location) => {
     showConfirmation({
       type: 'danger',
@@ -40,7 +39,7 @@ export const LocationList: React.FC<LocationListProps> = ({
       }
     });
   };
-  
+
   const baseList = useBaseList<Location, ReturnType<typeof useLocationsEnhanced>>({
     entityName: 'location',
     entityNamePlural: 'locations',

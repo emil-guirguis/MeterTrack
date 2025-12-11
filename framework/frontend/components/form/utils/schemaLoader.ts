@@ -29,6 +29,9 @@ export interface BackendFieldDefinition {
   min: number | null;
   max: number | null;
   pattern: string | null;
+  showOn?: string[];
+  validate?: boolean;
+  validationFields?: string[];
 }
 
 export interface BackendSchema {
@@ -73,8 +76,8 @@ export async function fetchSchema(
   options: { cache?: boolean; baseUrl?: string; ttl?: number } = {}
 ): Promise<BackendSchema> {
   // Use environment variable for API base URL, fallback to relative path
-  const defaultBaseUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL 
-    ? import.meta.env.VITE_API_BASE_URL 
+  const defaultBaseUrl = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL 
+    ? (import.meta as any).env.VITE_API_BASE_URL 
     : 'http://localhost:3001/api';
   const { cache = true, baseUrl = defaultBaseUrl, ttl = CACHE_TTL } = options;
 
@@ -138,6 +141,8 @@ export async function fetchSchema(
         schema,
         timestamp: Date.now(),
       });
+      console.log(`✅ SCHEMA LOADED: ${entityName} (${Object.keys(schema.formFields).length} form fields)`);
+      logSchemasInMemory();
     }
 
     return schema;
@@ -150,7 +155,7 @@ export async function fetchSchema(
 /**
  * Convert backend field definition to frontend format
  */
-function convertFieldDefinition(backendField: BackendFieldDefinition): FieldDefinition {
+function convertFieldDefinition(backendField: BackendFieldDefinition & { validate?: boolean; validationFields?: string[] }): FieldDefinition {
   return {
     type: backendField.type as any,
     default: backendField.default,
@@ -164,6 +169,11 @@ function convertFieldDefinition(backendField: BackendFieldDefinition): FieldDefi
     ...(backendField.max != null && { max: backendField.max }),
     ...(backendField.pattern && { pattern: backendField.pattern }),
     ...(backendField.enumValues && { enumValues: backendField.enumValues }),
+    // Preserve validation field properties for dropdown rendering
+    ...(backendField.validate != null && { validate: backendField.validate }),
+    ...(backendField.validationFields && { validationFields: backendField.validationFields }),
+    // Preserve showOn property for visibility control
+    ...(backendField.showOn && { showOn: backendField.showOn }),
   };
 }
 
@@ -213,6 +223,25 @@ export function clearSchemaCache(entityName?: string) {
   } else {
     schemaCache.clear();
   }
+}
+
+/**
+ * Log all schemas currently in memory
+ */
+export function logSchemasInMemory() {
+  if (schemaCache.size === 0) {
+    console.log('📋 SCHEMAS IN MEMORY: NONE');
+    return;
+  }
+  
+  console.log(`📋 SCHEMAS IN MEMORY: ${schemaCache.size} schemas loaded`);
+  schemaCache.forEach((entry, entityName) => {
+    const age = Date.now() - entry.timestamp;
+    const ageSeconds = Math.round(age / 1000);
+    const formFieldCount = Object.keys(entry.schema.formFields).length;
+    const entityFieldCount = Object.keys(entry.schema.entityFields).length;
+    console.log(`  [${entityName}] ${formFieldCount} form fields, ${entityFieldCount} entity fields (cached ${ageSeconds}s ago)`);
+  });
 }
 
 /**
@@ -280,8 +309,8 @@ export async function getAvailableSchemas(baseUrl?: string): Promise<Array<{
   endpoint: string;
 }>> {
   // Use environment variable for API base URL, fallback to relative path
-  const defaultBaseUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL 
-    ? import.meta.env.VITE_API_BASE_URL 
+  const defaultBaseUrl = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL 
+    ? (import.meta as any).env.VITE_API_BASE_URL 
     : 'http://localhost:3001/api';
   const apiBaseUrl = baseUrl || defaultBaseUrl;
   

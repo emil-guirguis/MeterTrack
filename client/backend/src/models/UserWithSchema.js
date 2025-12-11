@@ -11,11 +11,11 @@ const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = req
 class User extends BaseModel {
     constructor(data = {}) {
         super(data);
-        
+
         // Auto-initialize all fields from schema
         User.schema.initializeFromData(this, data);
     }
-    
+
     /**
      * @override
      * @returns {string}
@@ -23,7 +23,7 @@ class User extends BaseModel {
     static get tableName() {
         return 'users';
     }
-    
+
     /**
      * @override
      * @returns {string}
@@ -33,16 +33,17 @@ class User extends BaseModel {
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
-    
+
     /**
      * @override
      */
-        static get schema() {
+    static get schema() {
         return defineSchema({
             entityName: 'User',
             tableName: 'users',
             description: 'User entity for authentication and authorization',
-            
+
+            customListColumns: {},
             // Form fields - user can edit these
             formFields: {
                 name: field({
@@ -52,7 +53,10 @@ class User extends BaseModel {
                     label: 'Name',
                     dbField: 'name',
                     maxLength: 100,
-                }),
+                    placeholder: 'John Doe',
+                    filertable: ['main'],
+                    showOn: ['list', 'form'],
+                                }),
                 email: field({
                     type: FieldTypes.EMAIL,
                     default: '',
@@ -60,7 +64,9 @@ class User extends BaseModel {
                     label: 'Email',
                     dbField: 'email',
                     maxLength: 254,
-                }),
+                    placeholder: 'email@yahoo.com',
+                    showOn: ['list', 'form'],
+                                }),
                 passwordHash: field({
                     type: FieldTypes.STRING,
                     default: '',
@@ -72,19 +78,23 @@ class User extends BaseModel {
                 }),
                 role: field({
                     type: FieldTypes.STRING,
-                    default: 'viewer',
+                    default: 'Viewer',
                     required: false,
                     label: 'Role',
                     dbField: 'role',
                     maxLength: 20,
-                    enumValues: ['admin', 'manager', 'technician', 'viewer'],
-                }),
+                    enumValues: ['Admin', 'Manager', 'Technician', 'Viewer'],
+                      placeholder: 'Viewer',
+                    filertable: ['main'],
+                    showOn: ['list', 'form'],  
+                            }),
                 permissions: field({
                     type: FieldTypes.ARRAY,
                     default: [],
                     required: false,
                     label: 'Permissions',
                     dbField: 'permissions',
+                    showOn: [ 'form'],  
                 }),
                 active: field({
                     type: FieldTypes.BOOLEAN,
@@ -92,6 +102,7 @@ class User extends BaseModel {
                     required: false,
                     label: 'Active Status',
                     dbField: 'active',
+                    showOn: ['list', 'form'],  
                 }),
                 lastLogin: field({
                     type: FieldTypes.DATE,
@@ -100,9 +111,10 @@ class User extends BaseModel {
                     label: 'Last Login',
                     dbField: 'last_sign_in_at',
                     readOnly: true,
+                    showOn: ['list', 'form'],  
                 })
             },
-            
+
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
@@ -125,6 +137,7 @@ class User extends BaseModel {
                     readOnly: true,
                     label: 'Created At',
                     dbField: 'created_at',
+                    showOn: ['form'],  
                 }),
                 updatedAt: field({
                     type: FieldTypes.DATE,
@@ -132,9 +145,10 @@ class User extends BaseModel {
                     readOnly: true,
                     label: 'Updated At',
                     dbField: 'updated_at',
+                    showOn: ['form'],  
                 })
             },
-            
+
             // Relationships
             relationships: {
                 tenant: relationship({
@@ -144,7 +158,7 @@ class User extends BaseModel {
                     autoLoad: false,
                 }),
             },
-            
+
             validation: {},
         });
     }

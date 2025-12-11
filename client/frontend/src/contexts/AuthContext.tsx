@@ -9,18 +9,20 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  locations: [],
 };
 
 // Auth actions
 type AuthAction =
   | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: User }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: User; locations: any[] } }
   | { type: 'LOGIN_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
-  | { type: 'REFRESH_TOKEN_SUCCESS'; payload: User }
+  | { type: 'REFRESH_TOKEN_SUCCESS'; payload: { user: User; locations: any[] } }
   | { type: 'REFRESH_TOKEN_FAILURE' }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'CLEAR_ERROR' };
+  | { type: 'CLEAR_ERROR' }
+  | { type: 'SET_LOCATIONS'; payload: any[] };
 
 // Auth reducer
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
@@ -34,7 +36,8 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
     case 'LOGIN_SUCCESS':
       return {
         ...state,
-        user: action.payload,
+        user: action.payload.user,
+        locations: action.payload.locations,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -46,6 +49,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
         error: action.payload,
+        locations: [],
       };
     case 'LOGOUT':
       return {
@@ -54,11 +58,13 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        locations: [],
       };
     case 'REFRESH_TOKEN_SUCCESS':
       return {
         ...state,
-        user: action.payload,
+        user: action.payload.user,
+        locations: action.payload.locations,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -70,6 +76,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        locations: [],
       };
     case 'SET_LOADING':
       return {
@@ -80,6 +87,11 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...state,
         error: null,
+      };
+    case 'SET_LOCATIONS':
+      return {
+        ...state,
+        locations: action.payload,
       };
     default:
       return state;
@@ -139,7 +151,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             if (user) {
               console.log('✅ Token verified, user authenticated:', user.email);
-              dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+              
+              // Fetch locations for the user's tenant
+              const locations = await authService.fetchLocations(user.client);
+              
+              dispatch({ type: 'LOGIN_SUCCESS', payload: { user, locations } });
             } else {
               console.log('❌ Token invalid, clearing...');
               // Token is invalid, clear it
@@ -199,12 +215,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const authResponse = await authService.login(credentials);
       console.log('📦 Auth response received:', authResponse);
       
-      // Store tokens in tokenStorage
-      authService.storeTokens(authResponse.token, authResponse.refreshToken, authResponse.expiresIn, credentials.rememberMe);
-      console.log('💾 Tokens stored successfully');
+      // Tokens are already stored in authService.login()
+      // Just update rememberMe flag if needed
+      if (credentials.rememberMe) {
+        console.log('💾 RememberMe flag set');
+      }
       console.log('🔑 Token in storage:', authService.getStoredToken());
       
-      dispatch({ type: 'LOGIN_SUCCESS', payload: authResponse.user });
+      dispatch({ 
+        type: 'LOGIN_SUCCESS', 
+        payload: {
+          user: authResponse.user,
+          locations: authResponse.locations || []
+        }
+      });
       console.log('✅ Login completed successfully');
     } catch (error) {
       console.error('❌ Login failed in context:', error);
@@ -255,7 +279,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update stored tokens
       authService.storeTokens(authResponse.token, authResponse.refreshToken, authResponse.expiresIn);
       
-      dispatch({ type: 'REFRESH_TOKEN_SUCCESS', payload: authResponse.user });
+      dispatch({ 
+        type: 'REFRESH_TOKEN_SUCCESS', 
+        payload: {
+          user: authResponse.user,
+          locations: authResponse.locations || []
+        }
+      });
     } catch (error) {
       console.error('Token refresh failed:', error);
       dispatch({ type: 'REFRESH_TOKEN_FAILURE' });
@@ -275,6 +305,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return state.user.role === role;
   };
 
+  // Get locations for a specific tenant
+  const getLocationsByTenant = (tenantId: string | number): any[] => {
+    console.log(`[AUTH] getLocationsByTenant(${tenantId}): state.locations.length=${state.locations?.length}`);
+    
+    if (!state.locations || state.locations.length === 0) {
+      console.log('[AUTH] getLocationsByTenant: No locations in state');
+      console.log('[AUTH] Full state:', { 
+        user: state.user?.email, 
+        isAuthenticated: state.isAuthenticated,
+        locationsCount: state.locations?.length,
+        locationsArray: state.locations
+      });
+      return [];
+    }
+    
+    console.log(`[AUTH] getLocationsByTenant(${tenantId}): Checking ${state.locations.length} locations`);
+    console.log('[AUTH] Location objects:', state.locations.map((loc: any) => ({
+      id: loc.id,
+      name: loc.name,
+      tenant_id: loc.tenant_id,
+      keys: Object.keys(loc)
+    })));
+    
+    // Filter locations by tenant_id (handle both string and number comparisons)
+    const filtered = state.locations.filter((location: any) => {
+      const locationTenantId = String(location.tenant_id);
+      const searchTenantId = String(tenantId);
+      const matches = locationTenantId === searchTenantId;
+      console.log(`[AUTH]   Location ${location.id}: tenant_id=${location.tenant_id} vs search=${tenantId} => ${matches}`);
+      return matches;
+    });
+    
+    console.log(`[AUTH] getLocationsByTenant(${tenantId}): Found ${filtered.length} locations out of ${state.locations.length}`);
+    return filtered;
+  };
+
   // Context value
   const contextValue: AuthContextType = {
     ...state,
@@ -283,7 +349,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshToken,
     checkPermission,
     hasRole,
+    getLocationsByTenant,
   };
+
+  // Log locations in memory whenever they change
+  React.useEffect(() => {
+    if (state.locations && state.locations.length > 0) {
+      console.log('📍 LOCATIONS IN MEMORY:', state.locations);
+      console.log('📍 LOCATIONS COUNT:', state.locations.length);
+      state.locations.forEach((loc: any, idx: number) => {
+        console.log(`  [${idx}] ID: ${loc.id}, Name: ${loc.name}, Tenant: ${loc.tenant_id}`);
+      });
+    } else {
+      console.log('📍 NO LOCATIONS IN MEMORY');
+    }
+  }, [state.locations]);
 
   return (
     <AuthContext.Provider value={contextValue}>

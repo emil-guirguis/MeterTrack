@@ -37,7 +37,7 @@ export const locationColumns: ColumnDefinition<Location>[] = [
     {
       sortable: true,
       secondaryRender: (location: Location) => 
-        `${location.address.street}, ${location.address.city}, ${location.address.state}`,
+        location.address ? `${location.address.street}, ${location.address.city}, ${location.address.state}` : 'N/A',
     }
   ),
   
@@ -79,10 +79,10 @@ export const locationColumns: ColumnDefinition<Location>[] = [
     sortable: true,
     responsive: 'hide-mobile',
     render: (_, location) => 
-      React.createElement('div', { className: 'location-list__location' },
+      location.address ? React.createElement('div', { className: 'location-list__location' },
         React.createElement('div', null, `${location.address.city}, ${location.address.state}`),
         React.createElement('div', { className: 'location-list__zip' }, location.address.zipCode)
-      ),
+      ) : React.createElement('div', null, 'N/A'),
   },
   
   {
@@ -135,7 +135,7 @@ export const locationFilters: FilterDefinition[] = [
     type: 'select',
     options: (items: Location[]) => {
       const cities = items
-        .map(item => item.address.city)
+        .map(item => item.address?.city)
         .filter(Boolean)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
@@ -218,10 +218,10 @@ export const locationExportConfig: ExportConfig<Location> = {
     location.name,
     location.type,
     location.status,
-    location.address.street,
-    location.address.city,
-    location.address.state,
-    location.address.zipCode,
+    location.address?.street || '',
+    location.address?.city || '',
+    location.address?.state || '',
+    location.address?.zipCode || '',
     location.squareFootage || 0,
     location.meterCount,
     location.yearBuilt || '',

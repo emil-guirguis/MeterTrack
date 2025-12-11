@@ -8,8 +8,7 @@
 import React from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
 import { useContactsEnhanced } from './contactsStore';
-import type { Contact } from './contactConfig';
-import './ContactForm.css';
+import type { Contact } from './types';
 
 interface ContactFormProps {
   contact?: Contact;
@@ -30,6 +29,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     'Contact Information': ['name', 'company', 'role', 'email', 'phone'],
     'Address': ['street', 'street2', 'city', 'state', 'zip', 'country'],
     'Additional Information': ['active', 'notes'],
+    'Dates': ['created_at','modified_at']
   };
 
   return (

@@ -4,7 +4,7 @@ import { ContactList } from './ContactList';
 import { ContactForm } from './ContactForm';
 import { useContactsEnhanced } from './contactsStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
-import type { Contact } from './contactConfig';
+import type { Contact } from './types';
 
 export const ContactManagementPage: React.FC = () => (
   <EntityManagementPage<Contact, ReturnType<typeof useContactsEnhanced>>

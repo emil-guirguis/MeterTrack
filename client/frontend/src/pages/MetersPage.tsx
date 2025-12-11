@@ -176,10 +176,12 @@ const MetersPage: React.FC = () => {
       {(viewMode === 'create' || viewMode === 'edit') && (
         <FormModal
           isOpen={true}
-          title={viewMode === 'create' ? 'Add New Meter' : 'Edit Meter'}
+          title="Meter"
           onClose={handleFormCancel}
           onSubmit={() => { }} // No-op since form handles its own submission
           size="lg"
+          showSaveButton={true}
+          saveLabel="Save"
         >
           <MeterForm
             meter={selectedMeter || undefined}

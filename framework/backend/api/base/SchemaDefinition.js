@@ -11,6 +11,12 @@
  */
 
 /**
+ * Column  types supported by the schema system
+ */
+const ColumnTypes = {
+  
+}
+/**
  * Field types supported by the schema system
  */
 const FieldTypes = {
@@ -23,6 +29,7 @@ const FieldTypes = {
   URL: 'url',
   OBJECT: 'object',
   ARRAY: 'array',
+  JSON: 'json'
 };
 
 /**
@@ -36,6 +43,8 @@ const FieldTypes = {
  * @param {string} [definition.label] - Human-readable label
  * @param {string} [definition.description] - Field description
  * @param {string} [definition.placeholder] - Placeholder text
+//  * @param {boolean} [definition.sortable] - Sortable
+ * @param {Array<string>} [definition.filertable] - Filertable
  * @param {string} [definition.dbField] - Database column name (if different)
  * @param {Array<string>} [definition.enumValues] - Enum values for select fields
  * @param {number} [definition.minLength] - Minimum length for strings
@@ -43,7 +52,9 @@ const FieldTypes = {
  * @param {number} [definition.min] - Minimum value for numbers
  * @param {number} [definition.max] - Maximum value for numbers
  * @param {string} [definition.pattern] - Regex pattern for validation
- * @param {Function} [definition.validate] - Custom validation function
+ * @param {Array<string>} [definition.showOn] - Where to show field (e.g., ['form', 'list'])
+ * @param {boolean} [definition.validate] - Custom validation function
+ * @param {Array<string>} [definition.validationFields] - Custom validation fields
  * @param {Function} [definition.toApi] - Transform value when sending to API
  * @param {Function} [definition.fromApi] - Transform value when receiving from API
  * @returns {Object} Field definition
@@ -64,7 +75,9 @@ function field(definition) {
     min: definition.min !== undefined ? definition.min : null,
     max: definition.max !== undefined ? definition.max : null,
     pattern: definition.pattern || null,
+    showOn: definition.showOn || null,
     validate: definition.validate || null,
+    validationFields: definition.validationFields || null,
     toApi: definition.toApi || null,
     fromApi: definition.fromApi || null,
   };
@@ -114,6 +127,7 @@ function relationship(config) {
  * @param {string} definition.entityName - Entity name (e.g., 'Meter', 'Location')
  * @param {string} definition.tableName - Database table name
  * @param {string} [definition.description] - Entity description
+ * @param {Object} definition.customListColumns - Custom columns that appear in lists
  * @param {Object} definition.formFields - Fields that appear in forms (user-editable)
  * @param {Object} [definition.entityFields] - Additional fields in entity (read-only, computed)
  * @param {Object} [definition.relationships] - Entity relationships

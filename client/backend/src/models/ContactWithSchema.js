@@ -40,10 +40,40 @@ class Contact extends BaseModel {
             tableName: 'contact',
             description: 'Contact entity for customers, vendors, and other business contacts',
 
+            customListColumns: {  
+//                 createTwoLineColumn,
+//   createPhoneColumn,
+//   createStatusColumn,
+//   createLocationColumn,
+//   createBadgeListColumn,
+                
+            },
+
             // Form fields - user can edit these
             formFields: {
-                name: field({ type: FieldTypes.STRING, default: '', required: true, label: 'Name', dbField: 'name', minLength: 2, maxLength: 100, placeholder: 'John Doe', }),
-                company: field({ type: FieldTypes.STRING, default: '', required: false, label: 'Company', dbField: 'company', maxLength: 200, placeholder: 'AcmeCorporation', }),
+                name: field({
+                    type: FieldTypes.STRING,
+                    default: '',
+                    required: true,
+                    label: 'Name',
+                    dbField: 'name',
+                    minLength: 2,
+                    maxLength: 100,
+                    placeholder: 'John Doe',
+                    filertable:['main'],
+                    showOn: ['list', 'form'],
+                }),
+                company: field({
+                    type: FieldTypes.STRING,
+                    default: '',
+                    required: false,
+                    label: 'Company',
+                    dbField: 'company',
+                    maxLength: 200,
+                    placeholder: 'Acme Corporation',
+                    filertable:['true'],
+                    showOn: ['list', 'form'],
+                }),
 
                 role: field({
                     type: FieldTypes.STRING,
@@ -52,7 +82,10 @@ class Contact extends BaseModel {
                     label: 'Role',
                     dbField: 'role',
                     maxLength: 100,
-                    placeholder: 'Sales Manager',
+                    enumValues: ['Vendor', 'Customer', 'Contractor', 'Technician', 'Client', 'Sales Manager'],
+                    placeholder: 'Vendor',
+                    filertable:['true'],
+                    showOn: ['list', 'form'],
                 }),
 
                 email: field({
@@ -64,6 +97,7 @@ class Contact extends BaseModel {
                     maxLength: 254,
                     pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
                     placeholder: 'john@example.com',
+                    showOn: ['form'],
                 }),
 
                 phone: field({
@@ -74,6 +108,7 @@ class Contact extends BaseModel {
                     dbField: 'phone',
                     maxLength: 50,
                     placeholder: '(555) 123-4567',
+                    showOn: ['list', 'form'],
                 }),
 
                 street: field({
@@ -84,6 +119,7 @@ class Contact extends BaseModel {
                     dbField: 'street',
                     maxLength: 200,
                     placeholder: '123 Main St',
+                    showOn: ['form'],
                 }),
 
                 street2: field({
@@ -94,6 +130,7 @@ class Contact extends BaseModel {
                     dbField: 'street2',
                     maxLength: 100,
                     placeholder: 'Suite 100',
+                    showOn: ['form'],
                 }),
 
                 city: field({
@@ -104,6 +141,7 @@ class Contact extends BaseModel {
                     dbField: 'city',
                     maxLength: 100,
                     placeholder: 'New York',
+                    showOn: ['form'],
                 }),
 
                 state: field({
@@ -114,6 +152,7 @@ class Contact extends BaseModel {
                     dbField: 'state',
                     maxLength: 50,
                     placeholder: 'NY',
+                    showOn: ['form'],
                 }),
 
                 zip: field({
@@ -125,6 +164,7 @@ class Contact extends BaseModel {
                     maxLength: 20,
                     pattern: '^[0-9]{5}(-[0-9]{4})?$',
                     placeholder: '10001',
+                    showOn: ['form'],
                 }),
 
                 country: field({
@@ -135,6 +175,7 @@ class Contact extends BaseModel {
                     dbField: 'country',
                     maxLength: 100,
                     enumValues: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP'],
+                    showOn: ['form'],
                 }),
 
                 notes: field({
@@ -145,7 +186,28 @@ class Contact extends BaseModel {
                     dbField: 'notes',
                     maxLength: 5000,
                     placeholder: 'Additional notes...',
+                    showOn: ['form'],
                 }),
+
+                active: field({
+                    type: FieldTypes.BOOLEAN,
+                    default: true,
+                    readOnly: false,
+                    label: 'Active',
+                    dbField: 'active',
+                    description: 'Whether the contact is active',
+                    showOn: ['list', 'form'],
+                }),
+
+                // tags: field({
+                //     type: FieldTypes.ARRAY,
+                //     default: [],
+                //     readOnly: false,
+                //     label: 'Tags',
+                //     description: 'Contact tags for categorization',
+                //     showOn: ['list', 'form'],
+                // }),
+
             },
 
             // Entity fields - read-only, system-managed
@@ -158,40 +220,6 @@ class Contact extends BaseModel {
                     dbField: 'id',
                 }),
 
-                active: field({
-                    type: FieldTypes.BOOLEAN,
-                    default: true,
-                    readOnly: false,
-                    label: 'Active',
-                    dbField: 'active',
-                    description: 'Whether the contact is active',
-                }),
-
-                category: field({
-                    type: FieldTypes.STRING,
-                    default: 'customer',
-                    readOnly: false,
-                    label: 'Category',
-                    enumValues: ['customer', 'vendor', 'contractor', 'technician', 'client'],
-                    description: 'Contact category/type',
-                }),
-
-                status: field({
-                    type: FieldTypes.STRING,
-                    default: 'active',
-                    readOnly: false,
-                    label: 'Status',
-                    enumValues: ['active', 'inactive'],
-                    description: 'Contact status',
-                }),
-
-                tags: field({
-                    type: FieldTypes.ARRAY,
-                    default: [],
-                    readOnly: false,
-                    label: 'Tags',
-                    description: 'Contact tags for categorization',
-                }),
 
                 createdAt: field({
                     type: FieldTypes.DATE,
@@ -199,6 +227,7 @@ class Contact extends BaseModel {
                     readOnly: true,
                     label: 'Created At',
                     dbField: 'created_at',
+                    showOn: ['form'],
                 }),
 
                 updatedAt: field({
@@ -207,6 +236,7 @@ class Contact extends BaseModel {
                     readOnly: true,
                     label: 'Updated At',
                     dbField: 'updated_at',
+                    showOn: ['form'],
                 }),
 
                 tenantId: field({

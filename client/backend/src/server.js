@@ -42,10 +42,27 @@ let threadingService = null;
 app.use(helmet());
 
 // Rate limiting
+// Increased limits for development - schema prefetch makes multiple requests
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests per 15 min in dev, 100 in prod
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req, res) => {
+    // Skip rate limiting for schema endpoints during development
+    if (process.env.NODE_ENV !== 'production' && req.path.includes('/schema')) {
+      console.log('🔄 [RATE_LIMIT] Skipping rate limit for schema endpoint:', req.path);
+      return true;
+    }
+    return false;
+  },
+  handler: (req, res) => {
+    console.error('❌ [RATE_LIMIT] Rate limit exceeded for IP:', req.ip);
+    console.error('❌ [RATE_LIMIT] Path:', req.path);
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.'
+    });
+  }
 });
 app.use('/api/', limiter);
 
@@ -88,52 +105,90 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Connect to PostgreSQL and initialize services
 (async () => {
   try {
+    console.log('🔄 [INIT] Starting database connection...');
     // Connect to PostgreSQL
     await db.connect();
+    console.log('✅ [INIT] Database connected');
 
+    console.log('🔄 [INIT] Initializing email templates...');
     // Initialize email templates (seed default templates if needed)
     await initializeEmailTemplates();
+    console.log('✅ [INIT] Email templates initialized');
 
+    console.log('🔄 [INIT] Initializing email service...');
     // Initialize email service
     await initializeEmailService();
+    console.log('✅ [INIT] Email service initialized');
 
+    console.log('🔄 [INIT] Initializing notification scheduler...');
     // Initialize notification scheduler
     await initializeNotificationScheduler();
+    console.log('✅ [INIT] Notification scheduler initialized');
 
+    console.log('🔄 [INIT] Initializing meter data analyzer...');
     // Initialize meter data analyzer
     await initializeMeterDataAnalyzer();
+    console.log('✅ [INIT] Meter data analyzer initialized');
 
+    console.log('🔄 [INIT] Initializing meter integration service...');
     // Initialize meter integration service
     await initializeMeterIntegrationService();
+    console.log('✅ [INIT] Meter integration service initialized');
 
+    console.log('🔄 [INIT] Initializing meter monitoring service...');
     // Initialize meter monitoring service
     await initializeMeterMonitoringService();
+    console.log('✅ [INIT] Meter monitoring service initialized');
 
+    console.log('🔄 [INIT] Initializing threading system...');
     // Initialize threading service first (required for auto collection)
     await initializeThreadingSystem();
-    console.log('✅ Threading system initialization completed');
+    console.log('✅ [INIT] Threading system initialization completed');
+
+    console.log('✅ [INIT] All services initialized successfully');
+    console.log('✅ [INIT] Initialization async function completing...');
 
     // Initialize auto meter collection service (requires threading service)
     // TEMPORARILY DISABLED - service methods are commented out
     // await initializeAutoMeterCollection();
+    
+    console.log('✅ [INIT] Initialization complete - server should now be running');
   } catch (error) {
-    console.error('❌ Database connection error:', error.message);
+    console.error('❌ [INIT] Initialization error:', error.message);
+    console.error('❌ [INIT] Stack trace:', error.stack);
+    console.error('❌ [INIT] Exiting process with code 1');
     process.exit(1);
   }
 })();
+
+console.log('✅ [INIT] Initialization IIFE started (async)');
+console.log('✅ [INIT] Main thread continuing - server will start listening...');
+
+// Prevent the process from exiting if there are no active handles
+// This is important because the initialization might complete before the server starts listening
+console.log('🔄 [PROCESS] Setting up process keep-alive...');
+const keepAliveInterval = setInterval(() => {
+  // This interval keeps the process alive
+  // It will be cleared when the server is properly listening
+}, 30000);
+console.log('✅ [PROCESS] Keep-alive interval set');
 
 /**
  * Initialize email templates system
  */
 async function initializeEmailTemplates() {
   try {
+    console.log('🔄 [EMAIL_TEMPLATES] Starting initialization...');
     // Import EmailTemplateSeeder
     const EmailTemplateSeeder = require('./services/EmailTemplateSeeder');
+    console.log('🔄 [EMAIL_TEMPLATES] EmailTemplateSeeder imported');
     
     // Seed default templates if needed
     await EmailTemplateSeeder.seedOnStartup();
+    console.log('✅ [EMAIL_TEMPLATES] Seeding completed');
   } catch (error) {
-    console.error('❌ Failed to initialize email templates:', error.message);
+    console.error('❌ [EMAIL_TEMPLATES] Failed to initialize:', error.message);
+    console.error('❌ [EMAIL_TEMPLATES] Stack:', error.stack);
     // Don't exit the process - the server can still run without templates
   }
 }
@@ -143,20 +198,24 @@ async function initializeEmailTemplates() {
  */
 async function initializeEmailService() {
   try {
+    console.log('🔄 [EMAIL_SERVICE] Starting initialization...');
     // Import EmailService
     const emailService = require('./services/EmailService');
+    console.log('🔄 [EMAIL_SERVICE] EmailService imported');
     
     // Initialize with default configuration
     const result = await emailService.initialize();
+    console.log('🔄 [EMAIL_SERVICE] Initialize result:', result);
     
     if (result.success) {
-      console.log('📧 Email service initialized successfully');
+      console.log('� [EMAiIL_SERVICE] Initialized successfully');
     } else {
-      console.log('⚠️ Email service initialization failed:', result.error);
-      console.log('💡 Configure SMTP settings in .env file to enable email functionality');
+      console.log('⚠️ [EMAIL_SERVICE] Initialization failed:', result.error);
+      console.log('💡 [EMAIL_SERVICE] Configure SMTP settings in .env file to enable email functionality');
     }
   } catch (error) {
-    console.error('❌ Failed to initialize email service:', error.message);
+    console.error('❌ [EMAIL_SERVICE] Failed to initialize:', error.message);
+    console.error('❌ [EMAIL_SERVICE] Stack:', error.stack);
     // Don't exit the process - the server can still run without email
   }
 }
@@ -166,19 +225,23 @@ async function initializeEmailService() {
  */
 async function initializeNotificationScheduler() {
   try {
+    console.log('🔄 [NOTIFICATION_SCHEDULER] Starting initialization...');
     // Import NotificationScheduler
     const notificationScheduler = require('./services/NotificationScheduler');
+    console.log('🔄 [NOTIFICATION_SCHEDULER] NotificationScheduler imported');
     
     // Initialize with default configuration
     const result = await notificationScheduler.initialize();
+    console.log('� [NOTIiFICATION_SCHEDULER] Initialize result:', result);
     
     if (result.success) {
-      console.log('📅 Notification scheduler initialized successfully');
+      console.log('📅 [NOTIFICATION_SCHEDULER] Initialized successfully');
     } else {
-      console.log('⚠️ Notification scheduler initialization failed:', result.error);
+      console.log('⚠️ [NOTIFICATION_SCHEDULER] Initialization failed:', result.error);
     }
   } catch (error) {
-    console.error('❌ Failed to initialize notification scheduler:', error.message);
+    console.error('❌ [NOTIFICATION_SCHEDULER] Failed to initialize:', error.message);
+    console.error('❌ [NOTIFICATION_SCHEDULER] Stack:', error.stack);
     // Don't exit the process - the server can still run without scheduler
   }
 }
@@ -188,22 +251,28 @@ async function initializeNotificationScheduler() {
  */
 async function initializeMeterDataAnalyzer() {
   try {
+    console.log('🔄 [METER_ANALYZER] Starting initialization...');
     // Import MeterDataAnalyzer
     const meterDataAnalyzer = require('./services/MeterDataAnalyzer');
+    console.log('🔄 [METER_ANALYZER] MeterDataAnalyzer imported');
     
     // Initialize with default configuration
     const result = await meterDataAnalyzer.initialize();
+    console.log('� [ METER_ANALYZER] Initialize result:', result);
     
     if (result.success) {
-      console.log('📊 Meter data analyzer initialized successfully');
+      console.log('📊 [METER_ANALYZER] Initialized successfully');
       
       // Start monitoring if enabled
+      console.log('🔄 [METER_ANALYZER] Starting monitoring...');
       meterDataAnalyzer.startMonitoring();
+      console.log('✅ [METER_ANALYZER] Monitoring started');
     } else {
-      console.log('⚠️ Meter data analyzer initialization failed:', result.error);
+      console.log('⚠️ [METER_ANALYZER] Initialization failed:', result.error);
     }
   } catch (error) {
-    console.error('❌ Failed to initialize meter data analyzer:', error.message);
+    console.error('❌ [METER_ANALYZER] Failed to initialize:', error.message);
+    console.error('❌ [METER_ANALYZER] Stack:', error.stack);
     // Don't exit the process - the server can still run without analyzer
   }
 }
@@ -213,19 +282,23 @@ async function initializeMeterDataAnalyzer() {
  */
 async function initializeMeterIntegrationService() {
   try {
+    console.log('🔄 [METER_INTEGRATION] Starting initialization...');
     // Import MeterIntegrationService
     const meterIntegrationService = require('./services/MeterIntegrationService');
+    console.log('🔄 [METER_INTEGRATION] MeterIntegrationService imported');
     
     // Initialize with default configuration
     const result = await meterIntegrationService.initialize();
+    console.log('� [METEeR_INTEGRATION] Initialize result:', result);
     
     if (result.success) {
-      console.log('📡 Meter integration service initialized successfully');
+      console.log('📡 [METER_INTEGRATION] Initialized successfully');
     } else {
-      console.log('⚠️ Meter integration service initialization failed:', result.error);
+      console.log('⚠️ [METER_INTEGRATION] Initialization failed:', result.error);
     }
   } catch (error) {
-    console.error('❌ Failed to initialize meter integration service:', error.message);
+    console.error('❌ [METER_INTEGRATION] Failed to initialize:', error.message);
+    console.error('❌ [METER_INTEGRATION] Stack:', error.stack);
     // Don't exit the process - the server can still run without integration
   }
 }
@@ -235,22 +308,28 @@ async function initializeMeterIntegrationService() {
  */
 async function initializeMeterMonitoringService() {
   try {
+    console.log('🔄 [METER_MONITORING] Starting initialization...');
     // Import MeterMonitoringService
     const meterMonitoringService = require('./services/MeterMonitoringService');
+    console.log('� [MEeTER_MONITORING] MeterMonitoringService imported');
     
     // Initialize with default configuration
     const result = await meterMonitoringService.initialize();
+    console.log('🔄 [METER_MONITORING] Initialize result:', result);
     
     if (result.success) {
-      console.log('📊 Meter monitoring service initialized successfully');
+      console.log('📊 [METER_MONITORING] Initialized successfully');
       
       // Start monitoring if enabled
+      console.log('🔄 [METER_MONITORING] Starting monitoring...');
       meterMonitoringService.startMonitoring();
+      console.log('✅ [METER_MONITORING] Monitoring started');
     } else {
-      console.log('⚠️ Meter monitoring service initialization failed:', result.error);
+      console.log('⚠️ [METER_MONITORING] Initialization failed:', result.error);
     }
   } catch (error) {
-    console.error('❌ Failed to initialize meter monitoring service:', error.message);
+    console.error('❌ [METER_MONITORING] Failed to initialize:', error.message);
+    console.error('❌ [METER_MONITORING] Stack:', error.stack);
     // Don't exit the process - the server can still run without monitoring
   }
 }
@@ -323,11 +402,14 @@ async function initializeAutoMeterCollection() {
  */
 async function initializeThreadingSystem() {
   try {
-    console.log('🧵 Initializing MCP threading system...');
+    console.log('🧵 [THREADING] Initializing MCP threading system...');
     
+    console.log('🧵 [THREADING] Importing ThreadingService...');
     // Import ThreadingService
     const { ThreadingService } = require('./services/threading/ThreadingService.js');
+    console.log('🧵 [THREADING] ThreadingService imported successfully');
     
+    console.log('🧵 [THREADING] Creating threading configuration...');
     // Create threading service with default configuration
     const threadingConfig = {
       worker: {
@@ -357,28 +439,37 @@ async function initializeThreadingSystem() {
         }
       }
     };
+    console.log('🧵 [THREADING] Configuration created');
     
+    console.log('🧵 [THREADING] Instantiating ThreadingService...');
     threadingService = new ThreadingService(threadingConfig);
+    console.log('🧵 [THREADING] ThreadingService instantiated');
     
     // Initialize the threading routes with the service
     // initializeThreadingService(threadingService); // Function not available yet
     
+    console.log('🧵 [THREADING] Setting up event handlers...');
     // Setup threading service event handlers
     setupThreadingEventHandlers();
+    console.log('🧵 [THREADING] Event handlers set up');
     
     // Start the threading service if auto-start is enabled
     if (process.env.THREADING_AUTO_START !== 'false') {
+      console.log('🧵 [THREADING] Starting threading service...');
       const result = await threadingService.start();
+      console.log('🧵 [THREADING] Threading service start result:', result);
       if (result.success) {
-        console.log(`✅ MCP threading system started -> Thread ID: ${result.threadId}`);
+        console.log(`✅ [THREADING] MCP threading system started -> Thread ID: ${result.threadId}`);
       } else {
-        console.warn(`⚠️ MCP threading system failed to start: ${result.error}`);
+        console.warn(`⚠️ [THREADING] MCP threading system failed to start: ${result.error}`);
       }
     } else {
-      console.log('🧵 MCP threading system initialized (auto-start disabled)');
+      console.log('🧵 [THREADING] MCP threading system initialized (auto-start disabled)');
     }
+    console.log('🧵 [THREADING] Threading system initialization complete');
   } catch (error) {
-    console.error('❌ Failed to initialize threading system:', error);
+    console.error('❌ [THREADING] Failed to initialize threading system:', error.message);
+    console.error('❌ [THREADING] Stack trace:', error.stack);
     // Don't exit the process - the server can still run without threading
   }
 }
@@ -735,24 +826,65 @@ process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
+  console.error('❌ [PROCESS] Uncaught Exception:', error.message);
+  console.error('❌ [PROCESS] Stack:', error.stack);
   // gracefulShutdown('uncaughtException'); // TEMPORARILY DISABLED
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('❌ [PROCESS] Unhandled Rejection at:', promise);
+  console.error('❌ [PROCESS] Reason:', reason);
+  if (reason instanceof Error) {
+    console.error('❌ [PROCESS] Stack:', reason.stack);
+  }
   // gracefulShutdown('unhandledRejection'); // TEMPORARILY DISABLED
 });
 
+// Monitor process exit
+const originalExit = process.exit;
+process.exit = function(code) {
+  console.error(`❌ [PROCESS] process.exit(${code}) called`);
+  console.error('❌ [PROCESS] Stack trace:');
+  console.error(new Error().stack);
+  return originalExit.call(process, code);
+};
+
 // Start server
+console.log('🔄 [SERVER] About to call app.listen()...');
+console.log(`� [SERVEeR] PORT = ${PORT}`);
+
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
-  console.log(`🧵 Threading auto-start: ${process.env.THREADING_AUTO_START !== 'false' ? 'enabled' : 'disabled'}`);
+  console.log(`🚀 [SERVER] Server running on port ${PORT}`);
+  console.log(`📊 [SERVER] Environment: ${process.env.NODE_ENV}`);
+  console.log(`🌐 [SERVER] Frontend URL: ${process.env.FRONTEND_URL}`);
+  console.log(`🧵 [SERVER] Threading auto-start: ${process.env.THREADING_AUTO_START !== 'false' ? 'enabled' : 'disabled'}`);
+  console.log('✅ [SERVER] Server initialization complete - ready to accept requests');
+  
+  // Keep the process alive
+  console.log('📌 [PROCESS] Server is now running and keeping process alive');
+  
+  // Set a timeout to verify the server is still running after 5 seconds
+  setTimeout(() => {
+    console.log('✅ [PROCESS] Server is still running after 5 seconds - all good!');
+  }, 5000);
 });
+
+console.log('✅ [SERVER] app.listen() called successfully');
 
 // Handle server shutdown
 server.on('close', () => {
-  console.log('🚀 HTTP server closed');
+  console.log('🚀 [SERVER] HTTP server closed');
+});
+
+// Log when server is listening
+server.on('listening', () => {
+  console.log('📡 [SERVER] Server is listening for connections');
+  console.log('✅ [PROCESS] Server is listening - clearing keep-alive interval');
+  clearInterval(keepAliveInterval);
+  console.log('✅ [PROCESS] Keep-alive interval cleared - server will stay alive via active connections');
+});
+
+// Log any server errors
+server.on('error', (error) => {
+  console.error('❌ [SERVER] Server error:', error);
 });

@@ -9,6 +9,7 @@
  * - Type mapping and validation
  */
 
+const { log } = require('console');
 const {
   serializeValue,
   deserializeRow
@@ -145,7 +146,20 @@ function buildInsertSQL(tableName, fields, data) {
     const field = fieldMap.get(key);
     const fieldType = field ? field.type : null;
     
-    columns.push(key);
+    // Skip read-only fields
+    if (field && field.readOnly) {
+      continue;
+    }
+    
+    // Skip fields with no database column (computed fields)
+    if (field && field.dbField === null) {
+      continue;
+    }
+    
+    // Use the database column name (field.column or field.dbField), not the property name
+    const columnName = field ? (field.column || field.dbField || key) : key;
+    
+    columns.push(columnName);
     placeholders.push(`$${paramIndex++}`);
     values.push(serializeValue(value, fieldType));
   }
@@ -165,6 +179,13 @@ function buildInsertSQL(tableName, fields, data) {
   }
   
   const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+  
+  console.log('\n' + '='.repeat(120));
+  console.log('🔵 SQL INSERT STATEMENT');
+  console.log('='.repeat(120));
+  console.log('SQL:', sql);
+  console.log('Values:', JSON.stringify(values, null, 2));
+  console.log('='.repeat(120) + '\n');
   
   return { sql, values };
 }
@@ -230,6 +251,13 @@ function buildSelectSQL(tableName, fields, options = {}) {
   
   const sql = `SELECT ${selectClause} FROM ${tableName}${joinClause}${whereClause}${orderClause}${limitClause}${offsetClause}`;
   
+  console.log('\n' + '='.repeat(120));
+  console.log('🔵 SQL SELECT STATEMENT');
+  console.log('='.repeat(120));
+  console.log('SQL:', sql);
+  console.log('Values:', JSON.stringify(values, null, 2));
+  console.log('='.repeat(120) + '\n');
+  
   return { sql, values, relationshipMap };
 }
 
@@ -263,7 +291,20 @@ function buildUpdateSQL(tableName, fields, data, where) {
     const field = fieldMap.get(key);
     const fieldType = field ? field.type : null;
     
-    setClauses.push(`${key} = $${paramIndex++}`);
+    // Skip read-only fields
+    if (field && field.readOnly) {
+      continue;
+    }
+    
+    // Skip fields with no database column (computed fields)
+    if (field && field.dbField === null) {
+      continue;
+    }
+    
+    // Use the database column name (field.column or field.dbField), not the property name
+    const columnName = field ? (field.column || field.dbField || key) : key;
+    
+    setClauses.push(`${columnName} = $${paramIndex++}`);
     values.push(serializeValue(value, fieldType));
   }
   
@@ -281,6 +322,13 @@ function buildUpdateSQL(tableName, fields, data, where) {
   values.push(...whereResult.values);
   
   const sql = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE ${whereResult.clause} RETURNING *`;
+  
+  console.log('\n' + '='.repeat(120));
+  console.log('🔵 SQL UPDATE STATEMENT');
+  console.log('='.repeat(120));
+  console.log('SQL:', sql);
+  console.log('Values:', JSON.stringify(values, null, 2));
+  console.log('='.repeat(120) + '\n');
   
   return { sql, values };
 }

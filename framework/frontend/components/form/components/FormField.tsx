@@ -1,12 +1,26 @@
 import React from 'react';
-import type { FormFieldConfig } from '../types/form';
 import './FormField.css';
 
-export interface FormFieldProps extends Omit<FormFieldConfig, 'name'> {
+export interface FormFieldOption {
+  value: string | number;
+  label: string;
+}
+
+export interface FormFieldProps {
   name: string;
+  label?: string;
+  type?: 'text' | 'email' | 'password' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'time' | 'url' | 'tel' | 'search';
   value: any;
   error?: string;
   touched?: boolean;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  options?: FormFieldOption[];
+  rows?: number;
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   onBlur: (e: React.FocusEvent) => void;
   className?: string;
@@ -76,7 +90,7 @@ export const FormField: React.FC<FormFieldProps> = ({
             aria-describedby={showError ? errorId : undefined}
           >
             {placeholder && <option value="">{placeholder}</option>}
-            {options?.map(option => (
+            {options?.map((option: FormFieldOption) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -106,7 +120,7 @@ export const FormField: React.FC<FormFieldProps> = ({
       case 'radio':
         return (
           <div className={`${baseClassName}__radio-group`}>
-            {options?.map(option => (
+            {options?.map((option: FormFieldOption) => (
               <label key={option.value} className={`${baseClassName}__radio-label`}>
                 <input
                   type="radio"
@@ -140,6 +154,7 @@ export const FormField: React.FC<FormFieldProps> = ({
             max={max}
             step={step}
             className={inputClassName}
+            autoComplete="off"
             {...(showError && { 'aria-invalid': true })}
             aria-describedby={showError ? errorId : undefined}
           />
