@@ -10,18 +10,25 @@ export const useValidationDataProvider = () => {
 
   return async (entityName: string, fieldDef: any): Promise<Array<{ id: any; label: string }>> => {
     console.log(`[ValidationDataProvider] Fetching data for entity: ${entityName}`);
+    console.log(`[ValidationDataProvider] Auth state:`, {
+      isAuthenticated: auth.isAuthenticated,
+      userTenant: auth.user?.client,
+      locationsCount: auth.locations?.length || 0,
+    });
 
     // Handle location entity
     if (entityName === 'location') {
       console.log(`[ValidationDataProvider] Getting locations from auth context`);
 
-      // Get locations directly from auth context (already filtered by tenant on backend)
+      // Get locations directly from auth context (backend already filters by tenant)
       const locations = auth.locations || [];
 
       if (!locations || locations.length === 0) {
         console.warn(`[ValidationDataProvider] No locations found in auth context`);
         return [];
       }
+
+      console.log(`[ValidationDataProvider] Found ${locations.length} locations in auth context`);
 
       // Map locations to options using labelField from fieldDef
       const labelField = fieldDef.validationFields?.[0] || 'name';
@@ -31,6 +38,9 @@ export const useValidationDataProvider = () => {
       }));
 
       console.log(`[ValidationDataProvider] Mapped ${options.length} location options`);
+      options.forEach((opt: any, idx: number) => {
+        console.log(`  [${idx}] ID: ${opt.id}, Label: ${opt.label}`);
+      });
       return options;
     }
 

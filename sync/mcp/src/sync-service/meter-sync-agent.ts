@@ -183,7 +183,10 @@ export class MeterSyncAgent {
         if (localMeter) {
           // Check if any fields have changed
           const hasChanges =
-            localMeter.name !== remoteMeter.name ||
+            JSON.stringify(localMeter.register_map) !== JSON.stringify(remoteMeter.register_map)||
+            localMeter.ip !== remoteMeter.ip ||
+            localMeter.port !== remoteMeter.port ||
+            localMeter.active !== remoteMeter.active ||
             !localMeter.active;
 
           if (hasChanges) {
