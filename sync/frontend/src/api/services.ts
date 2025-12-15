@@ -79,6 +79,44 @@ export const meterSyncApi = {
   },
 };
 
+export const meterReadingApi = {
+  getStatus: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get<any>('/api/meter-reading/status');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Reading] Failed to fetch meter reading status:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.error || 
+          error.message || 
+          'Failed to fetch meter reading status'
+        );
+      }
+      throw error;
+    }
+  },
+
+  triggerCollection: async (): Promise<{ success: boolean; message: string; cycle_result?: any }> => {
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string; cycle_result?: any }>(
+        '/api/meter-reading/trigger'
+      );
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Reading] Failed to trigger meter reading collection:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.error || 
+          error.message || 
+          'Failed to trigger meter reading collection'
+        );
+      }
+      throw error;
+    }
+  },
+};
+
 export const tenantApi = {
   getTenantInfo: async (): Promise<TenantInfo | null> => {
     try {

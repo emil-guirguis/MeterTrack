@@ -23,6 +23,7 @@ import { SyncManager, createSyncManagerFromEnv } from './sync-service/sync-manag
 import { ClientSystemApiClient } from './sync-service/api-client.js';
 import { LocalApiServer, createAndStartLocalApiServer } from './api/server.js';
 import { MeterSyncAgent } from './sync-service/meter-sync-agent.js';
+import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
 
 // Load environment variables from root .env file first, then local .env
 // Use __dirname equivalent for ES modules
@@ -67,6 +68,7 @@ class SyncMcpServer {
   private meterCollector?: MeterCollector;
   private syncManager?: SyncManager;
   private meterSyncAgent?: MeterSyncAgent;
+  private bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
   private apiServer?: LocalApiServer;
   private remotePool?: Pool;
   private isInitialized: boolean = false;
@@ -208,6 +210,24 @@ class SyncMcpServer {
       //   await this.syncManager.start();
       //   console.log('✅ [Services] Sync Manager started');
 
+      // Initialize BACnet Meter Reading Agent
+      console.log('📊 [Services] Initializing BACnet Meter Reading Agent...');
+      this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
+        database: this.database,
+        collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '60', 10),
+        enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
+        bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
+        bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
+        connectionTimeoutMs: parseInt(process.env.BACNET_CONNECTION_TIMEOUT_MS || '5000', 10),
+        readTimeoutMs: parseInt(process.env.BACNET_READ_TIMEOUT_MS || '3000', 10),
+      }, logger);
+      console.log('✅ [Services] BACnet Meter Reading Agent initialized');
+
+      // Start BACnet Meter Reading Agent
+      console.log('▶️  [Services] Starting BACnet Meter Reading Agent...');
+      await this.bacnetMeterReadingAgent.start();
+      console.log('✅ [Services] BACnet Meter Reading Agent started');
+
       // Initialize Meter Sync Agent
       console.log('🔄 [Services] Initializing Meter Sync Agent...');
       remotePool = this.createRemoteDatabasePool();
@@ -227,7 +247,7 @@ class SyncMcpServer {
 
       // Initialize Local API Server
       console.log('🌐 [Services] Initializing Local API Server...');
-      this.apiServer = await createAndStartLocalApiServer(this.database, this.syncManager, this.meterSyncAgent);
+      this.apiServer = await createAndStartLocalApiServer(this.database, this.syncManager, this.meterSyncAgent, this.bacnetMeterReadingAgent);
       console.log('✅ [Services] Local API Server started');
 
       this.isInitialized = true;
@@ -280,6 +300,12 @@ class SyncMcpServer {
 
           case 'get_meter_status':
             return await this.handleGetMeterStatus(args);
+
+          case 'trigger_meter_reading':
+            return await this.handleTriggerMeterReading();
+
+          case 'get_meter_reading_status':
+            return await this.handleGetMeterReadingStatus();
 
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -367,6 +393,22 @@ class SyncMcpServer {
               description: 'Get status for specific meter (optional, returns all if omitted)',
             },
           },
+        },
+      },
+      {
+        name: 'trigger_meter_reading',
+        description: 'Manually trigger an immediate BACnet meter reading collection cycle',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      {
+        name: 'get_meter_reading_status',
+        description: 'Get the current status of the BACnet meter reading agent including cycle results and metrics',
+        inputSchema: {
+          type: 'object',
+          properties: {},
         },
       },
     ];
@@ -566,6 +608,92 @@ class SyncMcpServer {
   }
 
   /**
+   * Tool Handler: trigger_meter_reading
+   * Manually trigger an immediate BACnet meter reading collection cycle
+   */
+  private async handleTriggerMeterReading(): Promise<any> {
+    if (!this.bacnetMeterReadingAgent) {
+      throw new Error('BACnet Meter Reading Agent not initialized');
+    }
+
+    if (!this.bacnetMeterReadingAgent.getStatus().isRunning) {
+      throw new Error('BACnet Meter Reading Agent is not running');
+    }
+
+    try {
+      const result = await this.bacnetMeterReadingAgent.triggerCollection();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              message: 'Meter reading collection cycle triggered successfully',
+              cycle_result: {
+                cycleId: result.cycleId,
+                startTime: result.startTime,
+                endTime: result.endTime,
+                metersProcessed: result.metersProcessed,
+                readingsCollected: result.readingsCollected,
+                errorCount: result.errors.length,
+                errors: result.errors,
+              },
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to trigger meter reading collection: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Tool Handler: get_meter_reading_status
+   * Get the current status of the BACnet meter reading agent
+   */
+  private async handleGetMeterReadingStatus(): Promise<any> {
+    if (!this.bacnetMeterReadingAgent) {
+      throw new Error('BACnet Meter Reading Agent not initialized');
+    }
+
+    const status = this.bacnetMeterReadingAgent.getStatus();
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            agent_status: {
+              isRunning: status.isRunning,
+              totalCyclesExecuted: status.totalCyclesExecuted,
+              totalReadingsCollected: status.totalReadingsCollected,
+              totalErrorsEncountered: status.totalErrorsEncountered,
+            },
+            last_cycle_result: status.lastCycleResult ? {
+              cycleId: status.lastCycleResult.cycleId,
+              startTime: status.lastCycleResult.startTime,
+              endTime: status.lastCycleResult.endTime,
+              metersProcessed: status.lastCycleResult.metersProcessed,
+              readingsCollected: status.lastCycleResult.readingsCollected,
+              errorCount: status.lastCycleResult.errors.length,
+              success: status.lastCycleResult.success,
+            } : null,
+            active_errors: status.activeErrors.map(err => ({
+              meterId: err.meterId,
+              dataPoint: err.dataPoint,
+              operation: err.operation,
+              error: err.error,
+              timestamp: err.timestamp,
+            })),
+          }, null, 2),
+        },
+      ],
+    };
+  }
+
+  /**
    * Start the MCP server
    */
   async start(): Promise<void> {
@@ -580,7 +708,7 @@ class SyncMcpServer {
     await this.server.connect(transport);
 
     console.log('✅ [MCP] Sync MCP Server started');
-    console.log('📋 [MCP] Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_reading, get_meter_status');
+    console.log('📋 [MCP] Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_reading, get_meter_status, trigger_meter_reading, get_meter_reading_status');
   }
 
   /**
@@ -591,6 +719,10 @@ class SyncMcpServer {
 
     if (this.meterCollector) {
       await this.meterCollector.shutdown();
+    }
+
+    if (this.bacnetMeterReadingAgent) {
+      await this.bacnetMeterReadingAgent.stop();
     }
 
     if (this.syncManager) {

@@ -1,18 +1,168 @@
 /* Meter Form Component Styles */
 
-/* Meter form inherits all base-form styles from framework */
-/* Only meter-specific overrides should be added here */
+/* Tab Container */
+.meter-form-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-background, #f9fafb);
+}
 
+/* Tab Navigation */
+.meter-form__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #ffffff);
+  padding: 0 2rem;
+  flex-shrink: 0;
+}
+
+.meter-form__tab {
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--color-text-secondary, #6b7280);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.meter-form__tab:hover {
+  color: var(--color-text-primary, #111827);
+  background: var(--color-background-alt, #f3f4f6);
+}
+
+.meter-form__tab--active {
+  color: var(--color-primary, #1976d2);
+  border-bottom-color: var(--color-primary, #1976d2);
+}
+
+/* Tab Content */
+.meter-form__content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+}
+
+/* Override base form to ensure proper layout */
 .meter-form {
-  /* Inherits from .base-form in framework */
+  display: flex !important;
+  gap: 2rem !important;
+  padding: 2rem !important;
+  padding-top: 0 !important;
+  background: var(--color-background, #f9fafb) !important;
+  overflow: visible !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex: 1 !important;
+}
+
+.meter-form .base-form__main {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 1.5rem !important;
+  grid-auto-flow: row !important;
+  overflow: visible !important;
+  max-width: none !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.meter-form .base-form__sidebar {
+  position: sticky !important;
+  top: 2rem !important;
+  width: 320px !important;
+  height: fit-content !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Section-specific column layouts */
+
+/* Basic Information - Section 1 */
+.meter-form .base-form__section:nth-of-type(1) {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.meter-form .base-form__section:nth-of-type(1) .base-form__section-title {
+  margin-bottom: 0.5rem;
+}
+
+/* Network Settings - Section 2 */
+.meter-form .base-form__section:nth-of-type(2) {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.meter-form .base-form__section:nth-of-type(2) .base-form__section-title {
+  margin-bottom: 0.5rem;
+}
+
+/* Status & Configuration - Section 3 */
+.meter-form .base-form__section:nth-of-type(3) {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.meter-form .base-form__section:nth-of-type(3) .base-form__section-title {
+  margin-bottom: 0.5rem;
+}
+
+/* Register Map - Full width on its own row */
+.meter-form .base-form__section:nth-of-type(4) {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+/* Additional Information (Notes) - Full width on its own row */
+.meter-form .base-form__section:nth-of-type(5) {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+
+/* Row-based 2-column layout for fields */
+.meter-form .base-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 /* Meter-specific: Register map field styling */
-.meter-form__field {
-  margin-bottom: 16px;
+.meter-form .base-form__field {
+  margin-bottom: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.meter-form__label {
+.meter-form .base-form__section:nth-of-type(1) .base-form__field,
+.meter-form .base-form__section:nth-of-type(2) .base-form__field,
+.meter-form .base-form__section:nth-of-type(3) .base-form__field {
+  width: 100%;
+}
+
+.meter-form .base-form__label {
   display: block;
   font-weight: 600;
   margin-bottom: 8px;
@@ -20,37 +170,48 @@
   font-size: 14px;
 }
 
-.meter-form__required {
+.meter-form .base-form__required {
   color: #d32f2f;
 }
 
-.meter-form__error {
+.meter-form .base-form__error {
   display: block;
   color: #d32f2f;
   font-size: 12px;
   margin-top: 4px;
 }
 
-.meter-form__helper-text {
+.meter-form .base-form__helper-text {
   display: block;
   color: #666;
   font-size: 12px;
   margin-top: 4px;
 }
 
+/* Register map field - full width */
+.meter-form__register-map {
+  grid-column: 1 / -1 !important;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* Field header with actions */
 .meter-form__field-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .meter-form__field-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
+/* Secondary button styling */
 .btn-secondary {
   padding: 8px 12px;
   background: #f5f5f5;
@@ -75,7 +236,109 @@
 }
 
 /* Full-width field for register map grid */
-.meter-form__field:has(.json-grid-editor) {
+.meter-form .base-form__field:has(.json-grid-editor) {
   grid-column: 1 / -1;
   width: 100%;
+}
+
+/* Responsive: Stack columns on smaller screens */
+@media (max-width: 1400px) {
+  .meter-form {
+    grid-template-columns: 1fr 300px !important;
+  }
+
+  .meter-form .base-form__main {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .meter-form .base-form__section:nth-of-type(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .meter-form .base-form__section:nth-of-type(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .meter-form .base-form__section:nth-of-type(3) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .meter-form .base-form__section:nth-of-type(4) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .meter-form .base-form__section:nth-of-type(5) {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+}
+
+@media (max-width: 1024px) {
+  .meter-form {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .meter-form .base-form__main {
+    grid-template-columns: 1fr !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .meter-form .base-form__sidebar {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .meter-form .base-form__section:nth-of-type(1) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .meter-form .base-form__section:nth-of-type(2) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .meter-form .base-form__section:nth-of-type(3) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .meter-form .base-form__section:nth-of-type(4) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .meter-form .base-form__section:nth-of-type(5) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .meter-form {
+    padding: 1.5rem !important;
+    margin: 1rem !important;
+  }
+
+  .meter-form__field-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meter-form__field-actions {
+    width: 100%;
+  }
+
+  .btn-secondary {
+    flex: 1;
+  }
 }

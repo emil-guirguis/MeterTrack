@@ -1,17 +1,17 @@
 /**
  * Meter Form
  * 
- * Uses the dynamic schema-based BaseForm to render the meter form.
- * All validation, field rendering, and form management is handled by BaseForm.
- * Includes all required fields from the meter schema.
+ * Multi-tab form for managing meter information.
+ * Organized into tabs: Basic Info, Network, Register Map, and Additional Info.
  */
 
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
 import { JsonGridEditor } from '@framework/components/grid';
 import { useMetersEnhanced } from './metersStore';
 import { useValidationDataProvider } from '../../hooks/useValidationDataProvider';
 import type { Meter } from './meterConfig';
+import './MeterForm.css';
 
 interface MeterFormProps {
   meter?: Meter;
@@ -20,12 +20,15 @@ interface MeterFormProps {
   loading?: boolean;
 }
 
+type TabType = 'basic' | 'network' | 'register' | 'additional';
+
 export const MeterForm: React.FC<MeterFormProps> = ({
   meter,
   onSubmit,
   onCancel,
   loading = false,
 }) => {
+  const [activeTab, setActiveTab] = useState<TabType>('basic');
   const meters = useMetersEnhanced();
   const registerMapFileInputRef = useRef<HTMLInputElement>(null);
   const baseValidationDataProvider = useValidationDataProvider();
@@ -36,27 +39,64 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     [baseValidationDataProvider]
   );
 
-  const fieldSections: Record<string, string[]> = {
-    'Basic Information': [
-      'name',
-      'type',
-      'serial_number',
-      'location_id',
-      'device_id',
-    ],
-    'Network Settings': [
-      'ip',
-      'port',
-    ],
-    'Status & Configuration': [
-      'status',
-      'installation_date',
-      'register_map',
-    ],
-    'Additional Information': [
-      'notes',
-    ],
+  // Define tabs with their sections
+  const tabs: Record<TabType, { label: string; sections: Record<string, { fields: string[]; maxWidth?: string }> }> = {
+    basic: {
+      label: 'General',
+      sections: {
+        'Basic Information': {
+          fields: [
+            'name',
+            'device_id',
+            'location_id',
+            'type',
+            'serial_number',
+          ],
+        },
+        'Network Settings': {
+          fields: [
+            'ip',
+            'port',
+          ],
+        },
+        'Status & Configuration': {
+          fields: [
+            'active',
+            'installation_date',
+          ],
+        },
+      },
+    },
+    network: {
+      label: 'Register Map',
+      sections: {
+        'Register Map': {
+          fields: [
+            'register_map',
+          ],
+        },
+      },
+    },
+    register: {
+      label: 'Elements',
+      sections: {
+
+      },
+    },
+    additional: {
+      label: 'Notes',
+      sections: {
+        '': {
+          fields: [
+            'notes',
+          ],
+        },
+      },
+    },
   };
+
+  // Get field sections for active tab
+  const fieldSections = tabs[activeTab].sections;
 
   const renderCustomField = (
     fieldName: string,
@@ -71,13 +111,13 @@ export const MeterForm: React.FC<MeterFormProps> = ({
       const gridData = Array.isArray(value) ? value : (value ? [value] : []);
 
       return (
-        <div key={fieldName} className="base-form__field">
-          <div className="base-form__field-header">
+        <div key={fieldName} className="base-form__field meter-form__register-map">
+          <div className="meter-form__field-header">
             <label className="base-form__label">
               {fieldDef.label}
               {fieldDef.required && <span className="base-form__required">*</span>}
             </label>
-            <div className="base-form__field-actions">
+            <div className="meter-form__field-actions">
               <button
                 type="button"
                 className="btn-secondary"
@@ -118,19 +158,39 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   };
 
   return (
-    <BaseForm
-      schemaName="meter"
-      entity={meter}
-      store={meters}
-      onCancel={onCancel}
-      onLegacySubmit={onSubmit}
-      className="meter-form"
-      fieldSections={fieldSections}
-      loading={loading}
-      renderCustomField={renderCustomField}
-      fieldsToClean={['id', 'active', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags', 'tenant_id']}
-      validationDataProvider={validationDataProvider}
-    />
+    <div className="meter-form-container">
+      {/* Tab Navigation */}
+      <div className="meter-form__tabs">
+        {(Object.entries(tabs) as Array<[TabType, typeof tabs[TabType]]>).map(([tabKey, tab]) => (
+          <button
+            key={tabKey}
+            className={`meter-form__tab ${activeTab === tabKey ? 'meter-form__tab--active' : ''}`}
+            onClick={() => setActiveTab(tabKey)}
+            type="button"
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="meter-form__content">
+        <BaseForm
+          schemaName="meter"
+          entity={meter}
+          store={meters}
+          onCancel={onCancel}
+          onLegacySubmit={onSubmit}
+          className="meter-form"
+          fieldSections={fieldSections}
+          loading={loading}
+          renderCustomField={renderCustomField}
+          fieldsToClean={['id', 'active', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags', 'tenant_id']}
+          validationDataProvider={validationDataProvider}
+          showSidebar={false}
+        />
+      </div>
+    </div>
   );
 };
 

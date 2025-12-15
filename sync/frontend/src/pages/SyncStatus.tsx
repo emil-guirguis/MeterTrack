@@ -25,6 +25,7 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import { useAppStore } from '../stores/useAppStore';
 import { syncApi, tenantApi, meterSyncApi } from '../api/services';
 import CompanyInfoCard from '../components/CompanyInfoCard';
+import BACnetMeterReadingCard from '../components/BACnetMeterReadingCard';
 
 const POLLING_INTERVAL = parseInt(import.meta.env.VITE_POLLING_INTERVAL || '500000');
 
@@ -353,6 +354,11 @@ export default function SyncStatus() {
           </Card>
         </Grid>
         </>}
+
+        {/* BACnet Meter Reading Agent Status */}
+        <Grid item xs={12}>
+          <BACnetMeterReadingCard />
+        </Grid>
       </Grid>
 
       {/* Sync Error Logs - Only show if tenant is connected */}

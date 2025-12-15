@@ -33,7 +33,7 @@ export interface BaseFormProps {
     isDisabled: boolean,
     onChange: (value: any) => void
   ) => React.ReactNode | null;
-  fieldSections?: Record<string, string[]>;
+  fieldSections?: Record<string, string[] | { fields: string[]; maxWidth?: string }>;
   loading?: boolean;
   excludeFields?: string[];
   fieldsToClean?: string[];
@@ -686,12 +686,25 @@ export const BaseForm: React.FC<BaseFormProps> = ({
   const formContent = isDynamicForm ? (
     <>
       {Object.entries(fieldSections || { 'Fields': Object.keys(schema?.formFields || {}).filter(f => !excludeFields.includes(f)) }).map(
-        ([sectionTitle, fieldNames]) => {
+        ([sectionTitle, sectionConfig]) => {
+          // Handle both old format (array of strings) and new format (object with fields and maxWidth)
+          let fieldNames: string[] = [];
+          let maxWidth: string | undefined;
+          
+          if (Array.isArray(sectionConfig)) {
+            fieldNames = sectionConfig;
+          } else if (typeof sectionConfig === 'object' && sectionConfig !== null && 'fields' in sectionConfig) {
+            fieldNames = sectionConfig.fields;
+            maxWidth = sectionConfig.maxWidth;
+          }
+          
           const visibleFields = fieldNames.filter(f => !excludeFields.includes(f));
           if (visibleFields.length === 0) return null;
 
+          const sectionStyle = maxWidth ? { maxWidth } : undefined;
+
           return (
-            <div key={sectionTitle} className={`${className}__section`}>
+            <div key={sectionTitle} className={`${className}__section`} style={sectionStyle}>
               <h3 className={`${className}__section-title`}>{sectionTitle}</h3>
               {visibleFields.map(fieldName => {
                 // Check formFields first, then entityFields

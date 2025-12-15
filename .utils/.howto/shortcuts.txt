@@ -7,6 +7,7 @@ search in files Ctrl + Shift + F
 save all files Ctrl + K S
 toUpperCase() Ctrl + Shift + U
 toLowerCase() Ctrl + Shift + L
+change theme ctrl + K + T
 
 
 chrome 

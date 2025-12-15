@@ -10,12 +10,14 @@ import cors from 'cors';
 import { SyncDatabase } from '../database/postgres.js';
 import { SyncManager } from '../sync-service/sync-manager.js';
 import { MeterSyncAgent } from '../sync-service/meter-sync-agent.js';
+import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
 
 export interface LocalApiServerConfig {
   port: number;
   database: SyncDatabase;
   syncManager?: SyncManager;
   meterSyncAgent?: MeterSyncAgent;
+  bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
 }
 
 export class LocalApiServer {
@@ -24,6 +26,7 @@ export class LocalApiServer {
   private database: SyncDatabase;
   private syncManager?: SyncManager;
   private meterSyncAgent?: MeterSyncAgent;
+  private bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
   private server?: any;
 
   constructor(config: LocalApiServerConfig) {
@@ -31,6 +34,7 @@ export class LocalApiServer {
     this.database = config.database;
     this.syncManager = config.syncManager;
     this.meterSyncAgent = config.meterSyncAgent;
+    this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
     this.app = express();
 
     this.setupMiddleware();
@@ -341,6 +345,114 @@ export class LocalApiServer {
         next(error);
       }
     });
+
+    // Get BACnet meter reading agent status
+    this.app.get('/api/meter-reading/status', async (_req, res, next) => {
+      try {
+        console.log('📥 [API] GET /api/meter-reading/status - Request received');
+        
+        if (!this.bacnetMeterReadingAgent) {
+          console.error('❌ [API] BACnet meter reading agent not available');
+          return res.status(503).json({ 
+            error: 'BACnet meter reading agent not available',
+          });
+        }
+
+        const agentStatus = this.bacnetMeterReadingAgent.getStatus();
+        
+        const response = {
+          agent_status: {
+            isRunning: agentStatus.isRunning,
+            totalCyclesExecuted: agentStatus.totalCyclesExecuted,
+            totalReadingsCollected: agentStatus.totalReadingsCollected,
+            totalErrorsEncountered: agentStatus.totalErrorsEncountered,
+          },
+          last_cycle_result: agentStatus.lastCycleResult ? {
+            cycleId: agentStatus.lastCycleResult.cycleId,
+            startTime: agentStatus.lastCycleResult.startTime,
+            endTime: agentStatus.lastCycleResult.endTime,
+            metersProcessed: agentStatus.lastCycleResult.metersProcessed,
+            readingsCollected: agentStatus.lastCycleResult.readingsCollected,
+            errorCount: agentStatus.lastCycleResult.errors.length,
+            success: agentStatus.lastCycleResult.success,
+          } : null,
+          active_errors: agentStatus.activeErrors.map(err => ({
+            meterId: err.meterId,
+            dataPoint: err.dataPoint,
+            operation: err.operation,
+            error: err.error,
+            timestamp: err.timestamp,
+          })),
+        };
+
+        console.log(`📤 [API] GET /api/meter-reading/status - Returning:`, JSON.stringify(response, null, 2));
+        res.json(response);
+        console.log('✅ [API] GET /api/meter-reading/status - Response sent successfully');
+      } catch (error) {
+        console.error('❌ [API] GET /api/meter-reading/status - Error:', error);
+        next(error);
+      }
+    });
+
+    // Trigger manual BACnet meter reading collection
+    this.app.post('/api/meter-reading/trigger', async (_req, res, next) => {
+      try {
+        console.log('📥 [API] POST /api/meter-reading/trigger - Request received');
+        
+        if (!this.bacnetMeterReadingAgent) {
+          console.error('❌ [API] BACnet meter reading agent not available');
+          return res.status(503).json({ 
+            success: false,
+            error: 'BACnet meter reading agent not available',
+          });
+        }
+
+        const agentStatus = this.bacnetMeterReadingAgent.getStatus();
+        
+        if (!agentStatus.isRunning) {
+          console.error('❌ [API] BACnet meter reading agent is not running');
+          return res.status(503).json({ 
+            success: false,
+            error: 'BACnet meter reading agent is not running',
+          });
+        }
+
+        // Trigger collection cycle
+        console.log('🔄 [API] Triggering BACnet meter reading collection...');
+        const result = await this.bacnetMeterReadingAgent.triggerCollection();
+
+        const response = {
+          success: true,
+          message: 'Meter reading collection cycle triggered successfully',
+          cycle_result: {
+            cycleId: result.cycleId,
+            startTime: result.startTime,
+            endTime: result.endTime,
+            metersProcessed: result.metersProcessed,
+            readingsCollected: result.readingsCollected,
+            errorCount: result.errors.length,
+            errors: result.errors.map(err => ({
+              meterId: err.meterId,
+              dataPoint: err.dataPoint,
+              operation: err.operation,
+              error: err.error,
+              timestamp: err.timestamp,
+            })),
+          },
+        };
+
+        console.log(`📤 [API] POST /api/meter-reading/trigger - Returning:`, JSON.stringify(response, null, 2));
+        res.json(response);
+        console.log('✅ [API] POST /api/meter-reading/trigger - Response sent successfully');
+      } catch (error) {
+        console.error('❌ [API] POST /api/meter-reading/trigger - Error:', error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        res.status(409).json({
+          success: false,
+          error: errorMsg,
+        });
+      }
+    });
   }
 
   /**
@@ -378,7 +490,9 @@ export class LocalApiServer {
           console.log(`   Readings endpoint: http://localhost:${this.port}/api/local/readings`);
           console.log(`   Sync status endpoint: http://localhost:${this.port}/api/local/sync-status`);
           console.log(`   Meter sync status endpoint: http://localhost:${this.port}/api/local/meter-sync-status`);
-          console.log(`   Meter sync trigger endpoint: http://localhost:${this.port}/api/local/meter-sync-trigger\n`);
+          console.log(`   Meter sync trigger endpoint: http://localhost:${this.port}/api/local/meter-sync-trigger`);
+          console.log(`   Meter reading status endpoint: http://localhost:${this.port}/api/meter-reading/status`);
+          console.log(`   Meter reading trigger endpoint: http://localhost:${this.port}/api/meter-reading/trigger\n`);
           resolve();
         });
 
@@ -429,7 +543,8 @@ export class LocalApiServer {
 export async function createAndStartLocalApiServer(
   database: SyncDatabase,
   syncManager?: SyncManager,
-  meterSyncAgent?: MeterSyncAgent
+  meterSyncAgent?: MeterSyncAgent,
+  bacnetMeterReadingAgent?: BACnetMeterReadingAgent
 ): Promise<LocalApiServer> {
   const port = parseInt(process.env.LOCAL_API_PORT || '3002', 10);
 
@@ -438,6 +553,7 @@ export async function createAndStartLocalApiServer(
     database,
     syncManager,
     meterSyncAgent,
+    bacnetMeterReadingAgent,
   });
 
   await server.start();
