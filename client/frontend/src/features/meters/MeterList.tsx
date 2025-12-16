@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { DataList } from '@framework/components/list';
+import { BaseList } from '@framework/components/list/BaseList';
 import { useMetersEnhanced } from './metersStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useBaseList } from '@framework/components/list/hooks';
@@ -129,7 +129,7 @@ export const MeterList: React.FC<MeterListProps> = ({
 
   return (
     <div className="meter-list">
-      <DataList
+      <BaseList
         title="Meters"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}

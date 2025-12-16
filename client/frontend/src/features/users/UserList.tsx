@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataList } from '@framework/components/list';
+import { BaseList } from '@framework/components/list';
 import { useUsersEnhanced } from './usersStore';
 import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
@@ -36,7 +36,7 @@ export const UserList: React.FC<UserListProps> = ({
       message: `Inactivate user "${user.name}"?`,
       confirmText: 'Inactivate',
       onConfirm: async () => {
-        await users.updateItem(user.id, { status: 'inactive' });
+        //bawait users.updateItem(user.id, { active: 'inactive' });
         await users.fetchItems();
       }
     });
@@ -79,7 +79,7 @@ export const UserList: React.FC<UserListProps> = ({
 
   return (
     <div className="user-list">
-      <DataList
+      <BaseList
         title="Users"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}

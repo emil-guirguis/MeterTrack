@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { MeterList, MeterForm } from '../features/meters';
 import { useMetersEnhanced } from '../features/meters/metersStore';
-import { FormModal } from '@framework/shared/components';
+import { EntityManagementPage, FormModal } from '@framework/components/modal';
+
 import type { Meter, CreateMeterRequest } from '../features/meters/meterConfig';
 import './MetersPage.css';
 

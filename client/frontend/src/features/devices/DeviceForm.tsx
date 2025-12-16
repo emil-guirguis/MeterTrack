@@ -8,7 +8,7 @@
 
 import React, { useRef } from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
-import { JsonGridEditor } from '@framework/components/grid';
+import { JsonGridEditor } from '@framework/components/json_grid';
 import { useDevicesEnhanced } from './devicesStore';
 import type { Device } from './deviceConfig';
 

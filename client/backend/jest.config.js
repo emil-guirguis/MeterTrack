@@ -6,7 +6,8 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/src/services/threading/__tests__/'
+    '/src/services/threading/__tests__/',
+    '/src/__tests__/setup.js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',

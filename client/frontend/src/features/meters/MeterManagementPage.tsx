@@ -1,8 +1,8 @@
 import React from 'react';
-import { EntityManagementPage } from '@framework/shared/components';
+import { EntityManagementPage, FormModal } from '@framework/components/modal';
+
 import { MeterList } from './MeterList';
 import { MeterForm } from './MeterForm';
-import { FormModal } from '@framework/shared/components';
 import { useMetersEnhanced } from './metersStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 

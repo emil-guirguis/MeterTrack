@@ -219,6 +219,99 @@ class User extends BaseModel {
         const salt = await bcrypt.genSalt(10);
         return await bcrypt.hash(password, salt);
     }
+
+    // ===== PERMISSIONS METHODS =====
+
+    /**
+     * Validate permissions object structure
+     * Ensures permissions follow the nested object format: { module: { action: boolean } }
+     * @param {any} permissionsObj - Permissions object to validate
+     * @returns {boolean} True if valid, false otherwise
+     */
+    validatePermissionsObject(permissionsObj) {
+        const PermissionsService = require('../services/PermissionsService');
+        return PermissionsService.validatePermissionsObject(permissionsObj);
+    }
+
+    /**
+     * Convert stored permissions to nested object format
+     * Handles both JSON string storage and direct object storage
+     * @returns {Object} Nested permissions object { module: { action: boolean } }
+     */
+    getPermissionsAsNestedObject() {
+        const PermissionsService = require('../services/PermissionsService');
+        
+        // @ts-ignore - permissions is dynamically set by schema initialization
+        const storedPermissions = this.permissions;
+
+        // If permissions is a string (JSON), parse it
+        if (typeof storedPermissions === 'string') {
+            try {
+                const parsed = JSON.parse(storedPermissions);
+                if (PermissionsService.validatePermissionsObject(parsed)) {
+                    return parsed;
+                }
+            } catch (e) {
+                console.warn('Failed to parse permissions JSON:', e);
+            }
+        }
+
+        // If permissions is already an object, validate and return
+        if (typeof storedPermissions === 'object' && storedPermissions !== null && !Array.isArray(storedPermissions)) {
+            if (PermissionsService.validatePermissionsObject(storedPermissions)) {
+                return storedPermissions;
+            }
+        }
+
+        // If permissions is an array (old format), convert to nested object
+        if (Array.isArray(storedPermissions)) {
+            return PermissionsService.toNestedObject(storedPermissions);
+        }
+
+        // Fallback: return empty permissions object
+        return PermissionsService.getPermissionsByRole('viewer');
+    }
+
+    /**
+     * Convert stored permissions to flat array format
+     * Useful for API responses
+     * @returns {Array<string>} Flat array of permissions (e.g., ['user:create', 'meter:read'])
+     */
+    getPermissionsAsFlatArray() {
+        const PermissionsService = require('../services/PermissionsService');
+        const nestedObj = this.getPermissionsAsNestedObject();
+        return PermissionsService.toFlatArray(nestedObj);
+    }
+
+    /**
+     * Set permissions from nested object format
+     * Stores as JSON string in database
+     * @param {Object} permissionsObj - Nested permissions object { module: { action: boolean } }
+     * @returns {boolean} True if set successfully, false if invalid
+     */
+    setPermissionsFromNestedObject(permissionsObj) {
+        if (!this.validatePermissionsObject(permissionsObj)) {
+            console.warn('Invalid permissions object provided to setPermissionsFromNestedObject');
+            return false;
+        }
+
+        // Store as JSON string
+        // @ts-ignore - permissions is dynamically set by schema initialization
+        this.permissions = JSON.stringify(permissionsObj);
+        return true;
+    }
+
+    /**
+     * Set permissions from flat array format
+     * Converts to nested object and stores as JSON string
+     * @param {Array<string>} flatArray - Flat array of permissions (e.g., ['user:create', 'meter:read'])
+     * @returns {boolean} True if set successfully, false if invalid
+     */
+    setPermissionsFromFlatArray(flatArray) {
+        const PermissionsService = require('../services/PermissionsService');
+        const nestedObj = PermissionsService.toNestedObject(flatArray);
+        return this.setPermissionsFromNestedObject(nestedObj);
+    }
 }
 
 module.exports = User;

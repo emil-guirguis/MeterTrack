@@ -222,6 +222,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       console.log('🔑 Token in storage:', authService.getStoredToken());
       
+      console.log('📋 [AUTH] User permissions from backend:', authResponse.user.permissions);
+      console.log('📋 [AUTH] User role from backend:', authResponse.user.role);
+      
       dispatch({ 
         type: 'LOGIN_SUCCESS', 
         payload: {
@@ -295,8 +298,79 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check if user has specific permission
   const checkPermission = (permission: string): boolean => {
-    if (!state.user) return false;
-    return state.user.permissions.includes(permission as Permission);
+    if (!state.user) {
+      console.warn('[AUTH] checkPermission: No user in state');
+      return false;
+    }
+    
+    // Handle permissions as array (normal case)
+    if (Array.isArray(state.user.permissions)) {
+      if (state.user.permissions.length === 0) {
+        console.warn('[AUTH] checkPermission: User has no permissions', {
+          permission,
+          userRole: state.user.role,
+          permissionsArray: state.user.permissions
+        });
+        return false;
+      }
+      
+      const hasPermission = state.user.permissions.includes(permission);
+      if (!hasPermission) {
+        console.warn('[AUTH] checkPermission: Permission denied', {
+          permission,
+          userPermissions: state.user.permissions,
+          userRole: state.user.role
+        });
+      }
+      return hasPermission;
+    }
+    
+    // Handle permissions as nested object: { module: { action: boolean } }
+    if (typeof state.user.permissions === 'object' && state.user.permissions !== null) {
+      console.log('[AUTH] checkPermission: Permissions is nested object, checking format', {
+        permission,
+        permissionsKeys: Object.keys(state.user.permissions)
+      });
+      
+      // Parse permission string: "module:action"
+      const [module, action] = permission.split(':');
+      
+      if (!module || !action) {
+        console.warn('[AUTH] checkPermission: Invalid permission format (expected "module:action")', {
+          permission
+        });
+        return false;
+      }
+      
+      // Check if module exists and action is true
+      const permissionsObj = state.user.permissions as Record<string, Record<string, boolean>>;
+      const hasPermission = permissionsObj[module]?.[action] === true;
+      
+      if (!hasPermission) {
+        console.warn('[AUTH] checkPermission: Permission denied', {
+          permission,
+          module,
+          action,
+          moduleExists: !!permissionsObj[module],
+          actionValue: permissionsObj[module]?.[action],
+          userRole: state.user.role
+        });
+      } else {
+        console.log('[AUTH] checkPermission: Permission granted', {
+          permission,
+          module,
+          action
+        });
+      }
+      return hasPermission;
+    }
+    
+    console.warn('[AUTH] checkPermission: Permissions in unexpected format', {
+      permission,
+      permissionsType: typeof state.user.permissions,
+      permissions: state.user.permissions
+    });
+    return false;
   };
 
   // Check if user has specific role

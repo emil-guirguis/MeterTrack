@@ -1,6 +1,7 @@
 // @ts-nocheck
 const express = require('express');
 const User = require('../models/UserWithSchema');
+const PermissionsService = require('../services/PermissionsService');
 const { requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
@@ -67,7 +68,35 @@ router.get('/:id', requirePermission('user:read'), async (req, res) => {
 // Create user
 router.post('/', requirePermission('user:create'), async (req, res) => {
   try {
-    const user = new User(req.body);
+    const userData = { ...req.body };
+    
+    // Auto-generate permissions based on role if not explicitly provided
+    if (!userData.permissions || (Array.isArray(userData.permissions) && userData.permissions.length === 0)) {
+      const role = userData.role || 'Viewer';
+      const permissionsObj = PermissionsService.getPermissionsByRole(role);
+      
+      // Validate the generated permissions
+      if (!PermissionsService.validatePermissionsObject(permissionsObj)) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to generate valid permissions for role'
+        });
+      }
+      
+      // Store as JSON string
+      userData.permissions = JSON.stringify(permissionsObj);
+    } else if (typeof userData.permissions === 'object' && !Array.isArray(userData.permissions)) {
+      // If permissions is provided as nested object, validate and store as JSON string
+      if (!PermissionsService.validatePermissionsObject(userData.permissions)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid permissions object structure'
+        });
+      }
+      userData.permissions = JSON.stringify(userData.permissions);
+    }
+    
+    const user = new User(userData);
     await user.save();
     res.status(201).json({ success: true, data: user });
   } catch (error) {

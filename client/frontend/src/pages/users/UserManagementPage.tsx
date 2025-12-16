@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayoutWrapper as AppLayout } from '../../components/layout';
-import { FormModal } from '@framework/shared/components';
+import { EntityManagementPage, FormModal } from '@framework/components/modal';
+
 import { UserList } from '../../features/users/UserList';
 import { UserForm } from '../../features/users/UserForm';
 import { useUsersEnhanced } from '../../features/users/usersStore';

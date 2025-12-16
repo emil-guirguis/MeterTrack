@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/UserWithSchema');
 const { authenticateToken } = require('../middleware/auth');
+const PermissionsService = require('../services/PermissionsService');
 
 const router = express.Router();
 
@@ -83,6 +84,7 @@ router.post('/login', [
     }
 
     console.log('[AUTH DEBUG] All checks passed, generating tokens');
+    // @ts-ignore - tenantId is dynamically set by schema initialization
     console.log('[AUTH DEBUG] User tenant ID:', user.tenantId);
 
     // Update last login - DISABLED due to column name mismatch
@@ -129,6 +131,19 @@ router.post('/login', [
       console.error('Error fetching tenant:', err);
     }
 
+    // Derive permissions from role using PermissionsService
+    // @ts-ignore - role is dynamically set by schema initialization
+    const userRole = (user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = permissionsObj;
+    
+    // If user has permissions in database, use those instead (keep as nested object)
+    // @ts-ignore - permissions is dynamically set by schema initialization
+    if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
+      // Use nested object format as-is: { module: { action: true } }
+      permissions = user.permissions;
+    }
+
     const responseData = {
       success: true,
       data: {
@@ -141,8 +156,7 @@ router.post('/login', [
           name: user.name,
           // @ts-ignore
           role: user.role,
-          // @ts-ignore
-          permissions: user.permissions,
+          permissions: permissions,
           // @ts-ignore
           status: user.active ? 'active' : 'inactive',
           // @ts-ignore - tenantId is dynamically set by schema initialization
@@ -159,7 +173,9 @@ router.post('/login', [
       userId: responseData.data.user.id,
       email: responseData.data.user.email,
       client: responseData.data.user.client,
-      hasToken: !!responseData.data.token
+      hasToken: !!responseData.data.token,
+      permissionsCount: responseData.data.user.permissions.length,
+      permissions: responseData.data.user.permissions
     });
     
     res.json(responseData);
@@ -206,6 +222,17 @@ router.post('/refresh', [
     const newToken = generateToken(user.id);
     const newRefreshToken = generateRefreshToken(user.id);
 
+    // Derive permissions from role using PermissionsService
+    const userRole = (user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = permissionsObj;
+    
+    // If user has permissions in database, use those instead (keep as nested object)
+    if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
+      // Use nested object format as-is: { module: { action: true } }
+      permissions = user.permissions;
+    }
+
     res.json({
       success: true,
       data: {
@@ -214,7 +241,7 @@ router.post('/refresh', [
           email: user.email,
           name: user.name,
           role: user.role,
-          permissions: user.permissions,
+          permissions: permissions,
           active: user.active,
           // @ts-ignore - tenantId is dynamically set by schema initialization
           client: user.tenantId
@@ -237,9 +264,21 @@ router.post('/refresh', [
 // Verify token
 router.get('/verify', authenticateToken, async (req, res) => {
   try {
-    // Map user object to include client field
+    // Derive permissions from role using PermissionsService
+    const userRole = (req.user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = permissionsObj;
+    
+    // If user has permissions in database, use those instead (keep as nested object)
+    if (req.user.permissions && typeof req.user.permissions === 'object' && !Array.isArray(req.user.permissions)) {
+      // Use nested object format as-is: { module: { action: true } }
+      permissions = req.user.permissions;
+    }
+
+    // Map user object to include client field and permissions
     const userResponse = {
       ...req.user,
+      permissions: permissions,
       // @ts-ignore - tenantId is dynamically set by schema initialization
       client: req.user.tenantId
     };
@@ -309,13 +348,16 @@ router.post('/bootstrap', [
     // Hash password
     const passwordHash = await User.hashPassword(password);
 
+    // Get admin permissions from PermissionsService
+    const adminPermissionsObj = PermissionsService.getPermissionsByRole('admin');
+
     // Create admin user
     const user = await User.create({
       email,
       name,
       passwordHash,
       role: 'admin',
-      permissions: ['user:create', 'user:read', 'user:update', 'user:delete', 'meter:create', 'meter:read', 'meter:update', 'meter:delete'],
+      permissions: adminPermissionsObj,
       active: true
     });
 
@@ -332,7 +374,7 @@ router.post('/bootstrap', [
           email: user.email,
           name: user.name,
           role: user.role,
-          permissions: user.permissions,
+          permissions: adminPermissionsObj,
           status: 'active'
         },
         token,

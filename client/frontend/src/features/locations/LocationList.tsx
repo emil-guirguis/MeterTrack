@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataList } from '@framework/components/list';
+import { BaseList } from '@framework/components/list/BaseList';
 import { useLocationsEnhanced } from './locationsStore';
 import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
@@ -75,7 +75,7 @@ export const LocationList: React.FC<LocationListProps> = ({
 
   return (
     <div className="location-list">
-      <DataList
+      <BaseList
         title="Locations"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}

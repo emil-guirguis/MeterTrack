@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { FormModal } from '@framework/shared/components';
+import { EntityManagementPage, FormModal } from '@framework/components/modal';
+
 import { ConfirmationModal } from '@framework/components/modal/';
 
 export interface ConfirmationConfig {

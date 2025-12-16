@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataList } from '@framework/components/list';
+import { BaseList } from '@framework/components/list/BaseList';
 import { useMeterReadingsEnhanced } from './meterReadingsStore';
 import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
@@ -56,7 +56,7 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
 
   return (
     <div className="meter-reading-list">
-      <DataList
+      <BaseList
         title="Meter Readings"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}
@@ -66,7 +66,7 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
         loading={baseList.loading}
         error={baseList.error}
         emptyMessage="No meter readings found."
-        onSelect={onMeterReadingSelect}
+        // onSelect={onMeterReadingSelect}
         pagination={baseList.pagination}
       />
       {baseList.renderExportModal()}

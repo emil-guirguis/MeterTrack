@@ -1,5 +1,5 @@
 import React from 'react';
-import { EntityManagementPage, FormModal } from '@framework/shared/components';
+import { EntityManagementPage, FormModal } from '@framework/components/modal';
 import { ContactList } from './ContactList';
 import { ContactForm } from './ContactForm';
 import { useContactsEnhanced } from './contactsStore';

@@ -59,7 +59,7 @@ export interface User {
   name: string;
   client: string;
   role: UserRole;
-  permissions: Permission[];
+  permissions: string[]; // Accept any string, not just Permission enum
   active: boolean;
   lastLogin?: Date;
   createdAt: Date;

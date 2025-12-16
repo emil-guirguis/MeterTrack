@@ -7,7 +7,7 @@
 
 import React, { useRef, useCallback, useState } from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
-import { JsonGridEditor } from '@framework/components/grid';
+import { JsonGridEditor } from '@framework/components/json_grid';
 import { useMetersEnhanced } from './metersStore';
 import { useValidationDataProvider } from '../../hooks/useValidationDataProvider';
 import type { Meter } from './meterConfig';

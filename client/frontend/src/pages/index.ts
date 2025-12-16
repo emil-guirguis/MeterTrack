@@ -11,4 +11,4 @@ export { MeterManagementPage } from '../features/meters';
 // Other pages
 export { default as SettingsPage } from './SettingsPage';
 export { default as MetersPage } from './MetersPage';
-export { TemplatesPage } from './templates/TemplatesPage';
+// export { TemplatesPage } from './templates/TemplatesPage';

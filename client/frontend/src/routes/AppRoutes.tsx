@@ -11,7 +11,7 @@ import { LocationManagementPage } from '../features/locations';
 import { ContactManagementPage } from '../features/contacts';
 import { DeviceManagementPage } from '../features/devices';
 import { Permission, UserRole } from '../types/auth';
-import { SettingsPage, MetersPage, TemplatesPage } from '../pages';
+import { SettingsPage, MetersPage } from '../pages';
 import ManagementForm from '../components/management/ManagementForm';
 
 // Dashboard Page with Layout
@@ -128,7 +128,7 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/* Email Templates Module Placeholder */}
+        {/* Email Templates Module Placeholder
         <Route
           path="/templates"
           element={
@@ -136,7 +136,7 @@ const AppRoutes: React.FC = () => {
               <TemplatesPage />
             </AuthGuard>
           }
-        />
+        /> */}
 
         {/* Management Route */}
         <Route

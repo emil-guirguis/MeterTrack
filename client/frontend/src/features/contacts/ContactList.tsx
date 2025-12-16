@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { DataList } from '@framework/components/list/DataList';
+import { BaseList } from '@framework/components/list/BaseList';
 import { useContactsEnhanced } from './contactsStore';
 import { useBaseList } from '@framework/components/list/hooks/useBaseList';
 import { useAuth } from '../../hooks/useAuth';
@@ -44,10 +44,6 @@ export const ContactList: React.FC<ContactListProps> = ({
     return generateFiltersFromSchema(schema.formFields);
   }, [schema]);
 
-  const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
-    await contacts.bulkUpdateStatus(ids, status as 'active' | 'inactive');
-  };
-
   const handleContactDelete = (contact: Contact) => {
     showConfirmation({
       type: 'danger',
@@ -84,10 +80,10 @@ export const ContactList: React.FC<ContactListProps> = ({
     columns,
     filters,
     stats: contactStats,
-    bulkActions: createContactBulkActions(
-      { bulkUpdateStatus: bulkUpdateStatusWrapper },
-      (items) => baseList.handleExport(items)
-    ),
+    // bulkActions: createContactBulkActions(
+    //   { bulkUpdateStatus: bulkUpdateStatusWrapper },
+    //   (items) => baseList.handleExport(items)
+    // ),
     export: contactExportConfig,
     onEdit: onContactEdit,
     onCreate: onContactCreate,
@@ -106,7 +102,7 @@ export const ContactList: React.FC<ContactListProps> = ({
 
   return (
     <div className="contact-list">
-      <DataList
+      <BaseList
         title="Contacts"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}

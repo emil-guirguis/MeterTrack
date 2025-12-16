@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { DataTableProps, ColumnDefinition, BulkAction } from './types/ui';
+import type { DataTableProps, ColumnDefinition, BulkAction } from '../list/types/ui';
 import { useResponsive } from '../../hooks/useResponsive';
 import './DataTable.css';
 

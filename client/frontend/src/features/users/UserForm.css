@@ -231,6 +231,38 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.user-form__permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+}
+
+.user-form__permission-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.user-form__permission-checkbox:hover {
+  background-color: var(--color-background-tertiary);
+}
+
+.user-form__permission-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
 .user-form__permission-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

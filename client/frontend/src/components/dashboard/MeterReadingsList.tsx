@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DataList } from '@framework/components/list/DataList';
+import { BaseList } from '@framework/components/list/BaseList';
 import { meterReadingService } from '../../services';
 import type { DetailedMeterReading } from '../../types/entities';
 import './MeterReadingsList.css';
@@ -541,7 +541,7 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
 
   return (
     <div className={`meter-readings-list ${className}`}>
-      <DataList
+      <BaseList
         title={showTitle ? "Latest Meter Readings" : undefined}
         data={readings}
         columns={columns}

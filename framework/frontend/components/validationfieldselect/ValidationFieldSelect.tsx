@@ -12,7 +12,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import './FormField.css';
 
 export interface ValidationFieldSelectProps {
   fieldName: string;

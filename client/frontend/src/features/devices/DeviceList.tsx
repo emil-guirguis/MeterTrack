@@ -1,16 +1,11 @@
 import React from 'react';
-import { DataList } from '@framework/components/list/DataList';
+import { BaseList } from '@framework/components/list/BaseList';
 import { useDevicesEnhanced } from './devicesStore';
-import { useBaseList } from '@framework/components/list/hooks/useBaseList';
+import { useAuth } from '../../hooks/useAuth';
+import { useBaseList } from '@framework/components/list/hooks';
 import type { Device } from './deviceConfig';
 import { Permission } from '../../types/auth';
-import {
-  deviceColumns,
-  deviceFilters,
-  deviceStats,
-  createDeviceBulkActions,
-  deviceExportConfig,
-} from './deviceConfig';
+import { deviceColumns, deviceFilters, deviceStats, deviceExportConfig, createDeviceBulkActions } from './deviceConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './DeviceList.css';
 
@@ -23,8 +18,9 @@ interface DeviceListProps {
 export const DeviceList: React.FC<DeviceListProps> = ({
   onDeviceSelect,
   onDeviceEdit,
-  onDeviceCreate
+  onDeviceCreate,
 }) => {
+  const auth = useAuth();
   const devices = useDevicesEnhanced();
 
   const handleDeviceDelete = (device: Device) => {
@@ -36,13 +32,8 @@ export const DeviceList: React.FC<DeviceListProps> = ({
       onConfirm: async () => {
         await devices.deleteItem(device.id);
         await devices.fetchItems();
-      }
+      },
     });
-  };
-
-  const mockAuthContext = {
-    checkPermission: () => true,
-    user: { id: '1', name: 'Dev User' }
   };
 
   const baseList = useBaseList<Device, any>({
@@ -68,17 +59,20 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     columns: deviceColumns,
     filters: deviceFilters,
     stats: deviceStats,
+    bulkActions: createDeviceBulkActions({ bulkDelete: async (ids: string[]) => {
+      await Promise.all(ids.map(id => devices.deleteItem(id)));
+    }}),
     export: deviceExportConfig,
+    authContext: auth,
     onEdit: onDeviceEdit,
     onCreate: onDeviceCreate,
-    authContext: mockAuthContext,
   });
 
   const safeData = Array.isArray(baseList.data) ? baseList.data : [];
 
   return (
     <div className="device-list">
-      <DataList
+      <BaseList
         title="Devices"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}
@@ -90,7 +84,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         emptyMessage="No devices found. Create your first device to get started."
         onEdit={baseList.handleEdit}
         onDelete={handleDeviceDelete}
-        onSelect={baseList.bulkActions.length > 0 && onDeviceSelect ? (items) => onDeviceSelect(items[0]) : undefined}
+        onSelect={baseList.bulkActions.length > 0 && onDeviceSelect ? (items: Device[]) => onDeviceSelect(items[0]) : undefined}
         bulkActions={baseList.bulkActions}
         pagination={baseList.pagination}
       />

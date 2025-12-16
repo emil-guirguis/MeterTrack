@@ -71,6 +71,14 @@ class AuthService {
       
       const authResponse = response.data.data;
       
+      console.log('📋 [AUTH SERVICE] Login response user:', {
+        id: authResponse.user.id,
+        email: authResponse.user.email,
+        role: authResponse.user.role,
+        permissions: authResponse.user.permissions,
+        permissionsCount: authResponse.user.permissions?.length || 0
+      });
+      
       // Store tenant ID in localStorage for form validation field options
       const tenantId = authResponse.user.client;
       localStorage.setItem('tenantId', tenantId);

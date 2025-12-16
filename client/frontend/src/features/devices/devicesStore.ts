@@ -1,5 +1,5 @@
 /**
- * Devices Store - Consolidated
+ * Devices Store 
  * 
  * Combines API service and state management for devices.
  * Handles all device-related data fetching, mutations, and state.
@@ -7,7 +7,8 @@
 
 import type { Device } from './deviceConfig';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
-import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
+import { withTokenRefresh } from '../../store/middleware/apiMiddleware';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -164,6 +165,5 @@ export const useDevicesEnhanced = () => {
 
     // Statistics
     totalDevices: items.length,
-    uniqueManufacturers: [...new Set(items.map(d => d.manufacturer))].length,
   };
 };

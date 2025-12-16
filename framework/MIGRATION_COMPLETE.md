@@ -197,7 +197,7 @@ These backend frameworks are designed but not yet implemented. They can be added
 
 ```typescript
 // Lists
-import { DataList, useBaseList } from '../../../../framework/frontend/lists/components';
+import { BaseList, useBaseList } from '../../../../framework/frontend/lists/components';
 import { useBaseList } from '../../../../framework/frontend/lists/hooks';
 
 // Forms

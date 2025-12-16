@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { DataTable } from './DataTable';
+import { DataTable } from '../datatable/DataTable';
 import { Sidebar } from '@framework/components/sidebar';
 import type { DataTableProps, ColumnDefinition, BulkAction } from './types/ui';
 import type { SidebarSectionProps } from '@framework/components/sidebar';
 import './BaseList.css';
-import './DataList.css';
 
 export interface BaseListProps<T> {
   title?: string;

@@ -1,8 +1,8 @@
 import React from 'react';
-import { EntityManagementPage } from '@framework/shared/components';
 import { DeviceList } from './DeviceList';
 import { DeviceForm } from './DeviceForm';
-import { FormModal } from '@framework/shared/components';
+import { EntityManagementPage, FormModal } from '@framework/components/modal';
+
 import { useDevicesEnhanced } from './devicesStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 

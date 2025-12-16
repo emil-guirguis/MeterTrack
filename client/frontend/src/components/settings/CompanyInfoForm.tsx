@@ -1,6 +1,8 @@
 import React from 'react';
 import { CountrySelect, Toast } from '@framework/components/common';
-import { FormSection, FormField, FormActions } from '@framework/components/form/components';
+import { FormField } from '@framework/components/formfield/FormField';
+import { FormSection, } from '@framework/components/formsection/FormSection';
+import { FormActions } from '@framework/components/formactions/FormActions';
 import './SettingsForm.css';
 
 export interface CompanyInfoFormProps {

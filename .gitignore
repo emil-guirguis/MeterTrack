@@ -23,3 +23,5 @@ logs/
 
 # Version file (auto-generated during build)
 version.json
+sync/mcp/logs/sync-mcp.log
+sync/mcp/logs/sync-mcp.log

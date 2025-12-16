@@ -37,6 +37,53 @@ const authenticateToken = async (req, res, next) => {
 
     // Remove password hash before attaching to request
     delete user.passwordhash;
+    
+    // Derive permissions from role using PermissionsService
+    const PermissionsService = require('../services/PermissionsService');
+    const userRole = (user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = PermissionsService.toFlatArray(permissionsObj);
+    
+    // If user has permissions in database, use those instead (convert from nested object format to flat array)
+    // @ts-ignore - permissions is dynamically set by schema initialization
+    if (user.permissions) {
+      let permissionsToConvert = user.permissions;
+      
+      // If permissions is a JSON string, parse it first
+      if (typeof permissionsToConvert === 'string') {
+        try {
+          permissionsToConvert = JSON.parse(permissionsToConvert);
+          console.log('[AUTH MIDDLEWARE] Parsed permissions from JSON string');
+        } catch (e) {
+          console.warn('[AUTH MIDDLEWARE] Failed to parse permissions JSON:', e);
+          permissionsToConvert = null;
+        }
+      }
+      
+      // Now convert to flat array
+      if (permissionsToConvert && typeof permissionsToConvert === 'object' && !Array.isArray(permissionsToConvert)) {
+        // Convert nested object format: { module: { action: true } } to flat array: ['module:action']
+        console.log('[AUTH MIDDLEWARE] Converting nested permissions object to flat array');
+        permissions = PermissionsService.toFlatArray(permissionsToConvert);
+      } else if (Array.isArray(permissionsToConvert) && permissionsToConvert.length > 0) {
+        // Handle old array format as fallback
+        console.log('[AUTH MIDDLEWARE] Using existing array permissions');
+        permissions = permissionsToConvert;
+      } else {
+        console.log('[AUTH MIDDLEWARE] Using role-based permissions for role:', userRole);
+      }
+    } else {
+      console.log('[AUTH MIDDLEWARE] No stored permissions, using role-based permissions for role:', userRole);
+    }
+    
+    console.log('[AUTH MIDDLEWARE] Final permissions:', {
+      count: permissions.length,
+      sample: permissions.slice(0, 3),
+      isArray: Array.isArray(permissions)
+    });
+    
+    user.permissions = permissions;
+    
     req.user = user;
     
     // Also set req.auth for compatibility with tenant context middleware

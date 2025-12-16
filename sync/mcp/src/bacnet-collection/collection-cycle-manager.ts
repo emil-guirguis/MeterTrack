@@ -202,6 +202,41 @@ export class CollectionCycleManager {
           readTimeoutMs
         );
 
+
+// const values = await bacnetClient.readPropertyMultiple(
+//   meter.ip,
+//   parseInt(meter.port, 10),
+//   [
+//     {
+//       objectId: { type: config.objectType, instance: config.objectInstance },
+//       properties: [
+//         { id: 1069 },   // Dev Addr
+//         { id: 1070 },   // Baud rate
+//         { id: 1071 },   // Parity
+//         // ... up to hundreds more
+//       ]
+//     }
+//     // you can even add more objects here if needed
+//   ],
+//   readTimeoutMs
+// );
+
+// // values[0].values = array of { propertyId, value[] }
+// for (const prop of values[0].values) {
+//   console.log(`Register ${prop.id} = ${prop.value[0]?.value}`);
+// }
+
+// // Quick test – will throw or return empty if not supported
+// try {
+//   const test = await client.readPropertyMultiple(ip, [{
+//     objectId: { type: 8, instance: deviceId },  // Device object
+//     properties: [{ id: 76 }]  // Vendor Name – always exists
+//   }]);
+//   console.log("RPM works:", test[0].values[0].value[0].value);
+// } catch (e) {
+//   console.log("This device does NOT support ReadPropertyMultiple");
+// }
+
         if (readResult.success && readResult.value !== undefined) {
           // Create a reading record
           const reading: PendingReading = {

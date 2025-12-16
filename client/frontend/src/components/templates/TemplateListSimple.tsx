@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DataList } from '@framework/components/list/DataList';
-import { FormModal } from '@framework/shared/components';
+import { BaseList } from '@framework/components/list/BaseList';
+import { BaseForm } from '@framework/components/form/BaseForm';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import { useAuth } from '../../hooks/useAuth';
 import type { EmailTemplate } from '../../types/entities';
@@ -324,7 +324,7 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
 
     return (
         <div className="template-list">
-            <DataList
+            <BaseList
                 title="Templates"
                 filters={filters}
                 headerActions={headerActions}
@@ -355,8 +355,8 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
                 }}
             />
 
-            {/* Export Modal */}
-            <FormModal
+            {/* Export Modal
+            <BaseForm
                 isOpen={showExportModal}
                 title="Export Templates"
                 onClose={() => setShowExportModal(false)}
@@ -371,7 +371,7 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
                         <strong>{templates.items.length} templates</strong> will be exported.
                     </p>
                 </div>
-            </FormModal>
+            </BaseForm> */}
         </div>
     );
 };

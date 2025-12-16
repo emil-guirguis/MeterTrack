@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataList } from '@framework/components/list/DataList';
+import { BaseList } from '@framework/components/list/BaseList';
 import { useBaseList } from '../../../../../framework/frontend/components/list/hooks/useBaseList';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import type { EmailTemplate } from '../../types/entities';
@@ -57,7 +57,7 @@ export const EmailTemplateListSimple: React.FC<EmailTemplateListSimpleProps> = (
 
     return (
         <div className="template-list">
-            <DataList
+            <BaseList
                 title="Templates"
                 filters={baseList.renderFilters()}
                 headerActions={baseList.renderHeaderActions()}

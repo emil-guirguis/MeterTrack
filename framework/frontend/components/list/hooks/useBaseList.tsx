@@ -32,13 +32,11 @@ import type {
   BaseListConfig,
   BaseListReturn,
   EnhancedStore,
-  FilterDefinition,
-  BulkActionConfig,
   AuthContextProvider,
 } from '../types/list';
-import type { BulkAction, ColumnDefinition, PaginationConfig } from '../types/ui';
+import type { BulkAction, PaginationConfig } from '../types/ui';
 import { debounceSearch, buildFilters } from '../utils/listHelpers';
-import { ConfirmationModal } from '../../../shared/components';
+import { ConfirmationModal } from '../../../components/modal';
 import { generateCSV, downloadCSV, formatDateForFilename, generateExportInfo } from '../utils/exportHelpers';
 import { processImportFile, generateImportTemplate } from '../utils/importHelpers';
 import { getIconElement, MaterialIcons } from '../../../utils/iconHelper';
@@ -81,7 +79,6 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
     authContext: providedAuthContext,
     onEdit,
     onCreate,
-    onSelect,
   } = config;
 
   // Get auth context - use provided context or fall back to React Context
@@ -139,7 +136,6 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
     allowFilters = true,
     allowStats = true,
     allowPagination = true,
-    allowSelection = true,
   } = features;
 
   // Computed permission values (combines features + permissions)

@@ -5,7 +5,7 @@ import { useSchema, clearSchemaCache } from './utils/schemaLoader';
 import type { BackendFieldDefinition } from './utils/schemaLoader';
 import { createFormSchema } from './utils/formSchema';
 import { useEntityFormWithStore } from './hooks/useEntityFormWithStore';
-import { ValidationFieldSelect } from './components/ValidationFieldSelect';
+import { ValidationFieldSelect } from '../validationfieldselect/ValidationFieldSelect';
 import './BaseForm.css';
 
 export interface BaseFormProps {
