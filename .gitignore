@@ -25,3 +25,5 @@ logs/
 version.json
 sync/mcp/logs/sync-mcp.log
 sync/mcp/logs/sync-mcp.log
+sync/mcp/logs/sync-mcp.log
+*.log

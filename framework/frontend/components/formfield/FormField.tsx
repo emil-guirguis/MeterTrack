@@ -1,18 +1,35 @@
-import React from 'react';
-import './FormField.css';
+import React, { forwardRef } from 'react';
+import {
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  Checkbox,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  InputAdornment,
+} from '@mui/material';
+// import { MuiTelInput } from 'mui-tel-input';
+import { NumberSpinner } from './NumberSpinner';
+import { URLLink } from './URLLink';
 
 export interface FormFieldOption {
   value: string | number;
   label: string;
+  disabled?: boolean;
 }
 
 export interface FormFieldProps {
   name: string;
   label?: string;
-  type?: 'text' | 'email' | 'password' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'time' | 'url' | 'tel' | 'search';
-  value: any;
+  type?: 'text' | 'email' | 'password' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'time' | 'url' | 'tel' | 'search' | 'file' | 'country';
+  value?: any;
   error?: string;
   touched?: boolean;
+  help?: string;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -21,173 +38,384 @@ export interface FormFieldProps {
   min?: number | string;
   max?: number | string;
   step?: number | string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  onBlur: (e: React.FocusEvent) => void;
-  className?: string;
+  pattern?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onBlur?: (e: React.FocusEvent) => void;
+  [key: string]: any;
 }
 
 /**
  * Reusable form field component with validation and error display
+ * Supports Material Design 3 outlined styling via MUI components
  */
-export const FormField: React.FC<FormFieldProps> = ({
-  name,
-  label,
-  type = 'text',
-  value,
-  error,
-  touched,
-  placeholder,
-  required,
-  disabled,
-  options,
-  rows = 4,
-  min,
-  max,
-  step,
-  onChange,
-  onBlur,
-  className = '',
-}) => {
-  const showError = touched && error;
-  const fieldId = `field-${name}`;
-  const errorId = `${fieldId}-error`;
+export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, FormFieldProps>(
+  ({
+    name,
+    label,
+    type = 'text',
+    value,
+    error,
+    touched,
+    help,
+    placeholder,
+    required,
+    disabled,
+    options,
+    rows = 4,
+    min,
+    max,
+    step,
+    pattern,
+    onChange,
+    onBlur,
+  }, ref) => {
+    const showError = touched && error;
+    const fieldId = `field-${name}`;
+    const errorId = `${fieldId}-error`;
 
-  const baseClassName = 'form-field';
-  const inputClassName = `${baseClassName}__input ${showError ? `${baseClassName}__input--error` : ''} ${className}`;
+    // Debug logging
+    React.useEffect(() => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        const styles = window.getComputedStyle(element);
+        console.log(`[FormField Debug] ${name}:`, {
+          type,
+          computedStyles: {
+            backgroundColor: styles.backgroundColor,
+            borderColor: styles.borderColor,
+            borderWidth: styles.borderWidth,
+            color: styles.color,
+          },
+          classList: element.className,
+        });
+      }
+    }, [fieldId, name, type]);
 
-  const renderInput = () => {
-    switch (type) {
-      case 'textarea':
-        return (
-          <textarea
-            id={fieldId}
-            name={name}
-            value={value ?? ''}
-            onChange={onChange}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            required={required}
-            disabled={disabled}
-            rows={rows}
-            className={`${baseClassName}__textarea ${showError ? `${baseClassName}__textarea--error` : ''}`}
-            {...(showError && { 'aria-invalid': true })}
-            aria-describedby={showError ? errorId : undefined}
-          />
-        );
+    const handleNumberChange = (direction: 1 | -1) => {
+      const numValue = typeof value === 'string' ? parseFloat(value) : (value ?? 0);
+      const stepValue = typeof step === 'string' ? parseFloat(step) : (step ?? 1);
+      let newValue = numValue + (stepValue * direction);
 
-      case 'select':
-        return (
-          <select
-            id={fieldId}
-            name={name}
-            value={value ?? ''}
-            onChange={onChange}
-            onBlur={onBlur}
-            required={required}
-            disabled={disabled}
-            className={`${baseClassName}__select ${showError ? `${baseClassName}__select--error` : ''}`}
-            {...(showError && { 'aria-invalid': true })}
-            aria-describedby={showError ? errorId : undefined}
-          >
-            {placeholder && <option value="">{placeholder}</option>}
-            {options?.map((option: FormFieldOption) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        );
+      const minValue = typeof min === 'string' ? parseFloat(min) : min;
+      const maxValue = typeof max === 'string' ? parseFloat(max) : max;
 
-      case 'checkbox':
-        return (
-          <label className={`${baseClassName}__checkbox-label`}>
-            <input
+      if (minValue !== undefined && newValue < minValue) {
+        newValue = minValue;
+      }
+      if (maxValue !== undefined && newValue > maxValue) {
+        newValue = maxValue;
+      }
+
+      const syntheticEvent = {
+        target: {
+          name,
+          value: newValue.toString(),
+        },
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(syntheticEvent);
+    };
+
+    const renderInput = () => {
+      switch (type) {
+        case 'textarea':
+          return (
+            <TextField
               id={fieldId}
-              type="checkbox"
               name={name}
-              checked={!!value}
+              label={label}
+              value={value ?? ''}
               onChange={onChange}
               onBlur={onBlur}
+              required={required}
               disabled={disabled}
-              className={`${baseClassName}__checkbox`}
+              multiline
+              rows={rows}
+              fullWidth
+              variant="outlined"
+              error={showError}
+              helperText={showError ? error : help}
+              placeholder={placeholder}
               {...(showError && { 'aria-invalid': true })}
               aria-describedby={showError ? errorId : undefined}
             />
-            <span>{label}</span>
-          </label>
-        );
+          );
 
-      case 'radio':
-        return (
-          <div className={`${baseClassName}__radio-group`}>
-            {options?.map((option: FormFieldOption) => (
-              <label key={option.value} className={`${baseClassName}__radio-label`}>
-                <input
-                  type="radio"
+        case 'select':
+          return (
+            <FormControl fullWidth error={showError} disabled={disabled} variant="outlined">
+              <InputLabel id={`${fieldId}-label`}>{label}</InputLabel>
+              <Select
+                labelId={`${fieldId}-label`}
+                id={fieldId}
+                name={name}
+                value={value ?? ''}
+                onChange={onChange}
+                onBlur={onBlur}
+                label={label}
+                required={required}
+              >
+                {placeholder && <MenuItem value="">{placeholder}</MenuItem>}
+                {options?.map((option: FormFieldOption) => (
+                  <MenuItem key={option.value} value={option.value} disabled={option.disabled}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {showError && <FormHelperText id={errorId}>{error}</FormHelperText>}
+              {!showError && help && <FormHelperText>{help}</FormHelperText>}
+            </FormControl>
+          );
+
+        case 'country':
+          const countries = [
+            { code: 'US', name: 'United States' },
+            { code: 'CA', name: 'Canada' },
+            { code: 'GB', name: 'United Kingdom' },
+            { code: 'DE', name: 'Germany' },
+            { code: 'FR', name: 'France' },
+            { code: 'IT', name: 'Italy' },
+            { code: 'ES', name: 'Spain' },
+            { code: 'AU', name: 'Australia' },
+            { code: 'JP', name: 'Japan' },
+            { code: 'CN', name: 'China' },
+            { code: 'IN', name: 'India' },
+            { code: 'BR', name: 'Brazil' },
+            { code: 'MX', name: 'Mexico' },
+            { code: 'NL', name: 'Netherlands' },
+            { code: 'SE', name: 'Sweden' },
+            { code: 'NO', name: 'Norway' },
+            { code: 'DK', name: 'Denmark' },
+            { code: 'FI', name: 'Finland' },
+            { code: 'CH', name: 'Switzerland' },
+            { code: 'AT', name: 'Austria' },
+            { code: 'BE', name: 'Belgium' },
+            { code: 'IE', name: 'Ireland' },
+            { code: 'NZ', name: 'New Zealand' },
+            { code: 'SG', name: 'Singapore' },
+            { code: 'KR', name: 'South Korea' },
+            { code: 'TH', name: 'Thailand' },
+            { code: 'MY', name: 'Malaysia' },
+            { code: 'PH', name: 'Philippines' },
+            { code: 'ID', name: 'Indonesia' },
+            { code: 'VN', name: 'Vietnam' },
+            { code: 'ZA', name: 'South Africa' },
+            { code: 'EG', name: 'Egypt' },
+            { code: 'NG', name: 'Nigeria' },
+            { code: 'KE', name: 'Kenya' },
+            { code: 'GH', name: 'Ghana' },
+            { code: 'AR', name: 'Argentina' },
+            { code: 'CL', name: 'Chile' },
+            { code: 'CO', name: 'Colombia' },
+            { code: 'PE', name: 'Peru' },
+            { code: 'VE', name: 'Venezuela' },
+          ];
+          return (
+            <FormControl fullWidth error={showError} disabled={disabled} variant="outlined">
+              <InputLabel id={`${fieldId}-label`}>{label}</InputLabel>
+              <Select
+                labelId={`${fieldId}-label`}
+                id={fieldId}
+                name={name}
+                value={value ?? ''}
+                onChange={onChange}
+                onBlur={onBlur}
+                label={label}
+                required={required}
+              >
+                {placeholder && <MenuItem value="">{placeholder}</MenuItem>}
+                {countries.map((country) => (
+                  <MenuItem key={country.code} value={country.name}>
+                    {country.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {showError && <FormHelperText id={errorId}>{error}</FormHelperText>}
+              {!showError && help && <FormHelperText>{help}</FormHelperText>}
+            </FormControl>
+          );
+
+        case 'checkbox':
+          return (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  id={fieldId}
                   name={name}
-                  value={option.value}
-                  checked={value === option.value}
+                  checked={!!value}
                   onChange={onChange}
                   onBlur={onBlur}
                   disabled={disabled}
-                  className={`${baseClassName}__radio`}
+                  {...(showError && { 'aria-invalid': true })}
+                  aria-describedby={showError ? errorId : undefined}
                 />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </div>
-        );
+              }
+              label={label}
+            />
+          );
 
-      default:
-        return (
-          <input
-            id={fieldId}
-            type={type}
-            name={name}
-            value={value ?? ''}
-            onChange={onChange}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            required={required}
-            disabled={disabled}
-            min={min}
-            max={max}
-            step={step}
-            className={inputClassName}
-            autoComplete="off"
-            {...(showError && { 'aria-invalid': true })}
-            aria-describedby={showError ? errorId : undefined}
-          />
-        );
-    }
-  };
+        case 'radio':
+          return (
+            <FormControl error={showError} disabled={disabled} variant="outlined">
+              <InputLabel>{label}</InputLabel>
+              <RadioGroup
+                name={name}
+                value={value ?? ''}
+                onChange={onChange}
+                onBlur={onBlur}
+              >
+                {options?.map((option: FormFieldOption) => (
+                  <FormControlLabel
+                    key={option.value}
+                    value={option.value}
+                    control={<Radio disabled={option.disabled} />}
+                    label={option.label}
+                  />
+                ))}
+              </RadioGroup>
+              {showError && <FormHelperText id={errorId}>{error}</FormHelperText>}
+            </FormControl>
+          );
 
-  // For checkbox and radio, we don't need the standard label wrapper
-  if (type === 'checkbox' || type === 'radio') {
-    return (
-      <div className={`${baseClassName} ${baseClassName}--${type}`}>
-        {renderInput()}
-        {showError && (
-          <span id={errorId} className={`${baseClassName}__error`} role="alert">
-            {error}
-          </span>
-        )}
-      </div>
-    );
-  }
+        case 'email':
+          return (
+            <TextField
+              id={fieldId}
+              name={name}
+              label={label}
+              type="email"
+              value={value ?? ''}
+              onChange={onChange}
+              onBlur={onBlur}
+              required={required}
+              disabled={disabled}
+              fullWidth
+              variant="outlined"
+              error={showError}
+              helperText={showError ? error : help}
+              placeholder={placeholder}
+              autoComplete="email"
+              {...(showError && { 'aria-invalid': true })}
+              aria-describedby={showError ? errorId : undefined}
+            />
+          );
 
-  return (
-    <div className={baseClassName}>
-      <label htmlFor={fieldId} className={`${baseClassName}__label`}>
-        {label}
-        {required && <span className={`${baseClassName}__required`}>*</span>}
-      </label>
-      {renderInput()}
-      {showError && (
-        <span id={errorId} className={`${baseClassName}__error`} role="alert">
-          {error}
-        </span>
-      )}
-    </div>
-  );
-};
+        case 'url':
+          return (
+            <URLLink
+              value={value ?? ''}
+              onChange={(newValue) => {
+                const syntheticEvent = {
+                  target: {
+                    name,
+                    value: newValue,
+                  },
+                } as React.ChangeEvent<HTMLInputElement>;
+                onChange(syntheticEvent);
+              }}
+              onBlur={onBlur}
+              disabled={disabled}
+              placeholder={placeholder}
+            />
+          );
+
+        case 'tel':
+        case 'phone':
+          return (
+            // <MuiTelInput
+            <TextField
+              id={fieldId}
+              name={name}
+              label={label}
+              value={value ?? ''}
+              onChange={(newValue: string) => {
+                const syntheticEvent = {
+                  target: {
+                    name,
+                    value: newValue,
+                  },
+                } as React.ChangeEvent<HTMLInputElement>;
+                onChange(syntheticEvent);
+              }}
+              onBlur={onBlur}
+              required={required}
+              disabled={disabled}
+              fullWidth
+              variant="outlined"
+              error={showError}
+              helperText={showError ? error : help}
+              placeholder={placeholder}
+              defaultCountry="US"
+              preferredCountries={['US', 'CA', 'GB', 'AU']}
+              {...(showError && { 'aria-invalid': true })}
+              aria-describedby={showError ? errorId : undefined}
+            />
+          );
+
+        default: {
+          const isNumberField = type === 'number';
+          return (
+            <TextField
+              id={fieldId}
+              name={name}
+              label={label}
+              type={isNumberField ? 'number' : type}
+              value={value ?? ''}
+              onChange={onChange}
+              onBlur={onBlur}
+              required={required}
+              disabled={disabled}
+              fullWidth
+              variant="outlined"
+              error={showError}
+              helperText={showError ? error : help}
+              placeholder={placeholder}
+              autoComplete="off"
+              slotProps={{
+                input: {
+                  ...(isNumberField && {
+                    endAdornment: (
+                      <InputAdornment position="end" sx={{ mr: -1 }}>
+                        <NumberSpinner
+                          value={value ?? ''}
+                          min={typeof min === 'string' ? parseFloat(min) : min}
+                          max={typeof max === 'string' ? parseFloat(max) : max}
+                          step={typeof step === 'string' ? parseFloat(step) : step}
+                          onIncrement={() => handleNumberChange(1)}
+                          onDecrement={() => handleNumberChange(-1)}
+                          disabled={disabled}
+                        />
+                      </InputAdornment>
+                    ),
+                  }),
+                  min,
+                  max,
+                  step,
+                  pattern,
+                },
+              }}
+              {...(showError && { 'aria-invalid': true })}
+              aria-describedby={showError ? errorId : undefined}
+              ref={ref}
+              sx={isNumberField ? {
+                '& input[type=number]::-webkit-outer-spin-button': {
+                  WebkitAppearance: 'none',
+                  margin: 0,
+                },
+                '& input[type=number]::-webkit-inner-spin-button': {
+                  WebkitAppearance: 'none',
+                  margin: 0,
+                },
+                '& input[type=number]': {
+                  MozAppearance: 'textfield',
+                },
+              } : undefined}
+            />
+          );
+        }
+      }
+    };
+
+return renderInput();
+});
+
+FormField.displayName = 'FormField';

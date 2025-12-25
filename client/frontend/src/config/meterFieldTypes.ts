@@ -83,7 +83,6 @@ export type Meter = {
   installDate: Date;
   description?: string;
   notes?: string;
-  register_map?: RegisterMap | null;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: {
@@ -114,7 +113,6 @@ export interface CreateMeterRequest {
   location?: string;
   description?: string;
   type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
-  register_map?: RegisterMap | null;
 }
 
 /**

@@ -25,6 +25,14 @@ export interface FieldDefinition<TValue = any> {
   label?: string;
   /** Where to show field (e.g., ['form', 'list']) */
   showOn?: string[];
+  /** Form grouping for tab/section organization */
+  formGrouping?: {
+    tabName: string;
+    sectionName: string;
+    tabOrder: number;
+    sectionOrder: number;
+    fieldOrder: number;
+  };
 }
 
 /**

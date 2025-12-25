@@ -168,13 +168,14 @@ class Contact extends BaseModel {
                 }),
 
                 country: field({
-                    type: FieldTypes.STRING,
+                    type: FieldTypes.COUNTRY,
                     default: 'US',
-                    required: false,
+                    required: true,
                     label: 'Country',
                     dbField: 'country',
                     maxLength: 100,
-                    enumValues: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP'],
+                    placeholder: 'USA',
+                    // enumValues: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP'],
                     showOn: ['form'],
                 }),
 
@@ -256,7 +257,7 @@ class Contact extends BaseModel {
                     const errors = {};
 
                     // Ensure at least one contact method
-                    if (!data.email && !data.phone) {
+                    if (!data.email && !data.tel) {
                         errors._form = 'At least one contact method (email or phone) is required';
                     }
 

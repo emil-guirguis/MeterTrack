@@ -64,12 +64,15 @@ export const useValidationDataProvider = () => {
           devices = response.data.data;
         }
 
+        // Filter to only active devices
+        devices = devices.filter((device: any) => device.active === true);
+
         if (devices.length === 0) {
-          console.warn(`[ValidationDataProvider] No devices found in response`);
+          console.warn(`[ValidationDataProvider] No active devices found in response`);
           return [];
         }
 
-        console.log(`[ValidationDataProvider] Fetched ${devices.length} devices`);
+        console.log(`[ValidationDataProvider] Fetched ${devices.length} active devices`);
 
         // Map devices to options using multiple validation fields
         const validationFields = fieldDef.validationFields || ['manufacturer', 'model_number'];

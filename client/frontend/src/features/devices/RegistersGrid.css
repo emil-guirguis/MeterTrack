@@ -1,0 +1,71 @@
+.registers-grid {
+  width: 100%;
+  padding: 16px;
+}
+
+.registers-grid__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.registers-grid__add-button {
+  min-width: 120px;
+}
+
+.registers-grid__loading {
+  margin-left: 8px;
+}
+
+.registers-grid__error {
+  margin-bottom: 16px;
+}
+
+.registers-grid__table {
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.registers-grid__row {
+  transition: background-color 0.2s ease;
+}
+
+.registers-grid__row:hover {
+  background-color: #fafafa;
+}
+
+.registers-grid__cell {
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.registers-grid__cell--editable:hover {
+  background-color: #f0f0f0;
+}
+
+.registers-grid__cell--editing {
+  background-color: #fff3e0;
+  padding: 4px;
+}
+
+.registers-grid__input {
+  width: 100%;
+}
+
+.registers-grid__delete-button {
+  color: #d32f2f;
+  transition: background-color 0.2s ease;
+}
+
+.registers-grid__delete-button:hover {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+.registers-grid__empty {
+  padding: 32px 16px;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+}

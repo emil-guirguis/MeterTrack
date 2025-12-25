@@ -2,7 +2,7 @@
  * Validation Field Select Component
  * 
  * Generic framework component for rendering validation fields (foreign key relationships)
- * Inherits styling from FormField pattern
+ * Uses FormField with MUI Select for Material Design 3 styling
  * 
  * Configuration is provided via fieldDef.validationSource which specifies:
  * - source: 'auth' | 'api' | 'static'
@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { FormField } from '../formfield/FormField';
 
 export interface ValidationFieldSelectProps {
   fieldName: string;
@@ -90,15 +91,6 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
     error 
   });
 
-  const baseClassName = className.split('__')[0] || 'form';
-  const fieldClassName = `${baseClassName}__field`;
-  const labelClassName = `${baseClassName}__label`;
-  const inputClassName = `${baseClassName}__input`;
-  const errorClassName = `${baseClassName}__error`;
-  const helperClassName = `${baseClassName}__helper-text`;
-  const selectClassName = `${baseClassName}__select`;
-  const requiredClassName = `${baseClassName}__required`;
-
   // Determine placeholder text
   let placeholderText = `Select ${fieldDef.label}`;
   if (loading) {
@@ -107,32 +99,29 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
     placeholderText = `No ${fieldDef.label.toLowerCase()} available`;
   }
 
+  // Convert options to FormField format
+  const formFieldOptions = options.map((option) => ({
+    value: option.id,
+    label: option.label,
+  }));
+
   return (
-    <div className={fieldClassName}>
-      <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-        {fieldDef.label}
-        {fieldDef.required && <span className={requiredClassName}>*</span>}
-      </label>
-      <select
-        id={fieldName}
-        value={value ? String(value) : ''}
-        onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : null)}
-        className={`${selectClassName} ${error ? `${inputClassName}--error` : ''}`}
-        disabled={isDisabled}
-        {...(error && { 'aria-invalid': 'true' })}
-        aria-describedby={error ? `${fieldName}-error` : undefined}
-      >
-        <option value="">
-          {placeholderText}
-        </option>
-        {options.map((option) => (
-          <option key={option.id} value={String(option.id)}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error && <span id={`${fieldName}-error`} className={errorClassName}>{error}</span>}
-      {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
+    <div className={`${className}__field`}>
+      <FormField
+        name={fieldName}
+        label={fieldDef.label}
+        type="select"
+        value={value || ''}
+        error={error}
+        touched={!!error}
+        help={fieldDef.description}
+        required={fieldDef.required}
+        disabled={isDisabled || loading}
+        placeholder={placeholderText}
+        options={formFieldOptions}
+        onChange={(e: any) => onChange(e.target.value ? parseInt(e.target.value) : null)}
+        onBlur={() => {}}
+      />
     </div>
   );
 };

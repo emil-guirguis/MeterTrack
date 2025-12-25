@@ -13,10 +13,16 @@ setupDebugConsole();
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Prefetch schemas after user is authenticated
+  // Prefetch schemas after user is authenticated and wait for completion
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      prefetchAppSchemas();
+      console.log('[App] User authenticated, starting schema prefetch...');
+      prefetchAppSchemas().then(() => {
+        console.log('[App] Schema prefetch complete, all schemas cached and ready');
+      }).catch((error) => {
+        console.error('[App] Schema prefetch failed:', error);
+        // App continues to work even if prefetch fails
+      });
     }
   }, [isAuthenticated, isLoading]);
 

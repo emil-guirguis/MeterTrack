@@ -3,14 +3,17 @@
  * 
  * Uses the dynamic schema-based BaseForm to render the device form.
  * All validation, field rendering, and form management is handled by BaseForm.
- * Includes all required fields from the device schema.
+ * Fields are automatically organized into tabs and sections based on formGrouping metadata.
  */
 
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
-import { JsonGridEditor } from '@framework/components/json_grid';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import { useFormTabs } from '@framework/components/form/hooks';
 import { useDevicesEnhanced } from './devicesStore';
+import { RegistersGrid } from './RegistersGrid';
 import type { Device } from './deviceConfig';
+import './DeviceForm.css';
 
 interface DeviceFormProps {
   device?: Device;
@@ -19,6 +22,8 @@ interface DeviceFormProps {
   loading?: boolean;
 }
 
+type TabType = string;
+
 export const DeviceForm: React.FC<DeviceFormProps> = ({
   device,
   onSubmit,
@@ -26,92 +31,70 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   loading = false,
 }) => {
   const devices = useDevicesEnhanced();
-  const registerMapFileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('Basic');
 
-  const fieldSections: Record<string, string[]> = {
-    'Device Information': [
-      'type',
-      'manufacturer',
-      'model_number',
-      'description',
-    ],
-    'Configuration': [
-      'register_map',
-    ],
-  };
+  // Use schema from cache (prefetched at login)
+  const { schema } = useSchema('device');
 
-  const renderCustomField = (
-    fieldName: string,
-    fieldDef: any,
-    value: any,
-    error: string | undefined,
-    isDisabled: boolean,
-    onChange: (value: any) => void
-  ) => {
-    // Custom rendering for register_map (JSON field)
-    if (fieldName === 'register_map' && (fieldDef.type === 'object' || fieldDef.type === 'json')) {
-      const gridData = Array.isArray(value) ? value : (value ? [value] : []);
-
-      return (
-        <div key={fieldName} className="base-form__field">
-          <div className="base-form__field-header">
-            <label className="base-form__label">
-              {fieldDef.label}
-              {fieldDef.required && <span className="base-form__required">*</span>}
-            </label>
-            <div className="base-form__field-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => registerMapFileInputRef.current?.click()}
-                disabled={isDisabled}
-              >
-                📁 Import CSV
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => {
-                  if (device?.id) {
-                    console.log('Load defaults from device:', device.id);
-                  }
-                }}
-                disabled={isDisabled}
-              >
-                ⚙️ Default from Device
-              </button>
-            </div>
-          </div>
-          <JsonGridEditor
-            data={gridData}
-            onChange={onChange}
-            readOnly={isDisabled}
-            fileInputRef={registerMapFileInputRef}
-          />
-          {error && <span className="base-form__error">{error}</span>}
-          {fieldDef.description && (
-            <div className="base-form__helper-text">{fieldDef.description}</div>
-          )}
-        </div>
-      );
+  // Debug: Log schema when it loads
+  React.useEffect(() => {
+    if (schema) {
+      console.log('[DeviceForm] Schema loaded:', schema);
+      console.log('[DeviceForm] Form fields:', Object.keys(schema.formFields));
+      Object.entries(schema.formFields).forEach(([fieldName, fieldDef]) => {
+        console.log(`[DeviceForm] Field: ${fieldName}`, {
+          showOn: (fieldDef as any).showOn,
+          formGrouping: (fieldDef as any).formGrouping,
+          required: (fieldDef as any).required,
+        });
+      });
     }
+  }, [schema]);
 
-    return null;
-  };
+  // Use the useFormTabs hook to organize fields into tabs and sections
+  const { tabs, tabList, fieldSections } = useFormTabs(schema?.formFields, activeTab);
 
   return (
-    <BaseForm
-      schemaName="device"
-      entity={device}
-      store={devices}
-      onCancel={onCancel}
-      onLegacySubmit={onSubmit}
-      className="device-form"
-      fieldSections={fieldSections}
-      loading={loading}
-      renderCustomField={renderCustomField}
-      fieldsToClean={['id', 'active', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags', 'tenant_id']}
-    />
+    <div className="device-form-container">
+      {/* Tab Navigation */}
+      {tabList.length > 1 && (
+        <div className="device-form__tabs">
+          {tabList.map((tabName) => (
+            <button
+              key={tabName}
+              className={`device-form__tab ${activeTab === tabName ? 'device-form__tab--active' : ''}`}
+              onClick={() => setActiveTab(tabName)}
+              type="button"
+            >
+              {tabs[tabName].label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Tab Content */}
+      <div className="device-form__content">
+        {activeTab === 'Registers' && device?.id ? (
+          <RegistersGrid
+            deviceId={Number(device.id)}
+            onError={(error) => console.error('RegistersGrid error:', error)}
+            onSuccess={(message) => console.log('RegistersGrid success:', message)}
+          />
+        ) : (
+          <BaseForm
+            schemaName="device"
+            entity={device}
+            store={devices}
+            onCancel={onCancel}
+            onLegacySubmit={onSubmit}
+            className="device-form"
+            fieldSections={fieldSections}
+            loading={loading}
+            fieldsToClean={['id', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags']}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 

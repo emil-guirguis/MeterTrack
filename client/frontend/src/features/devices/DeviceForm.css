@@ -47,51 +47,7 @@
   color: #d32f2f;
 }
 
-.device-form__input,
-.device-form__select,
-.device-form__textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.device-form__input:focus,
-.device-form__select:focus,
-.device-form__textarea:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
-}
-
-.device-form__input--error,
-.device-form__select--error,
-.device-form__textarea--error {
-  border-color: #d32f2f;
-}
-
-.device-form__input:disabled,
-.device-form__select:disabled,
-.device-form__textarea:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.device-form__textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.device-form__error {
-  display: block;
-  color: #d32f2f;
-  font-size: 12px;
-  margin-top: 4px;
-}
+/* MUI FormField components handle all input styling */
 
 .device-form__btn {
   padding: 10px 20px;

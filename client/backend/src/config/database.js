@@ -79,17 +79,12 @@ class PostgresDB {
      * Execute a query with parameters
      */
     async query(text, params = []) {
+        // Log all queries to console
+        console.log(`█ SQL:', ${text}  Params: ${JSON.stringify(params, null, 2)}`);
         if (!this.pool) {
             throw new Error('Database not connected. Call connect() first.');
         }
 
-        // Log all queries to console
-        console.log('\n' + '█'.repeat(120));
-        console.log('█ DATABASE QUERY EXECUTION');
-        console.log('█'.repeat(120));
-        console.log('SQL:', text);
-        console.log('Params:', JSON.stringify(params, null, 2));
-        console.log('█'.repeat(120));
 
         const client = await this.pool.connect();
         try {
@@ -97,23 +92,12 @@ class PostgresDB {
             const result = await client.query(text, params);
             const duration = Date.now() - startTime;
 
-            console.log('✅ QUERY SUCCESS');
-            console.log(`Rows affected: ${result.rowCount}`);
-            console.log(`Duration: ${duration}ms`);
-            console.log('█'.repeat(120) + '\n');
-
+            console.log(`✅ QUERY SUCCESS: Rows affected: ${result.rowCount} Duration: ${duration}ms`);
             return result;
         } catch (error) {
-            const err = /** @type {Error} */ (error);
-            console.error('\n' + '❌'.repeat(60));
-            console.error('DATABASE QUERY ERROR');
-            console.error('❌'.repeat(60));
-            console.error('Error Code:', err.code);
-            console.error('Error Message:', err.message);
-            console.error('Error Detail:', err.detail);
-            console.error('Error Hint:', err.hint);
-            console.error('Full Error:', JSON.stringify(err, null, 2));
-            console.error('❌'.repeat(60) + '\n');
+            const err = /** @type {any} */ (error);
+            console.error(`❌ DATABASE QUERY ERROR Code:, ${err.code}  Message: ${err.message} Detail: ${err.detail} 
+                          Hint: ${err.hint} Full Error: ${JSON.stringify(err, null, 2)}`);
             throw error;
         } finally {
             client.release();

@@ -28,7 +28,6 @@ export interface CachedMeter {
   name: string;
   ip: string;
   port: string;
-  register_map: RegisterMap;
   protocol: string;
 }
 

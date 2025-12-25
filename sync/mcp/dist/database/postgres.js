@@ -60,7 +60,6 @@ export class SyncDatabase {
           port VARCHAR(10),
           protocol VARCHAR(50),
           status VARCHAR(50),
-          register_map JSONB,
           notes TEXT,
           active BOOLEAN DEFAULT true,
           created_at VARCHAR(50),
@@ -235,18 +234,6 @@ export class SyncDatabase {
             if (trimmedName.length > 255) {
                 throw new Error(`Meter name exceeds maximum length of 255 characters (got ${trimmedName.length})`);
             }
-            // Validate register_map if provided
-            let registerMapJson = null;
-            if (meter.register_map) {
-                try {
-                    registerMapJson = JSON.stringify(meter.register_map);
-                    console.log(`   ✓ Register map validated (${registerMapJson.length} bytes)`);
-                }
-                catch (error) {
-                    const jsonError = error instanceof Error ? error.message : 'Unknown error';
-                    throw new Error(`Invalid register_map JSON: ${jsonError}`);
-                }
-            }
             // Prepare parameters with validation
             const params = [
                 meter.id,
@@ -260,7 +247,6 @@ export class SyncDatabase {
                 meter.port || null,
                 meter.protocol || null,
                 meter.status || null,
-                registerMapJson,
                 meter.notes || null,
                 meter.active !== undefined ? meter.active : true,
                 meter.created_at || new Date().toISOString(),
@@ -269,9 +255,9 @@ export class SyncDatabase {
             console.log(`   ✓ All validations passed`);
             console.log(`   Executing INSERT/UPDATE query...`);
             const result = await this.pool.query(`INSERT INTO meter (id, name, type, serial_number, installation_date, device_id, location_id, 
-                            ip, port, protocol, status, register_map, notes, active, created_at, updated_at)
+                            ip, port, protocol, status,notes, active, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 
-                $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                $8, $9, $10, $11, $12, $13, $14, $15)
          ON CONFLICT (id) 
          DO UPDATE SET
            name = EXCLUDED.name,
@@ -284,7 +270,6 @@ export class SyncDatabase {
            port = EXCLUDED.port,
            protocol = EXCLUDED.protocol,
            status = EXCLUDED.status,
-           register_map = EXCLUDED.register_map,
            notes = EXCLUDED.notes,
            active = EXCLUDED.active,
            updated_at = EXCLUDED.updated_at

@@ -151,9 +151,13 @@
 
 /* Meter-specific: Register map field styling */
 .meter-form .base-form__field {
-  margin-bottom: 0;
+  margin-bottom: 1.5rem;
   min-width: 0;
   overflow: hidden;
+}
+
+.meter-form .base-form__section .base-form__field:last-child {
+  margin-bottom: 0;
 }
 
 .meter-form .base-form__section:nth-of-type(1) .base-form__field,

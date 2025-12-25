@@ -16,20 +16,7 @@ import { CachedMeter, RegisterMap, BACnetReadResult } from './types.js';
 
 // ==================== GENERATORS ====================
 
-/**
- * Generate a valid register map with at least one data point
- */
-const registerMapArbitrary = (): fc.Arbitrary<RegisterMap> => {
-  return fc.dictionary(
-    fc.string({ minLength: 2, maxLength: 30 }),
-    fc.record({
-      objectType: fc.constantFrom('analogInput', 'analogOutput', 'binaryInput', 'binaryOutput'),
-      objectInstance: fc.integer({ min: 0, max: 100 }),
-      propertyId: fc.constantFrom('presentValue', 'units', 'status'),
-    }),
-    { minKeys: 1, maxKeys: 5 }
-  );
-};
+
 
 /**
  * Generate a valid cached meter
@@ -40,7 +27,6 @@ const cachedMeterArbitrary = (): fc.Arbitrary<CachedMeter> => {
     name: fc.string({ minLength: 1, maxLength: 50 }),
     ip: fc.ipV4(),
     port: fc.integer({ min: 1, max: 65535 }).map(String),
-    register_map: registerMapArbitrary(),
     protocol: fc.constant('bacnet'),
   });
 };
@@ -376,13 +362,6 @@ describe('CollectionCycleManager', () => {
         name: 'Test Meter',
         ip: '192.168.1.1',
         port: '502',
-        register_map: {
-          energy: {
-            objectType: 'analogInput',
-            objectInstance: 0,
-            propertyId: 'presentValue',
-          },
-        },
         protocol: 'bacnet',
       },
     ];
@@ -413,13 +392,6 @@ describe('CollectionCycleManager', () => {
         name: 'Test Meter',
         ip: '192.168.1.1',
         port: '502',
-        register_map: {
-          energy: {
-            objectType: 'analogInput',
-            objectInstance: 0,
-            propertyId: 'presentValue',
-          },
-        },
         protocol: 'bacnet',
       },
     ];

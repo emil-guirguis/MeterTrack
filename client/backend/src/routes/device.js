@@ -28,7 +28,6 @@ router.get('/', requirePermission('device:read'), async (req, res) => {
       where,
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
-      tenantId: req.user?.tenantId // Automatic tenant filtering
     };
 
     // Get devices

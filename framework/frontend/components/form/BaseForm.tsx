@@ -6,6 +6,7 @@ import type { BackendFieldDefinition } from './utils/schemaLoader';
 import { createFormSchema } from './utils/formSchema';
 import { useEntityFormWithStore } from './hooks/useEntityFormWithStore';
 import { ValidationFieldSelect } from '../validationfieldselect/ValidationFieldSelect';
+import { FormField } from '../formfield/FormField';
 import './BaseForm.css';
 
 export interface BaseFormProps {
@@ -267,15 +268,22 @@ export const BaseForm: React.FC<BaseFormProps> = ({
         return;
       }
 
+      // Skip validation for foreign key fields (validate: true) - they're validated by the backend
+      if (backendFieldDef.validate === true) {
+        return;
+      }
+
       if (value !== undefined && value !== null && value !== '') {
         if (backendFieldDef.type === 'number') {
-          if (typeof value !== 'number') {
+          // Convert string to number for validation
+          const numValue = typeof value === 'string' ? parseFloat(value) : value;
+          if (isNaN(numValue)) {
             newErrors[fieldName] = `${backendFieldDef.label} must be a number`;
           } else {
-            if (backendFieldDef.min !== null && backendFieldDef.min !== undefined && value < backendFieldDef.min) {
+            if (backendFieldDef.min !== null && backendFieldDef.min !== undefined && numValue < backendFieldDef.min) {
               newErrors[fieldName] = `${backendFieldDef.label} must be at least ${backendFieldDef.min}`;
             }
-            if (backendFieldDef.max !== null && backendFieldDef.max !== undefined && value > backendFieldDef.max) {
+            if (backendFieldDef.max !== null && backendFieldDef.max !== undefined && numValue > backendFieldDef.max) {
               newErrors[fieldName] = `${backendFieldDef.label} must be at most ${backendFieldDef.max}`;
             }
           }
@@ -299,8 +307,12 @@ export const BaseForm: React.FC<BaseFormProps> = ({
           }
         }
 
-        if (backendFieldDef.enumValues && !backendFieldDef.enumValues.includes(value)) {
-          newErrors[fieldName] = `${backendFieldDef.label} must be one of: ${backendFieldDef.enumValues.join(', ')}`;
+        // Validate enum values - check against original enumValues
+        if (backendFieldDef.enumValues) {
+          const enumValues = backendFieldDef.enumValues;
+          if (!enumValues.includes(value)) {
+            newErrors[fieldName] = `${backendFieldDef.label} must be one of: ${enumValues.join(', ')}`;
+          }
         }
       }
     });
@@ -387,17 +399,6 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     const error = errors[fieldName];
     const isFormDisabled = loading || !!form?.isSubmitting;
 
-    if (error) {
-      console.log(`[RENDER] Field ${fieldName} has error: ${error}`);
-    }
-
-    // Log all field definitions for debugging
-    if (fieldName === 'location_id') {
-      console.log(`[DEBUG] location_id field definition:`, fieldDef);
-      console.log(`[DEBUG] location_id validate value:`, fieldDef.validate, typeof fieldDef.validate);
-      console.log(`[DEBUG] location_id type:`, fieldDef.type);
-    }
-
     const customField = renderCustomField?.(fieldName, fieldDef, value, error, isFormDisabled, (val) =>
       handleInputChange(fieldName, val)
     );
@@ -422,169 +423,27 @@ export const BaseForm: React.FC<BaseFormProps> = ({
       );
     }
 
-    const baseClassName = className.split('__')[0] || 'form';
-    const fieldClassName = `${baseClassName}__field`;
-    const labelClassName = `${baseClassName}__label`;
-    const inputClassName = `${baseClassName}__input`;
-    const errorClassName = `${baseClassName}__error`;
-    const helperClassName = `${baseClassName}__helper-text`;
-    const checkboxClassName = `${baseClassName}__checkbox`;
-    const selectClassName = `${baseClassName}__select`;
-    const textareaClassName = `${baseClassName}__textarea`;
-    const requiredClassName = `${baseClassName}__required`;
+    // Determine field type - handle special cases
+    let fieldType = fieldDef.type || 'text';
+    let fieldOptions = fieldDef.options;
 
-    if (fieldDef.type === 'boolean') {
-      return (
-        <div key={fieldName} className={fieldClassName}>
-          <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-            <input
-              type="checkbox"
-              id={fieldName}
-              checked={value || false}
-              onChange={(e) => handleInputChange(fieldName, e.target.checked)}
-              disabled={isFormDisabled}
-              className={checkboxClassName}
-            />
-            {fieldDef.label}
-            {fieldDef.required && <span className={requiredClassName}>*</span>}
-          </label>
-          {error && <span className={errorClassName}>{error}</span>}
-          {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
-        </div>
-      );
+    // Convert boolean to checkbox
+    if (fieldType === 'boolean') {
+      fieldType = 'checkbox';
     }
 
-    if (fieldDef.enumValues) {
-      return (
-        <div key={fieldName} className={fieldClassName}>
-          <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-            {fieldDef.label}
-            {fieldDef.required && <span className={requiredClassName}>*</span>}
-          </label>
-          <select
-            id={fieldName}
-            value={value || ''}
-            onChange={(e) => handleInputChange(fieldName, e.target.value)}
-            className={`${selectClassName} ${error ? `${inputClassName}--error` : ''}`}
-            disabled={isFormDisabled}
-          >
-            <option value="">Select {fieldDef.label}</option>
-            {fieldDef.enumValues.map((enumValue: string) => (
-              <option key={enumValue} value={enumValue}>
-                {enumValue.charAt(0).toUpperCase() + enumValue.slice(1)}
-              </option>
-            ))}
-          </select>
-          {error && <span className={errorClassName}>{error}</span>}
-          {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
-        </div>
-      );
+    // Convert enumValues to select with options
+    if (fieldDef.enumValues && !fieldOptions) {
+      fieldType = 'select';
+      fieldOptions = fieldDef.enumValues.map((val: string) => ({
+        value: val,
+        label: val.charAt(0).toUpperCase() + val.slice(1),
+      }));
     }
 
-    if (['description', 'notes'].includes(fieldName)) {
-      return (
-        <div key={fieldName} className={fieldClassName}>
-          <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-            {fieldDef.label}
-            {fieldDef.required && <span className={requiredClassName}>*</span>}
-          </label>
-          <textarea
-            id={fieldName}
-            value={value || ''}
-            onChange={(e) => handleInputChange(fieldName, e.target.value)}
-            className={`${textareaClassName} ${error ? `${inputClassName}--error` : ''}`}
-            placeholder={fieldDef.placeholder}
-            disabled={isFormDisabled}
-            rows={4}
-          />
-          {error && <span className={errorClassName}>{error}</span>}
-          {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
-        </div>
-      );
-    }
-
-    if (fieldDef.type === 'number') {
-      return (
-        <div key={fieldName} className={fieldClassName}>
-          <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-            {fieldDef.label}
-            {fieldDef.required && <span className={requiredClassName}>*</span>}
-          </label>
-          <input
-            type="number"
-            id={fieldName}
-            value={value || ''}
-            onChange={(e) => handleInputChange(fieldName, parseInt(e.target.value) || 0)}
-            className={`${inputClassName} ${error ? `${inputClassName}--error` : ''}`}
-            placeholder={fieldDef.placeholder}
-            min={fieldDef.min}
-            max={fieldDef.max}
-            disabled={isFormDisabled}
-          />
-          {error && <span className={errorClassName}>{error}</span>}
-          {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
-        </div>
-      );
-    }
-
-    if (fieldDef.type === 'email') {
-      return (
-        <div key={fieldName} className={fieldClassName}>
-          <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-            {fieldDef.label}
-            {fieldDef.required && <span className={requiredClassName}>*</span>}
-          </label>
-          <input
-            type="email"
-            id={fieldName}
-            value={value || ''}
-            onChange={(e) => handleInputChange(fieldName, e.target.value)}
-            className={`${inputClassName} ${error ? `${inputClassName}--error` : ''}`}
-            placeholder={fieldDef.placeholder}
-            maxLength={fieldDef.maxLength}
-            disabled={isFormDisabled}
-            autoComplete="off"
-          />
-          {error && <span className={errorClassName}>{error}</span>}
-          {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
-        </div>
-      );
-    }
-
-    if (fieldDef.type === 'date') {
-      const formatDateWithTime = (dateValue: any) => {
-        if (!dateValue) return '';
-        const date = new Date(dateValue);
-        if (isNaN(date.getTime())) return '';
-        return date.toLocaleString('en-US', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        });
-      };
-
-      return (
-        <div key={fieldName} className={fieldClassName}>
-          <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-            {fieldDef.label}
-            {fieldDef.required && <span className={requiredClassName}>*</span>}
-          </label>
-          <input
-            type="text"
-            id={fieldName}
-            value={formatDateWithTime(value)}
-            disabled={true}
-            className={`${inputClassName} ${error ? `${inputClassName}--error` : ''}`}
-            readOnly
-          />
-          {error && <span className={errorClassName}>{error}</span>}
-          {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
-        </div>
-      );
+    // Convert description/notes fields to textarea
+    if (['description', 'notes'].includes(fieldName) && fieldType === 'text') {
+      fieldType = 'textarea';
     }
 
     // Disable autocomplete for address fields to prevent Chrome's save address dialog
@@ -592,25 +451,32 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     const isAddressField = addressFields.includes(fieldName.toLowerCase());
 
     return (
-      <div key={fieldName} className={fieldClassName}>
-        <label htmlFor={fieldName} className={`${labelClassName} ${error ? `${labelClassName}--error` : ''}`}>
-          {fieldDef.label}
-          {fieldDef.required && <span className={requiredClassName}>*</span>}
-        </label>
-        <input
-          type="text"
-          id={fieldName}
+      <div key={fieldName} className={`${className}__field`}>
+        <FormField
           name={isAddressField ? `field_${fieldName}` : fieldName}
-          value={value || ''}
-          onChange={(e) => handleInputChange(fieldName, e.target.value)}
-          className={`${inputClassName} ${error ? `${inputClassName}--error` : ''}`}
-          placeholder={fieldDef.placeholder}
-          maxLength={fieldDef.maxLength}
+          label={fieldDef.label}
+          type={fieldType === 'phone' ? 'tel' : fieldType}
+          value={fieldType === 'checkbox' ? (value || false) : (value || '')}
+          error={error}
+          touched={!!error}
+          help={fieldDef.description}
+          required={fieldDef.required}
           disabled={isFormDisabled}
-          autoComplete="off"
+          placeholder={fieldDef.placeholder}
+          options={fieldOptions}
+          min={fieldDef.min}
+          max={fieldDef.max}
+          step={fieldDef.step}
+          rows={fieldDef.rows || (fieldType === 'textarea' ? 4 : undefined)}
+          onChange={(e: any) => {
+            if (fieldType === 'checkbox') {
+              handleInputChange(fieldName, e.target.checked);
+            } else {
+              handleInputChange(fieldName, e.target.value);
+            }
+          }}
+          onBlur={() => {}}
         />
-        {error && <span className={errorClassName}>{error}</span>}
-        {fieldDef.description && <div className={helperClassName}>{fieldDef.description}</div>}
       </div>
     );
   };

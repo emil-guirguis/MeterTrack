@@ -252,7 +252,6 @@ export class SyncManager {
                     port: meter.port,
                     protocol: meter.protocol,
                     status: meter.status,
-                    register_map: meter.register_map,
                     notes: meter.notes || '',
                     active: meter.active,
                     created_at: meter.created_at,

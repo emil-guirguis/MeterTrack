@@ -84,6 +84,11 @@ const authenticateToken = async (req, res, next) => {
     
     user.permissions = permissions;
     
+    // Ensure tenant_id is set from user's tenant relationship
+    if (!user.tenant_id && user.tenant) {
+      user.tenant_id = user.tenant.id || user.tenant;
+    }
+    
     req.user = user;
     
     // Also set req.auth for compatibility with tenant context middleware

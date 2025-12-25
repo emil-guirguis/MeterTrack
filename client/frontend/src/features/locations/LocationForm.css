@@ -69,42 +69,7 @@
   gap: 0.25rem;
 }
 
-.location-form__input,
-.location-form__select,
-.location-form__textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-family: inherit;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.location-form__input:focus,
-.location-form__select:focus,
-.location-form__textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-alpha);
-}
-
-.location-form__input:disabled,
-.location-form__select:disabled,
-.location-form__textarea:disabled {
-  background: var(--color-background-disabled);
-  color: var(--color-text-disabled);
-  cursor: not-allowed;
-}
-
-.location-form__input--error,
-.location-form__select--error,
-.location-form__textarea--error {
-  border-color: var(--color-error);
-  box-shadow: 0 0 0 3px var(--color-error-alpha);
-}
+/* MUI FormField components handle all input styling */
 
 .location-form__textarea {
   resize: vertical;

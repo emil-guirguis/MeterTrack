@@ -12,23 +12,6 @@ import { CachedMeter, RegisterMap } from './types.js';
 
 // ==================== GENERATORS ====================
 
-/**
- * Generate a valid register map
- */
-const registerMapArbitrary = (): fc.Arbitrary<RegisterMap> => {
-  return fc.dictionary(
-    fc.string({ minLength: 1, maxLength: 50 }),
-    fc.record({
-      objectType: fc.constantFrom('analogInput', 'analogOutput', 'binaryInput', 'binaryOutput'),
-      objectInstance: fc.integer({ min: 0, max: 1000 }),
-      propertyId: fc.constantFrom('presentValue', 'units', 'status', 'description'),
-    }),
-    { minKeys: 1, maxKeys: 5 }
-  ).filter((map) => {
-    // Ensure the map is not empty and all entries are valid
-    return Object.keys(map).length > 0 && Object.values(map).every((v) => v && typeof v === 'object');
-  });
-};
 
 /**
  * Generate a valid meter object
@@ -40,7 +23,6 @@ const meterArbitrary = (): fc.Arbitrary<any> => {
     ip: fc.ipV4(),
     port: fc.integer({ min: 1, max: 65535 }).map(String),
     protocol: fc.constantFrom('bacnet', 'modbus', 'mqtt'),
-    register_map: registerMapArbitrary(),
     active: fc.constant(true),
   });
 };
@@ -51,9 +33,8 @@ const meterArbitrary = (): fc.Arbitrary<any> => {
 const mockDatabaseArbitrary = (): fc.Arbitrary<any> => {
   return fc.array(meterArbitrary(), { minLength: 1, maxLength: 10 }).map((meters) => {
     // All meters from meterArbitrary() should have valid register maps
-    // since registerMapArbitrary() ensures minKeys: 1
     const validMeters = meters.filter((m) => {
-      return m.register_map && typeof m.register_map === 'object' && Object.keys(m.register_map).length > 0;
+      return m.length > 0;
     });
 
     // If filtering removed all meters, return the original meters
@@ -136,11 +117,6 @@ describe('MeterCache', () => {
 
   /**
    * Property 6: Cache Invalidation on Update
-   * 
-   * For any meter whose register_map is updated in the database, the system SHALL
-   * reload the updated register_map into the cache on the next collection cycle.
-   * 
-   * **Validates: Requirements 2.3**
    */
   it('Property 6: Cache Invalidation on Update - cache reflects updated register maps after reload', async () => {
     await fc.assert(
@@ -176,13 +152,7 @@ describe('MeterCache', () => {
           const updatedMeters = [...initialMeters];
           updatedMeters[updateIdx] = {
             ...meterToUpdate,
-            register_map: {
-              new_data_point: {
-                objectType: 'analogInput',
-                objectInstance: 999,
-                propertyId: 'presentValue',
-              },
-            },
+
           };
 
           // Create updated mock database
@@ -202,9 +172,6 @@ describe('MeterCache', () => {
           const updatedCachedMeter = cache.getMeter(meterToUpdate.id);
           expect(updatedCachedMeter).toBeDefined();
 
-          // The register map should be updated
-          expect(updatedCachedMeter!.register_map).toHaveProperty('new_data_point');
-          expect(updatedCachedMeter!.register_map.new_data_point.objectInstance).toBe(999);
         }
       ),
       { numRuns: 100 }
@@ -278,13 +245,6 @@ describe('MeterCache', () => {
       ip: '192.168.1.1',
       port: '502',
       protocol: 'bacnet',
-      register_map: {
-        total_energy: {
-          objectType: 'analogInput',
-          objectInstance: 0,
-          propertyId: 'presentValue',
-        },
-      },
       active: true,
     };
 
@@ -294,7 +254,6 @@ describe('MeterCache', () => {
       ip: '192.168.1.2',
       port: '502',
       protocol: 'bacnet',
-      register_map: 'not-a-valid-json-object', // Invalid
       active: true,
     };
 

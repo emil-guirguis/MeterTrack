@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BaseList } from '@framework/components/list/BaseList';
 import { useDevicesEnhanced } from './devicesStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useBaseList } from '@framework/components/list/hooks';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import { generateColumnsFromSchema, generateFiltersFromSchema } from '@framework/components/list/utils/schemaColumnGenerator';
 import type { Device } from './deviceConfig';
 import { Permission } from '../../types/auth';
-import { deviceColumns, deviceFilters, deviceStats, deviceExportConfig, createDeviceBulkActions } from './deviceConfig';
+import { deviceStats, deviceExportConfig, createDeviceBulkActions } from './deviceConfig';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './DeviceList.css';
 
@@ -22,6 +24,24 @@ export const DeviceList: React.FC<DeviceListProps> = ({
 }) => {
   const auth = useAuth();
   const devices = useDevicesEnhanced();
+  const { schema } = useSchema('device');
+
+  // Dynamically generate columns from schema based on showOn: ['list']
+  const columns = useMemo(() => {
+    if (!schema) return [];
+    return generateColumnsFromSchema<Device>(schema.formFields, {
+      fieldOrder: ['manufacturer', 'modelNumber', 'description', 'type' ],
+      responsive: 'hide-mobile',
+    });
+  }, [schema]);
+
+  // Dynamically generate filters from schema based on showOn: ['list'] and enumValues
+  const filters = useMemo(() => {
+    if (!schema) return [];
+    return generateFiltersFromSchema(schema.formFields, {
+      fieldOrder: ['type', 'manufacturer'],
+    });
+  }, [schema]);
 
   const handleDeviceDelete = (device: Device) => {
     showConfirmation({
@@ -52,12 +72,12 @@ export const DeviceList: React.FC<DeviceListProps> = ({
       allowStats: true,
     },
     permissions: {
-      create: Permission.DEVICE_CREATE,
-      update: Permission.DEVICE_UPDATE,
-      delete: Permission.DEVICE_DELETE,
+      create: false,//Permission.DEVICE_CREATE,
+      update: false,//Permission.DEVICE_UPDATE,
+      delete: false,//Permission.DEVICE_DELETE,
     },
-    columns: deviceColumns,
-    filters: deviceFilters,
+    columns,
+    filters,
     stats: deviceStats,
     bulkActions: createDeviceBulkActions({ bulkDelete: async (ids: string[]) => {
       await Promise.all(ids.map(id => devices.deleteItem(id)));

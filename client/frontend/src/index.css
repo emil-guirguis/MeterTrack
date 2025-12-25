@@ -142,37 +142,7 @@ p {
   outline-offset: 2px;
 }
 
-/* MUI Input/OutlinedInput background overrides (ensure light background) */
-.MuiInputBase-root.MuiOutlinedInput-root,
-.MuiInputBase-root {
-  background-color: var(--color-surface) !important;
-}
-
-.MuiInputBase-root .MuiInputBase-input,
-.MuiOutlinedInput-root .MuiOutlinedInput-input {
-  background-color: transparent !important;
-  color: var(--color-text-primary) !important;
-}
-
-/* Outline colors */
-.MuiOutlinedInput-notchedOutline {
-  border-color: var(--color-border) !important;
-}
-
-.Mui-focused .MuiOutlinedInput-notchedOutline {
-  border-color: var(--color-primary) !important;
-}
-
-/* Disabled state */
-.MuiInputBase-root.Mui-disabled {
-  background-color: var(--color-border-light) !important;
-}
-
-/* Force same behavior in any dark theme hook */
-body[data-theme='dark'] .MuiInputBase-root,
-body[data-theme='dark'] .MuiOutlinedInput-root {
-  background-color: var(--color-surface) !important;
-}
+/* MUI styling is now handled by the theme provider */
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {

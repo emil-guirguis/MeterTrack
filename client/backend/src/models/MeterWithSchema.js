@@ -63,7 +63,6 @@ class Meter extends BaseModel {
 
       customListColumns: {},
 
-
       // Form fields - user can edit these
       formFields: {
         name: field({
@@ -76,7 +75,13 @@ class Meter extends BaseModel {
           maxLength: 100,
           placeholder: 'Enter meter name',
           showOn: ['list', 'form'],
-
+          formGrouping: {
+            tabName: 'Basic',
+            sectionName: 'Basic Information',
+            tabOrder: 1,
+            sectionOrder: 1,
+            fieldOrder: 1,
+          },
         }),
 
         serial_number: field({
@@ -88,6 +93,33 @@ class Meter extends BaseModel {
           maxLength: 200,
           placeholder: 'Enter serial number',
           showOn: ['list', 'form'],
+          formGrouping: {
+            tabName: 'Basic',
+            sectionName: 'Basic Information',
+            tabOrder: 1,
+            sectionOrder: 1,
+            fieldOrder: 2,
+          },
+        }),
+
+        device_id: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          required: true,
+          label: 'Device',
+          dbField: 'device_id',
+          min: 1,
+          showOn: ['list', 'form'],
+          validate: true,
+          validationFields: ['description'],
+          validationQuery: 'SELECT id, description FROM device WHERE active = true ORDER BY description ASC',
+          formGrouping: {
+            tabName: 'Basic',
+            sectionName: 'Basic Information',
+            tabOrder: 1,
+            sectionOrder: 1,
+            fieldOrder: 3,
+          },
         }),
 
         location_id: field({
@@ -100,38 +132,47 @@ class Meter extends BaseModel {
           showOn: ['form'],
           validate: true,
           validationFields: ['name'],
+          formGrouping: {
+            tabName: 'Basic',
+            sectionName: 'Basic Information',
+            tabOrder: 1,
+            sectionOrder: 1,
+            fieldOrder: 4,
+          },
         }),
 
-        device_id: field({
-          type: FieldTypes.NUMBER,
+        // type: field({
+        //   type: FieldTypes.STRING,
+        //   default: 'electric',
+        //   required: true,
+        //   label: 'Meter Type',
+        //   dbField: 'type',
+        //   enumValues: ['electric', 'gas', 'water', 'steam', 'other'],
+        //   showOn: ['form'],
+        //   formGrouping: {
+        //     tabName: 'Basic',
+        //     sectionName: 'Basic Information',
+        //     tabOrder: 1,
+        //     sectionOrder: 1,
+        //     fieldOrder: 5,
+        //   },
+        // }),
+
+        installation_date: field({
+          type: FieldTypes.DATE,
           default: null,
-          required: true,
-          label: 'Device',
-          dbField: 'device_id',
-          min: 1,
-          showOn: ['list', 'form'],
-          validate: true,
-          validationFields: ['manufacturer', 'model_number'],
-        }),
-
-
-        device: field({
-          type: FieldTypes.STRING,
-          default: '',
-          readOnly: true,
-          label: 'Device Manufacturer',
-          dbField: null,
-          showOn: ['list'],
-        }),
-
-
-        model: field({
-          type: FieldTypes.STRING,
-          default: '',
-          readOnly: true,
-          label: 'Model',
-          dbField: null,
-          showOn: ['list'],
+          required: false,
+          label: 'Installation Date',
+          dbField: 'installation_date',
+          placeholder: 'Select date',
+          showOn: ['form'],
+          formGrouping: {
+            tabName: 'Basic',
+            sectionName: 'Status & Configuration',
+            tabOrder: 1,
+            sectionOrder: 2,
+            fieldOrder: 1,
+          },
         }),
 
         ip: field({
@@ -156,14 +197,21 @@ class Meter extends BaseModel {
           showOn: ['form'],
         }),
 
-        type: field({
-          type: FieldTypes.STRING,
-          default: 'electric',
-          required: true,
-          label: 'Meter Type',
-          dbField: 'type',
-          enumValues: ['electric', 'gas', 'water', 'steam', 'other'],
+
+        elements: field({
+          type: FieldTypes.OBJECT,
+          default: null,
+          required: false,
+          label: 'Elements',
+          dbField: null,
           showOn: ['form'],
+          formGrouping: {
+            tabName: 'Elements',
+            sectionName: 'Meter Elements',
+            tabOrder: 2,
+            sectionOrder: 1,
+            fieldOrder: 1,
+          },
         }),
 
         notes: field({
@@ -175,25 +223,31 @@ class Meter extends BaseModel {
           maxLength: 500,
           placeholder: 'Enter notes',
           showOn: ['form'],
+          formGrouping: {
+            tabName: 'Additional Info',
+            sectionName: 'Notes',
+            tabOrder: 3,
+            sectionOrder: 1,
+            fieldOrder: 1,
+          },
         }),
 
-        installation_date: field({
-          type: FieldTypes.DATE,
-          default: null,
-          required: false,
-          label: 'Installation Date',
-          dbField: 'installation_date',
-          placeholder: 'Select date',
-          showOn: ['form'],
+        device: field({
+          type: FieldTypes.STRING,
+          default: '',
+          readOnly: true,
+          label: 'Device Manufacturer',
+          dbField: null,
+          showOn: ['list'],
         }),
 
-        register_map: field({
-          type: FieldTypes.JSON,
-          default: null,
-          required: false,
-          label: 'Register Map',
-          dbField: 'register_map',
-          showOn: ['form'],
+        model: field({
+          type: FieldTypes.STRING,
+          default: '',
+          readOnly: true,
+          label: 'Model',
+          dbField: null,
+          showOn: ['list'],
         }),
       },
 
@@ -378,7 +432,6 @@ function transformMeterToResponse(meterData, relatedData = {}) {
     updatedAt: meterData.updated_at,
     created_at: meterData.created_at,
     updated_at: meterData.updated_at,
-    register_map: meterData.register_map ?? null,
     configuration: undefined,
     lastReading: null,
   };
@@ -400,7 +453,6 @@ function normalizeRequestBody(reqBody) {
     unit_of_measurement: reqBody.unit_of_measurement,
     multiplier: reqBody.multiplier || 1,
     notes: reqBody.notes,
-    register_map: reqBody.register_map || null,
     ip: reqBody.ip,
     port: reqBody.portNumber || reqBody.port,
     slave_id: reqBody.slaveId || reqBody.slave_id,
@@ -433,7 +485,6 @@ function transformCreatedMeterToResponse(meterData) {
     updatedAt: meterData.updated_at,
     created_at: meterData.created_at,
     updated_at: meterData.updated_at,
-    register_map: meterData.register_map ?? null,
   };
 }
 

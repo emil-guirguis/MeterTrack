@@ -270,4 +270,114 @@ router.post('/heartbeat', authenticateSyncServer, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/sync/getmeters  
+ * Download get meters for Sync
+ */
+router.get('/getmeters', authenticateSyncServer, async (req, res) => {
+  try {
+    const tenantId = req.tenantId;
+    const sql = `select m.id as meter_id, m.device_id, m.ip, m.port, me.element, m.active 
+                 from meter m
+                 	  join meter_element me on me.meter_id = m.id
+                 where m.tenant_id = $1`;
+
+    const params = [tenantId];
+    logQuery(sql, params);
+    const result = await db.query(sql, params);
+
+    const meter = result.rows[0];
+    if (!meter) {
+      return res.status(404).json({
+        success: false,
+        message: 'meter not found'
+      });
+    }
+
+    const meters = result.rows || [];
+
+    res.json({
+      success: true,
+      config: {
+        site: {
+          id: meter['meter_id'],
+          ip: meter['ip']
+        },
+        meters: meters.map(meter => ({
+          meter_id: meter['meter_id'],
+          device_id: meter['device_id'],
+          ip: meter['ip'],
+          port: meter['port'],
+          element: meter['element'],
+          active: meter['active']
+        })),
+        sync_interval_minutes: 5,
+        batch_size: 1000
+      }
+    });
+  } catch (error) {
+    console.error('Meter download error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      success: false,
+      message: 'Meter  download error',
+      error: errorMessage
+    });
+  }
+});
+
+
+/**
+ * GET /api/sync/getmregisters
+ * Download get registers for Sync
+ */
+router.get('/getmregisters', authenticateSyncServer, async (req, res) => {
+  try {
+    const deviceId = req.deviceId;
+    const sql = `select dr.device_id, register, field_name
+                 from register r 
+                    join device_register dr on dr.register_id = r.id 
+                 where dr.device_id = $1`;
+
+    const params = [deviceId];
+    logQuery(sql, params);
+    const result = await db.query(sql, params);
+
+    const register = result.rows[0];
+    if (!register) {
+      return res.status(404).json({
+        success: false,
+        message: 'register not found'
+      });
+    }
+
+    const registers = result.rows || [];
+
+    res.json({
+      success: true,
+      config: {
+        register: {
+          id: register['id'],
+          name: register['name']
+        },
+        registers: registers.map(register => ({
+          device_id: register['device_id'],
+          register: register['register'],
+          field_name: register['field_name'],
+        })),
+        sync_interval_minutes: 5,
+        batch_size: 1000
+      }
+    });
+  } catch (error) {
+    console.error('register download error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      success: false,
+      message: 'register  download error',
+      error: errorMessage
+    });
+  }
+});
+
 module.exports = router;

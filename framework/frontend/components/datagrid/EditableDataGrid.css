@@ -1,0 +1,96 @@
+.editable-data-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.editable-data-grid__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.editable-data-grid__add-button {
+  min-width: 120px;
+}
+
+.editable-data-grid__loading {
+  margin-left: 8px;
+}
+
+.editable-data-grid__error {
+  margin-bottom: 8px;
+}
+
+.editable-data-grid__table {
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.editable-data-grid__header-cell {
+  font-weight: 600;
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.editable-data-grid__row {
+  transition: background-color 0.2s ease;
+}
+
+.editable-data-grid__row:hover {
+  background-color: #fafafa;
+}
+
+.editable-data-grid__cell {
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.editable-data-grid__cell--editable {
+  cursor: pointer;
+}
+
+.editable-data-grid__cell--editable:hover {
+  background-color: #f0f0f0;
+}
+
+.editable-data-grid__cell--editing {
+  background-color: #fff3e0;
+  padding: 4px;
+}
+
+.editable-data-grid__input {
+  width: 100%;
+}
+
+.editable-data-grid__input .MuiOutlinedInput-root {
+  font-size: 14px;
+}
+
+.editable-data-grid__input .MuiOutlinedInput-root.Mui-focused {
+  border-color: var(--form-focus-color, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.editable-data-grid__actions-cell {
+  padding: 8px;
+  text-align: center;
+}
+
+.editable-data-grid__delete-button {
+  color: #d32f2f;
+  transition: background-color 0.2s ease;
+}
+
+.editable-data-grid__delete-button:hover {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+.editable-data-grid__empty {
+  padding: 32px 16px;
+  color: #999;
+  font-style: italic;
+}

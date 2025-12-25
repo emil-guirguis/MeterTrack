@@ -24,7 +24,10 @@ const schemaRoutes = require('./routes/schema');
 // const modbusRoutes = require('./routes/modbus'); // Temporarily disabled
 // const directMeterRoutes = require('./routes/directMeter'); // Temporarily disabled
 const devicesRoutes = require('./routes/device');
+const deviceRegisterRoutes = require('./routes/deviceRegister');
+const registersRoutes = require('./routes/registers');
 const autoCollectionRoutes = require('./routes/autoCollection');
+const meterElementRoutes = require('./routes/meterElement');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 // Import tenant isolation middleware
@@ -527,7 +530,10 @@ app.use('/api/schema', authenticateToken, tenantContext, schemaRoutes);
 // app.use('/api/modbus', authenticateToken, tenantContext, modbusRoutes); // Temporarily disabled
 // app.use('/api', authenticateToken, tenantContext, directMeterRoutes); // Temporarily disabled
 app.use('/api/device', authenticateToken, tenantContext, devicesRoutes);
+app.use('/api/devices/:deviceId/registers', authenticateToken, tenantContext, deviceRegisterRoutes);
+app.use('/api/registers', authenticateToken, tenantContext, registersRoutes);
 app.use('/api/auto-collection', authenticateToken, tenantContext, autoCollectionRoutes);
+app.use('/api/meters/:meterId/elements', authenticateToken, tenantContext, meterElementRoutes);
 // app.use('/api/threading', authenticateToken, tenantContext, threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint

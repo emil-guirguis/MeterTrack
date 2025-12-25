@@ -66,7 +66,6 @@ export interface MeterEntity extends BaseEntity {
   port: string;
   protocol: string;
   status: string;
-  register_map?: any;
   notes?: string;
 }
 
@@ -105,9 +104,6 @@ export interface BatchUploadResponse {
   message?: string;
 }
 
-export interface ConfigDownloadResponse {
-  meters: MeterEntity[];
-}
 
 export interface AuthResponse {
   success: boolean;
@@ -119,6 +115,11 @@ export interface HeartbeatResponse {
   success: boolean;
   timestamp: string;
 }
+
+export interface ConfigDownloadResponse {
+  meters: MeterEntity[];
+}
+
 // ==================== SYNC TYPES ====================
 
 export interface MeterSyncResult extends BaseSyncResult {}

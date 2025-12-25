@@ -29,7 +29,6 @@ CREATE TABLE IF NOT EXISTS meter (
   port VARCHAR(10),
   protocol VARCHAR(50),
   status VARCHAR(50),
-  register_map JSONB,
   notes TEXT,
   active BOOLEAN DEFAULT true,
   created_at VARCHAR(50),

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CountrySelect, Toast } from '@framework/components/common';
+import { Toast } from '@framework/components/common';
 import { FormField } from '@framework/components/formfield/FormField';
 import { FormSection, } from '@framework/components/formsection/FormSection';
 import { FormActions } from '@framework/components/formactions/FormActions';
@@ -127,13 +127,16 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
             />
           </div>
           <div className="settings-form__field">
-            <label className="settings-form__label">Country</label>
-            <CountrySelect
+            <FormField
+              name="address.country"
+              label="Country"
+              type="country"
+              placeholder="Select a country"
               value={values.address?.country || ''}
-              onChange={value => handleFieldChange('address.country', value)}
-              disabled={loading}
               required
-              className="settings-form__input"
+              disabled={loading}
+              onChange={(e: any) => handleFieldChange('address.country', e.target.value)}
+              onBlur={() => {}}
             />
           </div>
         </div>

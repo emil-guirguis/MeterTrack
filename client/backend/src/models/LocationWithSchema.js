@@ -118,7 +118,7 @@ class Location extends BaseModel {
                     maxLength: 20,
                 }),
                 country: field({
-                    type: FieldTypes.STRING,
+                    type: FieldTypes.COUNTRY,
                     default: '',
                     required: true,
                     label: 'Country',

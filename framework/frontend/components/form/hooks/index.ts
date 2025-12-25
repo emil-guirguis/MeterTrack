@@ -2,4 +2,4 @@
 export * from './useBaseForm';
 export * from './useEntityForm';
 export * from './useEntityFormWithStore';
-export * from './useValidationFieldOptions';
+export * from './useFormTabs';

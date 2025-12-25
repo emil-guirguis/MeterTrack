@@ -27,7 +27,6 @@ export interface MeterConfiguration {
   last_maintenance?: Date;
   maintenance_interval?: string;
   maintenance_notes?: string;
-  register_map?: any;
   notes?: string;
   active?: boolean;
   created_at: Date;
@@ -172,7 +171,7 @@ export class DownloadSyncManager {
         const result = await this.remotePool.query(
           `SELECT id, name, type, serial_number, installation_date, device_id, location_id,
                   ip, port, protocol, status, next_maintenance, last_maintenance,
-                  maintenance_interval, maintenance_notes, register_map, notes, active,
+                  maintenance_interval, maintenance_notes,notes, active,
                   created_at, updated_at
            FROM meter
            ORDER BY id`
@@ -198,7 +197,7 @@ export class DownloadSyncManager {
         const result = await this.localPool.query(
           `SELECT id, name, type, serial_number, installation_date, device_id, location_id,
                   ip, port, protocol, status, next_maintenance, last_maintenance,
-                  maintenance_interval, maintenance_notes, register_map, notes, active,
+                  maintenance_interval, maintenance_notes, notes, active,
                   created_at, updated_at
            FROM meter
            ORDER BY id`
@@ -269,8 +268,7 @@ export class DownloadSyncManager {
       remoteMeter.port !== localMeter.port ||
       remoteMeter.protocol !== localMeter.protocol ||
       remoteMeter.status !== localMeter.status ||
-      remoteMeter.active !== localMeter.active ||
-      JSON.stringify(remoteMeter.register_map) !== JSON.stringify(localMeter.register_map)
+      remoteMeter.active !== localMeter.active
     );
   }
 
@@ -291,7 +289,6 @@ export class DownloadSyncManager {
     if (remoteMeter.protocol !== localMeter.protocol) changedFields.push('protocol');
     if (remoteMeter.status !== localMeter.status) changedFields.push('status');
     if (remoteMeter.active !== localMeter.active) changedFields.push('active');
-    if (JSON.stringify(remoteMeter.register_map) !== JSON.stringify(localMeter.register_map)) changedFields.push('register_map');
 
     return changedFields;
   }
@@ -306,10 +303,10 @@ export class DownloadSyncManager {
         `INSERT INTO meter (
           id, name, type, serial_number, installation_date, device_id, location_id,
           ip, port, protocol, status, next_maintenance, last_maintenance,
-          maintenance_interval, maintenance_notes, register_map, notes, active,
+          maintenance_interval, maintenance_notes, notes, active,
           created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
         [
           meter.id,
           meter.name,
@@ -326,7 +323,6 @@ export class DownloadSyncManager {
           meter.last_maintenance,
           meter.maintenance_interval,
           meter.maintenance_notes,
-          meter.register_map ? JSON.stringify(meter.register_map) : null,
           meter.notes,
           meter.active,
           meter.created_at,
@@ -362,10 +358,9 @@ export class DownloadSyncManager {
              last_maintenance = $13,
              maintenance_interval = $14,
              maintenance_notes = $15,
-             register_map = $16,
-             notes = $17,
-             active = $18,
-             updated_at = $19
+             notes = $16,
+             active = $17,
+             updated_at = $18
          WHERE id = $1`,
         [
           meter.id,
@@ -383,7 +378,6 @@ export class DownloadSyncManager {
           meter.last_maintenance,
           meter.maintenance_interval,
           meter.maintenance_notes,
-          meter.register_map ? JSON.stringify(meter.register_map) : null,
           meter.notes,
           meter.active,
           meter.updated_at,

@@ -162,7 +162,6 @@ export class MeterSyncAgent {
               port: remoteMeter.port,
               protocol: remoteMeter.protocol,
               status: remoteMeter.status,
-              register_map: remoteMeter.register_map,
               notes: remoteMeter.notes || '',
               active: remoteMeter.active,
               created_at: remoteMeter.created_at,
@@ -183,7 +182,6 @@ export class MeterSyncAgent {
         if (localMeter) {
           // Check if any fields have changed
           const hasChanges =
-            JSON.stringify(localMeter.register_map) !== JSON.stringify(remoteMeter.register_map)||
             localMeter.ip !== remoteMeter.ip ||
             localMeter.port !== remoteMeter.port ||
             localMeter.active !== remoteMeter.active ||
@@ -203,7 +201,6 @@ export class MeterSyncAgent {
                 port: remoteMeter.port,
                 protocol: remoteMeter.protocol,
                 status: remoteMeter.status,
-                register_map: remoteMeter.register_map,
                 notes: remoteMeter.notes || '',
                 active: remoteMeter.active,
                 created_at: remoteMeter.created_at,

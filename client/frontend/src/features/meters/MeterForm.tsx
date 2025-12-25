@@ -1,15 +1,19 @@
 /**
  * Meter Form
  * 
- * Multi-tab form for managing meter information.
- * Organized into tabs: Basic Info, Network, Register Map, and Additional Info.
+ * Uses the dynamic schema-based BaseForm to render the meter form.
+ * All validation, field rendering, and form management is handled by BaseForm.
+ * Fields are automatically organized into tabs and sections based on formGrouping metadata.
  */
 
 import React, { useRef, useCallback, useState } from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
 import { JsonGridEditor } from '@framework/components/json_grid';
+import { useSchema } from '@framework/components/form/utils/schemaLoader';
+import { useFormTabs } from '@framework/components/form/hooks';
 import { useMetersEnhanced } from './metersStore';
 import { useValidationDataProvider } from '../../hooks/useValidationDataProvider';
+import { ElementsGrid } from './ElementsGrid';
 import type { Meter } from './meterConfig';
 import './MeterForm.css';
 
@@ -20,7 +24,7 @@ interface MeterFormProps {
   loading?: boolean;
 }
 
-type TabType = 'basic' | 'network' | 'register' | 'additional';
+type TabType = string;
 
 export const MeterForm: React.FC<MeterFormProps> = ({
   meter,
@@ -28,75 +32,21 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   onCancel,
   loading = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('basic');
+  const [activeTab, setActiveTab] = useState<TabType>('Basic');
   const meters = useMetersEnhanced();
-  const registerMapFileInputRef = useRef<HTMLInputElement>(null);
   const baseValidationDataProvider = useValidationDataProvider();
   
+  // Use schema from cache (prefetched at login)
+  const { schema } = useSchema('meter');
+
   // Memoize the provider function to prevent unnecessary re-renders of ValidationFieldSelect
   const validationDataProvider = useCallback(
     (entityName: string, fieldDef: any) => baseValidationDataProvider(entityName, fieldDef),
     [baseValidationDataProvider]
   );
 
-  // Define tabs with their sections
-  const tabs: Record<TabType, { label: string; sections: Record<string, { fields: string[]; maxWidth?: string }> }> = {
-    basic: {
-      label: 'General',
-      sections: {
-        'Basic Information': {
-          fields: [
-            'name',
-            'device_id',
-            'location_id',
-            'type',
-            'serial_number',
-          ],
-        },
-        'Network Settings': {
-          fields: [
-            'ip',
-            'port',
-          ],
-        },
-        'Status & Configuration': {
-          fields: [
-            'active',
-            'installation_date',
-          ],
-        },
-      },
-    },
-    network: {
-      label: 'Register Map',
-      sections: {
-        'Register Map': {
-          fields: [
-            'register_map',
-          ],
-        },
-      },
-    },
-    register: {
-      label: 'Elements',
-      sections: {
-
-      },
-    },
-    additional: {
-      label: 'Notes',
-      sections: {
-        '': {
-          fields: [
-            'notes',
-          ],
-        },
-      },
-    },
-  };
-
-  // Get field sections for active tab
-  const fieldSections = tabs[activeTab].sections;
+  // Use the useFormTabs hook to organize fields into tabs and sections
+  const { tabs, tabList, fieldSections } = useFormTabs(schema?.formFields, activeTab);
 
   const renderCustomField = (
     fieldName: string,
@@ -106,53 +56,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     isDisabled: boolean,
     onChange: (value: any) => void
   ) => {
-    // Custom rendering for register_map (JSON field)
-    if (fieldName === 'register_map' && (fieldDef.type === 'object' || fieldDef.type === 'json')) {
-      const gridData = Array.isArray(value) ? value : (value ? [value] : []);
-
-      return (
-        <div key={fieldName} className="base-form__field meter-form__register-map">
-          <div className="meter-form__field-header">
-            <label className="base-form__label">
-              {fieldDef.label}
-              {fieldDef.required && <span className="base-form__required">*</span>}
-            </label>
-            <div className="meter-form__field-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => registerMapFileInputRef.current?.click()}
-                disabled={isDisabled}
-              >
-                📁 Import CSV
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => {
-                  if (meter?.device_id) {
-                    console.log('Load defaults from device:', meter.device_id);
-                  }
-                }}
-                disabled={isDisabled}
-              >
-                ⚙️ Default from Device
-              </button>
-            </div>
-          </div>
-          <JsonGridEditor
-            data={gridData}
-            onChange={onChange}
-            readOnly={isDisabled}
-            fileInputRef={registerMapFileInputRef}
-          />
-          {error && <span className="base-form__error">{error}</span>}
-          {fieldDef.description && (
-            <div className="base-form__helper-text">{fieldDef.description}</div>
-          )}
-        </div>
-      );
-    }
 
     return null;
   };
@@ -160,35 +63,45 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   return (
     <div className="meter-form-container">
       {/* Tab Navigation */}
-      <div className="meter-form__tabs">
-        {(Object.entries(tabs) as Array<[TabType, typeof tabs[TabType]]>).map(([tabKey, tab]) => (
-          <button
-            key={tabKey}
-            className={`meter-form__tab ${activeTab === tabKey ? 'meter-form__tab--active' : ''}`}
-            onClick={() => setActiveTab(tabKey)}
-            type="button"
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {tabList.length > 1 && (
+        <div className="meter-form__tabs">
+          {tabList.map((tabName) => (
+            <button
+              key={tabName}
+              className={`meter-form__tab ${activeTab === tabName ? 'meter-form__tab--active' : ''}`}
+              onClick={() => setActiveTab(tabName)}
+              type="button"
+            >
+              {tabs[tabName].label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="meter-form__content">
-        <BaseForm
-          schemaName="meter"
-          entity={meter}
-          store={meters}
-          onCancel={onCancel}
-          onLegacySubmit={onSubmit}
-          className="meter-form"
-          fieldSections={fieldSections}
-          loading={loading}
-          renderCustomField={renderCustomField}
-          fieldsToClean={['id', 'active', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags', 'tenant_id']}
-          validationDataProvider={validationDataProvider}
-          showSidebar={false}
-        />
+        {activeTab === 'Elements' && meter?.id ? (
+          <ElementsGrid
+            meterId={Number(meter.id)}
+            onError={(error) => console.error('ElementsGrid error:', error)}
+            onSuccess={(message) => console.log('ElementsGrid success:', message)}
+          />
+        ) : (
+          <BaseForm
+            schemaName="meter"
+            entity={meter}
+            store={meters}
+            onCancel={onCancel}
+            onLegacySubmit={onSubmit}
+            className="meter-form"
+            fieldSections={fieldSections}
+            loading={loading}
+            renderCustomField={renderCustomField}
+            fieldsToClean={['id', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags', 'tenant_id']}
+            validationDataProvider={validationDataProvider}
+            showSidebar={false}
+          />
+        )}
       </div>
     </div>
   );

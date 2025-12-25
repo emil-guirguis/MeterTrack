@@ -11,18 +11,18 @@ const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = req
 class Tenant extends BaseModel {
     constructor(data = {}) {
         super(data);
-        
+
         // Auto-initialize all fields from schema
         Tenant.schema.initializeFromData(this, data);
     }
-    
+
     /**
      * @override
      */
     static get tableName() {
         return 'tenant';
     }
-    
+
     /**
      * @override
      */
@@ -31,7 +31,7 @@ class Tenant extends BaseModel {
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
-    
+
     /**
      * @override
      */
@@ -40,7 +40,8 @@ class Tenant extends BaseModel {
             entityName: 'Tenant',
             tableName: 'tenant',
             description: 'Tenant entity for multi-tenant isolation',
-            
+
+            customListColumns: {},
             // Form fields - user can edit these
             formFields: {
                 name: field({
@@ -107,13 +108,14 @@ class Tenant extends BaseModel {
                     placeholder: '10001',
                 }),
                 country: field({
-                    type: FieldTypes.STRING,
+                    type: FieldTypes.COUNTRY,
                     default: 'US',
                     required: false,
                     label: 'Country',
                     dbField: 'country',
                     maxLength: 50,
-                    enumValues: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP'],
+                    placeholder: 'USA',
+                    //enumValues: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP'],
                 }),
                 active: field({
                     type: FieldTypes.BOOLEAN,
@@ -132,7 +134,7 @@ class Tenant extends BaseModel {
                     description: 'Number of meter reading batches processed',
                 })
             },
-            
+
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
@@ -157,7 +159,7 @@ class Tenant extends BaseModel {
                     dbField: 'updated_at',
                 })
             },
-            
+
             // Relationships - HAS_MANY relationships to child entities
             relationships: {
                 users: relationship({
@@ -184,7 +186,7 @@ class Tenant extends BaseModel {
                 // Note: Meters and Locations don't have tenant_id in the database
                 // They are accessed through Device relationships
             },
-            
+
             validation: {},
         });
     }

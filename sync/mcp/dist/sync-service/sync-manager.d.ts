@@ -6,6 +6,7 @@
  */
 import { SyncDatabase } from '../database/postgres.js';
 import { ClientSystemApiClient } from './api-client.js';
+import { BaseEntity } from '../types/entities.js';
 export interface SyncManagerConfig {
     database: SyncDatabase;
     apiClient: ClientSystemApiClient;
@@ -14,6 +15,19 @@ export interface SyncManagerConfig {
     maxRetries?: number;
     enableAutoSync?: boolean;
     connectivityCheckIntervalMs?: number;
+}
+export interface MeterEntity extends BaseEntity {
+    name: string;
+    type: string;
+    serial_number: string;
+    installation_date: string;
+    device_id: string;
+    location_id: string;
+    ip: string;
+    port: string;
+    protocol: string;
+    status: string;
+    notes?: string;
 }
 export interface SyncStatus {
     isRunning: boolean;

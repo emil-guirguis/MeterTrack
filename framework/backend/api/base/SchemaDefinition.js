@@ -26,6 +26,7 @@ const FieldTypes = {
   DATE: 'date',
   EMAIL: 'email',
   PHONE: 'phone',
+  COUNTRY: 'country',
   URL: 'url',
   OBJECT: 'object',
   ARRAY: 'array',
@@ -43,8 +44,7 @@ const FieldTypes = {
  * @param {string} [definition.label] - Human-readable label
  * @param {string} [definition.description] - Field description
  * @param {string} [definition.placeholder] - Placeholder text
-//  * @param {boolean} [definition.sortable] - Sortable
- * @param {Array<string>} [definition.filertable] - Filertable
+ * @param {Array<string>} [definition.filertable] - Filterable
  * @param {string} [definition.dbField] - Database column name (if different)
  * @param {Array<string>} [definition.enumValues] - Enum values for select fields
  * @param {number} [definition.minLength] - Minimum length for strings
@@ -53,6 +53,12 @@ const FieldTypes = {
  * @param {number} [definition.max] - Maximum value for numbers
  * @param {string} [definition.pattern] - Regex pattern for validation
  * @param {Array<string>} [definition.showOn] - Where to show field (e.g., ['form', 'list'])
+ * @param {Object} [definition.formGrouping] - Form grouping configuration
+ * @param {string} [definition.formGrouping.tabName] - Tab name for multi-tab forms (e.g., 'Basic', 'Advanced')
+ * @param {string} [definition.formGrouping.sectionName] - Section name within tab (e.g., 'Basic Information')
+ * @param {number} [definition.formGrouping.tabOrder] - Order of tab (lower numbers appear first)
+ * @param {number} [definition.formGrouping.sectionOrder] - Order of section within tab (lower numbers appear first)
+ * @param {number} [definition.formGrouping.fieldOrder] - Order of field within section (lower numbers appear first)
  * @param {boolean} [definition.validate] - Custom validation function
  * @param {Array<string>} [definition.validationFields] - Custom validation fields
  * @param {Function} [definition.toApi] - Transform value when sending to API
@@ -76,6 +82,7 @@ function field(definition) {
     max: definition.max !== undefined ? definition.max : null,
     pattern: definition.pattern || null,
     showOn: definition.showOn || null,
+    formGrouping: definition.formGrouping || null,
     validate: definition.validate || null,
     validationFields: definition.validationFields || null,
     toApi: definition.toApi || null,
@@ -143,7 +150,7 @@ function defineSchema(definition) {
     entityFields: definition.entityFields || {},
     relationships: definition.relationships || {},
     validation: definition.validation || {},
-    version: '1.0.0',
+    version: '1.1.0', // Updated to include formGrouping support
     generatedAt: new Date().toISOString(),
   };
 
@@ -151,11 +158,13 @@ function defineSchema(definition) {
    * Get schema as JSON for API response
    */
   function toJSON() {
-    // Remove functions before serializing
+    // Remove functions before serializing, but preserve all other data including formGrouping
     const serializable = JSON.parse(JSON.stringify(schema, (key, value) => {
+      // Skip functions and null values that represent "no value"
       if (typeof value === 'function') {
         return undefined;
       }
+      // Preserve everything else, including objects like formGrouping
       return value;
     }));
     

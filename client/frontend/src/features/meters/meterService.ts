@@ -9,7 +9,6 @@ export interface MeterMapTemplate {
   manufacturer: string;
   model: string;  
   description: string;
-  registerMap: RegisterMap;
 }
 
 export interface ApiResponse<T> {

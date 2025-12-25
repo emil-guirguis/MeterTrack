@@ -28,7 +28,7 @@ const ENTITIES_TO_PREFETCH = [
  */
 export async function prefetchAppSchemas(): Promise<void> {
   try {
-    console.log('[Schema Prefetch] Starting schema prefetch...');
+    console.log('[Schema Prefetch] 🚀 Starting schema prefetch...');
     console.log(`[Schema Prefetch] Prefetching ${ENTITIES_TO_PREFETCH.length} entities:`, ENTITIES_TO_PREFETCH);
     const startTime = Date.now();
     
@@ -40,6 +40,7 @@ export async function prefetchAppSchemas(): Promise<void> {
     const duration = Date.now() - startTime;
     console.log(`[Schema Prefetch] ✅ Completed in ${duration}ms`);
     console.log(`[Schema Prefetch] Made ${ENTITIES_TO_PREFETCH.length} parallel requests`);
+    console.log('[Schema Prefetch] 📋 All schemas are now cached and ready for use');
   } catch (error) {
     console.error('[Schema Prefetch] ❌ Failed to prefetch schemas:', error);
     // Don't throw - app should still work even if prefetch fails

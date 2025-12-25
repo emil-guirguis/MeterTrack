@@ -45,10 +45,6 @@ const userModel = require('../models/UserWithSchema');
 const tenantModel = require('../models/TenantWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ TenantWithSchema loaded');
 
-// console.log('[SCHEMA ROUTES] Loading EmailLogsWithSchema...');
-const emailLogsModel = require('../models/EmailLogsWithSchema');
-// console.log('[SCHEMA ROUTES] ✅ EmailLogsWithSchema loaded');
-
 // console.log('[SCHEMA ROUTES] Loading EmailTemplatesWithSchema...');
 const emailTemplatesModel = require('../models/EmailTemplatesWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ EmailTemplatesWithSchema loaded');
@@ -56,10 +52,6 @@ const emailTemplatesModel = require('../models/EmailTemplatesWithSchema');
 // console.log('[SCHEMA ROUTES] Loading MeterMaintenanceWithSchema...');
 const meterMaintenanceModel = require('../models/MeterMaintenanceWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ MeterMaintenanceWithSchema loaded');
-
-// console.log('[SCHEMA ROUTES] Loading MeterMapsWithSchema...');
-const meterMapsModel = require('../models/MeterMapsWithSchema');
-// console.log('[SCHEMA ROUTES] ✅ MeterMapsWithSchema loaded');
 
 // console.log('[SCHEMA ROUTES] Loading MeterMonitoringAlertsWithSchema...');
 const meterMonitoringAlertsModel = require('../models/MeterMonitoringAlertsWithSchema');
@@ -81,6 +73,10 @@ const meterUsageAlertsModel = require('../models/MeterUsageAlertsWithSchema');
 const notificationLogsModel = require('../models/NotificationLogsWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ NotificationLogsWithSchema loaded');
 
+// console.log('[SCHEMA ROUTES] Loading MeterElementsWithSchema...');
+const meterElementsModel = require('../models/MeterElementsWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ MeterElementsWithSchema loaded');
+
 // console.log('[SCHEMA ROUTES] ✅ All models loaded successfully');
 
 const models = {
@@ -92,15 +88,14 @@ const models = {
   meter_reading: meterReadingsModel, // Alias for frontend
   user: userModel,
   tenant: tenantModel,
-  emailLogs: emailLogsModel,
   emailTemplates: emailTemplatesModel,
   meterMaintenance: meterMaintenanceModel,
-  meterMaps: meterMapsModel,
   meterMonitoringAlerts: meterMonitoringAlertsModel,
   meterStatusLog: meterStatusLogModel,
   meterTriggers: meterTriggersModel,
   meterUsageAlerts: meterUsageAlertsModel,
   notificationLogs: notificationLogsModel,
+  meterElements: meterElementsModel,
   // Add more models here
 };
 

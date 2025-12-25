@@ -32,6 +32,13 @@ export interface BackendFieldDefinition {
   showOn?: string[];
   validate?: boolean;
   validationFields?: string[];
+  formGrouping?: {
+    tabName: string;
+    sectionName: string;
+    tabOrder: number;
+    sectionOrder: number;
+    fieldOrder: number;
+  };
 }
 
 export interface BackendSchema {
@@ -88,10 +95,12 @@ export async function fetchSchema(
     
     // Return cached schema if still valid
     if (age < ttl) {
+      console.log(`[SchemaLoader] ✅ Cache HIT: ${entityName} (age: ${age}ms, TTL: ${ttl}ms)`);
       return entry.schema;
     }
     
     // Cache expired, remove it
+    console.log(`[SchemaLoader] ⏰ Cache EXPIRED: ${entityName} (age: ${age}ms, TTL: ${ttl}ms)`);
     schemaCache.delete(entityName);
   }
 
@@ -155,7 +164,7 @@ export async function fetchSchema(
 /**
  * Convert backend field definition to frontend format
  */
-function convertFieldDefinition(backendField: BackendFieldDefinition & { validate?: boolean; validationFields?: string[] }): FieldDefinition {
+function convertFieldDefinition(backendField: BackendFieldDefinition & { validate?: boolean; validationFields?: string[]; formGrouping?: any }): FieldDefinition {
   return {
     type: backendField.type as any,
     default: backendField.default,
@@ -174,6 +183,8 @@ function convertFieldDefinition(backendField: BackendFieldDefinition & { validat
     ...(backendField.validationFields && { validationFields: backendField.validationFields }),
     // Preserve showOn property for visibility control
     ...(backendField.showOn && { showOn: backendField.showOn }),
+    // Preserve formGrouping for tab/section organization
+    ...(backendField.formGrouping && { formGrouping: backendField.formGrouping }),
   };
 }
 
@@ -364,8 +375,31 @@ export function useSchema(entityName: string) {
 
     async function load() {
       try {
+        const startTime = Date.now();
+        
+        // Check if schema is already in cache before setting loading state
+        if (schemaCache.has(entityName)) {
+          const entry = schemaCache.get(entityName)!;
+          const age = Date.now() - entry.timestamp;
+          
+          if (age < CACHE_TTL) {
+            console.log(`[useSchema] ✅ Cache HIT for ${entityName} (age: ${age}ms)`);
+            const convertedSchema = convertSchema(entry.schema);
+            if (mounted) {
+              setSchema(convertedSchema);
+              setError(null);
+              setLoading(false);
+            }
+            return;
+          }
+        }
+        
+        console.log(`[useSchema] 🔄 Cache MISS for ${entityName}, fetching from API...`);
         setLoading(true);
         const loadedSchema = await loadSchema(entityName);
+        const duration = Date.now() - startTime;
+        console.log(`[useSchema] ✅ Loaded ${entityName} from API in ${duration}ms`);
+        
         if (mounted) {
           setSchema(loadedSchema);
           setError(null);
@@ -373,6 +407,7 @@ export function useSchema(entityName: string) {
       } catch (err) {
         if (mounted) {
           setError(err as Error);
+          console.error(`[useSchema] ❌ Error loading ${entityName}:`, err);
         }
       } finally {
         if (mounted) {

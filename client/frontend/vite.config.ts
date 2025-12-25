@@ -1,21 +1,24 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { versionPlugin } from './vite-plugins/version-plugin';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Custom plugin to log errors to terminal
 const errorLoggerPlugin = () => {
   return {
     name: 'error-logger',
-    configureServer(server) {
+    configureServer(server: any) {
       server.ws.on('connection', () => {
-        server.ws.on('error', (error) => {
+        server.ws.on('error', (error: any) => {
           console.error('\n❌ WebSocket Error:', error);
         });
       });
       
       // Log HMR errors
-      server.middlewares.use((err, _req, _res, next) => {
+      server.middlewares.use((err: any, _req: any, _res: any, next: any) => {
         if (err) {
           console.error('\n❌ Server Error:', err.message);
           console.error(err.stack);
@@ -23,11 +26,11 @@ const errorLoggerPlugin = () => {
         next(err);
       });
     },
-    transform(_code, id) {
+    transform(_code: any) {
       // This will catch transform errors
       return null;
     },
-    handleHotUpdate({ file, server }) {
+    handleHotUpdate({ file }: any) {
       console.log(`\n🔄 Hot update: ${path.relative(process.cwd(), file)}`);
     },
   };

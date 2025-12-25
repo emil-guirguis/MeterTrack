@@ -3,30 +3,28 @@ const router = express.Router();
 const db = require('../config/database');
 
 
-// GET /api/registers - Get all registers for the tenant
+// GET /api/registers - Get all registers 
 router.get('/', async (req, res) => {
   try {
-    const tenantId = req.user.tenant_id;
 
-    // Get all registers for the tenant
+    // Get all registers
     const registers = await db.query(
-      `SELECT id, number, name, unit, field_name, tenant_id
+      `SELECT id, number, name, unit, field_name
        FROM register
-       WHERE tenant_id = ?
        ORDER BY number ASC`,
-      [tenantId]
     );
 
     res.json({
       success: true,
-      data: registers,
+      data: registers.rows,
     });
   } catch (error) {
     console.error('Error fetching registers:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       message: 'Failed to fetch registers',
-      error: error.message,
+      error: errorMessage,
     });
   }
 });

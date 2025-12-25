@@ -37,7 +37,6 @@ export interface Meter {
   installDate: Date;
   lastMaintenance?: Date;
   nextMaintenance?: Date;
-  register_map?: RegisterMap | null;
   createdAt: string;
   updatedAt: string;
   createdBy?: {
@@ -89,7 +88,6 @@ export interface CreateMeterRequest {
   location?: string;
   description?: string;
   type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
-  register_map?: RegisterMap | null;
 }
 
 export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {

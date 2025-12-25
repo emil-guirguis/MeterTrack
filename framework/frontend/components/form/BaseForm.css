@@ -67,15 +67,36 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
 }
 
-/* Form Labels */
+.base-form__section .base-form__field:last-child {
+  margin-bottom: 0;
+}
+
+/* Form Field Input Wrapper - for floating label positioning */
+.base-form__field-wrapper {
+  position: relative;
+}
+
+/* Form Labels - Material Design 3 Floating Label */
 .base-form__label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  transition: color 0.2s ease;
+  color: var(--color-text-secondary, #6b7280);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: left center;
+  pointer-events: none;
+  background-color: var(--color-surface, #ffffff);
+  padding: 0 0.25rem;
+  max-width: calc(100% - 1.5rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .base-form__label--error {
@@ -88,146 +109,7 @@
   color: var(--color-error, #dc2626);
 }
 
-/* Input Fields - comprehensive styling for all input types */
-.base-form__input,
-.base-form__select,
-.base-form__textarea,
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="tel"],
-input[type="url"],
-input[type="number"],
-input[type="date"],
-input[type="time"],
-input[type="datetime-local"],
-input[type="search"],
-select,
-textarea {
-  color: var(--form-text-color, var(--color-text-primary, #111827)) !important;
-  background-color: var(--form-background, var(--color-surface, #ffffff));
-  padding: 0.75rem;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 6px;
-  font-size: 1rem;
-  font-family: inherit;
-  line-height: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  width: 100%;
-}
-
-/* Disabled state */
-.base-form__input:disabled,
-.base-form__select:disabled,
-.base-form__textarea:disabled,
-input:disabled,
-select:disabled,
-textarea:disabled {
-  color: var(--form-text-disabled, var(--color-text-secondary, #6b7280)) !important;
-  background-color: var(--form-background-disabled, var(--color-background-alt, #f9fafb));
-  cursor: not-allowed;
-}
-
-/* Placeholder text */
-input::placeholder,
-textarea::placeholder {
-  color: var(--form-placeholder-color, var(--color-text-secondary, #9ca3af));
-  opacity: 1;
-}
-
-/* Focus state */
-.base-form__input:focus,
-.base-form__select:focus,
-.base-form__textarea:focus,
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--form-border-focus, var(--color-primary, #1976d2));
-  box-shadow: 0 0 0 3px var(--form-focus-ring, rgba(25, 118, 210, 0.1));
-  background-color: #fefce8 !important;
-}
-
-/* Error state */
-.base-form__input--error,
-.base-form__select--error,
-.base-form__textarea--error,
-input.error,
-input[aria-invalid="true"],
-select.error,
-select[aria-invalid="true"],
-textarea.error,
-textarea[aria-invalid="true"] {
-  border-color: var(--form-border-error, var(--color-error, #dc2626));
-}
-
-.base-form__input--error:focus,
-.base-form__select--error:focus,
-.base-form__textarea--error:focus,
-input.error:focus,
-input[aria-invalid="true"]:focus,
-select.error:focus,
-select[aria-invalid="true"]:focus,
-textarea.error:focus,
-textarea[aria-invalid="true"]:focus {
-  box-shadow: 0 0 0 3px var(--form-error-ring, rgba(220, 38, 38, 0.1));
-}
-
-/* Autofill styles */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-text-fill-color: var(--form-text-color, var(--color-text-primary, #111827)) !important;
-  -webkit-box-shadow: 0 0 0 30px var(--form-background, var(--color-surface, #ffffff)) inset !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Select dropdown arrow */
-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 12px;
-  padding-right: 2.5rem;
-}
-
-/* Checkbox and radio inputs */
-input[type="checkbox"],
-input[type="radio"] {
-  width: auto;
-  height: auto;
-  cursor: pointer;
-}
-
-input[type="checkbox"]:disabled,
-input[type="radio"]:disabled {
-  cursor: not-allowed;
-}
-
-/* Form labels */
-label {
-  color: var(--form-label-color, var(--color-text-primary, #111827));
-  font-weight: 500;
-  display: inline-block;
-  margin-bottom: 0.25rem;
-}
-
-/* Required indicator */
-.required,
-[aria-required="true"]::after {
-  color: var(--form-required-color, var(--color-error, #dc2626));
-  content: " *";
-  font-weight: bold;
-}
-
-/* Textarea specific */
-.base-form__textarea,
-textarea {
-  resize: vertical;
-  min-height: 120px;
-}
+/* MUI components handle all input styling - removed to prevent conflicts */
 
 /* Error message */
 .base-form__error,
@@ -400,6 +282,22 @@ textarea {
 .base-form__section:has(.base-form__field input:disabled) .base-form__section-title {
   color: var(--color-text-secondary, #6b7280);
   font-weight: 500;
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .base-form__label {
+    transition: none;
+  }
+
+  .base-form__input,
+  .base-form__select,
+  .base-form__textarea,
+  input,
+  select,
+  textarea {
+    transition: none;
+  }
 }
 
 /* Responsive Design */

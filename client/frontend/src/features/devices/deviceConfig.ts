@@ -2,22 +2,15 @@
  * Device Configuration
  * 
  * Centralized configuration for Device entity including:
- * - List columns, filters, stats
- * - Bulk actions and export configuration
+ * - Stats, bulk actions, and export configuration
  * 
  * Schema is now loaded dynamically from the backend API.
+ * Columns and filters are auto-generated from the schema using showOn: ['list'].
  * This configuration is shared between DeviceForm and DeviceList components.
  */
 
-import type { ColumnDefinition } from '../../types/ui';
-import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
+import type { StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
 import { Permission } from '../../types/auth';
-import {
-  createStatusColumn,
-  createTwoLineColumn,
-  createStandardStatusActions,
-  createExportAction,
-} from '../../config/listHelpers';
 
 // ============================================================================
 // TYPE DEFINITION
@@ -28,95 +21,18 @@ import {
  */
 export type Device = {
   id: string;
-  type: string;
   manufacturer: string;
   model_number: string;
   description?: string;
-  register_map?: string;
-  createdat: Date;
-  updatedat: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
+  type: string;
+  active?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
 };
 
 // ============================================================================
 // LIST CONFIGURATION
 // ============================================================================
-
-
-/**
- * Column definitions for device list
- */
-export const deviceColumns: ColumnDefinition<Device>[] = [
-  createTwoLineColumn<Device>(
-    'type',
-    'Device Type',
-    'manufacturer',
-    {
-      responsive: 'hide-mobile',
-      fallback: 'N/A',
-    }
-  ),
-
-  {
-    key: 'model_number' as keyof Device,
-    label: 'Model Number',
-    sortable: true,
-    responsive: 'hide-tablet',
-    render: (_, device) => (device as any).model_number || 'N/A',
-  },
-
-  {
-    key: 'description' as keyof Device,
-    label: 'Description',
-    sortable: false,
-    responsive: 'hide-mobile',
-    render: (_, device) => (device as any).description || 'N/A',
-  },
-];
-
-/**
- * Filter definitions for device list
- */
-export const deviceFilters: FilterDefinition[] = [
-  {
-    key: 'type',
-    label: 'Device Type',
-    type: 'select',
-    options: (items: Device[]) => {
-      const uniqueValues = items
-        .map(item => item.type)
-        .filter(Boolean)
-        .filter((value, index, self) => self.indexOf(value) === index)
-        .sort();
-
-      return uniqueValues.map(value => ({
-        label: String(value),
-        value: String(value),
-      }));
-    },
-    placeholder: 'All Types',
-  },
-
-  {
-    key: 'manufacturer',
-    label: 'Manufacturer',
-    type: 'select',
-    options: (items: Device[]) => {
-      const uniqueValues = items
-        .map(item => item.manufacturer)
-        .filter(Boolean)
-        .filter((value, index, self) => self.indexOf(value) === index)
-        .sort();
-
-      return uniqueValues.map(value => ({
-        label: String(value),
-        value: String(value),
-      }));
-    },
-    placeholder: 'All Manufacturers',
-  },
-];
 
 /**
  * Stats definitions for device list
@@ -174,10 +90,11 @@ export function createDeviceBulkActions(
 export const deviceExportConfig: ExportConfig<Device> = {
   filename: (date: string) => `devices_export_${date}.csv`,
   headers: [
-    'Type',
     'Manufacturer',
     'Model Number',
     'Description',
+    'Type',
+    'Active',
     'Created',
     'Updated',
   ],
@@ -186,8 +103,9 @@ export const deviceExportConfig: ExportConfig<Device> = {
     device.manufacturer,
     device.model_number || '',
     device.description || '',
-    device.createdAt ? new Date(device.createdAt).toISOString() : '',
-    device.updatedAt ? new Date(device.updatedAt).toISOString() : '',
+    device.active ? 'Yes' : 'No',
+    device.created_at ? new Date(device.created_at).toISOString() : '',
+    device.updated_at ? new Date(device.updated_at).toISOString() : '',
   ],
   includeInfo: 'Device export with full details including type, manufacturer, model, and metadata',
 };
