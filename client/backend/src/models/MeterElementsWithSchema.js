@@ -58,6 +58,18 @@ class MeterElement extends BaseModel {
 
       // Form fields - user can edit these
       formFields: {
+        element: field({
+          type: FieldTypes.STRING,
+          default: '',
+          required: true,
+          label: 'Element',
+          dbField: 'element',
+          maxLength: 255,
+          placeholder: 'Enter element value',
+          enumValues: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+          showOn: ['form'],
+        }),
+
         name: field({
           type: FieldTypes.STRING,
           default: '',
@@ -69,27 +81,6 @@ class MeterElement extends BaseModel {
           showOn: ['list', 'form'],
         }),
 
-        element: field({
-          type: FieldTypes.STRING,
-          default: '',
-          required: true,
-          label: 'Element',
-          dbField: 'element',
-          maxLength: 255,
-          placeholder: 'Enter element value',
-          showOn: ['list', 'form'],
-        }),
-
-        status: field({
-          type: FieldTypes.STRING,
-          default: 'active',
-          required: false,
-          readOnly: true,
-          label: 'Status',
-          dbField: 'status',
-          enumValues: ['active', 'inactive'],
-          showOn: ['list', 'form'],
-        }),
       },
 
       // Entity fields - read-only, system-managed
@@ -108,6 +99,14 @@ class MeterElement extends BaseModel {
           readOnly: true,
           label: 'Meter ID',
           dbField: 'meter_id',
+        }),
+
+        tenant_id: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: true,
+          label: 'Tenant ID',
+          dbField: 'tenant_id',
         }),
 
         created_at: field({

@@ -6,20 +6,9 @@
  */
 
 import * as cron from 'node-cron';
-import axios from 'axios';
-import { SyncDatabase } from '../database/postgres.js';
 import { ClientSystemApiClient } from './api-client.js';
 import { ConnectivityMonitor } from './connectivity-monitor.js';
-import {
-  BaseEntity,
-  MeterReadingEntity,
-  ApiClientConfig,
-  AuthResponse,
-  BatchUploadRequest,
-  BatchUploadResponse,
-  ConfigDownloadResponse,
-  HeartbeatResponse,
-} from '../types/entities.js';
+import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
 
 export interface SyncManagerConfig {
   database: SyncDatabase;
@@ -29,20 +18,6 @@ export interface SyncManagerConfig {
   maxRetries?: number;
   enableAutoSync?: boolean;
   connectivityCheckIntervalMs?: number;
-}
-
-export interface MeterEntity extends BaseEntity {
-  name: string;
-  type: string;
-  serial_number: string;
-  installation_date: string;
-  device_id: string;
-  location_id: string;
-  ip: string;
-  port: string;
-  protocol: string;
-  status: string;
-  notes?: string;
 }
 
 export interface SyncStatus {
@@ -187,7 +162,7 @@ export class SyncManager {
 
       if (result.success) {
         // Delete synchronized readings
-        const readingIds = readings.map((r) => r.id);
+        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_id);
         const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
 
         console.log(`Successfully synced and deleted ${deletedCount} readings`);
@@ -267,7 +242,7 @@ export class SyncManager {
         await this.sleep(delay);
 
         // Increment retry count in database
-        const readingIds = readings.map((r) => r.id);
+        const readingIds = readings.map((r) => r.meter_id);
         await this.database.incrementRetryCount(readingIds);
 
         return this.uploadBatchWithRetry(readings, retryCount + 1);
@@ -277,7 +252,7 @@ export class SyncManager {
       console.error(`Max retries (${this.maxRetries}) exceeded`);
 
       // Increment retry count one final time
-      const readingIds = readings.map((r) => r.id);
+      const readingIds = readings.map((r) => r.meter_id);
       await this.database.incrementRetryCount(readingIds);
 
       return { success: false, error: `Max retries exceeded: ${errorMessage}` };
@@ -348,28 +323,8 @@ export class SyncManager {
 
       const config = await this.apiClient.downloadConfig();
 
-      // Update meters in database
-      for (const meter of config.meters) {
-        await this.database.upsertMeter({
-          id: meter.id,
-          name: meter.name,
-          type: meter.type,
-          serial_number: meter.serial_number,
-          installation_date: meter.installation_date || new Date().toISOString(),
-          device_id: meter.device_id,
-          location_id: meter.location_id,
-          ip: meter.ip,
-          port: meter.port,
-          protocol: meter.protocol,
-          status: meter.status,
-          notes: meter.notes || '',
-          active: meter.active,
-          created_at: meter.created_at,
-          updated_at: meter.updated_at,
-        });
-      }
-
-      console.log(`Updated ${config.meters.length} meters from configuration`);
+      console.log(`Downloaded configuration with ${config.meters.length} meters`);
+      // Configuration is downloaded but meter updates are handled by meter-sync-agent
     } catch (error) {
       console.error('Failed to download configuration:', error);
       throw error;

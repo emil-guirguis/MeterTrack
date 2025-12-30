@@ -6,7 +6,111 @@
  */
 
 import { Pool, PoolClient, QueryResult } from 'pg';
-import { MeterEntity, MeterReadingEntity, SyncLog, TenantEntity, DatabaseConfig } from '../types/entities.js';
+import { MeterEntity, MeterReadingEntity, SyncLog, TenantEntity } from '../types/entities.js';
+
+export interface DatabaseConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+  max?: number;
+  idleTimeoutMillis?: number;
+  connectionTimeoutMillis?: number;
+}
+
+// ==================== PUBLIC POOL OBJECTS ====================
+
+/**
+ * Public pool for the sync database
+ * Use this to execute queries against the local sync database
+ */
+export let syncPool: Pool;
+
+/**
+ * Public pool for the remote database
+ * Use this to execute queries against the remote client database
+ */
+export let remotePool: Pool;
+
+/**
+ * Initialize both database pools from environment variables
+ */
+export function initializePools(): void {
+  // Initialize sync database pool
+  const syncConfig: DatabaseConfig = {
+    host: process.env.POSTGRES_SYNC_HOST || 'localhost',
+    port: parseInt(process.env.POSTGRES_SYNC_PORT || '5432', 10),
+    database: process.env.POSTGRES_SYNC_DB || 'postgres',
+    user: process.env.POSTGRES_SYNC_USER || 'postgres',
+    password: process.env.POSTGRES_SYNC_PASSWORD || '',
+  };
+
+  syncPool = new Pool({
+    host: syncConfig.host,
+    port: syncConfig.port,
+    database: syncConfig.database,
+    user: syncConfig.user,
+    password: syncConfig.password,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  } as any);
+
+  syncPool.on('error', (err) => {
+    console.error('Unexpected error on sync database idle client', err);
+  });
+
+  console.log('\n📊 [Database Config] Sync Pool initialized:');
+  console.log(`   Host: ${syncConfig.host}`);
+  console.log(`   Port: ${syncConfig.port}`);
+  console.log(`   Database: ${syncConfig.database}`);
+  console.log(`   User: ${syncConfig.user}\n`);
+
+  // Initialize remote database pool
+  const remoteConfig: DatabaseConfig = {
+    host: process.env.POSTGRES_CLIENT_HOST || 'localhost',
+    port: parseInt(process.env.POSTGRES_CLIENT_PORT || '5432', 10),
+    database: process.env.POSTGRES_CLIENT_DB || 'postgres',
+    user: process.env.POSTGRES_CLIENT_USER || 'postgres',
+    password: process.env.POSTGRES_CLIENT_PASSWORD || '',
+  };
+
+  remotePool = new Pool({
+    host: remoteConfig.host,
+    port: remoteConfig.port,
+    database: remoteConfig.database,
+    user: remoteConfig.user,
+    password: remoteConfig.password,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  } as any);
+
+  remotePool.on('error', (err) => {
+    console.error('Unexpected error on remote database idle client', err);
+  });
+
+  console.log('\n📊 [Database Config] Remote Pool initialized:');
+  console.log(`   Host: ${remoteConfig.host}`);
+  console.log(`   Port: ${remoteConfig.port}`);
+  console.log(`   Database: ${remoteConfig.database}`);
+  console.log(`   User: ${remoteConfig.user}\n`);
+}
+
+/**
+ * Close both database pools
+ */
+export async function closePools(): Promise<void> {
+  if (syncPool) {
+    await syncPool.end();
+    console.log('✅ Sync pool closed');
+  }
+  if (remotePool) {
+    await remotePool.end();
+    console.log('✅ Remote pool closed');
+  }
+}
 
 export class SyncDatabase {
   private pool: Pool;
@@ -21,7 +125,7 @@ export class SyncDatabase {
       max: config.max || 10,
       idleTimeoutMillis: config.idleTimeoutMillis || 30000,
       connectionTimeoutMillis: config.connectionTimeoutMillis || 2000,
-    });
+    } as any);
 
     // Handle pool errors
     this.pool.on('error', (err) => {
@@ -37,8 +141,7 @@ export class SyncDatabase {
       console.log('\n🔧 [SQL] Initializing database schema...');
 
       // Create tenant table
-      await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS tenant (
+      let sql = `CREATE TABLE IF NOT EXISTS tenant (
           id SERIAL PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           url VARCHAR(255),
@@ -51,11 +154,12 @@ export class SyncDatabase {
           active BOOLEAN DEFAULT true,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+        )`;
+      await this.pool.query(sql);
+      console.log(`\n🔧 [SQL] ${sql}`);
 
       // Create meter table
-      await this.pool.query(`
+      sql = `
         CREATE TABLE IF NOT EXISTS meter (
           id VARCHAR(255) PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
@@ -72,11 +176,12 @@ export class SyncDatabase {
           active BOOLEAN DEFAULT true,
           created_at VARCHAR(50),
           updated_at VARCHAR(50)
-        )
-      `);
+        )`;
+      console.log(`\n🔧 [SQL] ${sql}`);
+      await this.pool.query(sql);
 
       // Create meter_reading table
-      await this.pool.query(`
+      sql = `
         CREATE TABLE IF NOT EXISTS meter_reading (
           id SERIAL PRIMARY KEY,
           meter_id VARCHAR(255) NOT NULL REFERENCES meter(id),
@@ -87,11 +192,12 @@ export class SyncDatabase {
           is_synchronized BOOLEAN DEFAULT false,
           retry_count INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+        )`;
+      console.log(`\n🔧 [SQL] ${sql}`);
+      await this.pool.query(sql);        
 
       // Create sync_log table
-      await this.pool.query(`
+      sql = `
         CREATE TABLE IF NOT EXISTS sync_log (
           id SERIAL PRIMARY KEY,
           batch_size INTEGER,
@@ -99,8 +205,9 @@ export class SyncDatabase {
           error_message TEXT,
           synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-      `);
-
+      `;
+      console.log(`\n🔧 [SQL] ${sql}`);
+      await this.pool.query(sql);
       // Create indexes
       await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_meter_id ON meter_reading(meter_id)`);
       await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_is_synchronized ON meter_reading(is_synchronized)`);
@@ -221,10 +328,7 @@ export class SyncDatabase {
   * Get meter by ID
   */
   async getMeterById(id: number): Promise<MeterEntity | null> {
-    const result = await this.pool.query(
-      'SELECT * FROM meter WHERE id = $1',
-      [id]
-    );
+    const result = await this.pool.query('SELECT * FROM meter WHERE id = $1', [id] );
     return result.rows[0] || null;
   }
 
@@ -232,7 +336,7 @@ export class SyncDatabase {
    * Create or update a meter
    */
   async upsertMeter(meter: MeterEntity): Promise<MeterEntity> {
-    const meterId = meter?.id || 'UNKNOWN';
+    const meterId = meter?.meter_id || 'UNKNOWN';
     
     try {
       console.log(`\n🔄 [SYNC SQL] Starting upsert for meter: ${meterId}`);
@@ -243,75 +347,36 @@ export class SyncDatabase {
         throw new Error('Meter object is required');
       }
 
-      if (!meter.id) {
+      if (!meter.meter_id) {
         throw new Error('Meter ID is required for upsert');
       }
 
-      if (!meter.name) {
-        throw new Error('Meter name is required for upsert');
+      if (!meter.element) {
+        throw new Error('Meter element is required for upsert');
       }
 
-      // Validate data types
-      if (typeof meter.id !== 'string') {
-        throw new Error(`Meter ID must be a string, got ${typeof meter.id}`);
-      }
-
-      if (typeof meter.name !== 'string') {
-        throw new Error(`Meter name must be a string, got ${typeof meter.name}`);
-      }
-
-      // Trim and validate name length
-      const trimmedName = meter.name.trim();
-      if (trimmedName.length === 0) {
-        throw new Error('Meter name cannot be empty or whitespace only');
-      }
-
-      if (trimmedName.length > 255) {
-        throw new Error(`Meter name exceeds maximum length of 255 characters (got ${trimmedName.length})`);
-      }
 
       // Prepare parameters with validation
       const params = [
-        meter.id,
-        trimmedName,
-        meter.type || null,
-        meter.serial_number || null,
-        meter.installation_date || null,
-        meter.device_id || null,
-        meter.location_id || null,
+        meter.meter_id,
+        meter.meter_element_id,
         meter.ip || null,
         meter.port || null,
-        meter.protocol || null,
-        meter.status || null,
-        meter.notes || null,
         meter.active !== undefined ? meter.active : true,
-        meter.created_at || new Date().toISOString(),
-        meter.updated_at || new Date().toISOString(),
+        meter.element || null,
       ];
 
       console.log(`   ✓ All validations passed`);
       console.log(`   Executing INSERT/UPDATE query...`);
 
       const result = await this.pool.query(
-        `INSERT INTO meter (id, name, type, serial_number, installation_date, device_id, location_id, 
-                            ip, port, protocol, status,notes, active, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 
-                $8, $9, $10, $11, $12, $13, $14, $15)
-         ON CONFLICT (id) 
+        `INSERT INTO meter (meter_id, meter_element_id, ip, port, element)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (meter_id, meter_element_id) 
          DO UPDATE SET
-           name = EXCLUDED.name,
-           type = EXCLUDED.type,
-           serial_number = EXCLUDED.serial_number,
-           installation_date = EXCLUDED.installation_date,
-           device_id = EXCLUDED.device_id,
-           location_id = EXCLUDED.location_id,
            ip = EXCLUDED.ip,
            port = EXCLUDED.port,
-           protocol = EXCLUDED.protocol,
-           status = EXCLUDED.status,
-           notes = EXCLUDED.notes,
-           active = EXCLUDED.active,
-           updated_at = EXCLUDED.updated_at
+           eleemnt = EXCLUDED.element
          RETURNING *`,
         params
       );
@@ -332,7 +397,7 @@ export class SyncDatabase {
       const upsertedMeter = result.rows[0];
 
       // Validate returned meter
-      if (!upsertedMeter.id) {
+      if (!upsertedMeter.meter_id) {
         throw new Error('Returned meter has no ID');
       }
 
@@ -369,11 +434,8 @@ export class SyncDatabase {
   /**
    * Deactivate a meter
    */
-  async deactivateMeter(externalId: string): Promise<void> {
-    await this.pool.query(
-      'UPDATE meter SET active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-      [externalId]
-    );
+  async deleteInactiveMeter(meterId: string): Promise<void> {
+    await this.pool.query('delete meter  WHERE meter_id = $1', [meterId] );
   }
 
   // ==================== METER READING METHODS ====================
@@ -568,7 +630,7 @@ export class SyncDatabase {
    */
   async getTenant(): Promise<TenantEntity | null> {
     try {
-      const query = 'SELECT * FROM tenant LIMIT 1';
+      const query = 'SELECT * FROM tenant';
       console.log('\n🔍 [SQL] Querying tenant:', query);
       const result = await this.pool.query(query);
       console.log(`📋 [SQL] Query returned ${result.rows.length} row(s)`);
@@ -606,21 +668,32 @@ export class SyncDatabase {
         throw new Error(`Tenant with ID ${tenantId} not found in remote database`);
       }
 
-      const remoteTenant = remoteResult.rows[0];
-      console.log(`✅ [SYNC] Found tenant in remote database:`, JSON.stringify(remoteTenant, null, 2));
+      const remoteRow = remoteResult.rows[0];
+      console.log(`✅ [SYNC] Found tenant in remote database:`, JSON.stringify(remoteRow, null, 2));
+
+      // Map remote row to TenantEntity
+      const remoteTenant: TenantEntity = {
+        tenant_id: remoteRow.id || remoteRow.tenant_id,
+        name: remoteRow.name,
+        url: remoteRow.url,
+        street: remoteRow.street,
+        street2: remoteRow.street2,
+        city: remoteRow.city,
+        state: remoteRow.state,
+        zip: remoteRow.zip,
+        country: remoteRow.country,
+      };
 
       // Upsert to local database, preserving the original tenant ID
-      console.log(`\n📝 [SYNC] Upserting tenant to local database with ID: ${remoteTenant.id}`);
+      console.log(`\n📝 [SYNC] Upserting tenant to local database with ID: ${remoteTenant.tenant_id}`);
 
-      // We need to handle the ID preservation specially since upsertTenant doesn't take an ID parameter
-      // We'll use a direct query to preserve the ID
       const existing = await this.getTenant();
 
       let localTenant: TenantEntity;
 
       if (existing) {
         // Update existing tenant, preserving the ID from remote
-        const updateQuery = `UPDATE tenant 
+        const sql = `UPDATE tenant 
           SET name = $1, 
               url = $2, 
               street = $3, 
@@ -628,14 +701,13 @@ export class SyncDatabase {
               city = $5, 
               state = $6, 
               zip = $7, 
-              country = $8, 
-              active = $9,
+              country = $8,
               updated_at = CURRENT_TIMESTAMP 
-          WHERE id = $10 
+          WHERE id = $9 
           RETURNING *`;
 
         try {
-          const updateResult = await this.pool.query(updateQuery, [
+          const updateResult = await this.pool.query(sql, [
             remoteTenant.name,
             remoteTenant.url || null,
             remoteTenant.street || null,
@@ -644,8 +716,7 @@ export class SyncDatabase {
             remoteTenant.state || null,
             remoteTenant.zip || null,
             remoteTenant.country || null,
-            remoteTenant.active !== undefined ? remoteTenant.active : true,
-            existing.id
+            existing.tenant_id
           ]);
           localTenant = updateResult.rows[0];
         } catch (error: any) {
@@ -659,7 +730,7 @@ export class SyncDatabase {
               RETURNING *`;
             const basicUpdateResult = await this.pool.query(basicUpdateQuery, [
               remoteTenant.name,
-              existing.id
+              existing.tenant_id
             ]);
             localTenant = basicUpdateResult.rows[0];
           } else {
@@ -668,13 +739,13 @@ export class SyncDatabase {
         }
       } else {
         // Insert new tenant with the remote ID
-        const insertQuery = `INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+        const insertQuery = `INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country) 
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
           RETURNING *`;
 
         try {
           const insertResult = await this.pool.query(insertQuery, [
-            remoteTenant.id,
+            remoteTenant.tenant_id,
             remoteTenant.name,
             remoteTenant.url || null,
             remoteTenant.street || null,
@@ -682,8 +753,7 @@ export class SyncDatabase {
             remoteTenant.city || null,
             remoteTenant.state || null,
             remoteTenant.zip || null,
-            remoteTenant.country || null,
-            remoteTenant.active !== undefined ? remoteTenant.active : true
+            remoteTenant.country || null
           ]);
           localTenant = insertResult.rows[0];
         } catch (error: any) {
@@ -704,102 +774,6 @@ export class SyncDatabase {
     } catch (error) {
       console.error(`❌ [SYNC] Error synchronizing tenant from remote:`, error);
       throw error;
-    }
-  }
-
-  /**
-   * Create or update tenant information
-   */
-  async upsertTenant(tenant: {
-    id: string;
-    name: string;
-    url?: string;
-    street?: string;
-    street2?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    country?: string;
-    active?: boolean;
-  }): Promise<TenantEntity> {
-    // Since there should only be one tenant, we'll update if exists, insert if not
-    const existing = await this.getTenant();
-
-    if (existing) {
-      // Build dynamic UPDATE query based on available columns
-      const updates: string[] = ['name = $1', 'updated_at = CURRENT_TIMESTAMP'];
-      const values: any[] = [tenant.name];
-      let paramIndex = 2;
-
-      // Try to update all fields, but handle missing columns gracefully
-      const fieldsToUpdate = [
-        { name: 'tenant_id', value: tenant.id },
-        { name: 'url', value: tenant.url },
-        { name: 'street', value: tenant.street },
-        { name: 'street2', value: tenant.street2 },
-        { name: 'city', value: tenant.city },
-        { name: 'state', value: tenant.state },
-        { name: 'zip', value: tenant.zip },
-        { name: 'country', value: tenant.country },
-        { name: 'active', value: tenant.active !== undefined ? tenant.active : true },
-      ];
-
-      for (const field of fieldsToUpdate) {
-        updates.push(`${field.name} = $${paramIndex}`);
-        values.push(field.value || null);
-        paramIndex++;
-      }
-
-      values.push(existing.id);
-
-      const query = `UPDATE tenant SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
-
-      try {
-        const result = await this.pool.query(query, values);
-        return result.rows[0];
-      } catch (error: any) {
-        // If column doesn't exist, try without it
-        if (error.message.includes('does not exist')) {
-          console.warn('⚠️ [SQL] Some columns do not exist, updating with basic fields only');
-          const basicQuery = `UPDATE tenant SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`;
-          const result = await this.pool.query(basicQuery, [tenant.name, existing.id]);
-          return result.rows[0];
-        }
-        throw error;
-      }
-    } else {
-      // Try to insert with all columns first
-      try {
-        const result = await this.pool.query(
-          `INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-           RETURNING *`,
-          [
-            tenant.id,
-            tenant.name,
-            tenant.url || null,
-            tenant.street || null,
-            tenant.street2 || null,
-            tenant.city || null,
-            tenant.state || null,
-            tenant.zip || null,
-            tenant.country || null,
-            tenant.active !== undefined ? tenant.active : true
-          ]
-        );
-        return result.rows[0];
-      } catch (error: any) {
-        // If columns don't exist, insert with basic fields only
-        if (error.message.includes('does not exist')) {
-          console.warn('⚠️ [SQL] Some columns do not exist, inserting with basic fields only');
-          const result = await this.pool.query(
-            `INSERT INTO tenant (name) VALUES ($1) RETURNING *`,
-            [tenant.name]
-          );
-          return result.rows[0];
-        }
-        throw error;
-      }
     }
   }
 
@@ -900,15 +874,16 @@ export class SyncDatabase {
 }
 
 /**
- * Create a database instance from environment variables
+ * Create a database instance from environment variables (legacy)
+ * @deprecated Use initializePools() and access syncPool/remotePool directly instead
  */
 export function createDatabaseFromEnv(): SyncDatabase {
   const config: DatabaseConfig = {
-    host: process.env.POSTGRES_SYNC_HOST || process.env.POSTGRES_CLIENT_HOST || 'localhost',
-    port: parseInt(process.env.POSTGRES_SYNC_PORT || process.env.POSTGRES_CLIENT_PORT || '5432', 10),
-    database: process.env.POSTGRES_SYNC_DB || process.env.POSTGRES_CLIENT_DB || 'postgres',
-    user: process.env.POSTGRES_SYNC_USER || process.env.POSTGRES_CLIENT_USER || 'postgres',
-    password: process.env.POSTGRES_SYNC_PASSWORD || process.env.POSTGRES_CLIENT_PASSWORD || '',
+    host: process.env.POSTGRES_SYNC_HOST || 'localhost',
+    port: parseInt(process.env.POSTGRES_SYNC_PORT || '5432', 10),
+    database: process.env.POSTGRES_SYNC_DB || 'postgres',
+    user: process.env.POSTGRES_SYNC_USER || 'postgres',
+    password: process.env.POSTGRES_SYNC_PASSWORD || '',
   };
 
   console.log('\n📊 [Database Config] Loading PostgreSQL configuration:');

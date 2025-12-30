@@ -55,7 +55,7 @@ export class BACnetMeterReadingAgent {
       this.logger.info('Starting BACnet Meter Reading Agent');
 
       // Load meter cache on startup
-      await this.meterCache.reload(this.config.database);
+      await this.meterCache.reload(this.config.syncDatabase);
       this.logger.info(`Loaded ${this.meterCache.getMeters().length} meters into cache`);
 
       // Set up cron job to execute every N seconds
@@ -139,17 +139,17 @@ export class BACnetMeterReadingAgent {
    */
   private async executeCycleInternal(): Promise<CollectionCycleResult> {
     // Set lock to prevent overlapping execution
-    this.isCycleExecuting = true;
+this.isCycleExecuting = true;
 
     try {
       // Reload meter cache to pick up any updates
-      await this.meterCache.reload(this.config.database);
+      await this.meterCache.reload(this.config.syncDatabase);
 
       // Execute the collection cycle
       const result = await this.cycleManager.executeCycle(
         this.meterCache,
         this.bacnetClient,
-        this.config.database,
+        this.config.syncDatabase,
         this.config.readTimeoutMs
       );
 

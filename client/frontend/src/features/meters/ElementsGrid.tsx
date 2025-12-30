@@ -15,7 +15,6 @@ export interface MeterElement {
   id: number;
   meter_id: number;
   name: string;
-  status: string;
   element: string;
   created_at?: string;
   updated_at?: string;
@@ -23,7 +22,6 @@ export interface MeterElement {
 
 interface UnsavedMeterElement {
   name: string;
-  status: string;
   element: string;
 }
 
@@ -53,17 +51,31 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
   const [schema, setSchema] = useState<Record<string, SchemaField> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'saved' | 'unsaved'; index?: number } | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [savingUnsavedRow, setSavingUnsavedRow] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Record<string, { rowId: number; column: string; value: string }>>({});
 
   // Build columns from schema
   const columns: GridColumn[] = useMemo(() => {
     if (!schema) return [];
     
-    return [
-      { key: 'name', label: schema.name?.label || 'Name', editable: !schema.name?.readOnly },
-      { key: 'status', label: schema.status?.label || 'Status', editable: !schema.status?.readOnly },
-      { key: 'element', label: schema.element?.label || 'Element', editable: !schema.element?.readOnly },
+    const elementOptions = schema.element?.enumValues || [];
+    
+    const cols: GridColumn[] = [
+      { 
+        key: 'element', 
+        label: schema.element?.label || 'Element', 
+        editable: !schema.element?.readOnly,
+        type: elementOptions.length > 0 ? 'select' : 'text',
+        options: elementOptions.length > 0 ? elementOptions : undefined,
+      },
+      { 
+        key: 'name', 
+        label: schema.name?.label || 'Name', 
+        editable: !schema.name?.readOnly,
+        type: 'text',
+      },
     ];
+    
+    return cols;
   }, [schema]);
 
   // Load schema from backend
@@ -92,8 +104,13 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       // Continue with default columns if schema fails
       setSchema({
         name: { type: 'STRING', label: 'Name', readOnly: false, required: true },
-        status: { type: 'STRING', label: 'Status', readOnly: true, required: false },
-        element: { type: 'STRING', label: 'Element', readOnly: false, required: true },
+        element: { 
+          type: 'STRING', 
+          label: 'Element', 
+          readOnly: false, 
+          required: true,
+          enumValues: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
+        },
       });
     }
   }, [meterId]);
@@ -105,6 +122,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
     try {
       const response = await apiClient.get(`/meters/${meterId}/elements`);
       setElements(response.data.data || []);
+      setError(null); // Clear any previous errors
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load elements';
       setError(errorMessage);
@@ -124,7 +142,6 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
   const handleAddElement = useCallback(() => {
     setUnsavedRow({
       name: '',
-      status: 'active',
       element: '',
     });
   }, []);
@@ -147,16 +164,15 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       return;
     }
 
-    setSavingUnsavedRow(true);
     try {
       const response = await apiClient.post(`/meters/${meterId}/elements`, {
         name: unsavedRow.name,
-        status: unsavedRow.status,
         element: unsavedRow.element,
       });
 
       setElements([response.data.data, ...elements]);
       setUnsavedRow(null);
+      setError(null); // Clear error on success
       onSuccess?.('Element added successfully');
     } catch (err) {
       // Handle validation errors from backend
@@ -175,8 +191,6 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         setError(errorMessage);
       }
       onError?.(new Error(err instanceof Error ? err.message : 'Failed to add element'));
-    } finally {
-      setSavingUnsavedRow(false);
     }
   }, [meterId, unsavedRow, elements, onError, onSuccess]);
 
@@ -188,8 +202,8 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
     });
   }, []);
 
-  // Handle cell change for saved elements
-  const handleCellChange = useCallback(
+  // Save pending changes when cell loses focus
+  const handleSavePendingChange = useCallback(
     async (rowId: number, column: string, value: string) => {
       // Adjust rowId if unsaved row exists (it's at index 0)
       const actualRowId = unsavedRow ? rowId - 1 : rowId;
@@ -197,29 +211,19 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       
       if (!element) return;
 
-      // Validate the change
-      if (column === 'name' && (!value || value.trim() === '')) {
-        setError('Name is required');
-        return;
-      }
-      if (column === 'element' && (!value || value.trim() === '')) {
-        setError('Element is required');
-        return;
-      }
-
-      // Optimistic update
-      const updatedElements = [...elements];
-      (updatedElements[actualRowId] as any)[column] = value;
-      setElements(updatedElements);
-
+      // UI is already updated optimistically in handleCellChange, just save to backend
       try {
         await apiClient.put(`/meters/${meterId}/elements/${element.id}`, {
           [column]: value,
         });
+        setError(null); // Clear error on success
         onSuccess?.('Element updated successfully');
       } catch (err) {
-        // Revert on error
-        setElements(elements);
+        // Revert on error - find the original value and restore it
+        const originalValue = (element as any)[column];
+        const revertedElements = [...elements];
+        (revertedElements[actualRowId] as any)[column] = originalValue;
+        setElements(revertedElements);
         
         // Handle validation errors from backend
         if (err instanceof Error && err.message.includes('Validation failed')) {
@@ -242,6 +246,48 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
     [meterId, elements, unsavedRow, onError, onSuccess]
   );
 
+  // Handle cell change for saved elements
+  const handleCellChange = useCallback(
+    (rowId: number, column: string, value: string) => {
+      // Check if this is the unsaved row
+      if (unsavedRow && rowId === 0) {
+        handleUnsavedRowChange(column, value);
+        return;
+      }
+
+      // Adjust rowId if unsaved row exists (it's at index 0)
+      const actualRowId = unsavedRow ? rowId - 1 : rowId;
+      const element = elements[actualRowId];
+      
+      if (!element) return;
+
+      // Validate the change
+      if (column === 'name' && (!value || value.trim() === '')) {
+        setError('Name is required');
+        return;
+      }
+      if (column === 'element' && (!value || value.trim() === '')) {
+        setError('Element is required');
+        return;
+      }
+
+      // Immediately update UI (optimistic update)
+      const updatedElements = [...elements];
+      (updatedElements[actualRowId] as any)[column] = value;
+      setElements(updatedElements);
+
+      // Store pending change (will be saved on blur)
+      const changeKey = `${rowId}-${column}`;
+      setPendingChanges((prev) => ({
+        ...prev,
+        [changeKey]: { rowId, column, value },
+      }));
+
+      // Don't do optimistic update here - wait for blur
+    },
+    [meterId, elements, unsavedRow, onError, onSuccess]
+  );
+
   // Handle delete
   const handleDeleteElement = useCallback(async () => {
     if (!deleteConfirm) return;
@@ -260,6 +306,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       await apiClient.delete(`/meters/${meterId}/elements/${element.id}`);
       setElements(elements.filter((e) => e.id !== element.id));
       setDeleteConfirm(null);
+      setError(null); // Clear error on success
       onSuccess?.('Element deleted successfully');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete element';
@@ -278,7 +325,6 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       data.push({
         id: 'unsaved',
         name: unsavedRow.name,
-        status: unsavedRow.status,
         element: unsavedRow.element,
         _isUnsaved: true,
       });
@@ -288,7 +334,6 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       data.push({
         id: element.id,
         name: element.name,
-        status: element.status,
         element: element.element,
       });
     });
@@ -308,55 +353,6 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
 
   return (
     <div className="elements-grid">
-      {/* Unsaved Row Editor */}
-      {unsavedRow && (
-        <div className="elements-grid__unsaved-row">
-          <div className="elements-grid__unsaved-row-content">
-            <input
-              type="text"
-              placeholder="Name"
-              value={unsavedRow.name}
-              onChange={(e) => handleUnsavedRowChange('name', e.target.value)}
-              className="elements-grid__unsaved-input"
-            />
-            <select
-              value={unsavedRow.status}
-              onChange={(e) => handleUnsavedRowChange('status', e.target.value)}
-              className="elements-grid__unsaved-input"
-              disabled
-              aria-label="Status"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Element"
-              value={unsavedRow.element}
-              onChange={(e) => handleUnsavedRowChange('element', e.target.value)}
-              className="elements-grid__unsaved-input"
-            />
-            <div className="elements-grid__unsaved-actions">
-              <Button
-                size="small"
-                variant="contained"
-                onClick={handleSaveUnsavedRow}
-                disabled={savingUnsavedRow || !unsavedRow.name || !unsavedRow.element}
-              >
-                {savingUnsavedRow ? <CircularProgress size={20} /> : 'Save'}
-              </Button>
-              <Button
-                size="small"
-                onClick={() => setUnsavedRow(null)}
-                disabled={savingUnsavedRow}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <EditableDataGrid
         data={gridData}
         columns={columns}
@@ -366,6 +362,25 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         onRowAdd={handleAddElement}
         onRowDelete={handleRowDelete}
         onCellChange={handleCellChange}
+        onCellBlur={(rowId, column, value) => {
+          // Auto-save unsaved row when user leaves a cell
+          if (unsavedRow && rowId === 0 && unsavedRow.name && unsavedRow.element) {
+            handleSaveUnsavedRow();
+          }
+          // Auto-save saved row when user leaves a cell
+          else if (!unsavedRow || rowId > 0) {
+            const changeKey = `${rowId}-${column}`;
+            if (pendingChanges[changeKey]) {
+              handleSavePendingChange(rowId, column, value);
+              // Remove from pending changes after saving
+              setPendingChanges((prev) => {
+                const updated = { ...prev };
+                delete updated[changeKey];
+                return updated;
+              });
+            }
+          }
+        }}
         emptyMessage="No elements associated with this meter"
         addButtonLabel="Add Element"
       />

@@ -30,8 +30,7 @@ export class SyncDatabase {
         try {
             console.log('\n🔧 [SQL] Initializing database schema...');
             // Create tenant table
-            await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS tenant (
+            let sql = `CREATE TABLE IF NOT EXISTS tenant (
           id SERIAL PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           url VARCHAR(255),
@@ -44,10 +43,11 @@ export class SyncDatabase {
           active BOOLEAN DEFAULT true,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+        )`;
+            await this.pool.query(sql);
+            console.log(`\n🔧 [SQL] ${sql}`);
             // Create meter table
-            await this.pool.query(`
+            sql = `
         CREATE TABLE IF NOT EXISTS meter (
           id VARCHAR(255) PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
@@ -64,10 +64,11 @@ export class SyncDatabase {
           active BOOLEAN DEFAULT true,
           created_at VARCHAR(50),
           updated_at VARCHAR(50)
-        )
-      `);
+        )`;
+            console.log(`\n🔧 [SQL] ${sql}`);
+            await this.pool.query(sql);
             // Create meter_reading table
-            await this.pool.query(`
+            sql = `
         CREATE TABLE IF NOT EXISTS meter_reading (
           id SERIAL PRIMARY KEY,
           meter_id VARCHAR(255) NOT NULL REFERENCES meter(id),
@@ -78,10 +79,11 @@ export class SyncDatabase {
           is_synchronized BOOLEAN DEFAULT false,
           retry_count INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+        )`;
+            console.log(`\n🔧 [SQL] ${sql}`);
+            await this.pool.query(sql);
             // Create sync_log table
-            await this.pool.query(`
+            sql = `
         CREATE TABLE IF NOT EXISTS sync_log (
           id SERIAL PRIMARY KEY,
           batch_size INTEGER,
@@ -89,7 +91,9 @@ export class SyncDatabase {
           error_message TEXT,
           synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-      `);
+      `;
+            console.log(`\n🔧 [SQL] ${sql}`);
+            await this.pool.query(sql);
             // Create indexes
             await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_meter_id ON meter_reading(meter_id)`);
             await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_is_synchronized ON meter_reading(is_synchronized)`);

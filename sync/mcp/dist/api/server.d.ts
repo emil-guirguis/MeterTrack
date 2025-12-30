@@ -4,10 +4,10 @@
  * Provides HTTP endpoints for the Sync Frontend to query local data and trigger sync operations.
  * This API serves only local network requests and does not expose data to the internet.
  */
-import { SyncDatabase } from '../database/postgres.js';
 import { SyncManager } from '../sync-service/sync-manager.js';
 import { MeterSyncAgent } from '../sync-service/meter-sync-agent.js';
 import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
+import { SyncDatabase } from '../types/entities.js';
 export interface LocalApiServerConfig {
     port: number;
     database: SyncDatabase;

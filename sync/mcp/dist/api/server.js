@@ -6,6 +6,7 @@
  */
 import express from 'express';
 import cors from 'cors';
+import { syncPool } from '../data-sync/connection-manager.js';
 export class LocalApiServer {
     app;
     port;
@@ -71,7 +72,24 @@ export class LocalApiServer {
             try {
                 const hours = parseInt(req.query.hours) || 24;
                 console.log(`📥 [API] GET /api/local/readings - Request received (hours: ${hours})`);
-                const readings = await this.database.getRecentReadings(hours);
+                // Query the local sync database for recent readings
+                const query = `
+          SELECT 
+            id,
+            meter_id,
+            timestamp,
+            data_point,
+            value,
+            unit,
+            is_synchronized,
+            retry_count
+          FROM meter_reading
+          WHERE timestamp >= NOW() - INTERVAL '${hours} hours'
+          ORDER BY timestamp DESC
+          LIMIT 1000
+        `;
+                const result = await syncPool.query(query);
+                const readings = result.rows;
                 console.log(`📤 [API] GET /api/local/readings - Returning ${readings.length} reading(s)`);
                 res.json(readings);
                 console.log('✅ [API] GET /api/local/readings - Response sent successfully');
@@ -85,7 +103,13 @@ export class LocalApiServer {
         this.app.get('/api/local/tenant', async (_req, res, next) => {
             try {
                 console.log('📥 [API] GET /api/local/tenant - Request received');
-                const tenant = await this.database.getTenant();
+                const query = `
+          SELECT id, name, url, street, street2, city, state, zip, country, active, created_at, updated_at
+          FROM tenant
+          LIMIT 1
+        `;
+                const result = await syncPool.query(query);
+                const tenant = result.rows[0] || null;
                 console.log('📤 [API] GET /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
                 res.json(tenant);
                 console.log('✅ [API] GET /api/local/tenant - Response sent successfully');
@@ -98,26 +122,44 @@ export class LocalApiServer {
         // Create or update tenant information
         this.app.post('/api/local/tenant', async (req, res, next) => {
             try {
-                console.log('� [AP[I] POST /api/local/tenant - Request received');
+                console.log('📥 [API] POST /api/local/tenant - Request received');
                 console.log('   Payload:', JSON.stringify(req.body, null, 2));
                 const { id, name, url, street, street2, city, state, zip, country, active } = req.body;
                 if (!name) {
                     console.error('❌ [API] POST /api/local/tenant - Missing required field: name');
                     return res.status(400).json({ error: 'Missing required field: name' });
                 }
-                const tenant = await this.database.upsertTenant({
-                    id,
+                // Upsert tenant into local sync database
+                const query = `
+          INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+          ON CONFLICT (id) DO UPDATE SET
+            name = $2,
+            url = $3,
+            street = $4,
+            street2 = $5,
+            city = $6,
+            state = $7,
+            zip = $8,
+            country = $9,
+            active = $10,
+            updated_at = NOW()
+          RETURNING id, name, url, street, street2, city, state, zip, country, active, created_at, updated_at
+        `;
+                const result = await syncPool.query(query, [
+                    id || 1,
                     name,
-                    url,
-                    street,
-                    street2,
-                    city,
-                    state,
-                    zip,
-                    country,
-                    active,
-                });
-                console.log('� [API] P]OST /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
+                    url || null,
+                    street || null,
+                    street2 || null,
+                    city || null,
+                    state || null,
+                    zip || null,
+                    country || null,
+                    active !== undefined ? active : true,
+                ]);
+                const tenant = result.rows[0];
+                console.log('📤 [API] POST /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
                 res.json(tenant);
                 console.log('✅ [API] POST /api/local/tenant - Response sent successfully');
             }
@@ -139,7 +181,15 @@ export class LocalApiServer {
                     console.error('❌ [API] Error getting queue size:', err);
                 }
                 try {
-                    recentLogs = await this.database.getRecentSyncLogs(10);
+                    // Query recent sync logs from local sync database
+                    const logsQuery = `
+            SELECT id, batch_size, success, error_message, synced_at
+            FROM sync_log
+            ORDER BY synced_at DESC
+            LIMIT 10
+          `;
+                    const logsResult = await syncPool.query(logsQuery);
+                    recentLogs = logsResult.rows;
                 }
                 catch (err) {
                     console.error('❌ [API] Error getting recent logs:', err);

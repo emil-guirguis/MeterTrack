@@ -7,6 +7,8 @@ import {
   TableRow,
   TableCell,
   TextField,
+  Select,
+  MenuItem,
   Button,
   IconButton,
   Alert,
@@ -23,6 +25,7 @@ export interface GridColumn {
   editable?: boolean;
   type?: 'text' | 'number' | 'select';
   width?: string;
+  options?: string[];
 }
 
 export interface EditableDataGridProps {
@@ -31,6 +34,7 @@ export interface EditableDataGridProps {
   onRowAdd?: () => void;
   onRowDelete?: (rowId: number) => void;
   onCellChange?: (rowId: number, column: string, value: any) => void;
+  onCellBlur?: (rowId: number, column: string, value: any) => void;
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -49,6 +53,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
   onRowAdd,
   onRowDelete,
   onCellChange,
+  onCellBlur,
   loading = false,
   error = null,
   onRetry,
@@ -62,24 +67,29 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
     (rowId: number, column: GridColumn) => {
       if (column.editable !== false) {
         const cellValue = data[rowId]?.[column.key] ?? '';
+        const trimmedValue = String(cellValue).trim(); // Trim whitespace
+        console.log('🔍 Cell clicked:', { rowId, column: column.key, cellValue, trimmedValue });
         setEditingCell({ rowId, column: column.key });
-        setEditValue(String(cellValue));
+        setEditValue(trimmedValue);
       }
     },
     [data]
   );
 
   const handleCellChange = useCallback((value: string) => {
+    console.log('🔍 handleCellChange called with:', value);
     setEditValue(value);
   }, []);
 
-  const handleCellSave = useCallback(() => {
+  const handleCellSave = useCallback((valueOverride?: string) => {
     if (editingCell && onCellChange) {
-      onCellChange(editingCell.rowId, editingCell.column, editValue);
+      const finalValue = valueOverride !== undefined ? valueOverride : editValue;
+      onCellChange(editingCell.rowId, editingCell.column, finalValue);
+      onCellBlur?.(editingCell.rowId, editingCell.column, finalValue);
       setEditingCell(null);
       setEditValue('');
     }
-  }, [editingCell, editValue, onCellChange]);
+  }, [editingCell, editValue, onCellChange, onCellBlur]);
 
   const handleCellCancel = useCallback(() => {
     setEditingCell(null);
@@ -178,7 +188,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
               data.map((row, rowIndex) => (
                 <TableRow
                   key={rowIndex}
-                  className="editable-data-grid__row"
+                  className={`editable-data-grid__row ${row._isUnsaved ? '_unsaved' : ''}`}
                 >
                   {columns.map((column) => (
                     <TableCell
@@ -190,22 +200,64 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                           : ''
                       } ${
                         isEditing(rowIndex, column.key)
-                          ? 'editable-data-grid__cell--editing'
+                          ? `editable-data-grid__cell--editing ${column.type === 'select' ? 'editable-data-grid__cell--editing-select' : ''}`
                           : ''
                       }`}
                     >
                       {isEditing(rowIndex, column.key) ? (
-                        <TextField
-                          autoFocus
-                          value={editValue}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCellChange(e.target.value)}
-                          onBlur={handleCellSave}
-                          onKeyDown={handleKeyDown}
-                          size="small"
-                          variant="outlined"
-                          fullWidth
-                          className="editable-data-grid__input"
-                        />
+                        <>
+                          {console.log('🔍 Editing cell:', { rowIndex, column: column.key, editValue, columnType: column.type, options: column.options })}
+                          {column.type === 'select' && column.options ? (
+                          <Select
+                            autoFocus
+                            value={editValue}
+                            onChange={(e) => {
+                              console.log('🔍 Select changed:', e.target.value);
+                              const newValue = e.target.value;
+                              handleCellChange(newValue);
+                              // Immediately save the value when selected from dropdown
+                              handleCellSave(newValue);
+                            }}
+                            size="small"
+                            variant="outlined"
+                            fullWidth
+                            className="editable-data-grid__select"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                backgroundColor: '#ffffff !important',
+                              },
+                              '& .MuiSelect-select': {
+                                color: '#000000 !important',
+                                backgroundColor: '#ffffff !important',
+                              },
+                              '& .MuiOutlinedInput-input': {
+                                color: '#000000 !important',
+                              },
+                            }}
+                          >
+                            {column.options.map((option) => {
+                              console.log('🔍 Rendering option:', option);
+                              return (
+                                <MenuItem key={option} value={option}>
+                                  {option}
+                                </MenuItem>
+                              );
+                            })}
+                          </Select>
+                        ) : (
+                          <TextField
+                            autoFocus
+                            value={editValue}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCellChange(e.target.value)}
+                            onBlur={handleCellSave}
+                            onKeyDown={handleKeyDown}
+                            size="small"
+                            variant="outlined"
+                            fullWidth
+                            className="editable-data-grid__input"
+                          />
+                        )}
+                        </>
                       ) : (
                         row[column.key]
                       )}

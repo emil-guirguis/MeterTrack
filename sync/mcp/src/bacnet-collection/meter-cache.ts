@@ -12,16 +12,16 @@ export class MeterCache {
   /**
    * Load all active meters from the database into memory
    */
-  async reload(database: any): Promise<void> {
+  async reload(syncDatabase: any): Promise<void> {
     try {
       this.meters.clear();
       this.valid = false;
 
       // Query all active meters from database
-      const meterRows = await database.getMeters(true);
+      const syncMeters = await syncDatabase.getMeters(true);
 
       // Process each meter
-      for (const row of meterRows) {
+      for (const row of syncMeters) {
         const cachedMeter: CachedMeter = {
           id: row.id,
           name: row.name,

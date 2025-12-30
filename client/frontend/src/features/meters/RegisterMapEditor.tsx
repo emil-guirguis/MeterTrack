@@ -1,4 +1,4 @@
-// import React, { useEffect, useState } from 'react';
+import React from 'react';
 // import type { RegisterMap, RegisterMapField } from './meterConfig';
 // import { BaseList } from '@framework/components/list/BaseList';
 // import type { ColumnDefinition } from '../../types/ui';
@@ -446,3 +446,6 @@
 // };
 
 // export default RegisterMapEditor;
+
+// Stub export for future use
+export const RegisterMapEditor: React.FC<any> = () => null;

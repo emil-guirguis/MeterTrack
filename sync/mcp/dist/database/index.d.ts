@@ -1,7 +1,6 @@
 /**
  * Database module exports
  */
-export * from './postgres.js';
 export * from './connection-manager.js';
 export { UploadSyncManager, UploadSyncResult, UploadSyncManagerConfig } from './upload-sync-manager.js';
 export { DownloadSyncManager, MeterSyncResult, TenantSyncResult, DownloadSyncManagerConfig, MeterConfiguration, Tenant } from './download-sync-manager.js';

@@ -2,7 +2,6 @@
  * Database module exports
  */
 
-export * from './postgres.js';
 export * from './connection-manager.js';
 export { 
   UploadSyncManager, 

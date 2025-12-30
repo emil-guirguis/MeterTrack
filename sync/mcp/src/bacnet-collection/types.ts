@@ -77,7 +77,7 @@ export interface PendingReading {
 // ==================== AGENT CONFIG ====================
 
 export interface BACnetMeterReadingAgentConfig {
-  database: any; // SyncDatabase type
+  syncDatabase: any; // SyncDatabase type
   collectionIntervalSeconds?: number;  // Default: 60
   enableAutoStart?: boolean;            // Default: true
   bacnetInterface?: string;             // Default: '0.0.0.0'

@@ -96,7 +96,7 @@ export class ClientSystemApiClient {
     // Transform readings to API format
     const request: BatchUploadRequest = {
       readings: readings.map((r) => ({
-        meter_id: r.meter_id,
+        meter_id: String(r.meter_id),
         timestamp: r.timestamp.toISOString(),
         data_point: r.data_point,
         value: r.value,

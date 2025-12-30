@@ -35,21 +35,21 @@ class MeterDataAnalyzer {
     getDefaultConfig() {
         return {
             monitoring: {
-                enabled: process.env.METER_MONITORING_ENABLED !== 'false',
-                interval: parseInt(process.env.METER_MONITORING_INTERVAL) || 300000, // 5 minutes
-                batchSize: parseInt(process.env.METER_MONITORING_BATCH_SIZE) || 100
+                enabled: (process.env.METER_MONITORING_ENABLED ?? 'true') !== 'false',
+                interval: parseInt(process.env.METER_MONITORING_INTERVAL ?? '300000') || 300000, // 5 minutes
+                batchSize: parseInt(process.env.METER_MONITORING_BATCH_SIZE ?? '100') || 100
             },
             thresholds: {
-                offlineTimeout: parseInt(process.env.METER_OFFLINE_THRESHOLD) || 300000, // 5 minutes
-                highUsage: parseFloat(process.env.HIGH_USAGE_THRESHOLD) || 1000, // kWh
-                usageSpike: parseFloat(process.env.USAGE_SPIKE_THRESHOLD) || 2.0, // 200% of average
-                lowUsage: parseFloat(process.env.LOW_USAGE_THRESHOLD) || 0.1, // kWh
-                communicationGap: parseInt(process.env.COMMUNICATION_GAP_THRESHOLD) || 3600000 // 1 hour
+                offlineTimeout: parseInt(process.env.METER_OFFLINE_THRESHOLD ?? '300000') || 300000, // 5 minutes
+                highUsage: parseFloat(process.env.HIGH_USAGE_THRESHOLD ?? '1000') || 1000, // kWh
+                usageSpike: parseFloat(process.env.USAGE_SPIKE_THRESHOLD ?? '2.0') || 2.0, // 200% of average
+                lowUsage: parseFloat(process.env.LOW_USAGE_THRESHOLD ?? '0.1') || 0.1, // kWh
+                communicationGap: parseInt(process.env.COMMUNICATION_GAP_THRESHOLD ?? '3600000') || 3600000 // 1 hour
             },
             analysis: {
-                historicalDays: parseInt(process.env.HISTORICAL_ANALYSIS_DAYS) || 30,
-                baselineReadings: parseInt(process.env.BASELINE_READINGS) || 10,
-                anomalyDetectionEnabled: process.env.ANOMALY_DETECTION_ENABLED !== 'false'
+                historicalDays: parseInt(process.env.HISTORICAL_ANALYSIS_DAYS ?? '30') || 30,
+                baselineReadings: parseInt(process.env.BASELINE_READINGS ?? '10') || 10,
+                anomalyDetectionEnabled: (process.env.ANOMALY_DETECTION_ENABLED ?? 'true') !== 'false'
             }
         };
     }
@@ -120,7 +120,8 @@ class MeterDataAnalyzer {
                             await this.processTriggers(meter, triggers);
                         }
                     } catch (error) {
-                        console.error(`❌ Error analyzing meter ${meter.id}:`, error.message);
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        console.error(`❌ Error analyzing meter ${meter.id}:`, errorMessage);
                     }
                 }
 
@@ -137,7 +138,8 @@ class MeterDataAnalyzer {
             }
 
         } catch (error) {
-            console.error('❌ Error during meter analysis:', error.message);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('❌ Error during meter analysis:', errorMessage);
         }
     }
 
@@ -165,7 +167,8 @@ class MeterDataAnalyzer {
             }
 
         } catch (error) {
-            console.error(`Error analyzing meter ${meter.id}:`, error.message);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error analyzing meter ${meter?.id}:`, errorMessage);
         }
 
         return triggers;
@@ -190,7 +193,7 @@ class MeterDataAnalyzer {
 
             const now = new Date();
             const lastReading = new Date(latestReading.reading_date);
-            const timeSinceLastReading = now - lastReading;
+            const timeSinceLastReading = now.getTime() - lastReading.getTime();
 
             // Check if meter is offline
             if (timeSinceLastReading > this.config.thresholds.offlineTimeout) {
@@ -223,7 +226,8 @@ class MeterDataAnalyzer {
             }
 
         } catch (error) {
-            console.error(`Error checking communication for meter ${meter.id}:`, error.message);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error checking communication for meter ${meter.id}:`, errorMessage);
         }
 
         return null;
@@ -248,7 +252,7 @@ class MeterDataAnalyzer {
             const latestReading = recentReadings[0];
 
             // Check for high usage
-            if (latestReading.reading_value > this.config.thresholds.highUsage) {
+            if (latestReading && latestReading.reading_value > this.config.thresholds.highUsage) {
                 triggers.push({
                     type: 'high_usage',
                     severity: 'medium',
@@ -263,7 +267,7 @@ class MeterDataAnalyzer {
             }
 
             // Check for usage spikes
-            if (usageStats.average > 0 && latestReading.reading_value > (usageStats.average * this.config.thresholds.usageSpike)) {
+            if (latestReading && usageStats.average > 0 && latestReading.reading_value > (usageStats.average * this.config.thresholds.usageSpike)) {
                 triggers.push({
                     type: 'usage_spike',
                     severity: 'high',
@@ -278,7 +282,7 @@ class MeterDataAnalyzer {
             }
 
             // Check for unusually low usage
-            if (latestReading.reading_value < this.config.thresholds.lowUsage && usageStats.average > this.config.thresholds.lowUsage * 2) {
+            if (latestReading && latestReading.reading_value < this.config.thresholds.lowUsage && usageStats.average > this.config.thresholds.lowUsage * 2) {
                 triggers.push({
                     type: 'low_usage',
                     severity: 'medium',
@@ -299,7 +303,8 @@ class MeterDataAnalyzer {
             }
 
         } catch (error) {
-            console.error(`Error checking usage anomalies for meter ${meter.id}:`, error.message);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error checking usage anomalies for meter ${meter.id}:`, errorMessage);
         }
 
         return triggers;
@@ -316,7 +321,7 @@ class MeterDataAnalyzer {
 
             const now = new Date();
             const maintenanceDate = new Date(meter.next_maintenance);
-            const daysUntilMaintenance = Math.ceil((maintenanceDate - now) / (1000 * 60 * 60 * 24));
+            const daysUntilMaintenance = Math.ceil((maintenanceDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
             // Check if maintenance is due within threshold
             if (daysUntilMaintenance <= 7 && daysUntilMaintenance >= 0) {
@@ -349,7 +354,8 @@ class MeterDataAnalyzer {
             }
 
         } catch (error) {
-            console.error(`Error checking maintenance for meter ${meter.id}:`, error.message);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error checking maintenance for meter ${meter.id}:`, errorMessage);
         }
 
         return null;
@@ -388,7 +394,8 @@ class MeterDataAnalyzer {
                 }
 
             } catch (error) {
-                console.error(`❌ Error processing trigger ${trigger.type} for meter ${meter.id}:`, error.message);
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error(`❌ Error processing trigger ${trigger.type} for meter ${meter.id}:`, errorMessage);
             }
         }
     }
@@ -434,6 +441,10 @@ class MeterDataAnalyzer {
     /**
      * Database query methods
      */
+    /**
+     * Get all active meters
+     * @returns {Promise<Array<{id: number, location_id: number, location_name: string, location: string, meter_type: string, next_maintenance: string, maintenance_interval: string, last_maintenance: string}>>}
+     */
     async getAllMeters() {
         const query = `
             SELECT 
@@ -453,13 +464,19 @@ class MeterDataAnalyzer {
 
         try {
             const result = await db.query(query);
-            return result.rows;
+            return /** @type {any[]} */ (result.rows);
         } catch (error) {
-            console.error('Error fetching active meters:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('Error fetching active meters:', errorMessage);
             return [];
         }
     }
 
+    /**
+     * Get latest reading
+     * @param {number} meterId
+     * @returns {Promise<{reading_value: number, reading_date: string} | null>}
+     */
     async getLatestReading(meterId) {
         const query = `
             SELECT reading_value, reading_date
@@ -471,13 +488,20 @@ class MeterDataAnalyzer {
 
         try {
             const result = await db.query(query, [meterId]);
-            return result.rows[0] || null;
+            return /** @type {any} */ (result.rows[0]) || null;
         } catch (error) {
-            console.error(`Error fetching latest reading for meter ${meterId}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error fetching latest reading for meter ${meterId}:`, errorMessage);
             return null;
         }
     }
 
+    /**
+     * Get recent readings
+     * @param {number} meterId
+     * @param {number} days
+     * @returns {Promise<Array<{reading_value: number, reading_date: string}>>}
+     */
     async getRecentReadings(meterId, days) {
         const query = `
             SELECT reading_value, reading_date
@@ -490,9 +514,10 @@ class MeterDataAnalyzer {
 
         try {
             const result = await db.query(query, [meterId]);
-            return result.rows;
+            return /** @type {any[]} */ (result.rows);
         } catch (error) {
-            console.error(`Error fetching recent readings for meter ${meterId}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error fetching recent readings for meter ${meterId}:`, errorMessage);
             return [];
         }
     }
@@ -519,19 +544,25 @@ class MeterDataAnalyzer {
                 JSON.stringify(trigger.data)
             ]);
         } catch (error) {
-            console.error('Error logging trigger:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('Error logging trigger:', errorMessage);
         }
     }
 
     /**
      * Statistical analysis methods
      */
+    /**
+     * Calculate usage statistics
+     * @param {Array<{reading_value: number, reading_date: string}>} readings
+     * @returns {{average: number, median: number, stdDev: number, min: number, max: number}}
+     */
     calculateUsageStatistics(readings) {
         if (readings.length === 0) {
             return { average: 0, median: 0, stdDev: 0, min: 0, max: 0 };
         }
 
-        const values = readings.map(r => parseFloat(r.reading_value));
+        const values = readings.map(r => Number(r.reading_value));
         const sum = values.reduce((a, b) => a + b, 0);
         const average = sum / values.length;
 
@@ -552,12 +583,18 @@ class MeterDataAnalyzer {
         };
     }
 
+    /**
+     * Detect statistical anomalies
+     * @param {Array<{reading_value: number, reading_date: string}>} readings
+     * @param {{average: number, median: number, stdDev: number, min: number, max: number}} stats
+     * @returns {Array}
+     */
     detectStatisticalAnomalies(readings, stats) {
         const anomalies = [];
         const threshold = 2; // Standard deviations
 
         for (const reading of readings.slice(0, 5)) { // Check last 5 readings
-            const value = parseFloat(reading.reading_value);
+            const value = Number(reading.reading_value);
             const zScore = Math.abs((value - stats.average) / stats.stdDev);
 
             if (zScore > threshold) {
@@ -566,7 +603,6 @@ class MeterDataAnalyzer {
                     severity: 'medium',
                     message: `Statistical anomaly detected (z-score: ${zScore.toFixed(2)})`,
                     data: {
-                        meter_id: reading.meter_id,
                         reading_value: value,
                         z_score: zScore,
                         average: stats.average,

@@ -12,9 +12,26 @@ router.use(authenticateToken);
 router.get('/schema', (req, res) => {
   try {
     const schema = MeterElement.schema;
+    
+    if (!schema) {
+      return res.status(500).json({
+        success: false,
+        message: 'Schema not available',
+      });
+    }
+
+    console.log('📋 [SCHEMA] MeterElement.schema:', schema);
+    console.log('📋 [SCHEMA] schema.schema:', schema.schema);
+    console.log('📋 [SCHEMA] formFields:', schema.schema?.formFields);
+    console.log('📋 [SCHEMA] element field:', schema.schema?.formFields?.element);
+
+    // Return schema in a format the frontend expects
     res.json({
       success: true,
-      data: schema.toJSON(),
+      data: {
+        formFields: schema.schema?.formFields || {},
+        entityFields: schema.schema?.entityFields || {},
+      },
     });
   } catch (error) {
     console.error('Error fetching meter elements schema:', error);
@@ -31,11 +48,19 @@ router.get('/schema', (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { meterId } = req.params;
+    const tenantId = req.user?.tenantId || req.user?.tenant_id;
 
-    // Verify meter exists
+    if (!tenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tenant context required',
+      });
+    }
+
+    // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1',
-      [meterId]
+      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      [meterId, tenantId]
     );
 
     if (meterResult.rows.length === 0) {
@@ -45,9 +70,9 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Get all meter elements
+    // Get all meter elements for this meter
     const elements = await db.query(
-      `SELECT id, meter_id, name, status, element
+      `SELECT id, meter_id, name, element
        FROM meter_element
        WHERE meter_id = $1
        ORDER BY name ASC`,
@@ -73,12 +98,19 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { meterId } = req.params;
-    const { name, status, element } = req.body;
+    const { name, element } = req.body;
+    const tenantId = req.user?.tenantId || req.user?.tenant_id;
+
+    if (!tenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tenant context required',
+      });
+    }
 
     // Validate against schema
     const validation = MeterElement.schema.validate({
       name,
-      status: status || 'active',
       element,
     });
 
@@ -90,10 +122,10 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Verify meter exists
+    // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1',
-      [meterId]
+      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      [meterId, tenantId]
     );
 
     if (meterResult.rows.length === 0) {
@@ -105,10 +137,10 @@ router.post('/', async (req, res) => {
 
     // Create meter_element record
     const result = await db.query(
-      `INSERT INTO meter_element (meter_id, name, status, element)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, meter_id, name, status, element`,
-      [meterId, name, status || 'active', element]
+      `INSERT INTO meter_element (meter_id, name, element)
+       VALUES ($1, $2, $3)
+       RETURNING id, meter_id, name, element`,
+      [meterId, name, element]
     );
 
     if (result.rows.length === 0) {
@@ -137,12 +169,20 @@ router.post('/', async (req, res) => {
 router.put('/:elementId', async (req, res) => {
   try {
     const { meterId, elementId } = req.params;
-    const { name, status, element } = req.body;
+    const { name,  element } = req.body;
+    const tenantId = req.user?.tenantId || req.user?.tenant_id;
 
-    // Verify meter exists
+    if (!tenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tenant context required',
+      });
+    }
+
+    // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1',
-      [meterId]
+      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      [meterId, tenantId]
     );
 
     if (meterResult.rows.length === 0) {
@@ -152,10 +192,10 @@ router.put('/:elementId', async (req, res) => {
       });
     }
 
-    // Verify element exists and get current data
+    // Verify element exists, belongs to meter, and tenant
     const elementResult = await db.query(
-      'SELECT id, name, status, element FROM meter_element WHERE id = $1 AND meter_id = $2',
-      [elementId, meterId]
+      'SELECT id, name, element FROM meter_element WHERE id = $1 AND meter_id = $2 AND tenant_id = $3',
+      [elementId, meterId, tenantId]
     );
 
     if (elementResult.rows.length === 0) {
@@ -169,7 +209,6 @@ router.put('/:elementId', async (req, res) => {
     const currentElement = elementResult.rows[0];
     const updatedData = {
       name: name !== undefined ? name : currentElement.name,
-      status: status !== undefined ? status : currentElement.status,
       element: element !== undefined ? element : currentElement.element,
     };
 
@@ -193,10 +232,6 @@ router.put('/:elementId', async (req, res) => {
       updates.push(`name = $${paramCount++}`);
       values.push(name);
     }
-    if (status !== undefined) {
-      updates.push(`status = $${paramCount++}`);
-      values.push(status);
-    }
     if (element !== undefined) {
       updates.push(`element = $${paramCount++}`);
       values.push(element);
@@ -216,7 +251,7 @@ router.put('/:elementId', async (req, res) => {
       UPDATE meter_element
       SET ${updates.join(', ')}
       WHERE id = $${paramCount++} AND meter_id = $${paramCount++}
-      RETURNING id, meter_id, name, status, element
+      RETURNING id, meter_id, name, element
     `;
 
     const result = await db.query(query, values);
@@ -247,11 +282,19 @@ router.put('/:elementId', async (req, res) => {
 router.delete('/:elementId', async (req, res) => {
   try {
     const { meterId, elementId } = req.params;
+    const tenantId = req.user?.tenantId || req.user?.tenant_id;
 
-    // Verify meter exists
+    if (!tenantId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tenant context required',
+      });
+    }
+
+    // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1',
-      [meterId]
+      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      [meterId, tenantId]
     );
 
     if (meterResult.rows.length === 0) {
@@ -261,10 +304,10 @@ router.delete('/:elementId', async (req, res) => {
       });
     }
 
-    // Verify element exists
+    // Verify element exists, belongs to meter, and tenant
     const elementResult = await db.query(
-      'SELECT id FROM meter_element WHERE id = $1 AND meter_id = $2',
-      [elementId, meterId]
+      'SELECT id FROM meter_element WHERE id = $1 AND meter_id = $2 AND tenant_id = $3',
+      [elementId, meterId, tenantId]
     );
 
     if (elementResult.rows.length === 0) {

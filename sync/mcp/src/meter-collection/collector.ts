@@ -1,7 +1,7 @@
 import winston from 'winston';
 import * as cron from 'node-cron';
 import { BACnetClient, BACnetConfig, BACnetDataPoint, MeterReading } from './bacnet-client.js';
-import { SyncDatabase } from '../database/index.js';
+import { SyncDatabase } from '../database/connection-pools.js';
 import fs from 'fs/promises';
 import path from 'path';
 

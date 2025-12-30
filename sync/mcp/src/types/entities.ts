@@ -2,28 +2,9 @@
  * Centralized types used across the sync system to avoid duplication.
  */
 
-// ==================== BASE INTERFACES ====================
-
-export interface BaseEntity {
-  id: number;
-  tenant_id?: string;
-  active: boolean;
-  created_at: Date;
-  updated_at?:Date;
-}
-
 export interface BaseResponse {
   success: boolean;
   message?: string;
-}
-
-export interface BaseAddress {
-  street?: string;
-  street2?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
 }
 
 export interface BaseSyncResult {
@@ -35,7 +16,7 @@ export interface BaseSyncResult {
   timestamp: Date;
 }
 
-export interface BasrSyncStatus {
+export interface BaseSyncStatus {
   isRunning: boolean;
   isSyncing: boolean;
   lastSyncTime?: Date;
@@ -47,30 +28,28 @@ export interface BasrSyncStatus {
   count: number;
 }
 
-// ==================== DATABASE TYPES ====================
-
-export interface TenantEntity  extends BaseEntity {
-  name: string;
+export interface TenantEntity {
+  tenant_id: number;
   url?: string;
-  address: BaseAddress;
+  name?: string;
+  street?: string;
+  street2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
 }
-
-export interface MeterEntity extends BaseEntity {
-  name: string;
-  type: string;
-  serial_number: string;
-  installation_date: string;
-  device_id: string;
-  location_id: string;
+export interface MeterEntity {
+  meter_id: number;
+  meter_element_id: number;
+  active: boolean;
   ip: string;
   port: string;
-  protocol: string;
-  status: string;
-  notes?: string;
+  element: number;
 }
-
-export interface MeterReadingEntity extends BaseEntity {
-  meter_id: string;
+export interface MeterReadingEntity {
+  meter_id: number;
+  meter_element_id: number;
   timestamp: Date;
   data_point: string;
   value: number;
@@ -122,8 +101,8 @@ export interface ConfigDownloadResponse {
 
 // ==================== SYNC TYPES ====================
 
-export interface MeterSyncResult extends BaseSyncResult {}
-export interface MeterSyncStatus extends BasrSyncStatus {}
+export interface MeterSyncResult extends BaseSyncResult { }
+export interface MeterSyncStatus extends BaseSyncStatus { }
 
 // ==================== CONFIG TYPES ====================
 
@@ -134,13 +113,22 @@ export interface ApiClientConfig {
   maxRetries?: number;
 }
 
-export interface DatabaseConfig {
-  host: string;
-  port: number;
-  database: string;
-  user: string;
-  password: string;
-  max?: number;
-  idleTimeoutMillis?: number;
-  connectionTimeoutMillis?: number;
+// ==================== DATABASE SERVICE INTERFACE ====================
+
+export interface SyncDatabase {
+  getTenant(): Promise<TenantEntity | null>;
+  getMeters(activeOnly: boolean): Promise<MeterEntity[]>;
+  upsertMeter(meter: MeterEntity): Promise<void>;
+  deleteInactiveMeter(meterId: string): Promise<void>;
+  logSyncOperation(batchSize: number, success: boolean, errorMessage?: string): Promise<void>;
+  getUnsynchronizedReadings(limit: number): Promise<MeterReadingEntity[]>;
+  deleteSynchronizedReadings(readingIds: number[]): Promise<number>;
+  incrementRetryCount(readingIds: number[]): Promise<void>;
+  getUnsynchronizedCount(): Promise<number>;
+  getSyncStats(hours: number): Promise<any>;
+  getRecentReadings(hours: number): Promise<MeterReadingEntity[]>;
+  getRecentSyncLogs(limit: number): Promise<SyncLog[]>;
 }
+
+
+
