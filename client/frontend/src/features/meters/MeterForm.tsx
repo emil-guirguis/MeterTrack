@@ -6,9 +6,8 @@
  * Fields are automatically organized into tabs and sections based on formGrouping metadata.
  */
 
-import React, { useRef, useCallback, useState } from 'react';
-import { BaseForm } from '@framework/components/form/BaseForm';
-import { JsonGridEditor } from '@framework/components/json_grid';
+import React, { useCallback, useState } from 'react';
+import { BaseForm, FormContainer, FormTabs } from '@framework/components/form';
 import { useSchema } from '@framework/components/form/utils/schemaLoader';
 import { useFormTabs } from '@framework/components/form/hooks';
 import { useMetersEnhanced } from './metersStore';
@@ -56,30 +55,19 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     isDisabled: boolean,
     onChange: (value: any) => void
   ) => {
-
     return null;
   };
 
   return (
-    <div className="meter-form-container">
-      {/* Tab Navigation */}
-      {tabList.length > 1 && (
-        <div className="meter-form__tabs">
-          {tabList.map((tabName) => (
-            <button
-              key={tabName}
-              className={`meter-form__tab ${activeTab === tabName ? 'meter-form__tab--active' : ''}`}
-              onClick={() => setActiveTab(tabName)}
-              type="button"
-            >
-              {tabs[tabName].label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Tab Content */}
-      <div className="meter-form__content">
+    <FormContainer>
+      <FormTabs
+        tabs={tabs}
+        tabList={tabList}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+      
+      <div className="form-container__content">
         {activeTab === 'Elements' && meter?.id ? (
           <ElementsGrid
             meterId={Number(meter.id)}
@@ -103,7 +91,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           />
         )}
       </div>
-    </div>
+    </FormContainer>
   );
 };
 

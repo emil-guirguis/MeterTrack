@@ -9,6 +9,7 @@ import React from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
 import { useContactsEnhanced } from './contactsStore';
 import type { Contact } from './types';
+import './ContactForm.css';
 
 interface ContactFormProps {
   contact?: Contact;

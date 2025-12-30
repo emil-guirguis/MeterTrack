@@ -22220,3 +22220,410 @@
 {"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T08:37:00.026Z"}
 {"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T08:37:00.027Z"}
 {"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T08:37:00.027Z"}
+{"level":"info","message":"Starting BACnet Meter Reading Agent","timestamp":"2025-12-30T15:47:14.011Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:47:14.014Z"}
+{"level":"info","message":"Scheduling collection cycles every 60 seconds","timestamp":"2025-12-30T15:47:14.015Z"}
+{"level":"info","message":"BACnet Meter Reading Agent started successfully","timestamp":"2025-12-30T15:47:14.046Z"}
+{"level":"info","message":"Triggering initial collection cycle","timestamp":"2025-12-30T15:47:14.047Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109634048-u96lljqex","timestamp":"2025-12-30T15:47:14.048Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:47:14.049Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:47:14.049Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:47:14.050Z"}
+{"level":"info","message":"Starting BACnet Meter Reading Agent","timestamp":"2025-12-30T15:47:14.985Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:47:14.988Z"}
+{"level":"info","message":"Scheduling collection cycles every 60 seconds","timestamp":"2025-12-30T15:47:14.988Z"}
+{"level":"info","message":"BACnet Meter Reading Agent started successfully","timestamp":"2025-12-30T15:47:15.014Z"}
+{"level":"info","message":"Triggering initial collection cycle","timestamp":"2025-12-30T15:47:15.014Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109635015-lj7s2ha06","timestamp":"2025-12-30T15:47:15.015Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:47:15.015Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:47:15.015Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:47:15.015Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109680038-p62qcuywg","timestamp":"2025-12-30T15:48:00.038Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109680036-q8phh77zg","timestamp":"2025-12-30T15:48:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:48:00.039Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:48:00.040Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:48:00.041Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:48:00.038Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:48:00.039Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:48:00.040Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109740032-8260q10kx","timestamp":"2025-12-30T15:49:00.032Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109740032-yx94hhix1","timestamp":"2025-12-30T15:49:00.033Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:49:00.033Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:49:00.033Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:49:00.034Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:49:00.033Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:49:00.034Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:49:00.034Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109800018-mugo8wlrj","timestamp":"2025-12-30T15:50:00.018Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:50:00.019Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:50:00.019Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:50:00.019Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109800034-i2o4ai0s8","timestamp":"2025-12-30T15:50:00.034Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:50:00.035Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:50:00.035Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:50:00.035Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109860030-hsrk3v9np","timestamp":"2025-12-30T15:51:00.030Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109860031-3oewc5lxj","timestamp":"2025-12-30T15:51:00.031Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:51:00.031Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:51:00.032Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:51:00.032Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:51:00.032Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:51:00.032Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:51:00.033Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109920044-k9hxn59op","timestamp":"2025-12-30T15:52:00.044Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109920044-4nojdyvat","timestamp":"2025-12-30T15:52:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:52:00.045Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:52:00.045Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:52:00.045Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:52:00.045Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:52:00.045Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:52:00.046Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109980015-gu40pwfwj","timestamp":"2025-12-30T15:53:00.015Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:53:00.016Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:53:00.016Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:53:00.017Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767109980031-odfuusvoo","timestamp":"2025-12-30T15:53:00.031Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:53:00.032Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:53:00.032Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:53:00.033Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110040037-awr0icx2d","timestamp":"2025-12-30T15:54:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:54:00.037Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:54:00.037Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:54:00.037Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110040050-wne3sbfht","timestamp":"2025-12-30T15:54:00.050Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:54:00.050Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:54:00.050Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:54:00.050Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110100038-g3tio6i3c","timestamp":"2025-12-30T15:55:00.038Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110100038-ozw46iskx","timestamp":"2025-12-30T15:55:00.039Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:55:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:55:00.040Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:55:00.040Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:55:00.039Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:55:00.040Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:55:00.040Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110160039-qpb99xi72","timestamp":"2025-12-30T15:56:00.039Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110160037-2fy5v53db","timestamp":"2025-12-30T15:56:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:56:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:56:00.040Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:56:00.040Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:56:00.038Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:56:00.038Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:56:00.039Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110220027-4zk3vqpas","timestamp":"2025-12-30T15:57:00.027Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110220026-csq0t9niq","timestamp":"2025-12-30T15:57:00.026Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:57:00.028Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:57:00.028Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:57:00.028Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:57:00.026Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:57:00.026Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:57:00.027Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110280029-jygba6mlt","timestamp":"2025-12-30T15:58:00.029Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110280029-backug3e7","timestamp":"2025-12-30T15:58:00.029Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:58:00.030Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:58:00.030Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:58:00.030Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:58:00.030Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:58:00.030Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:58:00.030Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110340024-owadcmgsu","timestamp":"2025-12-30T15:59:00.024Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:59:00.024Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:59:00.025Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:59:00.025Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110340039-w1pco0om2","timestamp":"2025-12-30T15:59:00.039Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T15:59:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T15:59:00.041Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T15:59:00.041Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110400034-g616dmuzg","timestamp":"2025-12-30T16:00:00.034Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:00:00.035Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:00:00.035Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:00:00.036Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110400044-1o4pjgo0u","timestamp":"2025-12-30T16:00:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:00:00.045Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:00:00.045Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:00:00.046Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110460036-ktk9dtmlw","timestamp":"2025-12-30T16:01:00.036Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110460036-lz6hm3dkz","timestamp":"2025-12-30T16:01:00.036Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:01:00.037Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:01:00.038Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:01:00.038Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:01:00.037Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:01:00.038Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:01:00.039Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110520034-56s2ry7qz","timestamp":"2025-12-30T16:02:00.035Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110520034-yosujs4zi","timestamp":"2025-12-30T16:02:00.035Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:02:00.035Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:02:00.036Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:02:00.036Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:02:00.035Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:02:00.036Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:02:00.036Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110580035-2uif0ew93","timestamp":"2025-12-30T16:03:00.035Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:03:00.036Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:03:00.037Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:03:00.037Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110580057-ele2br04p","timestamp":"2025-12-30T16:03:00.057Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:03:00.058Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:03:00.059Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:03:00.060Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110640037-z08pe2gam","timestamp":"2025-12-30T16:04:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:04:00.037Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:04:00.038Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:04:00.038Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110640068-cymbglkba","timestamp":"2025-12-30T16:04:00.068Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:04:00.069Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:04:00.069Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:04:00.069Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110700036-pv5phhoby","timestamp":"2025-12-30T16:05:00.036Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110700034-r747lno4a","timestamp":"2025-12-30T16:05:00.034Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:05:00.036Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:05:00.037Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:05:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:05:00.035Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:05:00.035Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:05:00.035Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110760042-w6fp7mfyc","timestamp":"2025-12-30T16:06:00.042Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110760042-o0fwelj1w","timestamp":"2025-12-30T16:06:00.042Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:06:00.043Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:06:00.044Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:06:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:06:00.043Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:06:00.043Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:06:00.044Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110820031-w8m3q6vbo","timestamp":"2025-12-30T16:07:00.031Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110820042-nbuny3g2l","timestamp":"2025-12-30T16:07:00.042Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:07:00.043Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:07:00.043Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:07:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:07:00.032Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:07:00.033Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:07:00.033Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110880039-zpt3qcfl3","timestamp":"2025-12-30T16:08:00.039Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110880040-g1xf7z00j","timestamp":"2025-12-30T16:08:00.040Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:08:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:08:00.040Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:08:00.040Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:08:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:08:00.041Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:08:00.041Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110940031-l44lsj9fq","timestamp":"2025-12-30T16:09:00.031Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:09:00.032Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:09:00.032Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:09:00.032Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767110940046-d11hjsgpa","timestamp":"2025-12-30T16:09:00.046Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:09:00.047Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:09:00.048Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:09:00.048Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111000022-le6px0uv8","timestamp":"2025-12-30T16:10:00.022Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111000024-hr82u4v5e","timestamp":"2025-12-30T16:10:00.024Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:10:00.023Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:10:00.023Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:10:00.023Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:10:00.024Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:10:00.024Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:10:00.024Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111060035-lze5izp4n","timestamp":"2025-12-30T16:11:00.035Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111060033-kn9a73rh8","timestamp":"2025-12-30T16:11:00.033Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:11:00.033Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:11:00.035Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:11:00.033Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:11:00.036Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:11:00.036Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:11:00.034Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111120024-slb45bqsn","timestamp":"2025-12-30T16:12:00.024Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111120025-1c17usa8n","timestamp":"2025-12-30T16:12:00.025Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:12:00.025Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:12:00.025Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:12:00.025Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:12:00.025Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:12:00.026Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:12:00.026Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111180022-gltxp2cp1","timestamp":"2025-12-30T16:13:00.022Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:13:00.023Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:13:00.023Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:13:00.023Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111180031-3mg1lz7ee","timestamp":"2025-12-30T16:13:00.031Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:13:00.031Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:13:00.032Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:13:00.032Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111240045-czzhh3aek","timestamp":"2025-12-30T16:14:00.045Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111240044-d7nu8lgw6","timestamp":"2025-12-30T16:14:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:14:00.045Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:14:00.045Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:14:00.046Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:14:00.046Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:14:00.046Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:14:00.047Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111300038-7x6a3mz2v","timestamp":"2025-12-30T16:15:00.038Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111300036-73ejl3pek","timestamp":"2025-12-30T16:15:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:15:00.038Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:15:00.039Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:15:00.039Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:15:00.037Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:15:00.038Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:15:00.038Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111360046-2u4zk7du1","timestamp":"2025-12-30T16:16:00.046Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111360049-h5p2zqh9g","timestamp":"2025-12-30T16:16:00.049Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:16:00.047Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:16:00.048Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:16:00.048Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:16:00.050Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:16:00.050Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:16:00.051Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111420033-pzlwlschb","timestamp":"2025-12-30T16:17:00.033Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:17:00.033Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:17:00.034Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:17:00.034Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111420038-eiu4w35i2","timestamp":"2025-12-30T16:17:00.038Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:17:00.039Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:17:00.040Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:17:00.040Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111480054-obnrnipd5","timestamp":"2025-12-30T16:18:00.054Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111480052-u8bqdkxu2","timestamp":"2025-12-30T16:18:00.052Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:18:00.055Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:18:00.055Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:18:00.056Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:18:00.053Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:18:00.054Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:18:00.054Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111540033-fad5ppsvs","timestamp":"2025-12-30T16:19:00.033Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:19:00.033Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:19:00.034Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:19:00.034Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111540044-6vy25wjjv","timestamp":"2025-12-30T16:19:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:19:00.045Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:19:00.045Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:19:00.046Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111600029-pufyp5if2","timestamp":"2025-12-30T16:20:00.029Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111600029-5nk3efcep","timestamp":"2025-12-30T16:20:00.029Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:20:00.029Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:20:00.030Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:20:00.030Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:20:00.029Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:20:00.030Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:20:00.030Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111660030-7yxdavzbr","timestamp":"2025-12-30T16:21:00.030Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111660031-pou8ms0kj","timestamp":"2025-12-30T16:21:00.032Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:21:00.031Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:21:00.031Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:21:00.032Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:21:00.032Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:21:00.033Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:21:00.033Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111720028-kwalikl8w","timestamp":"2025-12-30T16:22:00.028Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111720029-jy7i64z9r","timestamp":"2025-12-30T16:22:00.029Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:22:00.029Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:22:00.029Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:22:00.030Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:22:00.030Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:22:00.030Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:22:00.031Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111780042-y7ab72j13","timestamp":"2025-12-30T16:23:00.042Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111780043-k767x1465","timestamp":"2025-12-30T16:23:00.043Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:23:00.043Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:23:00.044Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:23:00.044Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:23:00.043Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:23:00.044Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:23:00.044Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111840023-lzjgnjeo2","timestamp":"2025-12-30T16:24:00.023Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:24:00.023Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:24:00.024Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:24:00.024Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111840029-pbad1i8z6","timestamp":"2025-12-30T16:24:00.029Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:24:00.030Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:24:00.030Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:24:00.030Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111900036-uci45b965","timestamp":"2025-12-30T16:25:00.036Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767111900039-8bdwa1kd0","timestamp":"2025-12-30T16:25:00.039Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:25:00.037Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:25:00.037Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:25:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:25:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:25:00.041Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:25:00.041Z"}
+{"level":"info","message":"Starting BACnet Meter Reading Agent","timestamp":"2025-12-30T16:26:50.436Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:26:50.440Z"}
+{"level":"info","message":"Scheduling collection cycles every 60 seconds","timestamp":"2025-12-30T16:26:50.440Z"}
+{"level":"info","message":"BACnet Meter Reading Agent started successfully","timestamp":"2025-12-30T16:26:50.468Z"}
+{"level":"info","message":"Triggering initial collection cycle","timestamp":"2025-12-30T16:26:50.468Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112010469-1a93tkxw1","timestamp":"2025-12-30T16:26:50.469Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:26:50.469Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:26:50.469Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:26:50.469Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112020052-7fm5y2a6b","timestamp":"2025-12-30T16:27:00.052Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:27:00.054Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:27:00.054Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:27:00.055Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112080021-71trvcdzv","timestamp":"2025-12-30T16:28:00.021Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:28:00.021Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:28:00.021Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:28:00.021Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112140024-mniqexgr4","timestamp":"2025-12-30T16:29:00.024Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:29:00.024Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:29:00.024Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:29:00.024Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112200028-8hlaef30t","timestamp":"2025-12-30T16:30:00.028Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:30:00.029Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:30:00.029Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:30:00.029Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112260043-clat8fht1","timestamp":"2025-12-30T16:31:00.043Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:31:00.044Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:31:00.044Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:31:00.044Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112320048-wb5n0foz2","timestamp":"2025-12-30T16:32:00.048Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:32:00.049Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:32:00.050Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:32:00.050Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112380020-t12n098d6","timestamp":"2025-12-30T16:33:00.020Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:33:00.021Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:33:00.021Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:33:00.021Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112440036-n75pnopt2","timestamp":"2025-12-30T16:34:00.037Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:34:00.038Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:34:00.038Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:34:00.039Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112500041-m449cmi18","timestamp":"2025-12-30T16:35:00.041Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:35:00.042Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:35:00.043Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:35:00.043Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112560026-7ni4n0821","timestamp":"2025-12-30T16:36:00.026Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:36:00.027Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:36:00.027Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:36:00.027Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112620038-hrx4b0gwg","timestamp":"2025-12-30T16:37:00.038Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:37:00.039Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:37:00.039Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:37:00.040Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112680041-fgvwtcbxl","timestamp":"2025-12-30T16:38:00.041Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:38:00.041Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:38:00.042Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:38:00.042Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112740021-g86mexw4c","timestamp":"2025-12-30T16:39:00.021Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:39:00.022Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:39:00.022Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:39:00.022Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112800026-wpbvfo30v","timestamp":"2025-12-30T16:40:00.026Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:40:00.026Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:40:00.027Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:40:00.027Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112860022-0ea0qulxr","timestamp":"2025-12-30T16:41:00.022Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:41:00.022Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:41:00.023Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:41:00.023Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112920059-y2lf3em07","timestamp":"2025-12-30T16:42:00.059Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:42:00.060Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:42:00.061Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:42:00.061Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767112980035-quusew95c","timestamp":"2025-12-30T16:43:00.035Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:43:00.036Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:43:00.036Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:43:00.037Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767113040047-qzl86b4e8","timestamp":"2025-12-30T16:44:00.047Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:44:00.048Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:44:00.048Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:44:00.048Z"}
+{"level":"info","message":"Starting collection cycle cycle-1767113100040-g9rqxowec","timestamp":"2025-12-30T16:45:00.040Z"}
+{"level":"info","message":"Cache is empty or invalid, loading from database","timestamp":"2025-12-30T16:45:00.040Z"}
+{"level":"info","message":"Loaded 0 meters into cache","timestamp":"2025-12-30T16:45:00.041Z"}
+{"level":"warn","message":"No meters in cache for collection cycle","timestamp":"2025-12-30T16:45:00.041Z"}

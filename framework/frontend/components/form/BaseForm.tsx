@@ -548,6 +548,42 @@ export const BaseForm: React.FC<BaseFormProps> = ({
 
   const handleFormSubmit = isDynamicForm ? handleDynamicSubmit : onSubmit;
 
+  // Determine layout based on schema metadata or fieldSections
+  const getLayoutInfo = () => {
+    if (!isDynamicForm || !fieldSections) {
+      return { gridClass: '', sectionClasses: {} };
+    }
+
+    const sectionCount = Object.keys(fieldSections).length;
+    let gridClass = '';
+    const sectionClasses: Record<string, string> = {};
+
+    // Determine grid layout based on number of sections
+    if (sectionCount <= 1) {
+      gridClass = 'base-form__main--grid-1';
+    } else if (sectionCount <= 2) {
+      gridClass = 'base-form__main--grid-2';
+    } else {
+      gridClass = 'base-form__main--grid-3';
+    }
+
+    // Assign section positioning classes
+    const sectionNames = Object.keys(fieldSections);
+    sectionNames.forEach((sectionName, index) => {
+      if (index < 3) {
+        // First 3 sections get column positions
+        sectionClasses[sectionName] = `base-form__section--col-${index + 1} base-form__section--row-1`;
+      } else {
+        // Additional sections span full width
+        sectionClasses[sectionName] = 'base-form__section--full-width';
+      }
+    });
+
+    return { gridClass, sectionClasses };
+  };
+
+  const { gridClass, sectionClasses } = getLayoutInfo();
+
   // Render dynamic form sections
   const formContent = isDynamicForm ? (
     <>
@@ -568,9 +604,10 @@ export const BaseForm: React.FC<BaseFormProps> = ({
           if (visibleFields.length === 0) return null;
 
           const sectionStyle = maxWidth ? { maxWidth } : undefined;
+          const sectionLayoutClass = sectionClasses[sectionTitle] || '';
 
           return (
-            <div key={sectionTitle} className={`${className}__section`} style={sectionStyle}>
+            <div key={sectionTitle} className={`${className}__section ${sectionLayoutClass}`} style={sectionStyle}>
               <h3 className={`${className}__section-title`}>{sectionTitle}</h3>
               {visibleFields.map(fieldName => {
                 // Check formFields first, then entityFields
@@ -609,7 +646,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
 
   return (
     <form onSubmit={handleFormSubmit} className={formClassName} autoComplete="off">
-      <div className="base-form__main">
+      <div className={`base-form__main ${gridClass}`}>
         {formContent}
       </div>
 

@@ -25,10 +25,27 @@ export const muiTheme = createTheme({
       defaultProps: {
         variant: 'outlined',
       },
+      styleOverrides: {
+        root: {
+          margin: '0 !important',
+          marginBottom: '0 !important',
+          marginTop: '0 !important',
+          '& .MuiOutlinedInput-root': {
+            minHeight: '48px',
+          },
+        },
+      },
     },
     MuiFormControl: {
       defaultProps: {
         variant: 'outlined',
+      },
+      styleOverrides: {
+        root: {
+          margin: '0 !important',
+          marginBottom: '0 !important',
+          marginTop: '0 !important',
+        },
       },
     },
   },

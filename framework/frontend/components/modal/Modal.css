@@ -180,7 +180,7 @@
 }
 
 .modal__content {
-  padding: 1.5rem;
+  padding: 0;
   overflow-y: auto;
   overflow-x: auto;
   flex: 1;
@@ -248,7 +248,7 @@
   }
 
   .modal__content {
-    padding: 1rem;
+    padding: 0;
   }
 
   .modal__footer {
