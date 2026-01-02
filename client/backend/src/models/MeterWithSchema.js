@@ -7,7 +7,7 @@
  */
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
-const { defineSchema, field, FieldTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { defineSchema, field, tab, section, FieldTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
 
 class Meter extends BaseModel {
   constructor(data = {}) {
@@ -60,178 +60,212 @@ class Meter extends BaseModel {
       entityName: 'Meter',
       tableName: 'meter',
       description: 'Meter entity for managing electric, gas, water, and other utility meters',
+      formMaxWidth: '600px',
 
       customListColumns: {},
 
-      // Form fields - user can edit these
+      // NEW: Hierarchical tab structure with embedded field definitions
+      formTabs: [
+        tab({
+          name: 'Meter',
+          order: 1,
+          sections: [
+            section({
+              name: 'Information',
+              order: 1,
+              minWidth: '350px',
+              fields: [
+                field({
+                  name: 'name',
+                  order: 1,
+                  type: FieldTypes.STRING,
+                  default: '',
+                  required: true,
+                  label: 'Meter Name',
+                  dbField: 'name',
+                  minLength: 3,
+                  maxLength: 100,
+                  placeholder: 'Enter meter name',
+                  showOn: ['list', 'form'],
+                  filertable: ['main'],
+                }),
+                field({
+                  name: 'serial_number',
+                  order: 2,
+                  type: FieldTypes.STRING,
+                  default: '',
+                  required: true,
+                  label: 'Serial Number',
+                  dbField: 'serial_number',
+                  maxLength: 200,
+                  placeholder: 'Enter serial number',
+                  filertable: ['true'],
+                  showOn: ['list', 'form'],
+                }),
+                field({
+                  name: 'device_id',
+                  order: 3,
+                  type: FieldTypes.NUMBER,
+                  default: null,
+                  required: true,
+                  label: 'Device',
+                  dbField: 'device_id',
+                  min: 1,
+                  showOn: ['list', 'form'],
+                  validate: true,
+                  validationFields: ['description'],
+                  validationQuery: 'SELECT id, description FROM device WHERE active = true ORDER BY description ASC',
+                }),
+                field({
+                  name: 'location_id',
+                  order: 4,
+                  type: FieldTypes.NUMBER,
+                  default: null,
+                  required: true,
+                  label: 'Location',
+                  dbField: 'location_id',
+                  min: 1,
+                  showOn: ['form'],
+                  validate: true,
+                  validationFields: ['name'],
+                }),
+              ],
+            }),
+            section({
+              name: 'Network',
+              order: 2,
+              fields: [
+                field({
+                  name: 'ip',
+                  order: 1,
+                  type: FieldTypes.STRING,
+                  default: '',
+                  required: true,
+                  label: 'IP Address',
+                  dbField: 'ip',
+                  placeholder: '192.168.1.100',
+                  showOn: ['list', 'form'],
+                }),
+                field({
+                  name: 'port',
+                  order: 2,
+                  type: FieldTypes.NUMBER,
+                  default: 502,
+                  required: true,
+                  label: 'Port Number',
+                  dbField: 'port',
+                  min: 1,
+                  max: 65535,
+                  placeholder: '502',
+                  showOn: ['form'],
+                }),
+              ],
+            }),
+            section({
+              name: 'Status & Configuration',
+              order: 3,
+              fields: [
+                field({
+                  name: 'active',
+                  order: 1,
+                  type: FieldTypes.BOOLEAN,
+                  default: true,
+                  required: true,
+                  label: 'Active',
+                  dbField: 'active',
+                  showOn: ['list', 'form'],
+                }),
+                field({
+                  name: 'installation_date',
+                  order: 2,
+                  type: FieldTypes.DATE,
+                  default: null,
+                  required: false,
+                  label: 'Installation Date',
+                  dbField: 'installation_date',
+                  placeholder: 'Select date',
+                  showOn: ['form'],
+                }),
+              ],
+            }),
+          ],
+        }),
+        tab({
+          name: 'Elements',
+          order: 2,
+          sections: [
+            section({
+              name: 'Meter Elements',
+              order: 1,
+              fields: [
+                field({
+                  name: 'elements',
+                  order: 1,
+                  type: FieldTypes.OBJECT,
+                  default: null,
+                  required: false,
+                  label: 'Elements',
+                  dbField: null,
+                  showOn: ['form'],
+                }),
+              ],
+            }),
+          ],
+        }),
+        tab({
+          name: 'Additional Info',
+          order: 3,
+          sectionOrientation:'vertical',
+          sections: [
+            section({
+              name: 'Notes',
+              order: 1,
+              minWidth: '500px',
+              fields: [
+                field({
+                  name: 'notes',
+                  order: 1,
+                  type: FieldTypes.STRING,
+                  default: '',
+                  required: false,
+                  label: 'Notes',
+                  dbField: 'notes',
+                  maxLength: 500,
+                  placeholder: 'Enter notes',
+                  showOn: ['form'],
+                }),
+              ],
+            }),
+            section({
+              name: 'Audit',
+              order: 2,
+              fields: [
+                field({
+                  name: 'created_at',
+                  order: 1,
+                  type: FieldTypes.DATE,
+                  default: null,
+                  readOnly: true,
+                  label: 'Created At',
+                  dbField: 'created_at',
+                }),
+                field({
+                  name: 'updated_at',
+                  order: 2,
+                  type: FieldTypes.DATE,
+                  default: null,
+                  readOnly: true,
+                  label: 'Updated At',
+                  dbField: 'updated_at',
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+
+      // Form fields - user can edit these (kept for backward compatibility and list display)
       formFields: {
-        name: field({
-          type: FieldTypes.STRING,
-          default: '',
-          required: true,
-          label: 'Meter Name',
-          dbField: 'name',
-          minLength: 3,
-          maxLength: 100,
-          placeholder: 'Enter meter name',
-          showOn: ['list', 'form'],
-          formGrouping: {
-            tabName: 'Basic',
-            sectionName: 'Basic Information',
-            tabOrder: 1,
-            sectionOrder: 1,
-            fieldOrder: 1,
-          },
-        }),
-
-        serial_number: field({
-          type: FieldTypes.STRING,
-          default: '',
-          required: true,
-          label: 'Serial Number',
-          dbField: 'serial_number',
-          maxLength: 200,
-          placeholder: 'Enter serial number',
-          showOn: ['list', 'form'],
-          formGrouping: {
-            tabName: 'Basic',
-            sectionName: 'Basic Information',
-            tabOrder: 1,
-            sectionOrder: 1,
-            fieldOrder: 2,
-          },
-        }),
-
-        device_id: field({
-          type: FieldTypes.NUMBER,
-          default: null,
-          required: true,
-          label: 'Device',
-          dbField: 'device_id',
-          min: 1,
-          showOn: ['list', 'form'],
-          validate: true,
-          validationFields: ['description'],
-          validationQuery: 'SELECT id, description FROM device WHERE active = true ORDER BY description ASC',
-          formGrouping: {
-            tabName: 'Basic',
-            sectionName: 'Basic Information',
-            tabOrder: 1,
-            sectionOrder: 1,
-            fieldOrder: 3,
-          },
-        }),
-
-        location_id: field({
-          type: FieldTypes.NUMBER,
-          default: null,
-          required: true,
-          label: 'Location',
-          dbField: 'location_id',
-          min: 1,
-          showOn: ['form'],
-          validate: true,
-          validationFields: ['name'],
-          formGrouping: {
-            tabName: 'Basic',
-            sectionName: 'Basic Information',
-            tabOrder: 1,
-            sectionOrder: 1,
-            fieldOrder: 4,
-          },
-        }),
-
-        // type: field({
-        //   type: FieldTypes.STRING,
-        //   default: 'electric',
-        //   required: true,
-        //   label: 'Meter Type',
-        //   dbField: 'type',
-        //   enumValues: ['electric', 'gas', 'water', 'steam', 'other'],
-        //   showOn: ['form'],
-        //   formGrouping: {
-        //     tabName: 'Basic',
-        //     sectionName: 'Basic Information',
-        //     tabOrder: 1,
-        //     sectionOrder: 1,
-        //     fieldOrder: 5,
-        //   },
-        // }),
-
-        installation_date: field({
-          type: FieldTypes.DATE,
-          default: null,
-          required: false,
-          label: 'Installation Date',
-          dbField: 'installation_date',
-          placeholder: 'Select date',
-          showOn: ['form'],
-          formGrouping: {
-            tabName: 'Basic',
-            sectionName: 'Status & Configuration',
-            tabOrder: 1,
-            sectionOrder: 2,
-            fieldOrder: 1,
-          },
-        }),
-
-        ip: field({
-          type: FieldTypes.STRING,
-          default: '',
-          required: true,
-          label: 'IP Address',
-          dbField: 'ip',
-          placeholder: '192.168.1.100',
-          showOn: ['list', 'form'],
-        }),
-
-        port: field({
-          type: FieldTypes.NUMBER,
-          default: 502,
-          required: true,
-          label: 'Port Number',
-          dbField: 'port',
-          min: 1,
-          max: 65535,
-          placeholder: '502',
-          showOn: ['form'],
-        }),
-
-
-        elements: field({
-          type: FieldTypes.OBJECT,
-          default: null,
-          required: false,
-          label: 'Elements',
-          dbField: null,
-          showOn: ['form'],
-          formGrouping: {
-            tabName: 'Elements',
-            sectionName: 'Meter Elements',
-            tabOrder: 2,
-            sectionOrder: 1,
-            fieldOrder: 1,
-          },
-        }),
-
-        notes: field({
-          type: FieldTypes.STRING,
-          default: '',
-          required: false,
-          label: 'Notes',
-          dbField: 'notes',
-          maxLength: 500,
-          placeholder: 'Enter notes',
-          showOn: ['form'],
-          formGrouping: {
-            tabName: 'Additional Info',
-            sectionName: 'Notes',
-            tabOrder: 3,
-            sectionOrder: 1,
-            fieldOrder: 1,
-          },
-        }),
-
         device: field({
           type: FieldTypes.STRING,
           default: '',
@@ -261,21 +295,6 @@ class Meter extends BaseModel {
           dbField: 'id',
         }),
 
-        created_at: field({
-          type: FieldTypes.DATE,
-          default: null,
-          readOnly: true,
-          label: 'Created At',
-          dbField: 'created_at',
-        }),
-
-        updated_at: field({
-          type: FieldTypes.DATE,
-          default: null,
-          readOnly: true,
-          label: 'Updated At',
-          dbField: 'updated_at',
-        }),
 
         tenant_id: field({
           type: FieldTypes.NUMBER,

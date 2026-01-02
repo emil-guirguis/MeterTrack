@@ -14,7 +14,7 @@ import { useFormTabs } from './useFormTabs';
  */
 export const BasicFormTabsExample: React.FC<{ schema: any }> = ({ schema }) => {
   const [activeTab, setActiveTab] = useState('Basic');
-  const { tabs, tabList, fieldSections } = useFormTabs(schema.formFields, activeTab);
+  const { tabs, tabList, fieldSections } = useFormTabs(schema.formTabs, activeTab);
 
   return (
     <div className="form-container">
@@ -63,7 +63,7 @@ export const FormWithTabsExample: React.FC<{ schema: any; entity?: any }> = ({
   entity,
 }) => {
   const [activeTab, setActiveTab] = useState('Basic');
-  const { tabs, tabList, fieldSections } = useFormTabs(schema.formFields, activeTab);
+  const { tabs, tabList, fieldSections } = useFormTabs(schema.formTabs, activeTab);
 
   return (
     <form className="device-form">
@@ -240,7 +240,7 @@ export const EXAMPLE_HOOK_OUTPUT = {
  */
 export const AdvancedTabsExample: React.FC<{ schema: any }> = ({ schema }) => {
   const [activeTab, setActiveTab] = useState('Basic');
-  const { tabs, tabList, fieldSections } = useFormTabs(schema.formFields, activeTab);
+  const { tabs, tabList, fieldSections } = useFormTabs(schema.formTabs, activeTab);
 
   return (
     <div className="form-container">

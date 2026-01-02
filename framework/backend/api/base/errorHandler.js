@@ -28,7 +28,7 @@ const { logDatabaseError } = require('../../shared/utils/logger');
  * @param {Array} params - Query parameters (optional)
  * @throws {ModelError} Appropriate custom error based on error code
  */
-function handleDatabaseError(error, operation, modelName, tableName, sql = null, params = []) {
+function handleDatabaseError(error, operation, modelName, tableName, sql = '', params = []) {
   // Log the error with full context
   logDatabaseError(operation, modelName, error, sql, params);
   
@@ -45,7 +45,7 @@ function handleDatabaseError(error, operation, modelName, tableName, sql = null,
   }
   
   // Handle specific PostgreSQL error codes
-  const errorCode = error.code;
+  const errorCode = error['code'] || error['sqlState'] || '';
   
   switch (errorCode) {
     case '23505': // Unique constraint violation
@@ -106,7 +106,7 @@ function handleDatabaseError(error, operation, modelName, tableName, sql = null,
  */
 function isConnectionError(error) {
   const connectionErrorCodes = ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET'];
-  return connectionErrorCodes.includes(error.code) || 
+  return connectionErrorCodes.includes(error['code'] || '') || 
          error.message.includes('connect') ||
          error.message.includes('connection');
 }

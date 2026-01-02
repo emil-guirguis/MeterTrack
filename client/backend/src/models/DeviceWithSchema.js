@@ -6,7 +6,7 @@
  */
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
-const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { defineSchema, field, tab, section, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
 
 class Device extends BaseModel {
     constructor(data = {}) {
@@ -43,109 +43,143 @@ class Device extends BaseModel {
 
             customListColumns: {},
 
-            // Form fields - user can edit these
-            formFields: {
-                description: field({
-                    type: FieldTypes.STRING,
-                    default: '',
-                    required: false,
-                    label: 'Description',
-                    dbField: 'description',
-                    maxLength: 255,
-                    placeholder: 'Device description',
-                    showOn: ['list', 'form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Device Information',
-                        tabOrder: 1,
-                        sectionOrder: 1,
-                        fieldOrder: 3,
-                    },
+            // NEW: Hierarchical tab structure with embedded field definitions
+            formTabs: [
+                tab({
+                    name: 'General',
+                    order: 1,
+                    sections: [
+                        section({
+                            name: 'Device Information',
+                            order: 1,
+                            fields: [
+                                field({
+                                    name: 'manufacturer',
+                                    order: 1,
+                                    type: FieldTypes.STRING,
+                                    default: '',
+                                    required: true,
+                                    label: 'Manufacturer',
+                                    dbField: 'manufacturer',
+                                    maxLength: 255,
+                                    placeholder: 'DENT Instruments',
+                                    enumValues: ['DENT Instruments', 'Honeywell', 'Siemens'],
+                                    showOn: ['list', 'form'],
+                                    filertable: ['true'],
+                                }),
+                                field({
+                                    name: 'modelNumber',
+                                    order: 2,
+                                    type: FieldTypes.STRING,
+                                    default: '',
+                                    required: true,
+                                    label: 'Model Number',
+                                    dbField: 'model_number',
+                                    maxLength: 255,
+                                    placeholder: 'Model',
+                                    showOn: ['list', 'form'],
+                                }),
+                                field({
+                                    name: 'description',
+                                    order: 3,
+                                    type: FieldTypes.STRING,
+                                    default: '',
+                                    required: false,
+                                    label: 'Description',
+                                    dbField: 'description',
+                                    maxLength: 50,
+                                    placeholder: 'Device description',
+                                    showOn: ['list', 'form'],
+                                    filertable: ['main'],
+                                }),
+                                field({
+                                    name: 'type',
+                                    order: 4,
+                                    type: FieldTypes.STRING,
+                                    default: '',
+                                    required: true,
+                                    label: 'Type',
+                                    dbField: 'type',
+                                    maxLength: 255,
+                                    enumValues: ['Electric', 'Gas', 'Water', 'Steam', 'Other'],
+                                    placeholder: 'Electric',
+                                    showOn: ['list', 'form'],
+                                    filertable: ['true'],
+                                }),
+                            ],
+                        }),
+                        section({
+                            name: 'Status',
+                            order: 2,
+                            fields: [
+                                field({
+                                    name: 'active',
+                                    order: 1,
+                                    type: FieldTypes.BOOLEAN,
+                                    default: true,
+                                    required: true,
+                                    label: 'Active',
+                                    dbField: 'active',
+                                    showOn: ['list', 'form'],
+                                }),
+                            ],
+                        }),
+                    ],
                 }),
-                manufacturer: field({
-                    type: FieldTypes.STRING,
-                    default: '',
-                    required: true,
-                    label: 'Manufacturer',
-                    dbField: 'manufacturer',
-                    maxLength: 255,
-                    placeholder: 'DENT Instruments',
-                    enumValues: ['DENT Instruments', 'Honeywell', 'Siemens'],
-                    showOn: ['list', 'form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Device Information',
-                        tabOrder: 1,
-                        sectionOrder: 1,
-                        fieldOrder: 1,
-                    },
+                tab({
+                    name: 'Registers',
+                    order: 2,
+                    sections: [
+                        section({
+                            name: 'Meter Registers',
+                            order: 1,
+                            fields: [
+                                field({
+                                    name: 'registers',
+                                    order: 1,
+                                    type: FieldTypes.OBJECT,
+                                    default: null,
+                                    required: false,
+                                    label: 'Registers',
+                                    showOn: ['form'],
+                                }),
+                            ],
+                        }),
+                    ],
                 }),
-                modelNumber: field({
-                    type: FieldTypes.STRING,
-                    default: '',
-                    required: true,
-                    label: 'Model Number',
-                    dbField: 'model_number',
-                    maxLength: 255,
-                    placeholder: 'Model',
-                    showOn: ['list', 'form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Device Information',
-                        tabOrder: 1,
-                        sectionOrder: 1,
-                        fieldOrder: 2,
-                    },
+                tab({
+                    name: 'Additional Info',
+                    order: 3,
+                    sections: [
+                        section({
+                            name: 'Audit',
+                            order: 1,
+                            fields: [
+                                field({
+                                    name: 'created_at',
+                                    order: 1,
+                                    type: FieldTypes.DATE,
+                                    default: null,
+                                    readOnly: true,
+                                    label: 'Created At',
+                                    dbField: 'created_at',
+                                    showOn: ['form'],
+                                }),
+                                field({
+                                    name: 'updated_at',
+                                    order: 2,
+                                    type: FieldTypes.DATE,
+                                    default: null,
+                                    readOnly: true,
+                                    label: 'Updated At',
+                                    dbField: 'updated_at',
+                                    showOn: ['form'],
+                                }),
+                            ],
+                        }),
+                    ],
                 }),
-
-                type: field({
-                    type: FieldTypes.STRING,
-                    default: '',
-                    required: true,
-                    label: 'Type',
-                    dbField: 'type',
-                    maxLength: 255,
-                    enumValues: ['Electric', 'Gas', 'Water', 'Steam', 'Other'],
-                    placeholder: 'Electric',
-                    showOn: ['list', 'form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Device Information',
-                        tabOrder: 1,
-                        sectionOrder: 1,
-                        fieldOrder: 4,
-                    },
-                }),
-                active: field({
-                    type: FieldTypes.BOOLEAN,
-                    default: true,
-                    required: true,
-                    label: 'Active',
-                    dbField: 'active',
-                    showOn: ['list', 'form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Status',
-                        tabOrder: 1,
-                        sectionOrder: 2,
-                        fieldOrder: 1,
-                    },
-                }),
-                registers: field({
-                    type: FieldTypes.OBJECT,
-                    default: null,
-                    required: false,
-                    label: 'Registers',
-                    showOn: ['form'],
-                    formGrouping: {
-                        tabName: 'Registers',
-                        sectionName: 'Meter Registers',
-                        tabOrder: 2,
-                        sectionOrder: 1,
-                        fieldOrder: 1,
-                    },
-                }),
-            },
+            ],
 
             // Entity fields - read-only, system-managed
             entityFields: {
@@ -155,36 +189,6 @@ class Device extends BaseModel {
                     readOnly: true,
                     label: 'Id',
                     dbField: 'id',
-                }),
-                createdAt: field({
-                    type: FieldTypes.DATE,
-                    default: null,
-                    readOnly: true,
-                    label: 'Created At',
-                    dbField: 'created_at',
-                    showOn: ['form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Meter Registers',
-                        tabOrder: 2,
-                        sectionOrder: 1,
-                        fieldOrder: 2,
-                    },
-                }),
-                updatedAt: field({
-                    type: FieldTypes.DATE,
-                    default: null,
-                    readOnly: true,
-                    label: 'Updated At',
-                    dbField: 'updated_at',
-                    showOn: ['form'],
-                    formGrouping: {
-                        tabName: 'General',
-                        sectionName: 'Meter Registers',
-                        tabOrder: 2,
-                        sectionOrder: 1,
-                        fieldOrder: 3,
-                    },
                 }),
                 tenantId: field({
                     type: FieldTypes.NUMBER,

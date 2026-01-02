@@ -88,13 +88,21 @@ class ContactAPI {
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
     
+    // Flatten filters into query parameters
     if (params.filters) {
       Object.entries(params.filters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value);
+        // Skip empty, null, or undefined values
+        if (value !== '' && value !== null && value !== undefined) {
+          console.log(`[ContactAPI] Adding filter: ${key}=${value}`);
+          queryParams.append(key, String(value));
+        }
       });
     }
     
-    const response = await this.request<{ data: ContactListResponse }>(`/contacts?${queryParams.toString()}`);
+    const queryString = queryParams.toString();
+    console.log('[ContactAPI] Full query string:', queryString);
+    
+    const response = await this.request<{ data: ContactListResponse }>(`/contacts?${queryString}`);
     const data = response.data;
     
     return {
@@ -148,13 +156,23 @@ const api = new ContactAPI();
 
 const contactsService = {
   async getAll(params?: any) {
-    return withTokenRefresh(async () => api.getAll({
-      page: params?.page,
-      limit: params?.pageSize,
-      sortBy: params?.sortBy,
-      sortOrder: params?.sortOrder,
-      filters: params?.filters,
-    }));
+    console.log('[contactsService] getAll called with params:', params);
+    return withTokenRefresh(async () => {
+      console.log('[contactsService] Calling api.getAll with:', {
+        page: params?.page,
+        limit: params?.pageSize,
+        sortBy: params?.sortBy,
+        sortOrder: params?.sortOrder,
+        filters: params?.filters,
+      });
+      return api.getAll({
+        page: params?.page,
+        limit: params?.pageSize,
+        sortBy: params?.sortBy,
+        sortOrder: params?.sortOrder,
+        filters: params?.filters,
+      });
+    });
   },
 
   async getById(id: string) {

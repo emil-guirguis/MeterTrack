@@ -117,11 +117,12 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
   // Create debounced search handler - memoized to prevent recreation
   const debouncedSetSearch = useMemo(
     () => debounceSearch((query: string) => {
+      console.log('[useBaseList] Debounced search called with query:', query);
       if (store.setSearch) {
         store.setSearch(query);
       }
     }, 300),
-    [store.setSearch]
+    []
   );
 
   // Feature flags with defaults
@@ -166,18 +167,41 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
   // Data fetching and lifecycle
   useEffect(() => {
     // Fetch items on component mount
+    console.log('[useBaseList] Component mounted, fetching initial items');
     if (store.fetchItems) {
       store.fetchItems();
     }
-  }, [store.fetchItems]);
+  }, []);
+
+  // Initialize default 'active' filter if the field exists
+  useEffect(() => {
+    // Check if 'active' filter exists in filter definitions
+    const hasActiveFilter = memoizedFilterDefinitions.some(f => f.key === 'active');
+    
+    // If active filter exists and no filters are currently set, set active to 'true'
+    if (hasActiveFilter && Object.keys(filters).length === 0) {
+      console.log('[useBaseList] Initializing default active filter to true');
+      setFiltersState({ active: 'true' });
+    }
+  }, [memoizedFilterDefinitions]);
 
   // Apply filters when they change
   useEffect(() => {
-    if (store.setFilters) {
+    console.log('[useBaseList] Filter effect triggered with filters:', filters);
+    
+    if (store.setFilters && store.fetchItems) {
       const cleanedFilters = buildFilters(filters);
+      console.log('[useBaseList] Setting cleaned filters:', cleanedFilters);
+      
+      // Update store filters - this will reset page to 1
       store.setFilters(cleanedFilters);
+      
+      // Trigger new API request with updated filters
+      // Pass a dummy param object to bypass cache check
+      console.log('[useBaseList] Calling fetchItems with updated filters');
+      (store.fetchItems as any)({ _bypassCache: true });
     }
-  }, [filters, store.setFilters]);
+  }, [filters]);
 
   // State setters with store integration
   const setSearchQuery = useCallback((query: string) => {
@@ -186,31 +210,32 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
   }, [debouncedSetSearch]);
 
   const setFilter = useCallback((key: string, value: any) => {
+    console.log('[useBaseList] setFilter called with key:', key, 'value:', value);
     setFiltersState(prev => {
       const newFilters = { ...prev, [key]: value };
-      
-      // Apply filters to store
-      if (store.setFilters) {
-        const cleanedFilters = buildFilters(newFilters);
-        store.setFilters(cleanedFilters);
-      }
-      
+      console.log('[useBaseList] Updated filters state:', newFilters);
       return newFilters;
     });
-  }, [store.setFilters]);
+  }, []);
 
   const clearFilters = useCallback(() => {
+    console.log('[useBaseList] clearFilters called');
     setFiltersState({});
     setSearchQueryState('');
     
-    // Clear store filters and search
+    // Clear store filters and search, then fetch all data
     if (store.setFilters) {
       store.setFilters({});
     }
     if (store.setSearch) {
       store.setSearch('');
     }
-  }, [store.setFilters, store.setSearch]);
+    
+    // Trigger new API request to fetch all data
+    if (store.fetchItems) {
+      store.fetchItems();
+    }
+  }, []);
 
   // CRUD handlers
   const handleEdit = useCallback((item: T) => {

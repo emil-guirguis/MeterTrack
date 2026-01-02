@@ -5,6 +5,8 @@ import { useSchema, clearSchemaCache } from './utils/schemaLoader';
 import type { BackendFieldDefinition } from './utils/schemaLoader';
 import { createFormSchema } from './utils/formSchema';
 import { useEntityFormWithStore } from './hooks/useEntityFormWithStore';
+import { useFormTabs } from './hooks/useFormTabs';
+import { FormTabs } from './FormTabs';
 import { ValidationFieldSelect } from '../validationfieldselect/ValidationFieldSelect';
 import { FormField } from '../formfield/FormField';
 import './BaseForm.css';
@@ -39,6 +41,10 @@ export interface BaseFormProps {
   excludeFields?: string[];
   fieldsToClean?: string[];
   validationDataProvider?: (entityName: string, fieldDef: any) => Promise<Array<{ id: any; label: string }>>;
+  showTabs?: boolean;
+  // Form width constraints
+  formMaxWidth?: string;
+  formMinWidth?: string;
 }
 
 /**
@@ -96,22 +102,97 @@ export const BaseForm: React.FC<BaseFormProps> = ({
   fieldSections,
   loading = false,
   excludeFields = [],
-  fieldsToClean = ['id', 'active', 'createdat', 'updatedat', 'createdAt', 'updatedAt'],
+  fieldsToClean = ['id'],
   validationDataProvider,
+  showTabs = true,
+  // Form width constraints
+  formMaxWidth,
+  formMinWidth,
 }) => {
   const formClassName = className ? `base-form ${className}` : 'base-form';
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<string>('');
 
   // Clear schema cache when form mounts to ensure fresh schema
   React.useEffect(() => {
     if (schemaName) {
+      console.log('[BaseForm] Clearing schema cache for:', schemaName);
       clearSchemaCache(schemaName);
     }
   }, [schemaName]);
 
   // Dynamic schema form logic
   const isDynamicForm = !!schemaName;
-  const { schema, loading: schemaLoading, error: schemaError } = useSchema(isDynamicForm ? schemaName! : '');
+  const { schema, loading: schemaLoading, error: schemaError } = useSchema(isDynamicForm ? schemaName! : '', { bypassCache: true });
+
+  // Determine the active tab - use state if set, otherwise use first tab from schema
+  const effectiveActiveTab = React.useMemo(() => {
+    // If activeTab state is set, use it
+    if (activeTab) return activeTab;
+    
+    // Otherwise, use first tab from schema
+    if (schema?.formTabs && schema.formTabs.length > 0) {
+      const sortedTabs = [...schema.formTabs].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+      const firstTabName = sortedTabs[0].name;
+      console.log('[BaseForm] Setting effectiveActiveTab to first tab:', firstTabName);
+      return firstTabName;
+    }
+    
+    console.log('[BaseForm] No tabs available');
+    return '';
+  }, [schema?.formTabs, activeTab]);
+
+  // Use formTabs from schema if available, otherwise use provided fieldSections
+  const { tabs: allTabs, fieldSections: formTabsFieldSections, tabList } = useFormTabs(
+    schema?.formTabs,
+    effectiveActiveTab
+  );
+
+  console.log('[BaseForm] useFormTabs result:', {
+    inputFormTabs: schema?.formTabs,
+    inputActiveTab: effectiveActiveTab,
+    outputTabs: allTabs,
+    outputTabList: tabList,
+    outputFieldSections: formTabsFieldSections,
+  });
+
+  // Debug logging
+  React.useEffect(() => {
+    if (schema) {
+      console.log('[BaseForm] Schema loaded:', {
+        entityName: schema.entityName,
+        hasFormTabs: !!schema.formTabs,
+        formTabsLength: schema.formTabs?.length,
+      });
+    }
+  }, [schema]);
+
+  React.useEffect(() => {
+    console.log('[BaseForm] Tab state:', {
+      tabList,
+      effectiveActiveTab,
+      activeTab,
+      allTabsKeys: Object.keys(allTabs),
+      formTabsFieldSectionsKeys: Object.keys(formTabsFieldSections),
+      formTabsFieldSections,
+      allTabs,
+      hasFormTabs: !!schema?.formTabs,
+      formTabsLength: schema?.formTabs?.length,
+    });
+  }, [tabList, effectiveActiveTab, activeTab, allTabs, formTabsFieldSections]);
+
+  // Debug: Log what sections will be rendered
+  React.useEffect(() => {
+    const sectionsToRender = fieldSections || formTabsFieldSections || {};
+    console.log('[BaseForm] Sections to render:', {
+      hasFieldSectionsProp: !!fieldSections,
+      fieldSectionsProp: fieldSections,
+      formTabsFieldSections,
+      sectionsToRender,
+      sectionCount: Object.keys(sectionsToRender).length,
+      formFieldsCount: Object.keys(schema?.formFields || {}).length,
+    });
+  }, [fieldSections, formTabsFieldSections, schema?.formFields]);
 
   const form = isDynamicForm
     ? useEntityFormWithStore<any, any>({
@@ -427,7 +508,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     let fieldType = fieldDef.type || 'text';
     let fieldOptions = fieldDef.options;
 
-    // Convert boolean to checkbox
+    // Convert boolean to checkbox (which renders as Material Design Switch)
     if (fieldType === 'boolean') {
       fieldType = 'checkbox';
     }
@@ -442,7 +523,8 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     }
 
     // Convert description/notes fields to textarea
-    if (['description', 'notes'].includes(fieldName) && fieldType === 'text') {
+    const isNoteField = ['description', 'notes', 'note', 'comments', 'comment', 'remarks', 'memo'].includes(fieldName.toLowerCase());
+    if (isNoteField) {
       fieldType = 'textarea';
     }
 
@@ -450,33 +532,36 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     const addressFields = ['street', 'street2', 'city', 'state', 'zip', 'country', 'address'];
     const isAddressField = addressFields.includes(fieldName.toLowerCase());
 
+    // Filter out schema-specific properties that shouldn't be passed to FormField
+    const validFormFieldProps = {
+      name: isAddressField ? `field_${fieldName}` : fieldName,
+      label: fieldDef.label,
+      type: fieldType === 'phone' ? 'tel' : fieldType,
+      value: fieldType === 'checkbox' ? (value || false) : (value || ''),
+      error,
+      touched: !!error,
+      help: fieldDef.description,
+      required: fieldDef.required,
+      disabled: isFormDisabled,
+      placeholder: fieldDef.placeholder,
+      options: fieldOptions,
+      min: fieldDef.min,
+      max: fieldDef.max,
+      step: fieldDef.step,
+      rows: fieldDef.rows || (isNoteField ? 6 : (fieldType === 'textarea' ? 4 : undefined)),
+      onChange: (e: any) => {
+        if (fieldType === 'checkbox') {
+          handleInputChange(fieldName, e.target.checked);
+        } else {
+          handleInputChange(fieldName, e.target.value);
+        }
+      },
+      onBlur: () => {},
+    };
+
     return (
       <div key={fieldName} className={`${className}__field`}>
-        <FormField
-          name={isAddressField ? `field_${fieldName}` : fieldName}
-          label={fieldDef.label}
-          type={fieldType === 'phone' ? 'tel' : fieldType}
-          value={fieldType === 'checkbox' ? (value || false) : (value || '')}
-          error={error}
-          touched={!!error}
-          help={fieldDef.description}
-          required={fieldDef.required}
-          disabled={isFormDisabled}
-          placeholder={fieldDef.placeholder}
-          options={fieldOptions}
-          min={fieldDef.min}
-          max={fieldDef.max}
-          step={fieldDef.step}
-          rows={fieldDef.rows || (fieldType === 'textarea' ? 4 : undefined)}
-          onChange={(e: any) => {
-            if (fieldType === 'checkbox') {
-              handleInputChange(fieldName, e.target.checked);
-            } else {
-              handleInputChange(fieldName, e.target.value);
-            }
-          }}
-          onBlur={() => {}}
-        />
+        <FormField {...validFormFieldProps} />
       </div>
     );
   };
@@ -550,80 +635,191 @@ export const BaseForm: React.FC<BaseFormProps> = ({
 
   // Determine layout based on schema metadata or fieldSections
   const getLayoutInfo = () => {
-    if (!isDynamicForm || !fieldSections) {
+    // Use fieldSections prop if provided, otherwise use formTabsFieldSections from formTabs
+    const sectionsToUse = fieldSections || (schema?.formTabs ? formTabsFieldSections : undefined);
+    
+    console.log('[BaseForm] getLayoutInfo:', {
+      sectionsToUse,
+      sectionCount: Object.keys(sectionsToUse || {}).length,
+      hasFieldSectionsProp: !!fieldSections,
+      hasFormTabsFieldSections: !!formTabsFieldSections,
+    });
+    
+    if (!isDynamicForm || !sectionsToUse || Object.keys(sectionsToUse).length === 0) {
+      console.log('[BaseForm] No sections to use, returning empty layout');
       return { gridClass: '', sectionClasses: {} };
     }
 
-    const sectionCount = Object.keys(fieldSections).length;
+    const sectionCount = Object.keys(sectionsToUse).length;
     let gridClass = '';
     const sectionClasses: Record<string, string> = {};
 
+    console.log('[BaseForm] Calculating layout for', sectionCount, 'sections');
+
     // Determine grid layout based on number of sections
-    if (sectionCount <= 1) {
+    if (sectionCount === 1) {
       gridClass = 'base-form__main--grid-1';
-    } else if (sectionCount <= 2) {
+    } else if (sectionCount === 2) {
       gridClass = 'base-form__main--grid-2';
-    } else {
+    } else if (sectionCount >= 3) {
       gridClass = 'base-form__main--grid-3';
     }
 
+    console.log('[BaseForm] Using grid class:', gridClass);
+
     // Assign section positioning classes
-    const sectionNames = Object.keys(fieldSections);
+    const sectionNames = Object.keys(sectionsToUse);
     sectionNames.forEach((sectionName, index) => {
-      if (index < 3) {
-        // First 3 sections get column positions
-        sectionClasses[sectionName] = `base-form__section--col-${index + 1} base-form__section--row-1`;
-      } else {
-        // Additional sections span full width
-        sectionClasses[sectionName] = 'base-form__section--full-width';
-      }
+      // Don't assign positioning classes - let the grid handle it
+      sectionClasses[sectionName] = '';
     });
+
+    console.log('[BaseForm] Section classes:', sectionClasses);
 
     return { gridClass, sectionClasses };
   };
 
   const { gridClass, sectionClasses } = getLayoutInfo();
 
+  // Determine if we should use flexbox or grid layout
+  const shouldUseFlexbox = () => {
+    const sectionsToRender = fieldSections || formTabsFieldSections || {};
+    const sections = schema?.formTabs
+      ?.flatMap(tab => tab.sections || [])
+      .filter(sec => Object.keys(sectionsToRender).includes(sec.name)) || [];
+    
+    // Use flexbox if any section has flex properties
+    return sections.some(sec => 
+      sec.flex !== undefined || 
+      sec.flexGrow !== undefined || 
+      sec.flexShrink !== undefined
+    );
+  };
+
+  // Calculate grid columns based on number of sections and orientation
+  const calculateGridColumns = () => {
+    const sectionsToRender = fieldSections || formTabsFieldSections || {};
+    const sectionCount = Object.keys(sectionsToRender).length;
+    
+    // Get orientation from the active tab in schema
+    const activeTabData = schema?.formTabs?.find(tab => tab.name === effectiveActiveTab);
+    const orientation = activeTabData?.sectionOrientation || 'horizontal';
+    
+    // If vertical orientation, always use single column
+    if (orientation === 'vertical') {
+      return '1fr';
+    }
+    
+    // Horizontal orientation - use multiple columns based on section count
+    if (sectionCount === 0) return '1fr';
+    if (sectionCount === 1) return '1fr';
+    if (sectionCount === 2) return 'repeat(2, 1fr)';
+    return 'repeat(3, 1fr)';
+  };
+
   // Render dynamic form sections
+  const useFlexbox = shouldUseFlexbox();
   const formContent = isDynamicForm ? (
-    <>
-      {Object.entries(fieldSections || { 'Fields': Object.keys(schema?.formFields || {}).filter(f => !excludeFields.includes(f)) }).map(
-        ([sectionTitle, sectionConfig]) => {
-          // Handle both old format (array of strings) and new format (object with fields and maxWidth)
-          let fieldNames: string[] = [];
-          let maxWidth: string | undefined;
-          
-          if (Array.isArray(sectionConfig)) {
-            fieldNames = sectionConfig;
-          } else if (typeof sectionConfig === 'object' && sectionConfig !== null && 'fields' in sectionConfig) {
-            fieldNames = sectionConfig.fields;
-            maxWidth = sectionConfig.maxWidth;
-          }
-          
-          const visibleFields = fieldNames.filter(f => !excludeFields.includes(f));
-          if (visibleFields.length === 0) return null;
+    <div 
+      className={`${className}__sections-container`}
+      style={{
+        display: useFlexbox ? 'flex' : 'grid',
+        ...(useFlexbox ? {
+          flexDirection: 'row',
+          gap: '1.25rem',
+          width: '100%',
+          alignItems: 'flex-start',
+        } : {
+          gridTemplateColumns: calculateGridColumns(),
+          gap: '1.25rem',
+          width: '100%',
+        }),
+      }}
+    >
+      {/* Render sections from formTabs if available, otherwise use fieldSections prop */}
+      {(() => {
+        const sectionsToRender = fieldSections || formTabsFieldSections || {};
+        const sectionEntries = Object.entries(sectionsToRender);
+        console.log('[BaseForm] formContent render:', {
+          sectionsToRender,
+          sectionCount: sectionEntries.length,
+          willRenderSections: sectionEntries.length > 0,
+        });
+        
+        if (sectionEntries.length > 0) {
+          return sectionEntries.map(
+            ([sectionTitle, fieldNames]) => {
+              console.log('[BaseForm] Rendering section:', {
+                sectionTitle,
+                fieldNames,
+                isArray: Array.isArray(fieldNames),
+              });
+              
+              // fieldNames should always be an array from useFormTabs
+              const visibleFields = (Array.isArray(fieldNames) ? fieldNames : []).filter(f => !excludeFields.includes(f));
+              console.log('[BaseForm] Visible fields in section:', { sectionTitle, visibleFields });
+              
+              if (visibleFields.length === 0) {
+                console.log('[BaseForm] Section has no visible fields, skipping');
+                return null;
+              }
 
-          const sectionStyle = maxWidth ? { maxWidth } : undefined;
-          const sectionLayoutClass = sectionClasses[sectionTitle] || '';
+              const sectionLayoutClass = sectionClasses[sectionTitle] || '';
+              
+              // Get width and flex properties from schema if available
+              const sectionData = schema?.formTabs
+                ?.flatMap(tab => tab.sections || [])
+                .find(sec => sec.name === sectionTitle);
+              const sectionMinWidth = sectionData?.minWidth;
+              const sectionMaxWidth = sectionData?.maxWidth;
+              const sectionFlex = sectionData?.flex;
+              const sectionFlexGrow = sectionData?.flexGrow;
+              const sectionFlexShrink = sectionData?.flexShrink;
+              
+              console.log('[BaseForm] Section layout:', { sectionTitle, sectionMinWidth, sectionMaxWidth, sectionFlex, sectionFlexGrow, sectionFlexShrink });
 
-          return (
-            <div key={sectionTitle} className={`${className}__section ${sectionLayoutClass}`} style={sectionStyle}>
-              <h3 className={`${className}__section-title`}>{sectionTitle}</h3>
-              {visibleFields.map(fieldName => {
-                // Check formFields first, then entityFields
-                const fieldDef = schema?.formFields?.[fieldName] || schema?.entityFields?.[fieldName];
-                return fieldDef ? renderField(fieldName, fieldDef) : null;
-              })}
-            </div>
+              return (
+                <div 
+                  key={sectionTitle} 
+                  className={`${className}__section ${sectionLayoutClass}`}
+                  style={{
+                    ...(sectionMinWidth && { minWidth: sectionMinWidth }),
+                    ...(sectionMaxWidth && { maxWidth: sectionMaxWidth }),
+                    ...(sectionFlex != null && { flex: sectionFlex }),
+                    ...(sectionFlexGrow != null && { flexGrow: sectionFlexGrow }),
+                    ...(sectionFlexShrink != null && { flexShrink: sectionFlexShrink }),
+                  }}
+                >
+                  <h3 className={`${className}__section-title`}>{sectionTitle}</h3>
+                  {visibleFields.map(fieldName => {
+                    // Check formFields first, then entityFields
+                    const fieldDef = schema?.formFields?.[fieldName] || schema?.entityFields?.[fieldName];
+                    console.log('[BaseForm] Rendering field:', { fieldName, hasFieldDef: !!fieldDef });
+                    return fieldDef ? renderField(fieldName, fieldDef) : null;
+                  })}
+                </div>
+              );
+            }
           );
+        } else {
+          // Fallback: render all form fields if no sections are defined
+          console.log('[BaseForm] No sections, rendering all form fields as fallback');
+          const allFields = Object.keys(schema?.formFields || {})
+            .filter(f => !excludeFields.includes(f));
+          console.log('[BaseForm] All fields to render:', allFields);
+          
+          return allFields.map(fieldName => {
+            const fieldDef = schema?.formFields?.[fieldName];
+            return fieldDef ? renderField(fieldName, fieldDef) : null;
+          });
         }
-      )}
+      })()}
       
       {/* Render entity fields that have showOn: ['form'] but are not in fieldSections */}
       {Object.entries(schema?.entityFields || {}).some(([fieldName, fieldDef]) => 
         fieldDef.showOn?.includes('form') && 
         !excludeFields.includes(fieldName) &&
-        !Object.values(fieldSections || {}).flat().includes(fieldName)
+        !Object.values(fieldSections || formTabsFieldSections || {}).flat().includes(fieldName)
       ) && (
         <div className={`${className}__section`}>
           {Object.entries(schema?.entityFields || {}).map(([fieldName, fieldDef]) => {
@@ -631,7 +827,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
               return null;
             }
             // Skip if already in fieldSections
-            if (Object.values(fieldSections || {}).flat().includes(fieldName)) {
+            if (Object.values(fieldSections || formTabsFieldSections || {}).flat().includes(fieldName)) {
               return null;
             }
             
@@ -639,20 +835,41 @@ export const BaseForm: React.FC<BaseFormProps> = ({
           })}
         </div>
       )}
-    </>
+    </div>
   ) : (
     children
   );
 
   return (
-    <form onSubmit={handleFormSubmit} className={formClassName} autoComplete="off">
-      <div className={`base-form__main ${gridClass}`}>
-        {formContent}
-      </div>
+    <form 
+      onSubmit={handleFormSubmit} 
+      className={formClassName} 
+      autoComplete="off"
+      style={{
+        maxWidth: formMaxWidth,
+        minWidth: formMinWidth,
+      }}
+    >
+      {/* Render tabs if using formTabs structure and showTabs is true */}
+      {showTabs && schema?.formTabs && tabList.length > 0 && (
+        <FormTabs
+          tabs={allTabs}
+          tabList={tabList}
+          activeTab={effectiveActiveTab}
+          onTabChange={setActiveTab}
+          className={`${className}__tabs`}
+        />
+      )}
+      
+      <div className="base-form__content">
+        <div className={`base-form__main ${gridClass}`}>
+          {formContent}
+        </div>
 
-      <Sidebar sections={allSidebarSections}>
-        {sidebarChildren}
-      </Sidebar>
+        <Sidebar sections={allSidebarSections}>
+          {sidebarChildren}
+        </Sidebar>
+      </div>
     </form>
   );
 };

@@ -54,9 +54,38 @@ class DeviceAPI {
     return response.json();
   }
 
-  async getAll(): Promise<Device[]> {
-    const response = await this.request<ApiResponse<DeviceListResponse>>('/device');
-    return response.data.items;
+  async getAll(params: any = {}): Promise<{ items: Device[]; total: number; hasMore: boolean }> {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    
+    // Flatten filters into query parameters
+    if (params.filters) {
+      Object.entries(params.filters).forEach(([key, value]: [string, any]) => {
+        // Skip empty, null, or undefined values
+        if (value !== '' && value !== null && value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    // Add search parameter if provided
+    if (params.search) {
+      queryParams.append('search', params.search);
+    }
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/device?${queryString}` : '/device';
+    
+    const response = await this.request<ApiResponse<DeviceListResponse>>(endpoint);
+    return {
+      items: response.data.items,
+      total: response.data.total,
+      hasMore: false,
+    };
   }
 
   async getById(id: string): Promise<Device> {
@@ -95,14 +124,9 @@ const api = new DeviceAPI();
 // ============================================================================
 
 const devicesService = {
-  async getAll(): Promise<{ items: Device[]; total: number; hasMore: boolean }> {
+  async getAll(params: any = {}): Promise<{ items: Device[]; total: number; hasMore: boolean }> {
     return withTokenRefresh(async () => {
-      const items = await api.getAll();
-      return {
-        items,
-        total: items.length,
-        hasMore: false,
-      };
+      return await api.getAll(params);
     });
   },
 

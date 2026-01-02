@@ -7,6 +7,9 @@
 
 import { create } from 'zustand';
 import type { MeterReading } from './meterReadingConfig';
+import { tokenStorage } from '../../utils/tokenStorage';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 interface MeterReadingsState {
   items: MeterReading[];
@@ -14,7 +17,7 @@ interface MeterReadingsState {
   error: string | null;
   
   // Fetch operations
-  fetchItems: () => Promise<void>;
+  fetchItems: (params?: any) => Promise<void>;
   fetchByMeterId: (meterId: string) => Promise<void>;
   
   // Utility
@@ -30,13 +33,41 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
   loading: false,
   error: null,
 
-  fetchItems: async () => {
+  fetchItems: async (params?: any) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/meterreadings', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+      const queryParams = new URLSearchParams();
+      
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      if (params?.search) queryParams.append('search', params.search);
+      
+      // Flatten filters into query parameters
+      if (params?.filters) {
+        Object.entries(params.filters).forEach(([key, value]: [string, any]) => {
+          // Skip empty, null, or undefined values
+          if (value !== '' && value !== null && value !== undefined) {
+            queryParams.append(key, String(value));
+          }
+        });
+      }
+      
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/meterreadings?${queryString}` : '/meterreadings';
+      
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'GET',
+        headers
       });
 
       if (!response.ok) {
@@ -63,10 +94,17 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
   fetchByMeterId: async (meterId: string) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`/api/meterreadings/meter/${meterId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/meterreadings/meter/${meterId}`, {
+        method: 'GET',
+        headers
       });
 
       if (!response.ok) {

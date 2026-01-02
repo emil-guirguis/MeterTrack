@@ -1,7 +1,24 @@
-.device-form {
+.device-form-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.device-form__tabs {
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.device-form__content {
+  flex: 1;
+  overflow-y: auto;
   padding: 20px;
-  max-width: 600px;
-  margin: 0 auto;
+}
+
+.device-form {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .device-form__section {

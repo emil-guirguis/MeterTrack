@@ -110,9 +110,9 @@ router.get('/', (req, res) => {
       const schema = model.schema;
       
       return {
-        entityName: schema.schema.entityName,
-        tableName: schema.schema.tableName,
-        description: schema.schema.description,
+        entityName: schema.entityName,
+        tableName: schema.tableName,
+        description: schema.description,
         endpoint: `/api/schema/${entityName}`,
       };
     });

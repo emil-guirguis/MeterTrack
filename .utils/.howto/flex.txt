@@ -1,0 +1,22 @@
+
+Property	Purpose	Example
+flex	Shorthand for flex-grow	flex: 1
+flexGrow	How much to grow	flexGrow: 2
+flexShrink	How much to shrink	flexShrink: 1
+maxWidth	Maximum width	maxWidth: '100px'
+minWidth	Minimum width	minWidth: '300px'
+
+
+flex: 2  // Takes 2x space
+flex: 1  // Takes 1x space
+Vertical Stack:
+
+sectionOrientation: 'vertical'
+Equal Width:
+
+flex: 1  // Both sections
+flex: 1
+The system is fully backward compatible - existing forms without flex properties continue to use the grid layout!
+
+Information section: flex: 1, flexGrow: 1, flexShrink: 1 (grows and shrinks naturally)
+Status section: flex: 1, flexGrow: 0, flexShrink: 0 (doesn't grow or shrink, stays fixed size with maxWidth: 100px)

@@ -26,13 +26,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 }) => {
   const contacts = useContactsEnhanced();
 
-  const fieldSections: Record<string, string[]> = {
-    'Contact Information': ['name', 'company', 'role', 'email', 'phone'],
-    'Address': ['street', 'street2', 'city', 'state', 'zip', 'country'],
-    'Additional Information': ['active', 'notes'],
-    'Dates': ['created_at','modified_at']
-  };
-
   return (
     <BaseForm
       schemaName="contact"
@@ -41,9 +34,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       onCancel={onCancel}
       onLegacySubmit={onSubmit}
       className="contact-form"
-      fieldSections={fieldSections}
       loading={loading}
-      fieldsToClean={['id', 'active', 'status', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags']}
     />
   );
 };

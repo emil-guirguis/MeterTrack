@@ -27,12 +27,12 @@ router.get('/', async (req, res) => {
 
     // Get all device registers with joined register data
     const registers = await db.query(
-      `SELECT dr.id, dr.device_id, dr.register_id, 
-              r.id as r_id, r.number, r.name, r.unit, r.field_name
+      `SELECT dr.id, dr.device_id, dr.register_id,
+              r.id as r_id, r.register, r.name, r.unit, r.field_name
        FROM device_register dr
        JOIN register r ON dr.register_id = r.id
        WHERE dr.device_id = $1
-       ORDER BY r.number ASC`,
+       ORDER BY r.register ASC`,
       [deviceId]
     );
 
@@ -41,11 +41,9 @@ router.get('/', async (req, res) => {
       id: row.id,
       device_id: row.device_id,
       register_id: row.register_id,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
       register: {
         id: row.r_id,
-        number: row.number,
+        register: row.register,
         name: row.name,
         unit: row.unit,
         field_name: row.field_name,
@@ -129,7 +127,7 @@ router.post('/', async (req, res) => {
     // Fetch the created record with register data
     const newRecord = await db.query(
       `SELECT dr.id, dr.device_id, dr.register_id,
-              r.id as r_id, r.number, r.name, r.unit, r.field_name
+              r.id as r_id, r.register, r.name, r.unit, r.field_name
        FROM device_register dr
        JOIN register r ON dr.register_id = r.id
        WHERE dr.id = $1`,
@@ -148,11 +146,9 @@ router.post('/', async (req, res) => {
       id: row.id,
       device_id: row.device_id,
       register_id: row.register_id,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
       register: {
         id: row.r_id,
-        number: row.number,
+        register: row.register,
         name: row.name,
         unit: row.unit,
         field_name: row.field_name,
@@ -227,8 +223,6 @@ router.put('/:registerId', async (req, res) => {
       id: row.id,
       device_id: row.device_id,
       register_id: row.register_id,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
       register: {
         id: row.r_id,
         number: row.number,

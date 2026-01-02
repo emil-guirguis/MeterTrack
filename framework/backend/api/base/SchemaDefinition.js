@@ -37,6 +37,7 @@ const FieldTypes = {
  * Define a field in the schema
  * 
  * @param {Object} definition - Field definition
+ * @param {string} [definition.name] - Field name (required when used in formTabs structure)
  * @param {string} definition.type - Field type (string, number, boolean, date, etc.)
  * @param {*} definition.default - Default value
  * @param {boolean} [definition.required=false] - Whether field is required
@@ -63,10 +64,14 @@ const FieldTypes = {
  * @param {Array<string>} [definition.validationFields] - Custom validation fields
  * @param {Function} [definition.toApi] - Transform value when sending to API
  * @param {Function} [definition.fromApi] - Transform value when receiving from API
+ * @param {number} [definition.order] - Order within section (for formTabs structure)
+ * @param {string} [definition.minWidth] - CSS min-width for field container
+ * @param {string} [definition.maxWidth] - CSS max-width for field container
  * @returns {Object} Field definition
  */
 function field(definition) {
   return {
+    name: definition.name || null,
     type: definition.type,
     default: definition.default,
     required: definition.required || false,
@@ -87,6 +92,9 @@ function field(definition) {
     validationFields: definition.validationFields || null,
     toApi: definition.toApi || null,
     fromApi: definition.fromApi || null,
+    order: definition.order !== undefined ? definition.order : null,
+    minWidth: definition.minWidth || null,
+    maxWidth: definition.maxWidth || null,
   };
 }
 
@@ -128,6 +136,67 @@ function relationship(config) {
 }
 
 /**
+ * Create a field reference for use in formTabs structure
+ * 
+ * @param {Object} config - Field reference configuration
+ * @param {string} config.name - Field name (must match a field in formFields)
+ * @param {number} [config.order] - Order of field within section (lower numbers appear first)
+ * @returns {Object} Field reference
+ */
+function fieldRef(config) {
+  return {
+    name: config.name,
+    order: config.order !== undefined ? config.order : null,
+  };
+}
+
+/**
+ * Create a section definition for use in formTabs structure
+ * 
+ * @param {Object} config - Section configuration
+ * @param {string} config.name - Section name (e.g., 'Basic Information')
+ * @param {number} [config.order] - Order of section within tab (lower numbers appear first)
+ * @param {Array<Object>} config.fields - Array of field definitions (with embedded name and order) or field references
+ * @param {string} [config.minWidth] - CSS min-width for section container
+ * @param {string} [config.maxWidth] - CSS max-width for section container
+ * @param {number} [config.flex] - CSS flex property for section container (defaults to 1 for auto-grow)
+ * @param {number} [config.flexGrow] - CSS flex-grow property for section container (defaults to 1 for auto-grow)
+ * @param {number} [config.flexShrink] - CSS flex-shrink property for section container (defaults to 1 for auto-shrink)
+ * @returns {Object} Section definition
+ */
+function section(config) {
+  return {
+    name: config.name,
+    order: config.order !== undefined ? config.order : null,
+    fields: config.fields || [],
+    minWidth: config.minWidth || null,
+    maxWidth: config.maxWidth || null,
+    flex: config.flex !== undefined ? config.flex : 1,
+    flexGrow: config.flexGrow !== undefined ? config.flexGrow : 1,
+    flexShrink: config.flexShrink !== undefined ? config.flexShrink : 1,
+  };
+}
+
+/**
+ * Create a tab definition for use in formTabs structure
+ * 
+ * @param {Object} config - Tab configuration
+ * @param {string} config.name - Tab name (e.g., 'Contact', 'Address')
+ * @param {number} [config.order] - Order of tab (lower numbers appear first)
+ * @param {Array<Object>} config.sections - Array of section definitions created with section()
+ * @param {string} [config.sectionOrientation] - Section layout orientation ('horizontal' or 'vertical')
+ * @returns {Object} Tab definition
+ */
+function tab(config) {
+  return {
+    name: config.name,
+    order: config.order !== undefined ? config.order : null,
+    sections: config.sections || [],
+    sectionOrientation: config.sectionOrientation || null,
+  };
+}
+
+/**
  * Define an entity schema
  * 
  * @param {Object} definition - Schema definition
@@ -135,22 +204,56 @@ function relationship(config) {
  * @param {string} definition.tableName - Database table name
  * @param {string} [definition.description] - Entity description
  * @param {Object} definition.customListColumns - Custom columns that appear in lists
- * @param {Object} definition.formFields - Fields that appear in forms (user-editable)
+ * @param {Object} [definition.formFields] - Fields that appear in forms (user-editable) - OPTIONAL if formTabs is provided
+ * @param {Array<Object>} [definition.formTabs] - Hierarchical tab/section/field organization with embedded field definitions
  * @param {Object} [definition.entityFields] - Additional fields in entity (read-only, computed)
  * @param {Object} [definition.relationships] - Entity relationships
  * @param {Object} [definition.validation] - Entity-level validation rules
  * @returns {Object} Schema definition with utilities
  */
 function defineSchema(definition) {
+  // Extract formFields from formTabs if formTabs is provided
+  let formFields = definition.formFields || {};
+  
+  if (definition.formTabs && Array.isArray(definition.formTabs)) {
+    const extractedFields = {};
+    
+    // Iterate through tabs
+    definition.formTabs.forEach((tab) => {
+      if (tab.sections && Array.isArray(tab.sections)) {
+        // Iterate through sections
+        tab.sections.forEach((section) => {
+          if (section.fields && Array.isArray(section.fields)) {
+            // Iterate through fields
+            section.fields.forEach((fieldDef) => {
+              // Check if this is a field definition (has 'type') or a field reference (has 'name' only)
+              if (fieldDef.type) {
+                // This is a full field definition - extract it
+                const fieldName = fieldDef.name;
+                if (fieldName) {
+                  extractedFields[fieldName] = fieldDef;
+                }
+              }
+            });
+          }
+        });
+      }
+    });
+    
+    // Merge extracted fields with any explicitly defined formFields
+    formFields = { ...extractedFields, ...formFields };
+  }
+
   const schema = {
     entityName: definition.entityName,
     tableName: definition.tableName,
     description: definition.description || '',
-    formFields: definition.formFields || {},
+    formFields: formFields,
+    formTabs: definition.formTabs || null,
     entityFields: definition.entityFields || {},
     relationships: definition.relationships || {},
     validation: definition.validation || {},
-    version: '1.1.0', // Updated to include formGrouping support
+    version: '1.2.0', // Updated to include formTabs support
     generatedAt: new Date().toISOString(),
   };
 
@@ -368,7 +471,13 @@ ${assignments}
   }
 
   return {
+    // Expose schema data directly for easy access
     schema,
+    formFields: schema.formFields,
+    entityFields: schema.entityFields,
+    relationships: schema.relationships,
+    
+    // Expose utility methods
     toJSON,
     getAllFieldNames,
     getFormFieldNames,
@@ -389,5 +498,8 @@ module.exports = {
   RelationshipTypes,
   field,
   relationship,
+  tab,
+  section,
+  fieldRef,
   defineSchema,
 };

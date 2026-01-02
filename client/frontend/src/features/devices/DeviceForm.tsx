@@ -8,6 +8,7 @@
 
 import React, { useState } from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
+import { FormTabs } from '@framework/components/form/FormTabs';
 import { useSchema } from '@framework/components/form/utils/schemaLoader';
 import { useFormTabs } from '@framework/components/form/hooks';
 import { useDevicesEnhanced } from './devicesStore';
@@ -31,46 +32,36 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   loading = false,
 }) => {
   const devices = useDevicesEnhanced();
-  const [activeTab, setActiveTab] = useState<TabType>('Basic');
 
   // Use schema from cache (prefetched at login)
   const { schema } = useSchema('device');
 
-  // Debug: Log schema when it loads
-  React.useEffect(() => {
-    if (schema) {
-      console.log('[DeviceForm] Schema loaded:', schema);
-      console.log('[DeviceForm] Form fields:', Object.keys(schema.formFields));
-      Object.entries(schema.formFields).forEach(([fieldName, fieldDef]) => {
-        console.log(`[DeviceForm] Field: ${fieldName}`, {
-          showOn: (fieldDef as any).showOn,
-          formGrouping: (fieldDef as any).formGrouping,
-          required: (fieldDef as any).required,
-        });
-      });
-    }
-  }, [schema]);
+  // Initialize activeTab state - will be set to first tab once schema loads
+  const [activeTab, setActiveTab] = useState<TabType>('');
 
-  // Use the useFormTabs hook to organize fields into tabs and sections
-  const { tabs, tabList, fieldSections } = useFormTabs(schema?.formFields, activeTab);
+  // Get all tabs from schema (using formTabs)
+  const { tabs: allTabs, tabList } = useFormTabs(schema?.formTabs, activeTab || 'dummy');
+  
+  // Set activeTab to first tab from schema on first load
+  React.useEffect(() => {
+    if (!activeTab && tabList?.length > 0) {
+      setActiveTab(tabList[0]);
+    }
+  }, [tabList, activeTab]);
+
+  // Use the useFormTabs hook to organize fields into tabs and sections for the active tab
+  const { fieldSections } = useFormTabs(schema?.formTabs, activeTab);
 
   return (
     <div className="device-form-container">
       {/* Tab Navigation */}
-      {tabList.length > 1 && (
-        <div className="device-form__tabs">
-          {tabList.map((tabName) => (
-            <button
-              key={tabName}
-              className={`device-form__tab ${activeTab === tabName ? 'device-form__tab--active' : ''}`}
-              onClick={() => setActiveTab(tabName)}
-              type="button"
-            >
-              {tabs[tabName].label}
-            </button>
-          ))}
-        </div>
-      )}
+      <FormTabs
+        tabs={allTabs}
+        tabList={tabList}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        className="device-form__tabs"
+      />
 
       {/* Tab Content */}
       <div className="device-form__content">
@@ -90,7 +81,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
             className="device-form"
             fieldSections={fieldSections}
             loading={loading}
-            fieldsToClean={['id', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags']}
+            showTabs={false}
           />
         )}
       </div>

@@ -47,6 +47,24 @@ export interface BackendSchema {
   description: string;
   formFields: Record<string, BackendFieldDefinition>;
   entityFields: Record<string, BackendFieldDefinition>;
+  formTabs?: Array<{
+    name: string;
+    order?: number | null;
+    sectionOrientation?: 'horizontal' | 'vertical' | null;
+    sections: Array<{
+      name: string;
+      order?: number | null;
+      fields: Array<{
+        name: string;
+        order?: number | null;
+      }>;
+      minWidth?: string | null;
+      maxWidth?: string | null;
+      flex?: number | null;
+      flexGrow?: number | null;
+      flexShrink?: number | null;
+    }>;
+  }>;
   relationships: Record<string, any>;
   validation: Record<string, any>;
   version: string;
@@ -144,6 +162,19 @@ export async function fetchSchema(
 
     const schema = result.data as BackendSchema;
 
+    // Log formTabs to verify they're being sent
+    if (schema.formTabs) {
+      console.log(`[SchemaLoader] ✅ formTabs found in schema:`, schema.formTabs.length, 'tabs');
+      schema.formTabs.forEach((tab, idx) => {
+        console.log(`  Tab ${idx}: ${tab.name}, sections:`, tab.sections?.length || 0);
+        tab.sections?.forEach((sec, sidx) => {
+          console.log(`    Section ${sidx}: ${sec.name}, flex: ${sec.flex}, flexGrow: ${sec.flexGrow}, flexShrink: ${sec.flexShrink}`);
+        });
+      });
+    } else {
+      console.log(`[SchemaLoader] ⚠️ NO formTabs in schema`);
+    }
+
     // Cache the schema with timestamp
     if (cache) {
       schemaCache.set(entityName, {
@@ -189,9 +220,38 @@ function convertFieldDefinition(backendField: BackendFieldDefinition & { validat
 }
 
 /**
+ * Converted schema format for frontend use
+ */
+export interface ConvertedSchema {
+  formFields: Record<string, FieldDefinition>;
+  entityFields: Record<string, FieldDefinition>;
+  formTabs: Array<{
+    name: string;
+    order?: number | null;
+    sectionOrientation?: 'horizontal' | 'vertical' | null;
+    sections: Array<{
+      name: string;
+      order?: number | null;
+      fields: Array<{
+        name: string;
+        order?: number | null;
+      }>;
+      minWidth?: string | null;
+      maxWidth?: string | null;
+      flex?: number | null;
+      flexGrow?: number | null;
+      flexShrink?: number | null;
+    }>;
+  }> | null;
+  entityName: string;
+  description: string;
+  relationships: Record<string, any>;
+}
+
+/**
  * Convert backend schema to frontend schema format
  */
-export function convertSchema(backendSchema: BackendSchema) {
+export function convertSchema(backendSchema: BackendSchema): ConvertedSchema {
   const formFields: Record<string, FieldDefinition> = {};
   const entityFields: Record<string, FieldDefinition> = {};
 
@@ -208,6 +268,7 @@ export function convertSchema(backendSchema: BackendSchema) {
   return {
     formFields,
     entityFields,
+    formTabs: backendSchema.formTabs || null,
     entityName: backendSchema.entityName,
     description: backendSchema.description,
     relationships: backendSchema.relationships,
@@ -363,10 +424,11 @@ export async function getAvailableSchemas(baseUrl?: string): Promise<Array<{
  * React hook for loading schemas
  * 
  * @param entityName - Entity name
+ * @param options - Options for schema loading
  * @returns Schema state
  */
-export function useSchema(entityName: string) {
-  const [schema, setSchema] = React.useState<ReturnType<typeof convertSchema> | null>(null);
+export function useSchema(entityName: string, options?: { bypassCache?: boolean }) {
+  const [schema, setSchema] = React.useState<ConvertedSchema | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -378,7 +440,7 @@ export function useSchema(entityName: string) {
         const startTime = Date.now();
         
         // Check if schema is already in cache before setting loading state
-        if (schemaCache.has(entityName)) {
+        if (!options?.bypassCache && schemaCache.has(entityName)) {
           const entry = schemaCache.get(entityName)!;
           const age = Date.now() - entry.timestamp;
           

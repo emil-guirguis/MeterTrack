@@ -46,10 +46,11 @@ class LocationAPI {
     if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
     if (params?.search) searchParams.append('search', params.search);
     
+    // Flatten filters into query parameters
     if (params?.filters) {
       Object.entries(params.filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          searchParams.append(`filter.${key}`, value.toString());
+          searchParams.append(key, value.toString());
         }
       });
     }

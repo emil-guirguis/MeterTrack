@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Table,
   TableContainer,
@@ -7,8 +7,6 @@ import {
   TableRow,
   TableCell,
   TextField,
-  Select,
-  MenuItem,
   Button,
   IconButton,
   Alert,
@@ -35,6 +33,7 @@ export interface EditableDataGridProps {
   onRowDelete?: (rowId: number) => void;
   onCellChange?: (rowId: number, column: string, value: any) => void;
   onCellBlur?: (rowId: number, column: string, value: any) => void;
+  onCellValidate?: (rowId: number, column: string, value: any) => boolean; // Returns true if valid
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -54,6 +53,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
   onRowDelete,
   onCellChange,
   onCellBlur,
+  onCellValidate,
   loading = false,
   error = null,
   onRetry,
@@ -62,13 +62,15 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
 }) => {
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const selectRef = useRef<HTMLSelectElement>(null);
+  const cellRef = useRef<HTMLTableCellElement>(null);
+  const [selectPosition, setSelectPosition] = useState<{ top: number; left: number } | null>(null);
 
   const handleCellClick = useCallback(
     (rowId: number, column: GridColumn) => {
       if (column.editable !== false) {
         const cellValue = data[rowId]?.[column.key] ?? '';
-        const trimmedValue = String(cellValue).trim(); // Trim whitespace
-        console.log('🔍 Cell clicked:', { rowId, column: column.key, cellValue, trimmedValue });
+        const trimmedValue = String(cellValue).trim();
         setEditingCell({ rowId, column: column.key });
         setEditValue(trimmedValue);
       }
@@ -76,8 +78,23 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
     [data]
   );
 
+  // Calculate select position when editing a select cell
+  React.useEffect(() => {
+    if (editingCell && cellRef.current) {
+      const column = columns.find(col => col.key === editingCell.column);
+      if (column?.type === 'select') {
+        const rect = cellRef.current.getBoundingClientRect();
+        setSelectPosition({
+          top: rect.top - 200,
+          left: rect.left,
+        });
+      }
+    } else {
+      setSelectPosition(null);
+    }
+  }, [editingCell, columns]);
+
   const handleCellChange = useCallback((value: string) => {
-    console.log('🔍 handleCellChange called with:', value);
     setEditValue(value);
   }, []);
 
@@ -193,7 +210,9 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                   {columns.map((column) => (
                     <TableCell
                       key={`${rowIndex}-${column.key}`}
+                      ref={isEditing(rowIndex, column.key) ? cellRef : null}
                       onClick={() => handleCellClick(rowIndex, column)}
+                      data-select-cell={column.type === 'select' ? 'true' : 'false'}
                       className={`editable-data-grid__cell ${
                         column.editable !== false
                           ? 'editable-data-grid__cell--editable'
@@ -206,50 +225,57 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                     >
                       {isEditing(rowIndex, column.key) ? (
                         <>
-                          {console.log('🔍 Editing cell:', { rowIndex, column: column.key, editValue, columnType: column.type, options: column.options })}
                           {column.type === 'select' && column.options ? (
-                          <Select
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => {
-                              console.log('🔍 Select changed:', e.target.value);
-                              const newValue = e.target.value;
-                              handleCellChange(newValue);
-                              // Immediately save the value when selected from dropdown
-                              handleCellSave(newValue);
-                            }}
-                            size="small"
-                            variant="outlined"
-                            fullWidth
-                            className="editable-data-grid__select"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                backgroundColor: '#ffffff !important',
-                              },
-                              '& .MuiSelect-select': {
-                                color: '#000000 !important',
-                                backgroundColor: '#ffffff !important',
-                              },
-                              '& .MuiOutlinedInput-input': {
-                                color: '#000000 !important',
-                              },
-                            }}
-                          >
-                            {column.options.map((option) => {
-                              console.log('🔍 Rendering option:', option);
-                              return (
-                                <MenuItem key={option} value={option}>
+                          <div style={{ visibility: 'hidden', height: '0' }}>
+                            <select
+                              ref={selectRef}
+                              autoFocus
+                              size={Math.min(10, (column.options?.length || 0) + 1)}
+                              value={editValue}
+                              title="Select element"
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                
+                                // Validate before saving
+                                if (editingCell && onCellValidate) {
+                                  const isValid = onCellValidate(editingCell.rowId, editingCell.column, newValue);
+                                  if (!isValid) {
+                                    // Validation failed - keep select open, reset to previous value
+                                    setEditValue(editValue);
+                                    return;
+                                  }
+                                }
+                                
+                                // Save immediately after selection
+                                if (editingCell && onCellChange) {
+                                  onCellChange(editingCell.rowId, editingCell.column, newValue);
+                                  onCellBlur?.(editingCell.rowId, editingCell.column, newValue);
+                                }
+                                
+                                // Clear editing state
+                                setEditingCell(null);
+                                setEditValue('');
+                              }}
+                              onBlur={() => {
+                                setEditingCell(null);
+                                setEditValue('');
+                              }}
+                              className="editable-data-grid__select"
+                            >
+                              <option value="">Select...</option>
+                              {column.options.map((option) => (
+                                <option key={option} value={option}>
                                   {option}
-                                </MenuItem>
-                              );
-                            })}
-                          </Select>
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         ) : (
                           <TextField
                             autoFocus
                             value={editValue}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCellChange(e.target.value)}
-                            onBlur={handleCellSave}
+                            onBlur={() => handleCellSave()}
                             onKeyDown={handleKeyDown}
                             size="small"
                             variant="outlined"
@@ -259,7 +285,10 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                         )}
                         </>
                       ) : (
-                        row[column.key]
+                        <div className="editable-data-grid__cell-content">
+                          <span>{row[column.key]}</span>
+                          {column.type === 'select' && <span className="editable-data-grid__cell-dropdown-icon">▼</span>}
+                        </div>
                       )}
                     </TableCell>
                   ))}
@@ -282,6 +311,72 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Floating Select Dropdown */}
+      {selectPosition && editingCell && (
+        <select
+          ref={selectRef}
+          autoFocus
+          value={editValue}
+          aria-label="Select element"
+          onChange={(e) => {
+            const newValue = e.target.value;
+            
+            // Validate before saving
+            if (editingCell && onCellValidate) {
+              const isValid = onCellValidate(editingCell.rowId, editingCell.column, newValue);
+              if (!isValid) {
+                // Validation failed - keep select open, reset to previous value
+                // The toast is already shown by onCellValidate
+                setEditValue(editValue);
+                // Re-focus the select to keep it open
+                setTimeout(() => {
+                  selectRef.current?.focus();
+                }, 0);
+                return;
+              }
+            }
+            
+            // Save immediately after selection
+            if (editingCell && onCellChange) {
+              onCellChange(editingCell.rowId, editingCell.column, newValue);
+              onCellBlur?.(editingCell.rowId, editingCell.column, newValue);
+            }
+            
+            // Clear editing state
+            setEditingCell(null);
+            setEditValue('');
+          }}
+          onBlur={() => {
+            setEditingCell(null);
+            setEditValue('');
+          }}
+          className="editable-data-grid__select"
+          style={{
+            position: 'fixed',
+            top: `${selectPosition.top}px`,
+            left: `${selectPosition.left}px`,
+            width: '200px',
+            padding: '8px',
+            fontSize: '14px',
+            backgroundColor: '#ffffff',
+            color: '#000000',
+            border: '2px solid #1976d2',
+            borderRadius: '4px',
+            zIndex: 9999,
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          }}
+          size={Math.min(10, (columns.find(c => c.key === editingCell.column)?.options?.length || 0) + 1)}
+          title="Select element"
+        >
+          <option value="">Select...</option>
+          {columns.find(c => c.key === editingCell.column)?.options?.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
     </Box>
   );
 };

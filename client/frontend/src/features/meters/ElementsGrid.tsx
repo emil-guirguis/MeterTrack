@@ -6,6 +6,8 @@ import {
   DialogActions,
   Button,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { EditableDataGrid, type GridColumn } from '@framework/components/datagrid/';
 import apiClient from '../../services/apiClient';
@@ -52,6 +54,9 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'saved' | 'unsaved'; index?: number } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Record<string, { rowId: number; column: string; value: string }>>({});
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
 
   // Build columns from schema
   const columns: GridColumn[] = useMemo(() => {
@@ -160,7 +165,11 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
     }
 
     if (Object.keys(validationErrors).length > 0) {
-      setError(Object.values(validationErrors).join(', '));
+      const errorMsg = Object.values(validationErrors).join(', ');
+      setError(errorMsg);
+      setToastMessage(errorMsg);
+      setToastSeverity('error');
+      setToastOpen(true);
       return;
     }
 
@@ -173,24 +182,32 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       setElements([response.data.data, ...elements]);
       setUnsavedRow(null);
       setError(null); // Clear error on success
+      setToastMessage('Element added successfully');
+      setToastSeverity('success');
+      setToastOpen(true);
       onSuccess?.('Element added successfully');
     } catch (err) {
       // Handle validation errors from backend
-      if (err instanceof Error && err.message.includes('Validation failed')) {
-        const errorData = (err as any).response?.data;
-        if (errorData?.errors) {
-          const errorMessages = Object.entries(errorData.errors)
-            .map(([field, message]) => `${field}: ${message}`)
-            .join(', ');
-          setError(errorMessages);
-        } else {
-          setError(err.message);
-        }
-      } else {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to add element';
-        setError(errorMessage);
+      let errorMessage = 'Failed to add element';
+      const errorResponse = (err as any).response?.data;
+      
+      if (errorResponse?.errors) {
+        // Extract error messages from validation errors
+        errorMessage = Object.entries(errorResponse.errors)
+          .map(([field, message]) => `${message}`)
+          .join(', ');
+      } else if (errorResponse?.message) {
+        // Use the message field if available
+        errorMessage = errorResponse.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
       }
-      onError?.(new Error(err instanceof Error ? err.message : 'Failed to add element'));
+      
+      setError(errorMessage);
+      setToastMessage(errorMessage);
+      setToastSeverity('error');
+      setToastOpen(true);
+      onError?.(new Error(errorMessage));
     }
   }, [meterId, unsavedRow, elements, onError, onSuccess]);
 
@@ -217,6 +234,9 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
           [column]: value,
         });
         setError(null); // Clear error on success
+        setToastMessage('Element updated successfully');
+        setToastSeverity('success');
+        setToastOpen(true);
         onSuccess?.('Element updated successfully');
       } catch (err) {
         // Revert on error - find the original value and restore it
@@ -226,21 +246,26 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         setElements(revertedElements);
         
         // Handle validation errors from backend
-        if (err instanceof Error && err.message.includes('Validation failed')) {
-          const errorData = (err as any).response?.data;
-          if (errorData?.errors) {
-            const errorMessages = Object.entries(errorData.errors)
-              .map(([field, message]) => `${field}: ${message}`)
-              .join(', ');
-            setError(errorMessages);
-          } else {
-            setError(err.message);
-          }
-        } else {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to update element';
-          setError(errorMessage);
+        let errorMessage = 'Failed to update element';
+        const errorResponse = (err as any).response?.data;
+        
+        if (errorResponse?.errors) {
+          // Extract error messages from validation errors
+          errorMessage = Object.entries(errorResponse.errors)
+            .map(([field, message]) => `${message}`)
+            .join(', ');
+        } else if (errorResponse?.message) {
+          // Use the message field if available
+          errorMessage = errorResponse.message;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
         }
-        onError?.(new Error(err instanceof Error ? err.message : 'Failed to update element'));
+        
+        setError(errorMessage);
+        setToastMessage(errorMessage);
+        setToastSeverity('error');
+        setToastOpen(true);
+        onError?.(new Error(errorMessage));
       }
     },
     [meterId, elements, unsavedRow, onError, onSuccess]
@@ -270,6 +295,8 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         setError('Element is required');
         return;
       }
+
+      setError(null);
 
       // Immediately update UI (optimistic update)
       const updatedElements = [...elements];
@@ -307,10 +334,28 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       setElements(elements.filter((e) => e.id !== element.id));
       setDeleteConfirm(null);
       setError(null); // Clear error on success
+      setToastMessage('Element deleted successfully');
+      setToastSeverity('success');
+      setToastOpen(true);
       onSuccess?.('Element deleted successfully');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete element';
+      let errorMessage = 'Failed to delete element';
+      const errorResponse = (err as any).response?.data;
+      
+      if (errorResponse?.errors) {
+        errorMessage = Object.entries(errorResponse.errors)
+          .map(([field, message]) => `${message}`)
+          .join(', ');
+      } else if (errorResponse?.message) {
+        errorMessage = errorResponse.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
+      setToastMessage(errorMessage);
+      setToastSeverity('error');
+      setToastOpen(true);
       onError?.(new Error(errorMessage));
     } finally {
       setDeleting(false);
@@ -362,6 +407,52 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         onRowAdd={handleAddElement}
         onRowDelete={handleRowDelete}
         onCellChange={handleCellChange}
+        onCellValidate={(rowId, column, value) => {
+          // Validate element uniqueness
+          if (column === 'element' && value) {
+            console.log('🔍 Validating element:', { rowId, value, unsavedRow, elementsCount: elements.length, allElements: elements.map(e => ({ id: e.id, element: e.element })) });
+            
+            // Check if this is the unsaved row (only if unsavedRow exists and rowId is 0)
+            if (unsavedRow && rowId === 0) {
+              // For unsaved row, check against all saved elements
+              const isDuplicate = elements.some((el) => el.element === value);
+              console.log('✅ Unsaved row check:', { isDuplicate, value });
+              if (isDuplicate) {
+                const errorMsg = `Element "${value}" is already assigned to this meter`;
+                setToastMessage(errorMsg);
+                setToastSeverity('error');
+                setToastOpen(true);
+                return false;
+              }
+            } else {
+              // For saved rows, adjust rowId based on whether unsavedRow exists
+              const actualRowId = unsavedRow ? rowId - 1 : rowId;
+              const element = elements[actualRowId];
+              console.log('✅ Saved row check:', { actualRowId, element, value, allElements: elements.map(e => e.element) });
+              if (element) {
+                // Check against other saved elements (excluding current element)
+                const isDuplicate = elements.some((el) => el.id !== element.id && el.element === value);
+                console.log('❌ Duplicate check result:', isDuplicate);
+                if (isDuplicate) {
+                  const errorMsg = `Element "${value}" is already assigned to this meter`;
+                  setToastMessage(errorMsg);
+                  setToastSeverity('error');
+                  setToastOpen(true);
+                  return false;
+                }
+                // Check against unsaved row if it exists
+                if (unsavedRow && unsavedRow.element === value) {
+                  const errorMsg = `Element "${value}" is already assigned to this meter`;
+                  setToastMessage(errorMsg);
+                  setToastSeverity('error');
+                  setToastOpen(true);
+                  return false;
+                }
+              }
+            }
+          }
+          return true;
+        }}
         onCellBlur={(rowId, column, value) => {
           // Auto-save unsaved row when user leaves a cell
           if (unsavedRow && rowId === 0 && unsavedRow.name && unsavedRow.element) {
@@ -382,7 +473,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
           }
         }}
         emptyMessage="No elements associated with this meter"
-        addButtonLabel="Add Element"
+        addButtonLabel="Add"
       />
 
       {/* Delete Confirmation Dialog */}
@@ -406,6 +497,22 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={4000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setToastOpen(false)}
+          severity={toastSeverity}
+          sx={{ width: '100%' }}
+        >
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

@@ -13,14 +13,16 @@ router.get('/', requirePermission('meter:read'), async (req, res) => {
     const {
       page = 1,
       limit = 25,
-      search,
-      status
+      search
     } = req.query;
 
-    // Build where clause for Meter
-    const where = {};
+    // Build where clause for Meter using framework filter processing
+    let where = {};
     if (search) where.name = search; // Assuming search by name
-    if (status) where.status = status;
+    
+    // Use framework method to process filters from query parameters
+    const filters = Meter.processFilters(req.query);
+    where = { ...where, ...filters };
 
     // Build options for findAll
     const options = {

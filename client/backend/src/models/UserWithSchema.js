@@ -6,7 +6,7 @@
  */
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
-const { defineSchema, field, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { defineSchema, field, tab, section, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
 
 class User extends BaseModel {
     constructor(data = {}) {
@@ -44,76 +44,104 @@ class User extends BaseModel {
             description: 'User entity for authentication and authorization',
 
             customListColumns: {},
-            // Form fields - user can edit these
-            formFields: {
-                name: field({
-                    type: FieldTypes.STRING,
-                    default: '',
-                    required: true,
-                    label: 'Name',
-                    dbField: 'name',
-                    maxLength: 100,
-                    placeholder: 'John Doe',
-                    filertable: ['main'],
-                    showOn: ['list', 'form'],
+
+            // NEW: Hierarchical tab structure with embedded field definitions
+            formTabs: [
+                tab({
+                    name: 'User',
+                    order: 1,
+                    sections: [
+                        section({
+                            name: 'Basic Information',
+                            order: 1,
+                            fields: [
+                                field({
+                                    name: 'name',
+                                    order: 1,
+                                    type: FieldTypes.STRING,
+                                    default: '',
+                                    required: true,
+                                    label: 'Name',
+                                    dbField: 'name',
+                                    maxLength: 100,
+                                    placeholder: 'John Doe',
+                                    filertable: ['main'],
+                                    showOn: ['list', 'form'],
                                 }),
-                email: field({
-                    type: FieldTypes.EMAIL,
-                    default: '',
-                    required: true,
-                    label: 'Email',
-                    dbField: 'email',
-                    maxLength: 254,
-                    placeholder: 'email@yahoo.com',
-                    showOn: ['list', 'form'],
+                                field({
+                                    name: 'email',
+                                    order: 2,
+                                    type: FieldTypes.EMAIL,
+                                    default: '',
+                                    required: true,
+                                    label: 'Email',
+                                    dbField: 'email',
+                                    maxLength: 254,
+                                    placeholder: 'email@yahoo.com',
+                                    showOn: ['list', 'form'],
                                 }),
-                passwordHash: field({
-                    type: FieldTypes.STRING,
-                    default: '',
-                    required: false,
-                    label: 'Password Hash',
-                    dbField: 'passwordhash',
-                    maxLength: 200,
-                    readOnly: true,
+                            ],
+                        }),
+                        section({
+                            name: 'Access Control',
+                            order: 2,
+                            fields: [
+                                field({
+                                    name: 'role',
+                                    order: 1,
+                                    type: FieldTypes.STRING,
+                                    default: 'Viewer',
+                                    required: false,
+                                    label: 'Role',
+                                    dbField: 'role',
+                                    maxLength: 20,
+                                    enumValues: ['Admin', 'Manager', 'Technician', 'Viewer'],
+                                    placeholder: 'Viewer',
+                                    filertable: ['true'],
+                                    showOn: ['list', 'form'],
+                                }),
+                                field({
+                                    name: 'permissions',
+                                    order: 2,
+                                    type: FieldTypes.ARRAY,
+                                    default: [],
+                                    required: false,
+                                    label: 'Permissions',
+                                    dbField: 'permissions',
+                                    showOn: ['form'],
+                                }),
+                            ],
+                        }),
+                        section({
+                            name: 'Status',
+                            order: 3,
+                            fields: [
+                                field({
+                                    name: 'active',
+                                    order: 1,
+                                    type: FieldTypes.BOOLEAN,
+                                    default: true,
+                                    required: false,
+                                    label: 'Active Status',
+                                    dbField: 'active',
+                                    showOn: ['list', 'form'],
+                                }),
+                                field({
+                                    name: 'lastLogin',
+                                    order: 2,
+                                    type: FieldTypes.DATE,
+                                    default: null,
+                                    required: false,
+                                    label: 'Last Login',
+                                    dbField: 'last_sign_in_at',
+                                    readOnly: true,
+                                    showOn: ['list', 'form'],
+                                }),
+                            ],
+                        }),
+                    ],
                 }),
-                role: field({
-                    type: FieldTypes.STRING,
-                    default: 'Viewer',
-                    required: false,
-                    label: 'Role',
-                    dbField: 'role',
-                    maxLength: 20,
-                    enumValues: ['Admin', 'Manager', 'Technician', 'Viewer'],
-                      placeholder: 'Viewer',
-                    filertable: ['main'],
-                    showOn: ['list', 'form'],  
-                            }),
-                permissions: field({
-                    type: FieldTypes.ARRAY,
-                    default: [],
-                    required: false,
-                    label: 'Permissions',
-                    dbField: 'permissions',
-                    showOn: [ 'form'],  
-                }),
-                active: field({
-                    type: FieldTypes.BOOLEAN,
-                    default: true,
-                    required: false,
-                    label: 'Active Status',
-                    dbField: 'active',
-                    showOn: ['list', 'form'],  
-                }),
-                lastLogin: field({
-                    type: FieldTypes.DATE,
-                    default: null,
-                    required: false,
-                    label: 'Last Login',
-                    dbField: 'last_sign_in_at',
-                    readOnly: true,
-                    showOn: ['list', 'form'],  
-                })
-            },
+            ],
 
             // Entity fields - read-only, system-managed
             entityFields: {
@@ -131,13 +159,22 @@ class User extends BaseModel {
                     label: 'Tenant ID',
                     dbField: 'tenant_id',
                 }),
+                passwordHash: field({
+                    type: FieldTypes.STRING,
+                    default: '',
+                    required: false,
+                    label: 'Password Hash',
+                    dbField: 'passwordhash',
+                    maxLength: 200,
+                    readOnly: true,
+                }),
                 createdAt: field({
                     type: FieldTypes.DATE,
                     default: null,
                     readOnly: true,
                     label: 'Created At',
                     dbField: 'created_at',
-                    showOn: ['form'],  
+                    showOn: ['form'],
                 }),
                 updatedAt: field({
                     type: FieldTypes.DATE,
@@ -145,7 +182,7 @@ class User extends BaseModel {
                     readOnly: true,
                     label: 'Updated At',
                     dbField: 'updated_at',
-                    showOn: ['form'],  
+                    showOn: ['form'],
                 })
             },
 
@@ -240,7 +277,7 @@ class User extends BaseModel {
      */
     getPermissionsAsNestedObject() {
         const PermissionsService = require('../services/PermissionsService');
-        
+
         // @ts-ignore - permissions is dynamically set by schema initialization
         const storedPermissions = this.permissions;
 

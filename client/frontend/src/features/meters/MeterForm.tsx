@@ -31,7 +31,6 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   onCancel,
   loading = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('Basic');
   const meters = useMetersEnhanced();
   const baseValidationDataProvider = useValidationDataProvider();
   
@@ -44,24 +43,26 @@ export const MeterForm: React.FC<MeterFormProps> = ({
     [baseValidationDataProvider]
   );
 
-  // Use the useFormTabs hook to organize fields into tabs and sections
-  const { tabs, tabList, fieldSections } = useFormTabs(schema?.formFields, activeTab);
+  // Initialize activeTab state - will be set to first tab once schema loads
+  const [activeTab, setActiveTab] = useState<TabType>('');
 
-  const renderCustomField = (
-    fieldName: string,
-    fieldDef: any,
-    value: any,
-    error: string | undefined,
-    isDisabled: boolean,
-    onChange: (value: any) => void
-  ) => {
-    return null;
-  };
+  // Get all tabs from schema (using formTabs)
+  const { tabs: allTabs, tabList } = useFormTabs(schema?.formTabs, activeTab || 'dummy');
+  
+  // Set activeTab to first tab from schema on first load
+  React.useEffect(() => {
+    if (!activeTab && tabList?.length > 0) {
+      setActiveTab(tabList[0]);
+    }
+  }, [tabList, activeTab]);
+
+  // Use the useFormTabs hook to organize fields into tabs and sections for the active tab
+  const { fieldSections } = useFormTabs(schema?.formTabs, activeTab);
 
   return (
     <FormContainer>
       <FormTabs
-        tabs={tabs}
+        tabs={allTabs}
         tabList={tabList}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -84,10 +85,9 @@ export const MeterForm: React.FC<MeterFormProps> = ({
             className="meter-form"
             fieldSections={fieldSections}
             loading={loading}
-            renderCustomField={renderCustomField}
-            fieldsToClean={['id', 'createdat', 'updatedat', 'createdAt', 'updatedAt', 'tags', 'tenant_id']}
             validationDataProvider={validationDataProvider}
             showSidebar={false}
+            showTabs={false}
           />
         )}
       </div>

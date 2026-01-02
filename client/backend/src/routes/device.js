@@ -12,16 +12,16 @@ router.get('/', requirePermission('device:read'), async (req, res) => {
     const {
       page = 1,
       limit = 25,
-      search,
-      active,
-      type
+      search
     } = req.query;
 
-    // Build where clause for Device
-    const where = {};
+    // Build where clause for Device using framework filter processing
+    let where = {};
     if (search) where.description = search; // Assuming search by description
-    if (active !== undefined) where.active = active;
-    if (type) where.type = type;
+    
+    // Use framework method to process filters from query parameters
+    const filters = Device.processFilters(req.query);
+    where = { ...where, ...filters };
 
     // Build options for findAll
     const options = {

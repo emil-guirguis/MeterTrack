@@ -3,56 +3,163 @@
 import type { User } from '../../types/auth';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
+import { tokenStorage } from '../../utils/tokenStorage';
 
-import { userService } from './userService';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 // Real API service
 const usersService = {
   async getAll(params?: any) {
     return withTokenRefresh(async () => {
-      const result = await userService.getUsers(params);
+      const queryParams = new URLSearchParams();
+      
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      
+      // Flatten filters into query parameters
+      if (params?.filters) {
+        Object.entries(params.filters).forEach(([key, value]: [string, any]) => {
+          // Skip empty, null, or undefined values
+          if (value !== '' && value !== null && value !== undefined) {
+            queryParams.append(key, String(value));
+          }
+        });
+      }
+      
+      // Add search parameter if provided
+      if (params?.search) {
+        queryParams.append('search', params.search);
+      }
+      
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/users?${queryString}` : '/users';
+      
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'GET',
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
       return {
-        items: result.items,
-        total: result.total,
-        hasMore: result.hasMore,
+        items: data.data?.items || [],
+        total: data.data?.total || 0,
+        hasMore: false,
       };
     });
   },
 
   async getById(id: string) {
     return withTokenRefresh(async () => {
-      return await userService.getUser(id);
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'GET',
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.data;
     });
   },
 
   async create(data: Partial<User>) {
     return withTokenRefresh(async () => {
-      return await userService.createUser(data as Partial<User> & { password: string });
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return result.data;
     });
   },
 
   async update(id: string, data: Partial<User>) {
     return withTokenRefresh(async () => {
-      // Handle password changes separately
-      if ((data as any).password) {
-        await userService.changePassword(id, (data as any).password);
-        // Remove password from regular update data
-        const updateData = { ...data };
-        delete (updateData as any).password;
-        if (Object.keys(updateData).length > 0) {
-          return await userService.updateUser(id, updateData);
-        }
-        // If only password was changed, return the current user data
-        return await userService.getUser(id);
-      } else {
-        return await userService.updateUser(id, data);
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
+      
+      const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return result.data;
     });
   },
 
   async delete(id: string) {
     return withTokenRefresh(async () => {
-      await userService.deleteUser(id);
+      const token = tokenStorage.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
     });
   },
 };

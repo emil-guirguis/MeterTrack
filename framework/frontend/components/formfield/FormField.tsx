@@ -6,11 +6,11 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-  Checkbox,
   FormControlLabel,
   RadioGroup,
   Radio,
   InputAdornment,
+  Switch,
 } from '@mui/material';
 // import { MuiTelInput } from 'mui-tel-input';
 import { NumberSpinner } from './NumberSpinner';
@@ -129,7 +129,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
               required={required}
               disabled={disabled}
               multiline
-              rows={rows}
+              rows={rows || 6}
               fullWidth
               variant="outlined"
               error={showError}
@@ -238,7 +238,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
           return (
             <FormControlLabel
               control={
-                <Checkbox
+                <Switch
                   id={fieldId}
                   name={name}
                   checked={!!value}
@@ -321,7 +321,6 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
         case 'tel':
         case 'phone':
           return (
-            // <MuiTelInput
             <TextField
               id={fieldId}
               name={name}
@@ -344,8 +343,33 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
               error={showError}
               helperText={showError ? error : help}
               placeholder={placeholder}
-              defaultCountry="US"
-              preferredCountries={['US', 'CA', 'GB', 'AU']}
+              type="tel"
+              {...(showError && { 'aria-invalid': true })}
+              aria-describedby={showError ? errorId : undefined}
+            />
+          );
+
+        case 'date':
+        case 'time':
+          return (
+            <TextField
+              id={fieldId}
+              name={name}
+              label={label}
+              type={type}
+              value={value ?? ''}
+              onChange={onChange}
+              onBlur={onBlur}
+              required={required}
+              disabled={disabled}
+              fullWidth
+              variant="outlined"
+              error={showError}
+              helperText={showError ? error : help}
+              placeholder={placeholder}
+              InputLabelProps={{
+                shrink: true,
+              }}
               {...(showError && { 'aria-invalid': true })}
               aria-describedby={showError ? errorId : undefined}
             />
@@ -370,29 +394,32 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
               helperText={showError ? error : help}
               placeholder={placeholder}
               autoComplete="off"
-              slotProps={{
-                input: {
-                  ...(isNumberField && {
-                    endAdornment: (
-                      <InputAdornment position="end" sx={{ mr: -1 }}>
-                        <NumberSpinner
-                          value={value ?? ''}
-                          min={typeof min === 'string' ? parseFloat(min) : min}
-                          max={typeof max === 'string' ? parseFloat(max) : max}
-                          step={typeof step === 'string' ? parseFloat(step) : step}
-                          onIncrement={() => handleNumberChange(1)}
-                          onDecrement={() => handleNumberChange(-1)}
-                          disabled={disabled}
-                        />
-                      </InputAdornment>
-                    ),
-                  }),
+              InputProps={
+                isNumberField ? {
+                  endAdornment: (
+                    <InputAdornment position="end" sx={{ mr: -1 }}>
+                      <NumberSpinner
+                        value={value ?? ''}
+                        min={typeof min === 'string' ? parseFloat(min) : min}
+                        max={typeof max === 'string' ? parseFloat(max) : max}
+                        step={typeof step === 'string' ? parseFloat(step) : step}
+                        onIncrement={() => handleNumberChange(1)}
+                        onDecrement={() => handleNumberChange(-1)}
+                        disabled={disabled}
+                      />
+                    </InputAdornment>
+                  ),
                   min,
                   max,
                   step,
                   pattern,
-                },
-              }}
+                } : {
+                  min,
+                  max,
+                  step,
+                  pattern,
+                }
+              }
               {...(showError && { 'aria-invalid': true })}
               aria-describedby={showError ? errorId : undefined}
               ref={ref}

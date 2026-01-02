@@ -37,6 +37,7 @@
 
 .editable-data-grid__row {
   transition: background-color 0.2s ease;
+  overflow: visible;
 }
 
 .editable-data-grid__row:hover {
@@ -47,6 +48,21 @@
   padding: 12px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  position: relative;
+  overflow: visible;
+}
+
+.editable-data-grid__cell-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.editable-data-grid__cell-dropdown-icon {
+  font-size: 12px;
+  color: #999;
+  margin-left: 8px;
 }
 
 .editable-data-grid__cell--editable {

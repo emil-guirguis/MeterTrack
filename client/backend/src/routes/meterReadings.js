@@ -171,10 +171,14 @@ router.get('/', [
     const skip = (numericPage - 1) * numericPageSize;
 
     // Map filters to PG, excluding undefined values
-    const filters = {};
+    let filters = {};
     if (meterId !== undefined && meterId !== '') {
       filters.meterid = meterId;
     }
+    
+    // Use framework method to process additional filters from query parameters
+    const additionalFilters = MeterReading.processFilters(req.query);
+    filters = { ...filters, ...additionalFilters };
 
     const result = await MeterReading.findAll({
       where: filters,

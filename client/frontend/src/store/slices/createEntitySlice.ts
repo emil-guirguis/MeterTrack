@@ -234,8 +234,15 @@ export const createEntityStore = <T extends { id: string }>(
       fetchItems: async (params) => {
         const state = get();
         
-        // Check cache freshness
-        if (state.lastFetch && isCacheFresh(state.lastFetch, cacheConfig.ttl) && !params) {
+        console.log('[fetchItems] Called with params:', params);
+        console.log('[fetchItems] Current state.list:', state.list);
+        
+        // Check if we should bypass cache (if params has any real properties besides _bypassCache)
+        const hasRealParams = params && Object.keys(params).some(key => key !== '_bypassCache');
+        const shouldBypassCache = params && (hasRealParams || params._bypassCache);
+        
+        if (state.lastFetch && isCacheFresh(state.lastFetch, cacheConfig.ttl) && !shouldBypassCache) {
+          console.log('[fetchItems] Using cached data - cache is fresh');
           return; // Use cached data
         }
 
@@ -245,7 +252,8 @@ export const createEntityStore = <T extends { id: string }>(
         });
 
         try {
-          const queryParams = params || {
+          // If params provided with real properties (not just _bypassCache), use them; otherwise use store state
+          const queryParams = hasRealParams ? params : {
             page: state.list.page,
             pageSize: state.list.pageSize,
             search: state.list.search,
@@ -254,7 +262,9 @@ export const createEntityStore = <T extends { id: string }>(
             sortOrder: state.list.sortOrder,
           };
 
+          console.log('[fetchItems] Calling service.getAll with queryParams:', queryParams);
           const response = await service.getAll(queryParams);
+          console.log('[fetchItems] Got response:', response);
 
           set((state) => {
             state.items = response.items as any;
@@ -267,6 +277,7 @@ export const createEntityStore = <T extends { id: string }>(
           });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch items';
+          console.error('[fetchItems] Error:', errorMessage);
           
           set((state) => {
             state.list.loading = false;

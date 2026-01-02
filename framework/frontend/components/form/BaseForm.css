@@ -13,40 +13,52 @@
 /* Form Container - flex layout with main content and sidebar */
 .base-form {
   display: flex;
-  gap: 1.5rem;
-  padding: 1rem;
-  padding-top: 0;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
   background: var(--color-background, #f9fafb);
   overflow: visible;
   width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+/* Content wrapper - contains main form and sidebar */
+.base-form__content {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  padding-top: 0;
+  width: 100%;
+  min-width: 0;
 }
 
 .base-form__main {
   flex: 1;
-  min-width: auto;
-  max-width: none;
-  width: auto;
-  overflow-x: auto;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: visible;
 }
 
-/* Grid Layout Classes - Applied dynamically based on schema */
-.base-form__main--grid-1 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-}
-
-.base-form__main--grid-2 {
+.base-form__sections-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
+  width: 100%;
 }
 
-.base-form__main--grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  grid-auto-flow: row;
+/* Grid Layout Classes - Applied dynamically based on schema */
+.base-form__main--grid-1 .base-form__sections-container {
+  grid-template-columns: 1fr !important;
+}
+
+.base-form__main--grid-2 .base-form__sections-container {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+.base-form__main--grid-3 .base-form__sections-container {
+  grid-template-columns: repeat(3, 1fr) !important;
 }
 
 /* Section positioning classes */
@@ -60,16 +72,18 @@
 
 /* Form Sections - card-based sections with borders and shadows */
 .base-form__section {
-  margin-bottom: 1.5rem;
   padding: 1.25rem;
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  min-width: 0;
+  width: 100%;
+  display: block;
 }
 
 .base-form__section:last-of-type {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 /* Section Titles */
@@ -149,6 +163,23 @@
   margin-top: 2px !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+/* Style date and time input icons for visibility */
+.base-form input[type="date"]::-webkit-calendar-picker-indicator,
+.form-container input[type="date"]::-webkit-calendar-picker-indicator,
+.base-form input[type="time"]::-webkit-calendar-picker-indicator,
+.form-container input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.8);
+  opacity: 0.7;
+}
+
+.base-form input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.form-container input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.base-form input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.form-container input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 /* Field container spacing */

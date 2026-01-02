@@ -84,13 +84,13 @@ class BaseModel {
       const schemaFields = {};
       
       // Add form fields from schema
-      if (this.schema.schema && this.schema.schema.formFields) {
-        Object.assign(schemaFields, this.schema.schema.formFields);
+      if (this.schema.formFields) {
+        Object.assign(schemaFields, this.schema.formFields);
       }
       
       // Add entity fields from schema
-      if (this.schema.schema && this.schema.schema.entityFields) {
-        Object.assign(schemaFields, this.schema.schema.entityFields);
+      if (this.schema.entityFields) {
+        Object.assign(schemaFields, this.schema.entityFields);
       }
       
       // Merge schema fields with extracted fields, preferring schema definitions
@@ -235,6 +235,65 @@ class BaseModel {
    */
   static get timestamps() {
     return true;
+  }
+
+  /**
+   * Process query parameters and extract filters based on schema
+   * Automatically handles type conversion and validation
+   * 
+   * @param {Object} queryParams - Query parameters from request
+   * @param {Array<string>} systemParams - System parameters to skip (e.g., ['page', 'limit', 'search'])
+   * @returns {Object} Processed where clause with filters
+   * 
+   * @example
+   * const where = Model.processFilters(req.query, ['page', 'limit', 'search', 'sortBy', 'sortOrder']);
+   */
+  static processFilters(queryParams = {}, systemParams = ['page', 'limit', 'search', 'sortBy', 'sortOrder']) {
+    const where = {};
+    
+    // Get schema to identify filterable fields
+    const schema = this.schema;
+    if (!schema) {
+      return where; // No schema, no filters
+    }
+    
+    const formFields = schema.formFields || {};
+    
+    // Process each query parameter
+    Object.entries(queryParams).forEach(([key, value]) => {
+      // Skip system parameters
+      if (systemParams.includes(key)) {
+        return;
+      }
+      
+      // Skip empty or null values
+      if (value === '' || value === null || value === undefined) {
+        return;
+      }
+      
+      // Check if this field exists in the schema
+      const fieldDef = formFields[key];
+      if (!fieldDef) {
+        return; // Skip unknown fields
+      }
+      
+      // Convert filter value to appropriate type based on field definition
+      let filterValue = value;
+      
+      if (fieldDef.type === 'boolean') {
+        // Convert string "true"/"false" to boolean
+        filterValue = value === 'true' || value === true;
+      } else if (fieldDef.type === 'number') {
+        // Convert to number
+        filterValue = parseInt(value, 10);
+      }
+      // For string and other types, use value as-is
+      
+      // Apply filter to where clause
+      where[key] = filterValue;
+    });
+    
+    return where;
   }
 
   /**

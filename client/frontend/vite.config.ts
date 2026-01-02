@@ -53,6 +53,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@framework': path.resolve(__dirname, '../../framework/frontend'),
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
     },
   },
   server: {
@@ -70,6 +72,7 @@ export default defineConfig({
       allow: [
         '.',
         '../../framework/frontend',
+        '../../node_modules',
       ],
     },
   },

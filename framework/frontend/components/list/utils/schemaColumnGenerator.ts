@@ -9,8 +9,11 @@
  * - Field properties (label, sortable, etc.)
  */
 
+import React from 'react';
 import type { ColumnDefinition } from '../types/ui';
 import type { FieldDefinition } from '../../form/utils/formSchema';
+import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 
 /**
  * Extended field definition with additional properties from backend schema
@@ -78,8 +81,20 @@ export function generateColumnsFromSchema<T extends Record<string, any>>(
       case 'boolean':
         column.render = (_value: any, row: T) => {
           const val = row[fieldName as keyof T];
+          // Special rendering for 'active' column
+          if (fieldName === 'active') {
+            const Icon = val ? RadioButtonCheckedIcon : RadioButtonUncheckedIcon;
+            const color = val ? '#4caf50' : '#9e9e9e';
+            return React.createElement(Icon, {
+              sx: { color, fontSize: '20px' }
+            });
+          }
           return val ? '✓' : '✗';
         };
+        // Center align the active column
+        if (fieldName === 'active') {
+          column.align = 'center';
+        }
         break;
 
       case 'date':
@@ -172,16 +187,33 @@ export function generateFiltersFromSchema(
             label: val,
             value: val,
           })),
-          placeholder: `All ${fieldDef.label || fieldName}`,
+          placeholder: `All ${fieldName == 'active' ? 'Statuses' : fieldDef.label || fieldName}`,
         };
       }
 
       if (fieldDef.type === 'boolean') {
+        // Special handling for 'active' field - use Active/Inactive options
+        if (fieldName === 'active') {
+          return {
+            key: fieldName,
+            label: fieldDef.label || fieldName,
+            type: 'select' as const,
+            options: [
+              { label: 'Active', value: 'true' },
+              { label: 'Inactive', value: 'false' },
+              { label: 'All Statuses', value: '' },
+            ],
+            placeholder: '',
+          };
+        }
+
+        // Standard boolean filter for other fields
         return {
           key: fieldName,
           label: fieldDef.label || fieldName,
           type: 'select' as const,
           options: [
+            { label: 'All', value: '' },
             { label: 'Yes', value: 'true' },
             { label: 'No', value: 'false' },
           ],

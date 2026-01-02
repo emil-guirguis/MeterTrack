@@ -12,16 +12,26 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
     const {
       page = 1,
       limit = 25,
-      search,
-      active,
-      role
+      search
     } = req.query;
 
+    console.log('\n' + '='.repeat(80));
+    console.log('[API] GET /contacts - Fetch Contacts');
+    console.log('='.repeat(80));
+    console.log('Query params:', JSON.stringify(req.query, null, 2));
+    console.log('='.repeat(80) + '\n');
+
     // Build where clause for Contact
-    const where = {};
-    if (search) where.name = search; // Assuming search by name
-    if (active !== undefined) where.active = active;
-    if (role) where.role = role;
+    let where = {};
+    
+    // Handle search parameter
+    if (search) {
+      where.name = search; // Assuming search by name
+    }
+
+    // Use framework method to process filters from query parameters
+    const filters = Contact.processFilters(req.query);
+    where = { ...where, ...filters };
 
     // Build options for findAll
     const options = {
@@ -31,8 +41,13 @@ router.get('/', requirePermission('contact:read'), async (req, res) => {
       tenantId: req.user?.tenantId // Automatic tenant filtering
     };
 
+    console.log('[API] Query options:', JSON.stringify(options, null, 2));
+
     // Get contacts
     const result = await Contact.findAll(options);
+
+    console.log('[API] Query result - items count:', result.rows.length, 'total:', result.pagination.total);
+    console.log('='.repeat(80) + '\n');
 
     res.json({
       success: true,

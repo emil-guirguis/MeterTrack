@@ -13,16 +13,16 @@ router.get('/', requirePermission('location:read'), async (req, res) => {
     const {
       page = 1,
       limit = 25,
-      search,
-      type,
-      status
+      search
     } = req.query;
 
-    // Build where clause for Location
-    const where = {};
+    // Build where clause for Location using framework filter processing
+    let where = {};
     if (search) where.name = search; // Assuming search by name
-    if (type) where.type = type;
-    if (status) where.status = status;
+    
+    // Use framework method to process filters from query parameters
+    const filters = Location.processFilters(req.query);
+    where = { ...where, ...filters };
 
     // Build options for findAll
     const options = {

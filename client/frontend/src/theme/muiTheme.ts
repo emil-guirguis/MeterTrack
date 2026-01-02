@@ -7,7 +7,7 @@ import { createTheme } from '@mui/material/styles';
 export const muiTheme = createTheme({
   palette: {
     primary: {
-      main: '#6200ea',
+      main: '#0056eaff',
     },
     error: {
       main: '#b3261e',
@@ -32,6 +32,20 @@ export const muiTheme = createTheme({
           marginTop: '0 !important',
           '& .MuiOutlinedInput-root': {
             minHeight: '48px',
+          },
+          '& .MuiInputLabel-root': {
+            '&.MuiInputLabel-shrink': {
+              transform: 'translate(14px, -9px) scale(0.75)',
+            },
+          },
+          // Style date/time input icons to be visible
+          '& input[type="date"]::-webkit-calendar-picker-indicator': {
+            cursor: 'pointer',
+            filter: 'invert(0.8)',
+          },
+          '& input[type="time"]::-webkit-calendar-picker-indicator': {
+            cursor: 'pointer',
+            filter: 'invert(0.8)',
           },
         },
       },

@@ -18,7 +18,7 @@ import './RegistersGrid.css';
 
 export interface Register {
   id: number;
-  number: string;
+  register: string;
   name: string;
   unit: string;
   field_name: string;
@@ -55,7 +55,7 @@ export const RegistersGrid: React.FC<RegistersGridProps> = ({
   const [deleting, setDeleting] = useState(false);
 
   const columns: GridColumn[] = [
-    { key: 'number', label: 'Number', editable: true, type: 'text' },
+    { key: 'register', label: 'Register', editable: true, type: 'text' },
     { key: 'name', label: 'Name', editable: true, type: 'text' },
     { key: 'unit', label: 'Unit', editable: true, type: 'text' },
     { key: 'field_name', label: 'Field Name', editable: true, type: 'text' },
@@ -164,7 +164,7 @@ export const RegistersGrid: React.FC<RegistersGridProps> = ({
 
   const gridData = registers.map((dr) => ({
     id: dr.id,
-    number: dr.register?.number || '',
+    register: dr.register?.register || '',
     name: dr.register?.name || '',
     unit: dr.register?.unit || '',
     field_name: dr.register?.field_name || '',
@@ -211,7 +211,7 @@ export const RegistersGrid: React.FC<RegistersGridProps> = ({
               >
                 {availableRegisters.map((reg) => (
                   <MenuItem key={reg.id} value={reg.id}>
-                    {reg.number} - {reg.name}
+                    {reg.register} - {reg.name}
                   </MenuItem>
                 ))}
               </Select>

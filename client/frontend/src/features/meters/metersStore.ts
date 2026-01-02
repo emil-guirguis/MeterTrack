@@ -5,6 +5,8 @@ import { createEntityStore, createEntityHook } from '../../store/slices/createEn
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
 import { tokenStorage } from '../../utils/tokenStorage';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+
 // Real API service
 const metersService = {
   async getAll(params?: any) {
@@ -12,23 +14,29 @@ const metersService = {
       const queryParams = new URLSearchParams();
 
       if (params?.page) queryParams.append('page', params.page.toString());
-      if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
       if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
       if (params?.search) queryParams.append('search', params.search);
 
-      // Apply filters
+      // Flatten filters into query parameters
       if (params?.filters) {
-        Object.entries(params.filters).forEach(([key, value]) => {
-          if (value) queryParams.append(`filter.${key}`, value as string);
+        Object.entries(params.filters).forEach(([key, value]: [string, any]) => {
+          // Skip empty, null, or undefined values
+          if (value !== '' && value !== null && value !== undefined) {
+            queryParams.append(key, String(value));
+          }
         });
       }
 
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/meters?${queryString}` : '/meters';
+      
       const listHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
       const listToken = tokenStorage.getToken();
       if (listToken) listHeaders['Authorization'] = `Bearer ${listToken}`;
 
-      const response = await fetch(`/api/meters?${queryParams.toString()}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'GET',
         headers: listHeaders
       });
@@ -60,7 +68,7 @@ const metersService = {
       const getToken = tokenStorage.getToken();
       if (getToken) getHeaders['Authorization'] = `Bearer ${getToken}`;
 
-      const response = await fetch(`/api/meters/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/meters/${id}`, {
         method: 'GET',
         headers: getHeaders
       });
@@ -86,7 +94,7 @@ const metersService = {
       const createToken = tokenStorage.getToken();
       if (createToken) createHeaders['Authorization'] = `Bearer ${createToken}`;
 
-      const response = await fetch('/api/meters', {
+      const response = await fetch(`${API_BASE_URL}/meters`, {
         method: 'POST',
         headers: createHeaders,
         body: JSON.stringify(meterData)
@@ -123,7 +131,7 @@ const metersService = {
       const updateToken = tokenStorage.getToken();
       if (updateToken) updateHeaders['Authorization'] = `Bearer ${updateToken}`;
 
-      const response = await fetch(`/api/meters/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/meters/${id}`, {
         method: 'PUT',
         headers: updateHeaders,
         body: JSON.stringify(meterData)
@@ -160,7 +168,7 @@ const metersService = {
       const deleteToken = tokenStorage.getToken();
       if (deleteToken) deleteHeaders['Authorization'] = `Bearer ${deleteToken}`;
 
-      const response = await fetch(`/api/meters/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/meters/${id}`, {
         method: 'DELETE',
         headers: deleteHeaders
       });
@@ -187,7 +195,7 @@ const metersService = {
       const testToken = tokenStorage.getToken();
       if (testToken) testHeaders['Authorization'] = `Bearer ${testToken}`;
 
-      const response = await fetch(`/api/meters/${id}/test-connection`, {
+      const response = await fetch(`${API_BASE_URL}/meters/${id}/test-connection`, {
         method: 'POST',
         headers: testHeaders
       });

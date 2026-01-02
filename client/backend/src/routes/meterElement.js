@@ -21,16 +21,15 @@ router.get('/schema', (req, res) => {
     }
 
     console.log('📋 [SCHEMA] MeterElement.schema:', schema);
-    console.log('📋 [SCHEMA] schema.schema:', schema.schema);
-    console.log('📋 [SCHEMA] formFields:', schema.schema?.formFields);
-    console.log('📋 [SCHEMA] element field:', schema.schema?.formFields?.element);
+    console.log('📋 [SCHEMA] formFields:', schema.formFields);
+    console.log('📋 [SCHEMA] element field:', schema.formFields?.element);
 
     // Return schema in a format the frontend expects
     res.json({
       success: true,
       data: {
-        formFields: schema.schema?.formFields || {},
-        entityFields: schema.schema?.entityFields || {},
+        formFields: schema.formFields || {},
+        entityFields: schema.entityFields || {},
       },
     });
   } catch (error) {
@@ -135,6 +134,23 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Check for duplicate element
+    const duplicateCheck = await db.query(
+      `SELECT id FROM meter_element 
+       WHERE meter_id = $1 AND element = $2`,
+      [meterId, element]
+    );
+
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: {
+          element: `Element "${element}" is already assigned to this meter`,
+        },
+      });
+    }
+
     // Create meter_element record
     const result = await db.query(
       `INSERT INTO meter_element (meter_id, name, element)
@@ -221,6 +237,25 @@ router.put('/:elementId', async (req, res) => {
         message: 'Validation failed',
         errors: validation.errors,
       });
+    }
+
+    // Check for duplicate element (if element is being changed)
+    if (element !== undefined && element !== currentElement.element) {
+      const duplicateCheck = await db.query(
+        `SELECT id FROM meter_element 
+         WHERE meter_id = $1 AND element = $2 AND id != $3`,
+        [meterId, element, elementId]
+      );
+
+      if (duplicateCheck.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: {
+            element: `Element "${element}" is already assigned to this meter`,
+          },
+        });
+      }
     }
 
     // Build update query dynamically
