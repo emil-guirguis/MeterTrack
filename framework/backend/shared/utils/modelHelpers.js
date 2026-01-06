@@ -122,9 +122,10 @@ function inferSQLType(fieldName) {
  * @param {string} tableName - The table name
  * @param {Array<Object>} fields - Field metadata
  * @param {Object} data - Data to insert
+ * @param {Object} context - Optional context with tenant_id for auto-injection
  * @returns {Object} { sql, values } - SQL query and parameter values
  */
-function buildInsertSQL(tableName, fields, data) {
+function buildInsertSQL(tableName, fields, data, context = {}) {
   const columns = [];
   const placeholders = [];
   const values = [];
@@ -146,8 +147,8 @@ function buildInsertSQL(tableName, fields, data) {
     const field = fieldMap.get(key);
     const fieldType = field ? field.type : null;
     
-    // Skip read-only fields
-    if (field && field.readOnly) {
+    // Skip read-only fields EXCEPT tenant_id (which must be set during creation)
+    if (field && field.readOnly && key !== 'tenant_id') {
       continue;
     }
     
@@ -167,6 +168,7 @@ function buildInsertSQL(tableName, fields, data) {
   // Add timestamps if not provided
   const hasCreatedAt = columns.includes('created_at');
   const hasUpdatedAt = columns.includes('updated_at');
+  const hasTenantId = columns.includes('tenant_id');
   
   if (!hasCreatedAt && fields.some(f => f.name === 'created_at')) {
     columns.push('created_at');
@@ -178,14 +180,27 @@ function buildInsertSQL(tableName, fields, data) {
     placeholders.push('CURRENT_TIMESTAMP');
   }
   
+  // Auto-inject tenant_id if it's a field in the model and not already provided
+  if (!hasTenantId && fields.some(f => f.name === 'tenant_id')) {
+    // tenant_id is a field but not provided - this will fail
+    console.error(`✗ ERROR: tenant_id field exists but was not provided in data for ${tableName}`);
+    console.error('Data provided:', Object.keys(data));
+    console.error('This will cause a foreign key constraint error');
+  }
+  
   const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
   
-  console.log('\n' + '='.repeat(120));
-  console.log('🔵 SQL INSERT STATEMENT');
-  console.log('='.repeat(120));
+  console.log('\n' + '█'.repeat(120));
+  console.log('█ SQL INSERT STATEMENT');
+  console.log('█'.repeat(120));
+  console.log('Table:', tableName);
+  console.log('Columns:', columns);
+  console.log('Placeholders:', placeholders);
   console.log('SQL:', sql);
   console.log('Values:', JSON.stringify(values, null, 2));
-  console.log('='.repeat(120) + '\n');
+  console.log('Field count:', fields.length);
+  console.log('Data keys:', Object.keys(data));
+  console.log('█'.repeat(120) + '\n');
   
   return { sql, values };
 }
@@ -251,12 +266,15 @@ function buildSelectSQL(tableName, fields, options = {}) {
   
   const sql = `SELECT ${selectClause} FROM ${tableName}${joinClause}${whereClause}${orderClause}${limitClause}${offsetClause}`;
   
-  console.log('\n' + '='.repeat(120));
-  console.log('🔵 SQL SELECT STATEMENT');
-  console.log('='.repeat(120));
+  console.log('\n' + '█'.repeat(120));
+  console.log('█ SQL SELECT STATEMENT');
+  console.log('█'.repeat(120));
+  console.log('Table:', tableName);
+  console.log('Select clause:', selectClause);
+  console.log('Where clause:', whereClause);
   console.log('SQL:', sql);
   console.log('Values:', JSON.stringify(values, null, 2));
-  console.log('='.repeat(120) + '\n');
+  console.log('█'.repeat(120) + '\n');
   
   return { sql, values, relationshipMap };
 }
@@ -323,12 +341,15 @@ function buildUpdateSQL(tableName, fields, data, where) {
   
   const sql = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE ${whereResult.clause} RETURNING *`;
   
-  console.log('\n' + '='.repeat(120));
-  console.log('🔵 SQL UPDATE STATEMENT');
-  console.log('='.repeat(120));
+  console.log('\n' + '█'.repeat(120));
+  console.log('█ SQL UPDATE STATEMENT');
+  console.log('█'.repeat(120));
+  console.log('Table:', tableName);
+  console.log('Set clauses:', setClauses);
+  console.log('Where clause:', whereResult.clause);
   console.log('SQL:', sql);
   console.log('Values:', JSON.stringify(values, null, 2));
-  console.log('='.repeat(120) + '\n');
+  console.log('█'.repeat(120) + '\n');
   
   return { sql, values };
 }

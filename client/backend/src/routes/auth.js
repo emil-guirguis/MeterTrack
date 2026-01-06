@@ -8,15 +8,15 @@ const PermissionsService = require('../services/PermissionsService');
 const router = express.Router();
 
 // Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+const generateToken = (userId, tenant_id) => {
+  return jwt.sign({ userId, tenant_id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '1h'
   });
 };
 
 // Generate refresh token
-const generateRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+const generateRefreshToken = (userId, tenant_id) => {
+  return jwt.sign({ userId, tenant_id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
   });
 };
@@ -49,24 +49,54 @@ router.post('/login', [
     }
 
     // Find user by email
+    console.log('\n' + '='.repeat(120));
+    console.log('[AUTH LOGIN] Step 1: Finding user by email:', email);
+
+    // DEBUG: Check database directly
+    const db = require('../config/database');
+    const dbCheck = await db.query('SELECT id, email, name, role, tenant_id, active FROM users WHERE email = $1', [email]);
+    console.log('[AUTH LOGIN] DATABASE CHECK - Raw query result:', dbCheck.rows);
+
     const user = await User.findByEmail(email);
+
     if (!user) {
+      console.log('[AUTH LOGIN] ✗ User not found');
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
+    console.log('[AUTH LOGIN] ✓ User found');
+    console.log('[AUTH LOGIN] User object keys:', Object.keys(user));
+    console.log('[AUTH LOGIN] User object:', {
+      // @ts-ignore - properties are dynamically set by schema initialization
+      id: user.id,
+      // @ts-ignore
+      email: user.email,
+      // @ts-ignore
+      name: user.name,
+      // @ts-ignore
+      role: user.role,
+      // @ts-ignore
+      tenant_id: user.tenant_id,
+      // @ts-ignore
+      active: user.active,
+      // @ts-ignore
+      passwordHash: user.passwordHash ? '***HASH***' : 'MISSING'
+    });
+
     // Check password
+    console.log('[AUTH LOGIN] Step 2: Validating password');
     const isPasswordValid = await user.comparePassword(password);
-    console.log('[AUTH DEBUG] Password valid:', isPasswordValid);
+    console.log('[AUTH LOGIN] Password valid:', isPasswordValid);
 
     if (!isPasswordValid) {
       // Improved error logging to include user email when password hash is missing
       // @ts-ignore - passwordHash is dynamically set by schema initialization
       if (!user.passwordHash) {
         // @ts-ignore - id is dynamically set by schema initialization
-        console.error(`Authentication failed: User ${email} (ID: ${user.id}) has no password hash`);
+        console.error(`[AUTH LOGIN] ✗ Authentication failed: User ${email} (ID: ${user.id}) has no password hash`);
       }
       return res.status(401).json({
         success: false,
@@ -75,27 +105,58 @@ router.post('/login', [
     }
 
     // Check if user is active
+    console.log('[AUTH LOGIN] Step 3: Checking if user is active');
     // @ts-ignore - status is dynamically set by schema initialization
     if (!user.active) {
+      console.log('[AUTH LOGIN] ✗ User is inactive');
       return res.status(401).json({
         success: false,
         message: 'Account is inactive'
       });
     }
 
-    console.log('[AUTH DEBUG] All checks passed, generating tokens');
-    // @ts-ignore - tenantId is dynamically set by schema initialization
-    console.log('[AUTH DEBUG] User tenant ID:', user.tenantId);
+    console.log('[AUTH LOGIN] ✓ User is active');
+    console.log('[AUTH LOGIN] Step 4: Preparing token generation');
+    // @ts-ignore - properties are dynamically set by schema initialization
+    console.log('[AUTH LOGIN] User ID:', user.id);
+    // @ts-ignore
+    console.log('[AUTH LOGIN] User tenant_id:', user.tenant_id);
+    // @ts-ignore
+    console.log('[AUTH LOGIN] User tenant_id type:', typeof user.tenant_id);
+    // @ts-ignore
+    console.log('[AUTH LOGIN] User tenant_id is null?', user.tenant_id === null);
+    // @ts-ignore
+    console.log('[AUTH LOGIN] User tenant_id is undefined?', user.tenant_id === undefined);
 
     // Update last login - DISABLED due to column name mismatch
     // TODO: Fix lastLogin field mapping to correct database column
     // await user.updateLastLogin();
 
     // Generate tokens
-    // @ts-ignore - id is dynamically set by schema initialization
-    const token = generateToken(user.id);
-    // @ts-ignore - id is dynamically set by schema initialization
-    const refreshToken = generateRefreshToken(user.id);
+    // @ts-ignore - properties are dynamically set by schema initialization
+    console.log('[AUTH LOGIN] Step 5: Generating tokens with userId:', user.id, 'and tenant_id:', user.tenant_id);
+    console.log('[AUTH LOGIN] CRITICAL DEBUG - About to generate token');
+    console.log('[AUTH LOGIN] user object full dump:', JSON.stringify(user, null, 2));
+    // @ts-ignore - tenant_id is dynamically set by schema initialization
+    console.log('[AUTH LOGIN] user.tenant_id value:', user.tenant_id);
+    // @ts-ignore - tenant_id is dynamically set by schema initialization
+    console.log('[AUTH LOGIN] user.tenant_id type:', typeof user.tenant_id);
+    // @ts-ignore - properties are dynamically set by schema initialization
+    console.log('[AUTH LOGIN] Calling generateToken with:', { userId: user.id, tenant_id: user.tenant_id });
+
+    // @ts-ignore - id and tenant_id are dynamically set by schema initialization
+    const token = generateToken(user.id, user.tenant_id);
+    // @ts-ignore - id and tenant_id are dynamically set by schema initialization
+    const refreshToken = generateRefreshToken(user.id, user.tenant_id);
+
+    console.log('[AUTH LOGIN] Token generated. Decoding to verify...');
+    const decoded = jwt.decode(token);
+    console.log('[AUTH LOGIN] Decoded token:', decoded);
+
+    // @ts-ignore
+    console.log('[AUTH LOGIN] ✓ Tokens generated');
+    // @ts-ignore
+    console.log('[AUTH LOGIN] Token payload will contain: userId:', user.id, ', tenant_id:', user.tenant_id);
 
     // Calculate expiration time
     const expiresIn = rememberMe ? 7 * 24 * 60 * 60 : 60 * 60; // 7 days or 1 hour
@@ -116,8 +177,8 @@ router.post('/login', [
           id: tenantRow.id,
           name: tenantRow.name,
           url: tenantRow.url,
-          address: tenantRow.street,
-          address2: tenantRow.street2,
+          street: tenantRow.street,
+          street2: tenantRow.street2,
           city: tenantRow.city,
           state: tenantRow.state,
           zip: tenantRow.zip,
@@ -136,7 +197,7 @@ router.post('/login', [
     const userRole = (user.role || 'viewer').toLowerCase();
     const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
     let permissions = permissionsObj;
-    
+
     // If user has permissions in database, use those instead (keep as nested object)
     // @ts-ignore - permissions is dynamically set by schema initialization
     if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
@@ -159,8 +220,8 @@ router.post('/login', [
           permissions: permissions,
           // @ts-ignore
           status: user.active ? 'active' : 'inactive',
-          // @ts-ignore - tenantId is dynamically set by schema initialization
-          client: user.tenantId
+          // @ts-ignore - tenant_id is dynamically set by schema initialization
+          client: user.tenant_id
         },
         tenant: tenant,
         token,
@@ -168,16 +229,16 @@ router.post('/login', [
         expiresIn
       }
     };
-    
+
     console.log('[AUTH DEBUG] Login response:', {
       userId: responseData.data.user.id,
       email: responseData.data.user.email,
       client: responseData.data.user.client,
       hasToken: !!responseData.data.token,
-      permissionsCount: responseData.data.user.permissions.length,
-      permissions: responseData.data.user.permissions
+      permissionsCount: Object.keys(responseData.data.user.permissions || {}).length,
+      permissions: responseData.data.user.permissionss
     });
-    
+
     res.json(responseData);
   } catch (error) {
     const err = /** @type {Error} */ (error);
@@ -218,15 +279,15 @@ router.post('/refresh', [
       });
     }
 
-    // Generate new tokens
-    const newToken = generateToken(user.id);
-    const newRefreshToken = generateRefreshToken(user.id);
+    // Generate new tokens with tenant_id
+    const newToken = generateToken(user.id, user.tenant_id || decoded.tenant_id);
+    const newRefreshToken = generateRefreshToken(user.id, user.tenant_id || decoded.tenant_id);
 
     // Derive permissions from role using PermissionsService
     const userRole = (user.role || 'viewer').toLowerCase();
     const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
     let permissions = permissionsObj;
-    
+
     // If user has permissions in database, use those instead (keep as nested object)
     if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
       // Use nested object format as-is: { module: { action: true } }
@@ -243,8 +304,8 @@ router.post('/refresh', [
           role: user.role,
           permissions: permissions,
           active: user.active,
-          // @ts-ignore - tenantId is dynamically set by schema initialization
-          client: user.tenantId
+          // @ts-ignore - tenant_id is dynamically set by schema initialization
+          client: user.tenant_id
         },
         token: newToken,
         refreshToken: newRefreshToken,
@@ -268,7 +329,7 @@ router.get('/verify', authenticateToken, async (req, res) => {
     const userRole = (req.user.role || 'viewer').toLowerCase();
     const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
     let permissions = permissionsObj;
-    
+
     // If user has permissions in database, use those instead (keep as nested object)
     if (req.user.permissions && typeof req.user.permissions === 'object' && !Array.isArray(req.user.permissions)) {
       // Use nested object format as-is: { module: { action: true } }
@@ -279,10 +340,10 @@ router.get('/verify', authenticateToken, async (req, res) => {
     const userResponse = {
       ...req.user,
       permissions: permissions,
-      // @ts-ignore - tenantId is dynamically set by schema initialization
-      client: req.user.tenantId
+      // @ts-ignore - tenant_id is dynamically set by schema initialization
+      client: req.user.tenant_id
     };
-    
+
     res.json({
       success: true,
       data: {
@@ -351,19 +412,51 @@ router.post('/bootstrap', [
     // Get admin permissions from PermissionsService
     const adminPermissionsObj = PermissionsService.getPermissionsByRole('admin');
 
-    // Create admin user
+    // Create or get default tenant
+    const db = require('../config/database');
+    let tenantId = null;
+
+    try {
+      // Check if a default tenant exists
+      const tenantResult = await db.query('SELECT id FROM tenant LIMIT 1');
+      if (tenantResult.rows && tenantResult.rows.length > 0) {
+        const tenantRow = /** @type {Record<string, any>} */ (tenantResult.rows[0]);
+        tenantId = tenantRow.id;
+        console.log('[BOOTSTRAP] Using existing tenant:', tenantId);
+      } else {
+        // Create a default tenant
+        const createTenantResult = await db.query(
+          'INSERT INTO tenant (name, active) VALUES ($1, $2) RETURNING id',
+          ['Default Tenant', true]
+        );
+        const createdTenantRow = /** @type {Record<string, any>} */ (createTenantResult.rows[0]);
+        tenantId = createdTenantRow.id;
+        console.log('[BOOTSTRAP] Created default tenant:', tenantId);
+      }
+    } catch (err) {
+      const error = /** @type {Error} */ (err);
+      console.error('[BOOTSTRAP] Error managing tenant:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create or find tenant',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+
+    // Create admin user with tenant_id
     const user = await User.create({
       email,
       name,
       passwordHash,
       role: 'admin',
       permissions: adminPermissionsObj,
-      active: true
+      active: true,
+      tenant_id: tenantId
     });
 
     // Generate tokens
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const token = generateToken(user.id, user.tenant_id);
+    const refreshToken = generateRefreshToken(user.id, user.tenant_id);
 
     res.json({
       success: true,

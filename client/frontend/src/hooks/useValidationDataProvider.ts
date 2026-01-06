@@ -78,10 +78,22 @@ export const useValidationDataProvider = () => {
         const validationFields = fieldDef.validationFields || ['manufacturer', 'model_number'];
         const options = devices.map((device: any) => {
           // Combine multiple fields for the label
+          // Handle both camelCase and snake_case field names
           const labelParts = validationFields
-            .map((field: string) => device[field])
+            .map((field: string) => {
+              // Try camelCase first, then snake_case
+              const camelCaseField = field.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+              return device[field] || device[camelCaseField];
+            })
             .filter((val: any) => val);
           const label = labelParts.length > 0 ? labelParts.join(' - ') : `Device ${device.id}`;
+
+          console.log(`[ValidationDataProvider] Device ${device.id}:`, {
+            validationFields,
+            labelParts,
+            label,
+            deviceKeys: Object.keys(device),
+          });
 
           return {
             id: device.id,

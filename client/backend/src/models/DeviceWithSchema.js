@@ -7,6 +7,7 @@
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
 const { defineSchema, field, tab, section, relationship, FieldTypes, RelationshipTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { DEVICE_MANUFACTURERS, DEVICE_TYPES } = require('../constants/enumerations.js');
 
 class Device extends BaseModel {
     constructor(data = {}) {
@@ -59,20 +60,22 @@ class Device extends BaseModel {
                                     type: FieldTypes.STRING,
                                     default: '',
                                     required: true,
+                                    readOnly: true,
                                     label: 'Manufacturer',
                                     dbField: 'manufacturer',
                                     maxLength: 255,
                                     placeholder: 'DENT Instruments',
-                                    enumValues: ['DENT Instruments', 'Honeywell', 'Siemens'],
+                                    enumValues: DEVICE_MANUFACTURERS,
                                     showOn: ['list', 'form'],
                                     filertable: ['true'],
                                 }),
                                 field({
-                                    name: 'modelNumber',
+                                    name: 'model_number',
                                     order: 2,
                                     type: FieldTypes.STRING,
                                     default: '',
                                     required: true,
+                                    readOnly: true,
                                     label: 'Model Number',
                                     dbField: 'model_number',
                                     maxLength: 255,
@@ -85,6 +88,7 @@ class Device extends BaseModel {
                                     type: FieldTypes.STRING,
                                     default: '',
                                     required: false,
+                                    readOnly: true,
                                     label: 'Description',
                                     dbField: 'description',
                                     maxLength: 50,
@@ -98,10 +102,11 @@ class Device extends BaseModel {
                                     type: FieldTypes.STRING,
                                     default: '',
                                     required: true,
+                                    readOnly: true,
                                     label: 'Type',
                                     dbField: 'type',
                                     maxLength: 255,
-                                    enumValues: ['Electric', 'Gas', 'Water', 'Steam', 'Other'],
+                                    enumValues: DEVICE_TYPES,
                                     placeholder: 'Electric',
                                     showOn: ['list', 'form'],
                                     filertable: ['true'],
@@ -118,6 +123,7 @@ class Device extends BaseModel {
                                     type: FieldTypes.BOOLEAN,
                                     default: true,
                                     required: true,
+                                    readOnly: true,
                                     label: 'Active',
                                     dbField: 'active',
                                     showOn: ['list', 'form'],
@@ -140,6 +146,7 @@ class Device extends BaseModel {
                                     type: FieldTypes.OBJECT,
                                     default: null,
                                     required: false,
+                                    readOnly: true,
                                     label: 'Registers',
                                     showOn: ['form'],
                                 }),
@@ -184,29 +191,18 @@ class Device extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
+                    order: 1,
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'Id',
                     dbField: 'id',
                 }),
-                tenantId: field({
-                    type: FieldTypes.NUMBER,
-                    default: null,
-                    readOnly: true,
-                    label: 'Tenant Id',
-                    dbField: 'tenant_id',
-                })
             },
 
             // Relationships
             relationships: {
-                tenant: relationship({
-                    type: RelationshipTypes.BELONGS_TO,
-                    model: 'Tenant',
-                    foreignKey: 'tenant_id',
-                    autoLoad: false,
-                }),
             },
 
             validation: {},

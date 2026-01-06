@@ -49,10 +49,6 @@ const tenantModel = require('../models/TenantWithSchema');
 const emailTemplatesModel = require('../models/EmailTemplatesWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ EmailTemplatesWithSchema loaded');
 
-// console.log('[SCHEMA ROUTES] Loading MeterMaintenanceWithSchema...');
-const meterMaintenanceModel = require('../models/MeterMaintenanceWithSchema');
-// console.log('[SCHEMA ROUTES] ✅ MeterMaintenanceWithSchema loaded');
-
 // console.log('[SCHEMA ROUTES] Loading MeterMonitoringAlertsWithSchema...');
 const meterMonitoringAlertsModel = require('../models/MeterMonitoringAlertsWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ MeterMonitoringAlertsWithSchema loaded');
@@ -89,7 +85,6 @@ const models = {
   user: userModel,
   tenant: tenantModel,
   emailTemplates: emailTemplatesModel,
-  meterMaintenance: meterMaintenanceModel,
   meterMonitoringAlerts: meterMonitoringAlertsModel,
   meterStatusLog: meterStatusLogModel,
   meterTriggers: meterTriggersModel,

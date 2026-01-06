@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MeterReadingsList, MeterDataRetriever } from '../components/dashboard';
+import { MeterReadingsList } from '../components/dashboard';
 import { meterReadingService } from '../services';
 import type { MeterReadingStats } from '../types/entities';
 import './Dashboard.css';
@@ -68,9 +68,6 @@ export const Dashboard: React.FC = () => {
         <h1 className="dashboard__title">Device Management Dashboard</h1>
         <p className="dashboard__subtitle">Real-time monitoring and energy management</p>
       </div> */}
-
-      {/* Live Meter Data Retriever */}
-      <MeterDataRetriever />
 
       {/* Statistics Section - Collapsible */}
       <div className="dashboard__stats-section">

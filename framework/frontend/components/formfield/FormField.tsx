@@ -154,9 +154,9 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
                 label={label}
                 required={required}
               >
-                {placeholder && <MenuItem value="">{placeholder}</MenuItem>}
-                {options?.map((option: FormFieldOption) => (
-                  <MenuItem key={option.value} value={option.value} disabled={option.disabled}>
+                {placeholder && <MenuItem key="__placeholder__" value="">{placeholder}</MenuItem>}
+                {options?.map((option: FormFieldOption, index: number) => (
+                  <MenuItem key={`option-${index}-${option.value}`} value={option.value} disabled={option.disabled}>
                     {option.label}
                   </MenuItem>
                 ))}
@@ -222,7 +222,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
                 label={label}
                 required={required}
               >
-                {placeholder && <MenuItem value="">{placeholder}</MenuItem>}
+                {placeholder && <MenuItem key="__placeholder__" value="">{placeholder}</MenuItem>}
                 {countries.map((country) => (
                   <MenuItem key={country.code} value={country.name}>
                     {country.name}
@@ -326,15 +326,7 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement | HTM
               name={name}
               label={label}
               value={value ?? ''}
-              onChange={(newValue: string) => {
-                const syntheticEvent = {
-                  target: {
-                    name,
-                    value: newValue,
-                  },
-                } as React.ChangeEvent<HTMLInputElement>;
-                onChange(syntheticEvent);
-              }}
+              onChange={onChange}
               onBlur={onBlur}
               required={required}
               disabled={disabled}

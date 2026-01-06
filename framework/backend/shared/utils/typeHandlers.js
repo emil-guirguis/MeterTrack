@@ -9,7 +9,7 @@
  * Map JavaScript type to PostgreSQL type
  * 
  * @param {*} value - JavaScript value
- * @param {string} fieldType - Expected field type from field metadata
+ * @param {string|null} fieldType - Expected field type from field metadata
  * @returns {string} PostgreSQL type name
  */
 function mapJavaScriptToPostgreSQLType(value, fieldType = null) {
@@ -69,10 +69,11 @@ function mapJavaScriptToPostgreSQLType(value, fieldType = null) {
 /**
  * Map PostgreSQL type to JavaScript type
  * 
- * @param {string} pgType - PostgreSQL type name
+ * @param {string|null} pgType - PostgreSQL type name
  * @returns {string} JavaScript type name
  */
 function mapPostgreSQLToJavaScriptType(pgType) {
+  if (!pgType) return 'string';
   const normalizedType = pgType.toUpperCase();
   
   // Integer types
@@ -117,7 +118,7 @@ function mapPostgreSQLToJavaScriptType(pgType) {
  * Converts JavaScript values to PostgreSQL-compatible format
  * 
  * @param {*} value - Value to serialize
- * @param {string} fieldType - Expected field type from field metadata
+ * @param {string|null} fieldType - Expected field type from field metadata
  * @returns {*} Serialized value ready for database
  */
 function serializeValue(value, fieldType = null) {
@@ -147,7 +148,8 @@ function serializeValue(value, fieldType = null) {
         throw new Error('Invalid date string');
       }
       return date.toISOString();
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(`Cannot convert "${value}" to Date: ${error.message}`);
     }
   }
@@ -157,7 +159,8 @@ function serializeValue(value, fieldType = null) {
     // Plain object - serialize to JSON
     try {
       return JSON.stringify(value);
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(`Cannot serialize object to JSON: ${error.message}`);
     }
   }
@@ -166,7 +169,8 @@ function serializeValue(value, fieldType = null) {
     // Array - serialize to JSON
     try {
       return JSON.stringify(value);
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(`Cannot serialize array to JSON: ${error.message}`);
     }
   }
@@ -190,7 +194,7 @@ function serializeValue(value, fieldType = null) {
   // Handle strings
   if (typeof value === 'string') {
     // If field type is number and string is numeric, convert it
-    if (fieldType === 'number' && !isNaN(value) && value.trim() !== '') {
+    if (fieldType === 'number' && !isNaN(Number(value)) && value.trim() !== '') {
       return parseInt(value, 10);
     }
     return value;
@@ -205,7 +209,7 @@ function serializeValue(value, fieldType = null) {
  * Converts PostgreSQL values to appropriate JavaScript types
  * 
  * @param {*} value - Value from database
- * @param {string} fieldType - Expected field type from field metadata
+ * @param {string|null} fieldType - Expected field type from field metadata
  * @param {string} fieldName - Field name for error messages
  * @returns {*} Deserialized JavaScript value
  */
@@ -241,7 +245,8 @@ function deserializeValue(value, fieldType = null, fieldName = 'field') {
         if (typeof value === 'string') {
           try {
             return JSON.parse(value);
-          } catch (error) {
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
             throw new Error(`Cannot parse JSON for field "${fieldName}": ${error.message}`);
           }
         }
@@ -260,7 +265,8 @@ function deserializeValue(value, fieldType = null, fieldName = 'field') {
               throw new Error('Parsed value is not an array');
             }
             return parsed;
-          } catch (error) {
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
             throw new Error(`Cannot parse JSON array for field "${fieldName}": ${error.message}`);
           }
         }
@@ -319,7 +325,8 @@ function deserializeValue(value, fieldType = null, fieldName = 'field') {
     }
   } catch (error) {
     // Log warning but don't fail - return original value
-    console.warn(`Type conversion warning for field "${fieldName}":`, error.message);
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.warn(`Type conversion warning for field "${fieldName}":`, err.message);
     return value;
   }
 }
@@ -339,19 +346,31 @@ function deserializeRow(row, fields) {
   
   const deserialized = {};
   
-  // Create a map of field names to field metadata for quick lookup
-  const fieldMap = new Map();
+  // Create maps for field lookup by both name and dbField
+  const fieldMapByName = new Map();
+  const fieldMapByDbField = new Map();
   fields.forEach(field => {
-    fieldMap.set(field.name, field);
+    fieldMapByName.set(field.name, field);
+    if (field.dbField) {
+      fieldMapByDbField.set(field.dbField, field);
+    }
   });
   
   // Deserialize each field in the row
   for (const [key, value] of Object.entries(row)) {
-    const field = fieldMap.get(key);
+    // Try to find field by name first, then by dbField
+    let field = fieldMapByName.get(key);
+    
+    if (!field) {
+      field = fieldMapByDbField.get(key);
+    }
     
     if (field) {
-      // Apply type conversion based on field metadata
-      deserialized[key] = deserializeValue(value, field.type, key);
+      // Use the field's name property as the key in the deserialized object
+      // This ensures tenant_id is properly mapped from the database column
+      const propertyName = field.name;
+      const deserializedValue = deserializeValue(value, field.type, propertyName);
+      deserialized[propertyName] = deserializedValue;
     } else {
       // Field not in metadata - return as-is (might be from JOIN)
       deserialized[key] = value;

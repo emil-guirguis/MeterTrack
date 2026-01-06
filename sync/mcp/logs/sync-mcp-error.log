@@ -6,3 +6,9 @@
 {"level":"error","message":"Failed to start Sync MCP Server: Failed to connect to Sync Database","stack":"Error: Failed to connect to Sync Database\n    at SyncMcpServer.initializeServices (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:121:23)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async SyncMcpServer.start (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:499:9)","timestamp":"2025-12-11T01:32:13.571Z"}
 {"level":"error","message":"Failed to start Sync MCP Server: Failed to connect to Sync Database","stack":"Error: Failed to connect to Sync Database\n    at SyncMcpServer.initializeServices (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:121:23)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async SyncMcpServer.start (file:///C:/Projects/MeterItPro/sync/mcp/dist/index.js:499:9)","timestamp":"2025-12-11T01:32:13.618Z"}
 {"level":"error","message":"Failed to start agent: Cannot read properties of undefined (reading 'getMeters')","timestamp":"2025-12-30T00:05:32.628Z"}
+{"level":"error","message":"Failed to start agent: column \"meter_element_id\" does not exist","timestamp":"2026-01-05T23:50:48.774Z"}
+{"level":"error","message":"Failed to start agent: column \"meter_element_id\" does not exist","timestamp":"2026-01-05T23:54:34.333Z"}
+{"level":"error","message":"Failed to start agent: column \"meter_element_id\" does not exist","timestamp":"2026-01-05T23:55:11.797Z"}
+{"level":"error","message":"Failed to start agent: column \"meter_element_id\" does not exist","timestamp":"2026-01-05T23:55:49.627Z"}
+{"level":"error","message":"Failed to start agent: column \"meter_element_id\" does not exist","timestamp":"2026-01-05T23:57:04.036Z"}
+{"level":"error","message":"Failed to start agent: column \"meter_element_id\" does not exist","timestamp":"2026-01-05T23:57:12.919Z"}

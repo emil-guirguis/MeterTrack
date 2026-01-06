@@ -166,16 +166,16 @@ export function createPhoneColumn<T>(
 }
 
 // Filter helpers
-export function createStatusFilter(key: string = 'status', options?: any): FilterDefinition {
+export function createStatusFilter(key: string = 'active', options?: any): FilterDefinition {
   return {
     key,
     label: 'Status',
     type: 'select',
     options: [
-      { label: 'Active', value: 'active' },
-      { label: 'Inactive', value: 'inactive' },
+      { label: 'All', value: '' },
+      { label: 'Active', value: 'true' },
+      { label: 'Inactive', value: 'false' },
     ],
-    placeholder: 'All Statuses',
     ...options
   };
 }

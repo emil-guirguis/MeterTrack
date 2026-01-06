@@ -119,8 +119,23 @@ export class MeterSyncAgent {
     this.status.isSyncing = true;
 
     try {
+      // Initialize tenant_id if not already set
       if (!this.tenant_id) {
-        throw new Error('Tenant ID not configured');
+        console.log('🔍 [Meter Sync] Tenant ID not initialized, retrieving from database...');
+        try {
+          const tenant = await this.syncDatabase.getTenant();
+          if (!tenant) {
+            throw new Error('No tenant configured in sync database');
+          }
+          if (!tenant.tenant_id) {
+            throw new Error('Tenant ID not found in database');
+          }
+          this.tenant_id = tenant.tenant_id;
+          console.log(`✅ [Meter Sync] Tenant ID initialized: ${this.tenant_id}`);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          throw new Error(`Failed to initialize tenant ID: ${errorMsg}`);
+        }
       }
 
       console.log(`\n🔄 [Meter Sync] Starting meter synchronization for tenant ${this.tenant_id}...`);
@@ -140,25 +155,56 @@ export class MeterSyncAgent {
       let updatedCount = 0;
       let deletedCount = 0;
 
-      // Create maps for efficient lookup
-      const remoteMap = new Map(remoteMeters.map((m: MeterEntity) => [m.meter_id, m]));
-      const localMap = new Map(localMeters.map((m: MeterEntity) => [m.meter_id, m]));
+      // Create maps for efficient lookup using composite key (meter_id, meter_element_id)
+      const remoteMap = new Map(
+        remoteMeters.map((m: MeterEntity) => [`${m.meter_id}:${m.meter_element_id}`, m])
+      );
+      const localMap = new Map(
+        localMeters.map((m: MeterEntity) => [`${m.meter_id}:${m.meter_element_id}`, m])
+      );
+
+      // Deactivate deleted meters (those in local but not in remote)
+      console.log(`\n➖ [Meter Sync] Processing deleted meters...`);
+      for (const localMeter of localMeters) {
+        const compositeKey = `${localMeter.meter_id}:${localMeter.meter_element_id}`;
+        const remoteMeter = remoteMap.get(compositeKey);
+
+        if ((remoteMeter && !remoteMeter.active) && localMeter.active) {
+          try {
+            await this.syncDatabase.deleteSyncMeter(localMeter.meter_id);
+            deletedCount++;
+            console.log(`   ✅ Deleted sync meter: ${localMeter.meter_id} (element: ${localMeter.element})`);
+          } catch (error) {
+            console.error(`   ❌ Failed to delete meter ${localMeter.meter_id}:`, error);
+          }
+        } else if (!remoteMeter) {
+          try {
+            await this.syncDatabase.deleteSyncMeter(localMeter.meter_id, localMeter.meter_element_id);
+            deletedCount++;
+            console.log(`   ✅ Deleted sync meter: ${localMeter.name} `);
+          } catch (error) {
+            console.error(`   ❌ Failed to delete meter ${localMeter.meter_id}:`, error);
+          }
+        }
+      }
 
       // Insert new meters
       console.log(`\n➕ [Meter Sync] Processing new meters...`);
       for (const remoteMeter of remoteMeters) {
-        if (!localMap.has(remoteMeter.meter_id)) {
+        const compositeKey = `${remoteMeter.meter_id}:${remoteMeter.meter_element_id}`;
+        if (!localMap.has(compositeKey)) {
           try {
             await this.syncDatabase.upsertMeter({
               meter_id: remoteMeter.meter_id,
-              meter_element_id: remoteMeter.meter_element_id,
+              name: remoteMeter.name,
               ip: remoteMeter.ip,
               port: remoteMeter.port,
               active: remoteMeter.active,
+              meter_element_id: remoteMeter.meter_element_id,
               element: remoteMeter.element,
             });
             insertedCount++;
-            console.log(`   ✅ Inserted meter: ${remoteMeter.meter_id} (${remoteMeter.meter_element_id})`);
+            console.log(`   ✅ Inserted meter: ${remoteMeter.name} (${remoteMeter.element})`);
           } catch (error) {
             console.error(`   ❌ Failed to insert meter ${remoteMeter.meter_id}:`, error);
           }
@@ -168,27 +214,30 @@ export class MeterSyncAgent {
       // Update existing meters
       console.log(`\n🔄 [Meter Sync] Processing meter updates...`);
       for (const remoteMeter of remoteMeters) {
-        const localMeter = localMap.get(remoteMeter.meter_id);
+        const compositeKey = `${remoteMeter.meter_id}:${remoteMeter.meter_element_id}`;
+        const localMeter = localMap.get(compositeKey);
         if (localMeter) {
           // Check if any fields have changed
           const hasChanges =
             localMeter.ip !== remoteMeter.ip ||
             localMeter.port !== remoteMeter.port ||
             localMeter.active !== remoteMeter.active ||
+            localMeter.element !== remoteMeter.element ||
             !localMeter.active;
 
           if (hasChanges) {
             try {
               await this.syncDatabase.upsertMeter({
                 meter_id: remoteMeter.meter_id,
-                meter_element_id: remoteMeter.meter_element_id,
+                name: remoteMeter.name,
                 ip: remoteMeter.ip,
                 port: remoteMeter.port,
                 active: remoteMeter.active,
+                meter_element_id: remoteMeter.meter_element_id,
                 element: remoteMeter.element,
               });
               updatedCount++;
-              console.log(`   ✅ Updated meter: ${remoteMeter.meter_id} (${remoteMeter.meter_element_id})`);
+              console.log(`   ✅ Updated meter: ${remoteMeter.name} (${remoteMeter.element})`);
             } catch (error) {
               console.error(`   ❌ Failed to update meter ${remoteMeter.meter_id}:`, error);
             }
@@ -196,21 +245,6 @@ export class MeterSyncAgent {
         }
       }
 
-      // Deactivate deleted meters
-      console.log(`\n➖ [Meter Sync] Processing deleted meters...`);
-      for (const localMeter of localMeters) {
-        const remoteMeter = remoteMap.get(localMeter.meter_id);
-        // Deactivate if meter doesn't exist in remote or is inactive in remote
-        if ((!remoteMeter || !remoteMeter.active) && localMeter.active) {
-          try {
-            await this.syncDatabase.deleteInactiveMeter(String(localMeter.meter_id));
-            deletedCount++;
-            console.log(`   ✅ Deactivated meter: ${localMeter.meter_id}`);
-          } catch (error) {
-            console.error(`   ❌ Failed to deactivate meter ${localMeter.meter_id}:`, error);
-          }
-        }
-      }
 
       // Get updated meter count
       const updatedLocalMeters = await this.syncDatabase.getMeters(true);
@@ -281,22 +315,27 @@ export class MeterSyncAgent {
   private async getRemoteMeters(tenantId: number): Promise<MeterEntity[]> {
     try {
       const query = `
-        SELECT m.id as meter_id,
-               me.ip as ip,
-               me.port as port,
-               m.active as active,
-               me.element as element,
-               me.meter_element_id as meter_element_id
+        SELECT m.id AS meter_id, m.ip,m.port,m.active,me.element,
+               me.id AS meter_element_id, 
+               m.name || '-' || me.name AS name
           FROM meter m
-               JOIN meter_element me ON me.meter_id = me.id
-        WHERE tenant_id = $1
+               JOIN meter_element me ON me.meter_id = m.id 
+        WHERE m.tenant_id = $1
       `;
 
       console.log(`🔍 [Meter Sync] Executing remote query for tenant ${tenantId}`);
+      console.log(`🔍 [Meter Sync SQL]  ${query}`);
       const result = await this.remotePool.query(query, [tenantId]);
       console.log(`✅ [Meter Sync] Remote query returned ${result.rows.length} meter(s)`);
+      if (result.rows.length > 0) {
+        console.log(`📋 [Meter Sync] Sample meter data:`, JSON.stringify(result.rows[0], null, 2));
+      }
 
-      return result.rows as MeterEntity[];
+      // Convert meter_id to number
+      return result.rows.map((row: any) => ({
+        ...row,
+        meter_id: Number(row.meter_id),
+      })) as MeterEntity[];
     } catch (error) {
       console.error('Failed to query remote meters:', error);
       throw new Error(`Failed to query remote database: ${error instanceof Error ? error.message : 'Unknown error'}`);

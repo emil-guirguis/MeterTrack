@@ -7,5 +7,4 @@ export { MeterList } from './MeterList';
 export { MeterManagementPage } from './MeterManagementPage';
 export { RegisterMapEditor } from './RegisterMapEditor';
 export { useMetersEnhanced, useMeters, useMetersStore } from './metersStore';
-export * from './meterConfig';
 export * from './meterService';

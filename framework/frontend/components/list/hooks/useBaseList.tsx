@@ -164,24 +164,35 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
 
   const canBulkAction = useMemo(() => allowBulkActions, [allowBulkActions]);
 
-  // Data fetching and lifecycle
-  useEffect(() => {
-    // Fetch items on component mount
-    console.log('[useBaseList] Component mounted, fetching initial items');
-    if (store.fetchItems) {
-      store.fetchItems();
-    }
-  }, []);
-
-  // Initialize default 'active' filter if the field exists
+  // Initialize default 'active' filter and fetch data
   useEffect(() => {
     // Check if 'active' filter exists in filter definitions
     const hasActiveFilter = memoizedFilterDefinitions.some(f => f.key === 'active');
     
-    // If active filter exists and no filters are currently set, set active to 'true'
-    if (hasActiveFilter && Object.keys(filters).length === 0) {
+    // If filters are currently set, don't override them
+    if (Object.keys(filters).length > 0) {
+      return;
+    }
+    
+    // If active filter exists, set it and fetch with that filter
+    if (hasActiveFilter) {
       console.log('[useBaseList] Initializing default active filter to true');
-      setFiltersState({ active: 'true' });
+      const defaultFilters = { active: 'true' };
+      setFiltersState(defaultFilters);
+      
+      // Set filters in store and fetch
+      if (store.setFilters) {
+        store.setFilters(defaultFilters);
+      }
+      if (store.fetchItems) {
+        (store.fetchItems as any)({ _bypassCache: true });
+      }
+    } else {
+      // No active filter, just fetch all items
+      console.log('[useBaseList] No active filter, fetching all items');
+      if (store.fetchItems) {
+        store.fetchItems();
+      }
     }
   }, [memoizedFilterDefinitions]);
 
@@ -453,7 +464,9 @@ export function useBaseList<T extends Record<string, any>, StoreType extends Enh
                   onChange={(e) => setFilter(filter.key, e.target.value)}
                   aria-label={filter.label}
                 >
-                  <option value="">{filter.placeholder || `All ${filter.label}`}</option>
+                  {filter.key !== 'active' && (
+                    <option value="">{filter.placeholder || `All ${filter.label}`}</option>
+                  )}
                   {options.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}

@@ -316,7 +316,7 @@ describe('BaseModel', () => {
               }),
               tenant_id: field({
                 type: FieldTypes.NUMBER,
-                readOnly: true,
+                readOnly: false,
                 label: 'Tenant ID'
               })
             }

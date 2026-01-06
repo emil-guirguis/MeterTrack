@@ -115,10 +115,10 @@ router.post(
             let meterId;
             if (meterResult.rows.length === 0) {
               // Create meter if it doesn't exist
-              const insertMeterQuery = `INSERT INTO meter (site_id, external_id, name, created_at) 
-                 VALUES ($1, $2, $3, NOW()) 
+              const insertMeterQuery = `INSERT INTO meter (id, name, device_id, ip, port, element) 
+                 VALUES ($1, $2, $3, $4,$5) 
                  RETURNING id`;
-              const insertMeterParams = [siteId, reading.meter_external_id, reading.meter_external_id];
+              const insertMeterParams = [siteId, reading.meter_id, reading.meter_element];
               logQuery(insertMeterQuery, insertMeterParams);
               const insertMeterResult = await client.query(insertMeterQuery, insertMeterParams);
               meterId = insertMeterResult.rows[0] && insertMeterResult.rows[0].id;
@@ -127,8 +127,8 @@ router.post(
             }
 
             // Insert meter reading
-            const readingQuery = `INSERT INTO meter_reading (meter_id, timestamp, data_point, value, unit, created_at)
-               VALUES ($1, $2, $3, $4, $5, NOW())`;
+            const readingQuery = `INSERT INTO meter_reading (meter_id, timestamp, data_point, value, unit)
+               VALUES ($1, $2, $3, $4, $5)`;
             const readingParams = [
               meterId,
               reading.timestamp,
@@ -277,7 +277,8 @@ router.post('/heartbeat', authenticateSyncServer, async (req, res) => {
 router.get('/getmeters', authenticateSyncServer, async (req, res) => {
   try {
     const tenantId = req.tenantId;
-    const sql = `select m.id as meter_id, m.device_id, m.ip, m.port, me.element, m.active 
+    const sql = `select m.id as meter_id, m.device_id, m.ip, m.port, m.active ,  
+                me.meter_element_id, me.element, me.name as name 
                  from meter m
                  	  join meter_element me on me.meter_id = m.id
                  where m.tenant_id = $1`;

@@ -9,7 +9,6 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -18,7 +17,30 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    console.log('\n' + '█'.repeat(120));
+    console.log('█ [AUTH] Token decoded');
+    console.log('█'.repeat(120));
+    console.log('Decoded token:', decoded);
+    console.log('█'.repeat(120) + '\n');
+    
     const user = await User.findById(decoded.userId);
+    
+    // CRITICAL: Always set tenant_id from JWT token
+    // This ensures tenant_id is available even if deserialization didn't work
+    if (user && decoded.tenant_id) {
+      user.tenant_id = decoded.tenant_id;
+    } else if (user && !user.tenant_id && decoded.tenant_id) {
+      // Fallback: if user doesn't have tenant_id, use JWT token value
+      user.tenant_id = decoded.tenant_id;
+    }
+    
+    console.log('\n' + '█'.repeat(120));
+    console.log('█ [AUTH] User.findById result');
+    console.log('█'.repeat(120));
+    console.log('User object keys:', Object.keys(user || {}));
+    console.log('User object:', JSON.stringify(user, null, 2));
+    console.log('█'.repeat(120) + '\n');
     
     if (!user) {
       return res.status(401).json({
@@ -37,6 +59,18 @@ const authenticateToken = async (req, res, next) => {
 
     // Remove password hash before attaching to request
     delete user.passwordhash;
+    
+    // CRITICAL: Set global tenant context for automatic filtering
+    global.currentTenantId = user.tenant_id;
+    
+    console.log('\n' + '█'.repeat(120));
+    console.log('█ [AUTH] GLOBAL TENANT CONTEXT SET');
+    console.log('█'.repeat(120));
+    console.log('User ID:', user.id);
+    console.log('User Email:', user.email);
+    console.log('Tenant ID:', user.tenant_id);
+    console.log('Global tenant context set to:', global.currentTenantId);
+    console.log('█'.repeat(120) + '\n');
     
     // Derive permissions from role using PermissionsService
     const PermissionsService = require('../services/PermissionsService');
@@ -88,6 +122,15 @@ const authenticateToken = async (req, res, next) => {
     if (!user.tenant_id && user.tenant) {
       user.tenant_id = user.tenant.id || user.tenant;
     }
+    
+    console.log('[AUTH MIDDLEWARE] User loaded:', {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      tenant_id: user.tenant_id,
+      active: user.active
+    });
     
     req.user = user;
     

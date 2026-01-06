@@ -110,26 +110,10 @@ class Location extends BaseModel {
                                     name: 'active',
                                     order: 2,
                                     type: FieldTypes.BOOLEAN,
-                                    default: false,
+                                    default: true,
                                     required: false,
                                     label: 'Active',
                                     dbField: 'active',
-                                    showOn: ['form'],
-                                }),
-                            ],
-                        }),
-                        section({
-                            name: 'Details',
-                            order: 3,
-                            fields: [
-                                field({
-                                    name: 'squareFootage',
-                                    order: 1,
-                                    type: FieldTypes.NUMBER,
-                                    default: 0,
-                                    required: false,
-                                    label: 'Square Footage',
-                                    dbField: 'square_footage',
                                     showOn: ['form'],
                                 }),
                             ],
@@ -291,16 +275,17 @@ class Location extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'Id',
                     dbField: 'id',
                 }),
-                tenantId: field({
+                tenant_id: field({
                     type: FieldTypes.NUMBER,
                     default: null,
-                    readOnly: true,
+                    readOnly: false,
                     label: 'Tenant ID',
                     dbField: 'tenant_id',
                 })

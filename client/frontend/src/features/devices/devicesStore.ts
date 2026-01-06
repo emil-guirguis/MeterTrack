@@ -1,8 +1,9 @@
 /**
- * Devices Store 
+ * Devices Store - READ-ONLY
  * 
  * Combines API service and state management for devices.
- * Handles all device-related data fetching, mutations, and state.
+ * Handles device data fetching only - devices are read-only and managed externally.
+ * CREATE, UPDATE, DELETE operations have been removed.
  */
 
 import type { Device } from './deviceConfig';
@@ -13,7 +14,7 @@ import { withTokenRefresh } from '../../store/middleware/apiMiddleware';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 // ============================================================================
-// API SERVICE (Internal)
+// API SERVICE (Internal) - READ-ONLY
 // ============================================================================
 
 interface ApiResponse<T> {
@@ -88,39 +89,18 @@ class DeviceAPI {
     };
   }
 
-  async getById(id: string): Promise<Device> {
+  async getById(id: string | number): Promise<Device> {
     const response = await this.request<ApiResponse<Device>>(`/device/${id}`);
     return response.data;
   }
 
-  async create(data: Partial<Device>): Promise<Device> {
-    const response = await this.request<ApiResponse<Device>>('/device', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
-
-  async update(id: string, data: Partial<Device>): Promise<Device> {
-    const response = await this.request<ApiResponse<Device>>(`/device/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.request<ApiResponse<void>>(`/device/${id}`, {
-      method: 'DELETE',
-    });
-  }
-  
+  // NOTE: CREATE, UPDATE, DELETE methods removed - devices are read-only
 }
 
 const api = new DeviceAPI();
 
 // ============================================================================
-// STORE CONFIGURATION
+// STORE CONFIGURATION - READ-ONLY
 // ============================================================================
 
 const devicesService = {
@@ -130,28 +110,23 @@ const devicesService = {
     });
   },
 
-  async getById(id: string): Promise<Device> {
+  async getById(id: string | number): Promise<Device> {
     return withTokenRefresh(async () => {
       return await api.getById(id);
     });
   },
 
-  async create(data: Partial<Device>): Promise<Device> {
-    return withTokenRefresh(async () => {
-      return await api.create(data);
-    });
+  // NOTE: CREATE, UPDATE, DELETE methods removed - devices are read-only
+  async create(): Promise<Device> {
+    throw new Error('Device creation is not allowed - devices are read-only');
   },
 
-  async update(id: string, data: Partial<Device>): Promise<Device> {
-    return withTokenRefresh(async () => {
-      return await api.update(id, data);
-    });
+  async update(): Promise<Device> {
+    throw new Error('Device updates are not allowed - devices are read-only');
   },
 
-  async delete(id: string): Promise<void> {
-    return withTokenRefresh(async () => {
-      await api.delete(id);
-    });
+  async delete(): Promise<void> {
+    throw new Error('Device deletion is not allowed - devices are read-only');
   },
 };
 

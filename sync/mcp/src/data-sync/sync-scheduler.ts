@@ -196,7 +196,39 @@ export class SyncScheduler {
 
       // Execute meter configuration download (from remote to local)
       // Download failures are isolated and don't block other operations (Requirement 9.5)
-      const meterDownloadResult = await this.downloadManager.syncMeterConfigurations();
+      let meterDownloadResult: MeterSyncResult;
+      try {
+        // Get tenant ID from local database
+        const tenantRows = await this.downloadManager.getTenantId();
+        if (tenantRows.length === 0) {
+          this.logger.warn('No tenant found in local database, skipping meter sync');
+          meterDownloadResult = {
+            success: false,
+            newMeters: 0,
+            updatedMeters: 0,
+            totalMeters: 0,
+            error: 'No tenant found in local database',
+            duration: 0,
+            newMeterIds: [],
+            updatedMeterIds: [],
+          };
+        } else {
+          const tenantId = tenantRows[0].id;
+          meterDownloadResult = await this.downloadManager.syncMeterConfigurations(tenantId);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        meterDownloadResult = {
+          success: false,
+          newMeters: 0,
+          updatedMeters: 0,
+          totalMeters: 0,
+          error: errorMessage,
+          duration: 0,
+          newMeterIds: [],
+          updatedMeterIds: [],
+        };
+      }
       
       if (meterDownloadResult.success) {
         this.logger.info(

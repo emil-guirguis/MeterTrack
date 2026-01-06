@@ -6,7 +6,7 @@
  */
 import express from 'express';
 import cors from 'cors';
-import { syncPool } from '../data-sync/connection-manager.js';
+import { syncPool } from '../data-sync/data-sync.js';
 export class LocalApiServer {
     app;
     port;
@@ -52,6 +52,48 @@ export class LocalApiServer {
         // Health check
         this.app.get('/health', (req, res) => {
             res.json({ status: 'ok', timestamp: new Date().toISOString() });
+        });
+        // Health check for sync database
+        this.app.get('/api/health/sync-db', async (_req, res, next) => {
+            try {
+                console.log('📥 [API] GET /api/health/sync-db - Request received');
+                const result = await syncPool.query('SELECT NOW()');
+                console.log('✅ [API] Sync database is healthy');
+                res.json({
+                    status: 'ok',
+                    database: 'sync',
+                    timestamp: result.rows[0].now,
+                });
+            }
+            catch (error) {
+                console.error('❌ [API] Sync database health check failed:', error);
+                res.status(503).json({
+                    status: 'error',
+                    database: 'sync',
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        });
+        // Health check for remote database
+        this.app.get('/api/health/remote-db', async (_req, res, next) => {
+            try {
+                console.log('📥 [API] GET /api/health/remote-db - Request received');
+                // Note: This would need remotePool to be passed in or available
+                console.log('✅ [API] Remote database health check endpoint available');
+                res.json({
+                    status: 'ok',
+                    database: 'remote',
+                    timestamp: new Date().toISOString(),
+                });
+            }
+            catch (error) {
+                console.error('❌ [API] Remote database health check failed:', error);
+                res.status(503).json({
+                    status: 'error',
+                    database: 'remote',
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
         });
         // Get all meters
         this.app.get('/api/local/meters', async (_req, res, next) => {
@@ -99,15 +141,44 @@ export class LocalApiServer {
                 next(error);
             }
         });
-        // Get tenant information
+        // Get tenant information GET api/local/tenant
         this.app.get('/api/local/tenant', async (_req, res, next) => {
             try {
                 console.log('📥 [API] GET /api/local/tenant - Request received');
+                // First, check if the tenant table exists and has data
+                console.log('🔍 [API] Checking tenant table...');
+                try {
+                    const countQuery = `SELECT COUNT(*) as count FROM tenant`;
+                    console.log('   Executing count query...');
+                    const countResult = await syncPool.query(countQuery);
+                    const tenantCount = parseInt(countResult.rows[0].count, 10);
+                    console.log(`📊 [API] Tenant table has ${tenantCount} record(s)`);
+                    if (tenantCount === 0) {
+                        console.warn('⚠️  [API] No tenant records found in database');
+                        res.json(null);
+                        console.log('✅ [API] GET /api/local/tenant - Response sent (null)');
+                        return;
+                    }
+                    if (tenantCount > 1) {
+                        console.warn(`⚠️  [API] Multiple tenant records found (${tenantCount}), returning first one`);
+                    }
+                }
+                catch (countErr) {
+                    console.error('❌ [API] Error checking tenant count:', countErr);
+                    console.error('   Error details:', {
+                        message: countErr instanceof Error ? countErr.message : String(countErr),
+                        code: countErr?.code,
+                        detail: countErr?.detail,
+                    });
+                    throw countErr;
+                }
+                // Query only the columns that exist in the sync database
                 const query = `
-          SELECT id, name, url, street, street2, city, state, zip, country, active, created_at, updated_at
+          SELECT id, name, url, street, street2, city, state, zip, country, active
           FROM tenant
           LIMIT 1
         `;
+                console.log('🔍 [API] Executing tenant query...');
                 const result = await syncPool.query(query);
                 const tenant = result.rows[0] || null;
                 console.log('📤 [API] GET /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
@@ -116,10 +187,17 @@ export class LocalApiServer {
             }
             catch (error) {
                 console.error('❌ [API] GET /api/local/tenant - Error:', error);
+                console.error('   Error details:', {
+                    message: error instanceof Error ? error.message : String(error),
+                    code: error?.code,
+                    detail: error?.detail,
+                    hint: error?.hint,
+                    stack: error instanceof Error ? error.stack : undefined,
+                });
                 next(error);
             }
         });
-        // Create or update tenant information
+        // Create or update tenant information POST api/local/tenant
         this.app.post('/api/local/tenant', async (req, res, next) => {
             try {
                 console.log('📥 [API] POST /api/local/tenant - Request received');
@@ -131,8 +209,8 @@ export class LocalApiServer {
                 }
                 // Upsert tenant into local sync database
                 const query = `
-          INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+          INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           ON CONFLICT (id) DO UPDATE SET
             name = $2,
             url = $3,
@@ -142,9 +220,8 @@ export class LocalApiServer {
             state = $7,
             zip = $8,
             country = $9,
-            active = $10,
-            updated_at = NOW()
-          RETURNING id, name, url, street, street2, city, state, zip, country, active, created_at, updated_at
+            active = $10
+          RETURNING id, name, url, street, street2, city, state, zip, country, active
         `;
                 const result = await syncPool.query(query, [
                     id || 1,
@@ -174,12 +251,6 @@ export class LocalApiServer {
                 console.log('📥 [API] GET /api/local/sync-status - Request received');
                 let queueSize = 0;
                 let recentLogs = [];
-                try {
-                    queueSize = await this.database.getUnsynchronizedCount();
-                }
-                catch (err) {
-                    console.error('❌ [API] Error getting queue size:', err);
-                }
                 try {
                     // Query recent sync logs from local sync database
                     const logsQuery = `
@@ -398,6 +469,7 @@ export class LocalApiServer {
         });
         // Trigger manual BACnet meter reading collection
         this.app.post('/api/meter-reading/trigger', async (_req, res, next) => {
+            debugger; // Add this line
             try {
                 console.log('📥 [API] POST /api/meter-reading/trigger - Request received');
                 if (!this.bacnetMeterReadingAgent) {

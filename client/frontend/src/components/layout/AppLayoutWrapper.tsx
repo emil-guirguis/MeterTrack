@@ -116,20 +116,9 @@ const menuItems: MenuItem[] = [
  * Use this component instead of importing AppLayout directly.
  */
 export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
-  // Mock user for testing - replace with real useAuth when backend is available
-  const mockUser = {
-    id: '1',
-    name: 'Test User',
-    email: 'test@example.com',
-    role: 'admin' as const,
-    permissions: [],
-    status: 'active' as const,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
-
-  const user = mockUser;
-  const { logout: authLogout } = useAuth();
+  // Use real authentication data
+  const { user, logout: authLogout, checkPermission } = useAuth();
+  
   const logout = () => {
     console.log('🚪 Logout button clicked');
     
@@ -140,7 +129,6 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
     console.log('🔄 Redirecting to login page');
     window.location.href = '/login';
   };
-  const checkPermission = () => true; // Mock always returns true
 
   // Get responsive state
   const responsive = useResponsive();

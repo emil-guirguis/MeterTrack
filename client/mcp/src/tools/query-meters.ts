@@ -9,7 +9,7 @@ interface QueryMetersArgs {
 
 interface MeterRow {
   tenant_id: number;
-  meter_id: string;
+  meter_id: number;
   meter_name: string;
   bacnet_device_id: number | null;
   bacnet_ip: string | null;

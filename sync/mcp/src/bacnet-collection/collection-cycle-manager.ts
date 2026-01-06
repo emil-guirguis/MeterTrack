@@ -186,6 +186,69 @@ export class CollectionCycleManager {
   ): Promise<PendingReading[]> {
     const readings: PendingReading[] = [];
 
+    try {
+      // For now, we'll read a default set of data points
+      // In a full implementation, this would come from meter configuration
+      const defaultDataPoints = [
+        { name: 'presentValue', objectType: 'analogInput', objectInstance: 0, property: 'presentValue' },
+      ];
+
+      for (const dataPoint of defaultDataPoints) {
+        try {
+          this.logger.debug(`Reading ${dataPoint.name} from meter ${meter.id}`);
+
+          const result = await bacnetClient.readProperty(
+            meter.ip,
+            meter.port || 47808,
+            dataPoint.objectType,
+            dataPoint.objectInstance,
+            dataPoint.property,
+            readTimeoutMs
+          );
+
+          if (result.success && result.value !== undefined) {
+            readings.push({
+              meter_id: meter.id,
+              timestamp: new Date(),
+              data_point: dataPoint.name,
+              value: Number(result.value),
+              unit: 'unknown',
+            });
+            this.logger.debug(`Successfully read ${dataPoint.name} from meter ${meter.id}: ${result.value}`);
+          } else {
+            const errorMsg = result.error || 'Unknown error';
+            this.logger.warn(`Failed to read ${dataPoint.name} from meter ${meter.id}: ${errorMsg}`);
+            errors.push({
+              meterId: String(meter.id),
+              dataPoint: dataPoint.name,
+              operation: 'read',
+              error: errorMsg,
+              timestamp: new Date(),
+            });
+          }
+        } catch (dpError) {
+          const errorMsg = dpError instanceof Error ? dpError.message : String(dpError);
+          this.logger.error(`Error reading data point ${dataPoint.name} from meter ${meter.id}: ${errorMsg}`);
+          errors.push({
+            meterId: String(meter.id),
+            dataPoint: dataPoint.name,
+            operation: 'read',
+            error: errorMsg,
+            timestamp: new Date(),
+          });
+        }
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error reading meter data points for meter ${meter.id}: ${errorMsg}`);
+      errors.push({
+        meterId: String(meter.id),
+        operation: 'read',
+        error: errorMsg,
+        timestamp: new Date(),
+      });
+    }
+
     return readings;
   }
 }

@@ -35,10 +35,7 @@ export const Permission = {
   METER_DELETE: 'meter:delete',
   
   // Device Management
-  DEVICE_CREATE: 'device:create',
   DEVICE_READ: 'device:read',
-  DEVICE_UPDATE: 'device:update',
-  DEVICE_DELETE: 'device:delete',
   
   // Settings Management
   SETTINGS_READ: 'settings:read',

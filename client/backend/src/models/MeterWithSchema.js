@@ -8,6 +8,7 @@
 
 const BaseModel = require('../../../../framework/backend/api/base/BaseModel');
 const { defineSchema, field, tab, section, FieldTypes } = require('../../../../framework/backend/api/base/SchemaDefinition');
+const { DEVICE_MANUFACTURERS } = require('../constants/enumerations');
 
 class Meter extends BaseModel {
   constructor(data = {}) {
@@ -113,8 +114,7 @@ class Meter extends BaseModel {
                   min: 1,
                   showOn: ['list', 'form'],
                   validate: true,
-                  validationFields: ['description'],
-                  validationQuery: 'SELECT id, description FROM device WHERE active = true ORDER BY description ASC',
+                  validationFields: ['manufacturer', 'model_number'],
                 }),
                 field({
                   name: 'location_id',
@@ -162,7 +162,7 @@ class Meter extends BaseModel {
               ],
             }),
             section({
-              name: 'Status & Configuration',
+              name: 'Status & Installation',
               order: 3,
               fields: [
                 field({
@@ -174,6 +174,7 @@ class Meter extends BaseModel {
                   label: 'Active',
                   dbField: 'active',
                   showOn: ['list', 'form'],
+                  filertable: ['true'],
                 }),
                 field({
                   name: 'installation_date',
@@ -218,7 +219,7 @@ class Meter extends BaseModel {
           sectionOrientation:'vertical',
           sections: [
             section({
-              name: 'Notes',
+              name: 'notes',
               order: 1,
               minWidth: '500px',
               fields: [
@@ -288,6 +289,7 @@ class Meter extends BaseModel {
       // Entity fields - read-only, system-managed
       entityFields: {
         id: field({
+          name: 'id',
           type: FieldTypes.NUMBER,
           default: null,
           readOnly: true,
@@ -299,7 +301,7 @@ class Meter extends BaseModel {
         tenant_id: field({
           type: FieldTypes.NUMBER,
           default: 0,
-          readOnly: true,
+          readOnly: false,
           label: 'Tenant ID',
           dbField: 'tenant_id',
         }),

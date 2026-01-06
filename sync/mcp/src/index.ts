@@ -17,14 +17,15 @@ import {
 import dotenv from 'dotenv';
 import winston from 'winston';
 import { Pool } from 'pg';
-import { syncPool, remotePool, initializePools, closePools } from './data-sync/connection-manager.js';
+import { syncPool, remotePool, initializePools, closePools } from './data-sync/data-sync.js';
 import { MeterCollector, CollectorConfig } from './meter-collection/collector.js';
 import { SyncManager, createSyncManagerFromEnv } from './sync-service/sync-manager.js';
 import { ClientSystemApiClient } from './sync-service/api-client.js';
 import { LocalApiServer, createAndStartLocalApiServer } from './api/server.js';
 import { MeterSyncAgent } from './sync-service/meter-sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
-import { SyncDatabase } from './types/entities.js';
+import { SyncDatabase as SyncDatabaseInterface } from './types/entities.js';
+import { SyncDatabase } from './data-sync/data-sync.js';
 
 // Load environment variables from root .env file first, then local .env
 // Use __dirname equivalent for ES modules
@@ -134,39 +135,31 @@ class SyncMcpServer {
 
       // Initialize BACnet Meter Reading Agent
       console.log('📊 [Services] Initializing BACnet Meter Reading Agent...');
-      // Create a minimal database object for the agent
-      const minimalDatabase = {
-        getTenant: async () => null,
-        getMeters: async () => [],
-        upsertMeter: async () => {},
-        deleteInactiveMeter: async () => {},
-        logSyncOperation: async () => {},
-        getUnsynchronizedReadings: async () => [],
-        deleteSynchronizedReadings: async () => 0,
-        incrementRetryCount: async () => {},
-        getUnsynchronizedCount: async () => 0,
-        getSyncStats: async () => ({}),
-        getRecentReadings: async () => [],
-        getRecentSyncLogs: async () => [],
-      } as any;
+      // Create a real database service
+      this.syncDatabase = new SyncDatabase({ 
+        host: process.env.POSTGRES_SYNC_HOST || 'localhost',
+        port: parseInt(process.env.POSTGRES_SYNC_PORT || '5432', 10),
+        database: process.env.POSTGRES_SYNC_DB || 'postgres',
+        user: process.env.POSTGRES_SYNC_USER || 'postgres',
+        password: process.env.POSTGRES_SYNC_PASSWORD || '',
+      });
+      console.log('✅ [Services] SyncDatabase service created');
       
-      this.syncDatabase = minimalDatabase;
-      
-      this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
-        syncDatabase: this.syncDatabase,
-        collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '60', 10),
-        enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
-        bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
-        bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
-        connectionTimeoutMs: parseInt(process.env.BACNET_CONNECTION_TIMEOUT_MS || '5000', 10),
-        readTimeoutMs: parseInt(process.env.BACNET_READ_TIMEOUT_MS || '3000', 10),
-      }, logger);
-      console.log('✅ [Services] BACnet Meter Reading Agent initialized');
+      // this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
+      //   syncDatabase: this.syncDatabase,
+      //   collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '60', 10),
+      //   enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
+      //   bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
+      //   bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
+      //   connectionTimeoutMs: parseInt(process.env.BACNET_CONNECTION_TIMEOUT_MS || '5000', 10),
+      //   readTimeoutMs: parseInt(process.env.BACNET_READ_TIMEOUT_MS || '3000', 10),
+      // }, logger);
+      // console.log('✅ [Services] BACnet Meter Reading Agent initialized');
 
       // Start BACnet Meter Reading Agent
       console.log('▶️  [Services] Starting BACnet Meter Reading Agent...');
-      await this.bacnetMeterReadingAgent.start();
-      console.log('✅ [Services] BACnet Meter Reading Agent started');
+      // DISABLED: await this.bacnetMeterReadingAgent.start();
+      console.log('⏸️  [Services] BACnet Meter Reading Agent disabled (not started)');
 
       // Initialize Meter Sync Agent
       console.log('🔄 [Services] Initializing Meter Sync Agent...');

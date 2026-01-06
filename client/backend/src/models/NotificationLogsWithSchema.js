@@ -120,6 +120,7 @@ class NotificationLogs extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,

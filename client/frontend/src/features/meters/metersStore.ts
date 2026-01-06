@@ -1,9 +1,38 @@
 // Meters Entity Store
 
-import type { Meter } from './meterConfig';
 import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
 import { tokenStorage } from '../../utils/tokenStorage';
+
+// Meter TypeScript type
+export type Meter = {
+  id: string;
+  name: string;
+  serial_number: string;
+  device_id: number;
+  location_id: number;
+  ip: string;
+  port: number;
+  active: boolean;
+  installation_date?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  status?: string;
+  type?: string;
+  lastReading?: {
+    value: number;
+    timestamp: string;
+    quality?: 'good' | 'questionable' | 'estimated';
+  };
+  configuration?: {
+    ipAddress?: string;
+    port?: number;
+    slaveId?: number;
+  };
+  locationId?: string;
+  [key: string]: any;
+};
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 

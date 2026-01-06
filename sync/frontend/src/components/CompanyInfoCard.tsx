@@ -68,13 +68,11 @@ function isValidTenantInfo(data: unknown): data is TenantInfo {
   console.log('🔍 [Validation] Checking tenant data:', {
     id: { value: obj.id, type: typeof obj.id },
     name: { value: obj.name, type: typeof obj.name },
-    created_at: { value: obj.created_at, type: typeof obj.created_at },
   });
   
   const isValid = (
     (typeof obj.id === 'number' || typeof obj.id === 'string') &&
     typeof obj.name === 'string' &&
-    (typeof obj.created_at === 'string' || obj.created_at instanceof Date) &&
     obj.name.trim().length > 0
   );
   
@@ -115,8 +113,6 @@ async function handleLogin(
         zip: response.tenant.zip,
         country: response.tenant.country,
         active: response.tenant.active,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
       console.log('✅ [CompanyInfoCard] Login successful, saving tenant:', tenantInfo);
@@ -542,7 +538,7 @@ export default function CompanyInfoCard() {
 
         <Box mt={2}>
           <Typography variant="caption" color="text.secondary">
-            Created: {new Date(tenantInfo.created_at).toLocaleString()}
+            Created: {}
           </Typography>
         </Box>
       </CardContent>

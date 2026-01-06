@@ -42,6 +42,7 @@ export interface BaseFormProps {
   fieldsToClean?: string[];
   validationDataProvider?: (entityName: string, fieldDef: any) => Promise<Array<{ id: any; label: string }>>;
   showTabs?: boolean;
+  onTabChange?: (tabName: string) => void;
   // Form width constraints
   formMaxWidth?: string;
   formMinWidth?: string;
@@ -105,6 +106,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
   fieldsToClean = ['id'],
   validationDataProvider,
   showTabs = true,
+  onTabChange,
   // Form width constraints
   formMaxWidth,
   formMinWidth,
@@ -194,13 +196,47 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     });
   }, [fieldSections, formTabsFieldSections, schema?.formFields]);
 
+  // Call onTabChange when effectiveActiveTab changes (including initial load)
+  React.useEffect(() => {
+    if (effectiveActiveTab && onTabChange) {
+      console.log('[BaseForm] Calling onTabChange for effectiveActiveTab:', effectiveActiveTab);
+      onTabChange(effectiveActiveTab);
+    }
+  }, [effectiveActiveTab, onTabChange]);
+
   const form = isDynamicForm
     ? useEntityFormWithStore<any, any>({
         entity: schema ? entity : undefined,
         store,
         entityToFormData: (entityData) => {
           if (!schema) return {};
-          const formSchema = createFormSchema(schema.formFields);
+          
+          // Build form schema from formTabs fields (primary source)
+          const allFormFields: any = {};
+          
+          // First, add fields from formTabs
+          if (schema.formTabs) {
+            schema.formTabs.forEach((tab: any) => {
+              if (tab.sections) {
+                tab.sections.forEach((section: any) => {
+                  if (section.fields) {
+                    section.fields.forEach((field: any) => {
+                      allFormFields[field.name] = field;
+                    });
+                  }
+                });
+              }
+            });
+          }
+          
+          // Then, add fields from formFields (for backward compatibility)
+          Object.entries(schema.formFields || {}).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (!allFormFields[fieldName]) {
+              allFormFields[fieldName] = fieldDef;
+            }
+          });
+          
+          const formSchema = createFormSchema(allFormFields);
           const formData = formSchema.fromApi(entityData);
           
           // Also include entityFields data
@@ -214,7 +250,33 @@ export const BaseForm: React.FC<BaseFormProps> = ({
         },
         getDefaultFormData: () => {
           if (!schema) return {};
-          const formSchema = createFormSchema(schema.formFields);
+          
+          // Build form schema from formTabs fields (primary source)
+          const allFormFields: any = {};
+          
+          // First, add fields from formTabs
+          if (schema.formTabs) {
+            schema.formTabs.forEach((tab: any) => {
+              if (tab.sections) {
+                tab.sections.forEach((section: any) => {
+                  if (section.fields) {
+                    section.fields.forEach((field: any) => {
+                      allFormFields[field.name] = field;
+                    });
+                  }
+                });
+              }
+            });
+          }
+          
+          // Then, add fields from formFields (for backward compatibility)
+          Object.entries(schema.formFields || {}).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (!allFormFields[fieldName]) {
+              allFormFields[fieldName] = fieldDef;
+            }
+          });
+          
+          const formSchema = createFormSchema(allFormFields);
           const defaults = formSchema.getDefaults();
           
           // Also include entityFields defaults
@@ -228,26 +290,40 @@ export const BaseForm: React.FC<BaseFormProps> = ({
         },
         formDataToEntity: (formData) => {
           if (!schema) return {};
-          const formSchema = createFormSchema(schema.formFields);
+          
+          // Build form schema from formTabs fields (primary source)
+          const allFormFields: any = {};
+          
+          // First, add fields from formTabs
+          if (schema.formTabs) {
+            schema.formTabs.forEach((tab: any) => {
+              if (tab.sections) {
+                tab.sections.forEach((section: any) => {
+                  if (section.fields) {
+                    section.fields.forEach((field: any) => {
+                      allFormFields[field.name] = field;
+                    });
+                  }
+                });
+              }
+            });
+          }
+          
+          // Then, add fields from formFields (for backward compatibility)
+          Object.entries(schema.formFields || {}).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (!allFormFields[fieldName]) {
+              allFormFields[fieldName] = fieldDef;
+            }
+          });
+          
+          const formSchema = createFormSchema(allFormFields);
           const apiData = formSchema.toApi(formData);
           const cleanData = { ...apiData };
           fieldsToClean.forEach(field => {
             delete cleanData[field];
           });
           
-          // For updates, only include dirty fields
-          if (entity && form?.dirtyFields && form.dirtyFields.size > 0) {
-            const filteredData: any = {};
-            form.dirtyFields.forEach(field => {
-              if (field in cleanData) {
-                filteredData[field] = cleanData[field];
-              }
-            });
-            console.log('[FORM] Dirty fields:', Array.from(form.dirtyFields));
-            console.log('[FORM] Filtered data (only dirty fields):', filteredData);
-            return filteredData;
-          }
-          
+          // Return all data - let the store handle dirty field filtering if needed
           return cleanData;
         },
         updateStrategy: 'optimistic',
@@ -418,8 +494,16 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     console.log('========================================');
     console.log('[FORM SUBMIT] Form submission triggered');
     console.log('[FORM SUBMIT] Schema name:', schemaName);
-    console.log('[FORM SUBMIT] Form data:', JSON.stringify(form?.formData, null, 2));
-    console.log('[FORM SUBMIT] Entity:', JSON.stringify(entity, null, 2));
+    try {
+      console.log('[FORM SUBMIT] Form data:', JSON.stringify(form?.formData, null, 2));
+    } catch (e) {
+      console.log('[FORM SUBMIT] Form data: (circular structure, cannot stringify)');
+    }
+    try {
+      console.log('[FORM SUBMIT] Entity:', JSON.stringify(entity, null, 2));
+    } catch (e) {
+      console.log('[FORM SUBMIT] Entity: (circular structure, cannot stringify)');
+    }
     console.log('========================================');
 
     // Validate form and get validation result with errors
@@ -443,6 +527,29 @@ export const BaseForm: React.FC<BaseFormProps> = ({
             errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
           } else {
             console.warn('[FORM SUBMIT] Could not find element with id:', firstErrorField);
+            // If field is not in DOM (likely on inactive tab), find which tab it belongs to and switch to it
+            if (schema?.formTabs && schema.formTabs.length > 0) {
+              for (const tab of schema.formTabs) {
+                if (tab.sections) {
+                  for (const section of tab.sections) {
+                    if (section.fields && section.fields.some((f: any) => f.name === firstErrorField)) {
+                      console.log('[FORM SUBMIT] Field found in tab:', tab.name, '- switching to it');
+                      setActiveTab(tab.name);
+                      onTabChange?.(tab.name);
+                      // Try focusing again after tab switch
+                      setTimeout(() => {
+                        const retryElement = document.getElementById(firstErrorField);
+                        if (retryElement) {
+                          retryElement.focus();
+                          retryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }, 100);
+                      return;
+                    }
+                  }
+                }
+              }
+            }
           }
         }, 100);
       }
@@ -451,7 +558,13 @@ export const BaseForm: React.FC<BaseFormProps> = ({
 
     try {
       console.log('[FORM SUBMIT] Calling handleSubmit...');
-      await form?.handleSubmit();
+      console.log('[FORM SUBMIT] Form object:', form);
+      console.log('[FORM SUBMIT] Form handleSubmit method:', form?.handleSubmit);
+      if (!form) {
+        console.error('[FORM SUBMIT] Form is null or undefined');
+        return;
+      }
+      await form.handleSubmit();
       console.log('[FORM SUBMIT] Submit completed successfully');
     } catch (error) {
       console.error('[FORM SUBMIT] Form submission error:', error);
@@ -459,10 +572,27 @@ export const BaseForm: React.FC<BaseFormProps> = ({
   };
 
   const handleInputChange = (field: string, value: any) => {
-    form?.setFormData?.((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }));
+    console.log(`[BaseForm] handleInputChange called:`, { 
+      field, 
+      value, 
+      hasForm: !!form,
+      hasSetFormData: !!form?.setFormData,
+      formData: form?.formData 
+    });
+    
+    if (!form) {
+      console.error(`[BaseForm] Form is null or undefined!`);
+      return;
+    }
+    
+    form.setFormData((prev: any) => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+      console.log(`[BaseForm] Form data updated:`, { field, oldValue: prev[field], newValue: value, newData });
+      return newData;
+    });
 
     if (errors[field]) {
       setErrors(prev => {
@@ -717,9 +847,13 @@ export const BaseForm: React.FC<BaseFormProps> = ({
     return 'repeat(3, 1fr)';
   };
 
+  // Only render form content if we have determined the tab structure
+  // This prevents fields from flashing before tabs are organized
+  const shouldRenderFormContent = !isDynamicForm || (schema && (tabList.length > 0 || !schema.formTabs));
+
   // Render dynamic form sections
   const useFlexbox = shouldUseFlexbox();
-  const formContent = isDynamicForm ? (
+  const formContent = shouldRenderFormContent && isDynamicForm ? (
     <div 
       className={`${className}__sections-container`}
       style={{
@@ -842,6 +976,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
 
   return (
     <form 
+      id={`form-${schemaName || 'base'}`}
       onSubmit={handleFormSubmit} 
       className={formClassName} 
       autoComplete="off"
@@ -856,14 +991,17 @@ export const BaseForm: React.FC<BaseFormProps> = ({
           tabs={allTabs}
           tabList={tabList}
           activeTab={effectiveActiveTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tabName) => {
+            setActiveTab(tabName);
+            onTabChange?.(tabName);
+          }}
           className={`${className}__tabs`}
         />
       )}
       
       <div className="base-form__content">
         <div className={`base-form__main ${gridClass}`}>
-          {formContent}
+          {shouldRenderFormContent ? formContent : null}
         </div>
 
         <Sidebar sections={allSidebarSections}>

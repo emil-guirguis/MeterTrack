@@ -35,9 +35,6 @@ export const MeterDashboardExample: React.FC = () => {
 
   return (
     <div className="dashboard">
-      {/* Live Meter Data Retriever - keep existing component */}
-      {/* <MeterDataRetriever /> */}
-
       {/* Statistics Section using DashboardWidget */}
       <DashboardWidget
         id="meter-stats"

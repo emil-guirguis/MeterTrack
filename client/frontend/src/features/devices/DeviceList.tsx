@@ -7,20 +7,17 @@ import { useSchema } from '@framework/components/form/utils/schemaLoader';
 import { generateColumnsFromSchema, generateFiltersFromSchema } from '@framework/components/list/utils/schemaColumnGenerator';
 import type { Device } from './deviceConfig';
 import { Permission } from '../../types/auth';
-import { deviceStats, deviceExportConfig, createDeviceBulkActions } from './deviceConfig';
-import { showConfirmation } from '@framework/utils/confirmationHelper';
+import { deviceStats, deviceExportConfig } from './deviceConfig';
 import './DeviceList.css';
 
 interface DeviceListProps {
   onDeviceSelect?: (device: Device) => void;
-  onDeviceEdit?: (device: Device) => void;
-  onDeviceCreate?: () => void;
+  onDeviceView?: (device: Device) => void;
 }
 
 export const DeviceList: React.FC<DeviceListProps> = ({
   onDeviceSelect,
-  onDeviceEdit,
-  onDeviceCreate,
+  onDeviceView,
 }) => {
   const auth = useAuth();
   const devices = useDevicesEnhanced();
@@ -43,57 +40,42 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     });
   }, [schema]);
 
-  const handleDeviceDelete = (device: Device) => {
-    showConfirmation({
-      type: 'danger',
-      title: 'Delete Device',
-      message: `Delete device "${device.description}"? This cannot be undone.`,
-      confirmText: 'Delete',
-      onConfirm: async () => {
-        await devices.deleteItem(device.id);
-        await devices.fetchItems();
-      },
-    });
-  };
-
   const baseList = useBaseList<Device, any>({
     entityName: 'device',
     entityNamePlural: 'devices',
     useStore: useDevicesEnhanced,
     features: {
-      allowCreate: true,
-      allowEdit: true,
-      allowDelete: true,
-      allowBulkActions: true,
-      allowExport: true,
-      allowImport: false,
-      allowSearch: true,
-      allowFilters: true,
-      allowStats: true,
+      allowCreate: false,      // Disabled - devices are read-only
+      allowEdit: false,        // Disabled - devices are read-only
+      allowDelete: false,      // Disabled - devices are read-only
+      allowBulkActions: false, // Disabled - devices are read-only
+      allowExport: true,       // Keep export for viewing data
+      allowImport: false,      // Disabled - devices are read-only
+      allowSearch: true,       // Keep search for finding devices
+      allowFilters: true,      // Keep filters for finding devices
+      allowStats: true,        // Keep stats for overview
     },
     permissions: {
-      create: false,//Permission.DEVICE_CREATE,
-      update: false,//Permission.DEVICE_UPDATE,
-      delete: false,//Permission.DEVICE_DELETE,
+      create: false,  // No create permission
+      update: false,  // No update permission
+      delete: false,  // No delete permission
     },
     columns,
     filters,
     stats: deviceStats,
-    bulkActions: createDeviceBulkActions({ bulkDelete: async (ids: string[]) => {
-      await Promise.all(ids.map(id => devices.deleteItem(id)));
-    }}),
+    bulkActions: [], // No bulk actions for read-only
     export: deviceExportConfig,
     authContext: auth,
-    onEdit: onDeviceEdit,
-    onCreate: onDeviceCreate,
+    onEdit: undefined,        // No edit function
+    onCreate: undefined,      // No create function
   });
 
   const safeData = Array.isArray(baseList.data) ? baseList.data : [];
 
   return (
-    <div className="device-list">
+    <div className="device-list device-list--readonly">
       <BaseList
-        title="Devices"
+        title="Devices (Read-Only)"
         filters={baseList.renderFilters()}
         headerActions={baseList.renderHeaderActions()}
         stats={baseList.renderStats()}
@@ -101,11 +83,12 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         columns={baseList.columns}
         loading={baseList.loading}
         error={baseList.error}
-        emptyMessage="No devices found. Create your first device to get started."
-        onEdit={baseList.handleEdit}
-        onDelete={handleDeviceDelete}
-        onSelect={baseList.bulkActions.length > 0 && onDeviceSelect ? (items: Device[]) => onDeviceSelect(items[0]) : undefined}
-        bulkActions={baseList.bulkActions}
+        emptyMessage="No devices found."
+        onView={onDeviceView}     // Use onView instead of onEdit
+        onEdit={undefined}       // No edit function
+        onDelete={undefined}     // No delete function
+        onSelect={onDeviceSelect ? (items: Device[]) => onDeviceSelect(items[0]) : undefined}
+        bulkActions={[]} // No bulk actions
         pagination={baseList.pagination}
       />
       {baseList.renderExportModal()}

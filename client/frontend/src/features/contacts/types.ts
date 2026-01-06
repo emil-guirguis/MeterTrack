@@ -19,12 +19,7 @@ export type Contact = {
   zip?: string;
   country?: string;
   notes?: string;
-  category: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
-  status: 'active' | 'inactive';
-  createdat: Date;
-  updatedat: Date;
-  tags?: string[];
   active?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 };

@@ -122,15 +122,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
             width: '100%',
             maxWidth: 400,
             boxShadow: 3,
+            backgroundColor: '#ffffff',
           }}
         >
           <CardContent sx={{ p: 4 }}>
             {/* Header */}
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h4" component="h1" gutterBottom>
+              <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#1a1a1a', fontWeight: 600 }}>
                 Sign In
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ color: '#666' }}>
                 Enter your credentials to access your account
               </Typography>
             </Box>
@@ -143,7 +144,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
             )}
 
             {/* Login Form */}
-            <Box component="form" onSubmit={handleSubmit} noValidate>
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* Email Field */}
               <TextField
                 margin="normal"
@@ -160,10 +161,33 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                 error={hasFieldError('email')}
                 helperText={getFieldError('email')}
                 disabled={isSubmitting || isLoading}
+                variant="outlined"
                 InputLabelProps={{
-                  shrink: credentials.email.length > 0 || undefined,
+                  shrink: true,
                 }}
-                sx={{ mb: 2 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    '&:hover fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#000000',
+                    fontSize: '16px',
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: '#cccccc',
+                    opacity: 1,
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#cccccc',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#666666',
+                    fontSize: '14px',
+                  },
+                }}
               />
 
               {/* Password Field */}
@@ -181,8 +205,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                 error={hasFieldError('password')}
                 helperText={getFieldError('password')}
                 disabled={isSubmitting || isLoading}
+                variant="outlined"
                 InputLabelProps={{
-                  shrink: credentials.password.length > 0 || undefined,
+                  shrink: true,
                 }}
                 InputProps={{
                   endAdornment: (
@@ -198,7 +223,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                     </InputAdornment>
                   ),
                 }}
-                sx={{ mb: 1 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    '&:hover fieldset': {
+                      borderColor: '#1976d2',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#000000',
+                    fontSize: '16px',
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: '#cccccc',
+                    opacity: 1,
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#cccccc',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#666666',
+                    fontSize: '14px',
+                  },
+                }}
               />
 
               {/* Remember Me Checkbox */}
@@ -213,7 +260,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
                   />
                 }
                 label="Remember me"
-                sx={{ mb: 2 }}
               />
 
               {/* Submit Button */}

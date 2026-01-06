@@ -6,7 +6,7 @@
  */
 
 import { Pool, PoolClient, QueryResult } from 'pg';
-import { MeterEntity, MeterReadingEntity, SyncLog, TenantEntity } from '../types/entities.js';
+import { TenantEntity, MeterEntity, MeterReadingEntity, SyncLog } from '../types/entities.js';
 
 export interface DatabaseConfig {
   host: string;
@@ -251,7 +251,17 @@ export class SyncDatabase {
       return false;
     }
   }
-
+  /**
+   * Delete a meter from the database
+   */
+  async deleteSyncMeter(meterId: number, meterElementId?: number): Promise<void> {
+    if (meterElementId) {
+      await this.pool.query('DELETE FROM meter WHERE id = $1 AND meter_element_id = $2', [meterId, meterElementId]);
+    } else {
+      await this.pool.query('DELETE FROM meter WHERE id = $1', [meterId]);
+    }
+    
+  } 
   /**
    * Validate that the tenant table exists and contains valid data
    * 
@@ -310,19 +320,7 @@ export class SyncDatabase {
 
   // ==================== METER METHODS ====================
 
-  /**
-   * Get all meters
-   */
-  async getMeters(activeOnly: boolean = true): Promise<MeterEntity[]> {
-    const query = activeOnly
-      ? 'SELECT * FROM meter WHERE active = true ORDER BY name'
-      : 'SELECT * FROM meter ORDER BY name';
 
-    console.log('\n🔍 [SQL] Querying meters:', query);
-    const result = await this.pool.query(query);
-    console.log(`📋 [SQL] Query returned ${result.rows.length} meter(s)`);
-    return result.rows;
-  }
 
   /**
   * Get meter by ID
@@ -332,94 +330,6 @@ export class SyncDatabase {
     return result.rows[0] || null;
   }
 
-  /**
-   * Create or update a meter
-   */
-  async upsertMeter(meter: MeterEntity): Promise<MeterEntity> {
-    const meterId = meter?.meter_id || 'UNKNOWN';
-    
-    try {
-      console.log(`\n🔄 [SYNC SQL] Starting upsert for meter: ${meterId}`);
-      console.log(`   Input data:`, JSON.stringify(meter, null, 2));
-
-      // Validate required fields
-      if (!meter) {
-        throw new Error('Meter object is required');
-      }
-
-      if (!meter.meter_id) {
-        throw new Error('Meter ID is required for upsert');
-      }
-
-      if (!meter.element) {
-        throw new Error('Meter element is required for upsert');
-      }
-
-
-      // Prepare parameters with validation
-      const params = [
-        meter.meter_id,
-        meter.meter_element_id,
-        meter.ip || null,
-        meter.port || null,
-        meter.active !== undefined ? meter.active : true,
-        meter.element || null,
-      ];
-
-      console.log(`   ✓ All validations passed`);
-      console.log(`   Executing INSERT/UPDATE query...`);
-
-      const result = await this.pool.query(
-        `INSERT INTO meter (meter_id, meter_element_id, ip, port, element)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (meter_id, meter_element_id) 
-         DO UPDATE SET
-           ip = EXCLUDED.ip,
-           port = EXCLUDED.port,
-           eleemnt = EXCLUDED.element
-         RETURNING *`,
-        params
-      );
-
-      // Validate query result
-      if (!result) {
-        throw new Error('Query result is null or undefined');
-      }
-
-      if (!result.rows) {
-        throw new Error('Query result has no rows property');
-      }
-
-      if (result.rows.length === 0) {
-        throw new Error(`Upsert failed: No rows returned for meter ${meterId}`);
-      }
-
-      const upsertedMeter = result.rows[0];
-
-      // Validate returned meter
-      if (!upsertedMeter.meter_id) {
-        throw new Error('Returned meter has no ID');
-      }
-
-      console.log(`✅ [SYNC SQL] Successfully upserted meter: ${meterId}`);
-      console.log(`   Returned data:`, JSON.stringify(upsertedMeter, null, 2));
-
-      return upsertedMeter;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : '';
-      
-      console.error(`\n❌ [SYNC SQL] FAILED to upsert meter: ${meterId}`);
-      console.error(`   Error Message: ${errorMessage}`);
-      if (errorStack) {
-        console.error(`   Stack Trace:\n${errorStack}`);
-      }
-      console.error(`   Meter Data:`, JSON.stringify(meter, null, 2));
-
-      // Re-throw with enhanced error message
-      throw new Error(`Failed to upsert meter ${meterId}: ${errorMessage}`);
-    }
-  }
 
   /**
    * Update meter last reading timestamp
@@ -429,13 +339,6 @@ export class SyncDatabase {
       'UPDATE meter SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [timestamp, externalId]
     );
-  }
-
-  /**
-   * Deactivate a meter
-   */
-  async deleteInactiveMeter(meterId: string): Promise<void> {
-    await this.pool.query('delete meter  WHERE meter_id = $1', [meterId] );
   }
 
   // ==================== METER READING METHODS ====================
@@ -503,38 +406,6 @@ export class SyncDatabase {
     }
   }
 
-  /**
-   * Get unsynchronized readings for sync
-   */
-  async getUnsynchronizedReadings(limit: number = 1000): Promise<MeterReadingEntity[]> {
-    const result = await this.pool.query(
-      `SELECT * FROM meter_reading
-       WHERE is_synchronized = false 
-       ORDER BY created_at ASC 
-       LIMIT $1`,
-      [limit]
-    );
-    return result.rows;
-  }
-
-  /**
-   * Get readings by meter and time range
-   */
-  async getReadingsByMeterAndTimeRange(
-    meterExternalId: string,
-    startTime: Date,
-    endTime: Date
-  ): Promise<MeterReadingEntity[]> {
-    const result = await this.pool.query(
-      `SELECT * FROM meter_reading
-       WHERE meter_external_id = $1 
-         AND timestamp >= $2 
-         AND timestamp <= $3 
-       ORDER BY timestamp ASC`,
-      [meterExternalId, startTime, endTime]
-    );
-    return result.rows;
-  }
 
   /**
    * Get recent readings (last N hours)
@@ -566,50 +437,7 @@ export class SyncDatabase {
     return result.rowCount || 0;
   }
 
-  /**
-   * Delete synchronized readings
-   */
-  async deleteSynchronizedReadings(readingIds: number[]): Promise<number> {
-    if (readingIds.length === 0) {
-      return 0;
-    }
 
-    const result = await this.pool.query(
-      `DELETE FROM meter_reading
-       WHERE id = ANY($1::int[]) AND is_synchronized = true`,
-      [readingIds]
-    );
-    return result.rowCount || 0;
-  }
-
-  /**
-   * Increment retry count for failed readings
-   */
-  async incrementRetryCount(readingIds: number[]): Promise<number> {
-    if (readingIds.length === 0) {
-      return 0;
-    }
-
-    const result = await this.pool.query(
-      `UPDATE meter_reading
-       SET retry_count = retry_count + 1 
-       WHERE id = ANY($1::int[])`,
-      [readingIds]
-    );
-    return result.rowCount || 0;
-  }
-
-  /**
-   * Get count of unsynchronized readings
-   */
-  async getUnsynchronizedCount(): Promise<number> {
-    const query = 'SELECT COUNT(*) as count FROM meter_reading WHERE is_synchronized = false';
-    console.log('\n🔍 [SQL] Counting unsynchronized readings:', query);
-    const result = await this.pool.query(query);
-    const count = parseInt(result.rows[0].count, 10);
-    console.log(`📋 [SQL] Unsynchronized readings count: ${count}`);
-    return count;
-  }
 
   /**
    * Delete old synchronized readings (cleanup)
@@ -630,7 +458,7 @@ export class SyncDatabase {
    */
   async getTenant(): Promise<TenantEntity | null> {
     try {
-      const query = 'SELECT * FROM tenant';
+      const query = 'SELECT id AS tenant_id, * FROM tenant';
       console.log('\n🔍 [SQL] Querying tenant:', query);
       const result = await this.pool.query(query);
       console.log(`📋 [SQL] Query returned ${result.rows.length} row(s)`);
@@ -779,73 +607,8 @@ export class SyncDatabase {
 
   // ==================== SYNC LOG METHODS ====================
 
-  /**
-   * Log a sync operation
-   */
-  async logSyncOperation(
-    batchSize: number,
-    success: boolean,
-    errorMessage?: string
-  ): Promise<SyncLog> {
-    const result = await this.pool.query(
-      `INSERT INTO sync_log (batch_size, success, error_message)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [batchSize, success, errorMessage || null]
-    );
-    return result.rows[0];
-  }
 
-  /**
-   * Get recent sync logs
-   */
-  async getRecentSyncLogs(limit: number = 100): Promise<SyncLog[]> {
-    const query = `SELECT * FROM sync_log 
-       ORDER BY synced_at DESC 
-       LIMIT $1`;
-    console.log('\n🔍 [SQL] Querying recent sync logs:', query, `[limit: ${limit}]`);
-    const result = await this.pool.query(query, [limit]);
-    console.log(`📋 [SQL] Query returned ${result.rows.length} log(s)`);
-    return result.rows;
-  }
-
-  /**
-   * Get sync statistics
-   */
-  async getSyncStats(hours: number = 24): Promise<{
-    total_syncs: number;
-    successful_syncs: number;
-    failed_syncs: number;
-    total_readings_synced: number;
-    success_rate: number;
-  }> {
-    const result = await this.pool.query(
-      `SELECT 
-         COUNT(*) as total_syncs,
-         SUM(CASE WHEN success = true THEN 1 ELSE 0 END) as successful_syncs,
-         SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as failed_syncs,
-         SUM(CASE WHEN success = true THEN batch_size ELSE 0 END) as total_readings_synced
-       FROM sync_log 
-       WHERE synced_at >= NOW() - INTERVAL '${hours} hours'`
-    );
-
-    const row = result.rows[0];
-    const totalSyncs = parseInt(row.total_syncs, 10);
-    const successfulSyncs = parseInt(row.successful_syncs, 10);
-    const failedSyncs = parseInt(row.failed_syncs, 10);
-    const totalReadingsSynced = parseInt(row.total_readings_synced, 10);
-    const successRate = totalSyncs > 0 ? (successfulSyncs / totalSyncs) * 100 : 0;
-
-    return {
-      total_syncs: totalSyncs,
-      successful_syncs: successfulSyncs,
-      failed_syncs: failedSyncs,
-      total_readings_synced: totalReadingsSynced,
-      success_rate: Math.round(successRate * 100) / 100,
-    };
-  }
-
-  /**
+    /**
    * Delete old sync logs (cleanup)
    */
   async deleteOldSyncLogs(daysOld: number = 30): Promise<number> {
@@ -870,6 +633,215 @@ export class SyncDatabase {
    */
   async getClient(): Promise<PoolClient> {
     return this.pool.connect();
+  }
+
+  // ==================== INTERFACE IMPLEMENTATION METHODS ====================
+
+  /**
+   * Get all meters (implements SyncDatabase interface)
+   */
+  async getMeters(activeOnly: boolean = true): Promise<MeterEntity[]> {
+    const query = activeOnly
+      ? 'SELECT id AS meter_id, name, active, ip, port, meter_element_id, element FROM meter WHERE active = true ORDER BY name'
+      : 'SELECT id AS meter_id, name, active, ip, port, meter_element_id, element FROM meter ORDER BY name';
+    console.log('\n🔍 [SQL] Querying meters:', query);
+    const result = await this.pool.query(query);
+    console.log(`📋 [SQL] Query returned ${result.rows.length} meter(s)`);
+    return result.rows;
+  }
+
+  /**
+   * Create or update a meter (implements SyncDatabase interface)
+   */
+  async upsertMeter(meter: MeterEntity): Promise<void> {
+    const meterId = meter?.meter_id || 'UNKNOWN';
+    try {
+      console.log(`\n🔄 [SYNC SQL] Starting upsert for meter: ${meterId}`);
+      console.log(`   Input data:`, JSON.stringify(meter, null, 2));
+
+      // Validate required fields
+      if (!meter) {
+        throw new Error('Meter object is required');
+      }
+      if (!meter.meter_id) {
+        throw new Error('Meter ID is required for upsert');
+      }
+
+      // Prepare parameters
+      const params = [
+        meter.meter_id,
+        meter.name,
+        meter.active !== undefined ? meter.active : true,
+        meter.ip || null,
+        meter.port || null,
+        meter.meter_element_id || null,
+        meter.element || null,
+      ];
+
+      console.log(`   ✓ All validations passed`);
+      console.log(`   Executing INSERT/UPDATE query...`);
+
+      const sql = `INSERT INTO meter (id, name, active, ip, port, meter_element_id, element)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (id, meter_element_id) DO UPDATE SET
+           name = EXCLUDED.name,
+           active = EXCLUDED.active,
+           ip = EXCLUDED.ip,
+           port = EXCLUDED.port,
+           element = EXCLUDED.element
+         RETURNING *`;
+         console.log(`[SYNC SQL]  ${sql}`);
+         console.log(`   Parameters:`, JSON.stringify(params, null, 2));
+      const result = await this.pool.query(sql,params );
+
+      if (!result || !result.rows || result.rows.length === 0) {
+        throw new Error(`Upsert failed: No rows returned for meter ${meterId}`);
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`\n❌ [SYNC SQL] FAILED to upsert meter: ${meterId}`);
+      console.error(`   Error Message: ${errorMessage}`);
+      throw new Error(`Failed to upsert meter ${meterId}: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Log a sync operation (implements SyncDatabase interface)
+   */
+  async logSyncOperation(
+    batchSize: number,
+    success: boolean,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      await this.pool.query(
+        `INSERT INTO sync_log (batch_size, success, error_message)
+         VALUES ($1, $2, $3)`,
+        [batchSize, success, errorMessage || null]
+      );
+      console.log(`✅ [SQL] Logged sync operation: ${batchSize} items, success=${success}`);
+    } catch (error) {
+      console.error('❌ [SQL] Failed to log sync operation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get unsynchronized readings for sync (implements SyncDatabase interface)
+   */
+  async getUnsynchronizedReadings(limit: number = 1000): Promise<MeterReadingEntity[]> {
+    try {
+      const query = `SELECT * FROM meter_reading
+         WHERE is_synchronized = false
+         ORDER BY created_at ASC
+         LIMIT $1`;
+      console.log('\n🔍 [SQL] Querying unsynchronized readings:', query, `[limit: ${limit}]`);
+      const result = await this.pool.query(query, [limit]);
+      console.log(`📋 [SQL] Query returned ${result.rows.length} reading(s)`);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to get unsynchronized readings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete synchronized readings (implements SyncDatabase interface)
+   */
+  async deleteSynchronizedReadings(readingIds: number[]): Promise<number> {
+    if (readingIds.length === 0) {
+      return 0;
+    }
+
+    try {
+      const result = await this.pool.query(
+        `DELETE FROM meter_reading
+         WHERE id = ANY($1::int[]) AND is_synchronized = true`,
+        [readingIds]
+      );
+      const deletedCount = result.rowCount || 0;
+      console.log(`✅ [SQL] Deleted ${deletedCount} synchronized reading(s)`);
+      return deletedCount;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to delete synchronized readings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Increment retry count for failed readings (implements SyncDatabase interface)
+   */
+  async incrementRetryCount(readingIds: number[]): Promise<void> {
+    if (readingIds.length === 0) {
+      return;
+    }
+
+    try {
+      await this.pool.query(
+        `UPDATE meter_reading
+         SET retry_count = retry_count + 1
+         WHERE id = ANY($1::int[])`,
+        [readingIds]
+      );
+      console.log(`✅ [SQL] Incremented retry count for ${readingIds.length} reading(s)`);
+    } catch (error) {
+      console.error('❌ [SQL] Failed to increment retry count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sync statistics (implements SyncDatabase interface)
+   */
+  async getSyncStats(hours: number = 24): Promise<any> {
+    try {
+      const result = await this.pool.query(
+        `SELECT 
+           COUNT(*) as total_syncs,
+           SUM(CASE WHEN success = true THEN 1 ELSE 0 END) as successful_syncs,
+           SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as failed_syncs,
+           SUM(CASE WHEN success = true THEN batch_size ELSE 0 END) as total_readings_synced,
+           MAX(synced_at) as last_sync_time
+         FROM sync_log
+         WHERE synced_at >= NOW() - INTERVAL '${hours} hours'`
+      );
+
+      const row = result.rows[0];
+      const totalSyncs = parseInt(row.total_syncs, 10);
+      const successfulSyncs = parseInt(row.successful_syncs || 0, 10);
+      const failedSyncs = parseInt(row.failed_syncs || 0, 10);
+      const totalReadingsSynced = parseInt(row.total_readings_synced || 0, 10);
+      const successRate = totalSyncs > 0 ? (successfulSyncs / totalSyncs) * 100 : 0;
+
+      return {
+        total_syncs: totalSyncs,
+        successful_syncs: successfulSyncs,
+        failed_syncs: failedSyncs,
+        total_readings_synced: totalReadingsSynced,
+        success_rate: Math.round(successRate * 100) / 100,
+        last_sync_time: row.last_sync_time,
+      };
+    } catch (error) {
+      console.error('❌ [SQL] Failed to get sync stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get recent sync logs (implements SyncDatabase interface)
+   */
+  async getRecentSyncLogs(limit: number = 100): Promise<SyncLog[]> {
+    try {
+      const query = `SELECT * FROM sync_log ORDER BY synced_at DESC LIMIT $1`;
+      console.log('\n🔍 [SQL] Querying recent sync logs:', query, `[limit: ${limit}]`);
+      const result = await this.pool.query(query, [limit]);
+      console.log(`📋 [SQL] Query returned ${result.rows.length} log(s)`);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to get recent sync logs:', error);
+      throw error;
+    }
   }
 }
 

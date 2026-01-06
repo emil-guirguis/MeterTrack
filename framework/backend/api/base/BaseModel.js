@@ -78,6 +78,11 @@ class BaseModel {
     // Extract fields from constructor using modelHelpers
     let fields = extractFields(this);
     
+    console.log('\n' + '█'.repeat(120));
+    console.log('█ FIELD EXTRACTION FOR:', this.name);
+    console.log('█'.repeat(120));
+    console.log('Extracted from constructor:', fields.map(f => f.name));
+    
     // Also include fields from schema if available
     if (this.schema) {
       // Build a map of all schema fields (both form and entity fields)
@@ -93,6 +98,9 @@ class BaseModel {
         Object.assign(schemaFields, this.schema.entityFields);
       }
       
+      console.log('Schema form fields:', Object.keys(this.schema.formFields || {}));
+      console.log('Schema entity fields:', Object.keys(this.schema.entityFields || {}));
+      
       // Merge schema fields with extracted fields, preferring schema definitions
       const fieldMap = new Map();
       
@@ -105,7 +113,8 @@ class BaseModel {
         const dbField = fieldDef.dbField || name;
         fieldMap.set(name, {
           name,
-          column: dbField,
+          dbField: dbField,  // CRITICAL: Use dbField not column for deserializeRow compatibility
+          column: dbField,   // Keep column for backward compatibility
           type: fieldDef.type,
           required: fieldDef.required || false,
           readOnly: fieldDef.readOnly || false,
@@ -115,7 +124,10 @@ class BaseModel {
       });
       
       fields = Array.from(fieldMap.values());
+      console.log('Final merged fields:', fields.map(f => ({ name: f.name, dbField: f.column || f.dbField, type: f.type })));
     }
+    
+    console.log('█'.repeat(120) + '\n');
 
     this._fields = fields;
 
@@ -382,9 +394,23 @@ class BaseModel {
       return null;
     }
     
+    console.log('\n' + '█'.repeat(120));
+    console.log('█ [BASEMODEL] _mapResultToInstance - START');
+    console.log('█'.repeat(120));
+    console.log('Model:', this.name);
+    console.log('Row keys:', Object.keys(row));
+    console.log('Row data:', JSON.stringify(row, null, 2));
+    
     // Deserialize database values to proper JavaScript types
     const fields = this._getFields();
+    console.log('Fields available:', fields.map(f => ({ name: f.name, dbField: f.dbField, type: f.type })));
+    
     const deserializedRow = deserializeRow(row, fields);
+    
+    console.log('After deserializeRow:');
+    console.log('Deserialized keys:', Object.keys(deserializedRow));
+    console.log('Deserialized data:', JSON.stringify(deserializedRow, null, 2));
+    console.log('█'.repeat(120) + '\n');
     
     return new this(deserializedRow);
   }
@@ -429,6 +455,30 @@ class BaseModel {
     try {
       // Get fields and validate configuration
       const fields = this._getFields();
+      
+      // Automatically set tenant_id if model has tenant_id field
+      const hasTenantIdField = fields.some(f => f.name === 'tenant_id');
+      if (hasTenantIdField) {
+        // Get tenant_id from data or global context
+        let tenantId = data.tenant_id;
+        
+        // If not in data, try to get from global context (set by middleware)
+        if (tenantId === undefined && global.currentTenantId) {
+          tenantId = global.currentTenantId;
+        }
+        
+        // Set tenant_id if available
+        if (tenantId !== undefined && tenantId !== null) {
+          data = { ...data, tenant_id: tenantId };
+          
+          console.log('\n' + '█'.repeat(120));
+          console.log('█ [BASEMODEL] TENANT ID SET ON CREATE');
+          console.log('█'.repeat(120));
+          console.log('Model:', this.name);
+          console.log('Tenant ID:', tenantId);
+          console.log('█'.repeat(120) + '\n');
+        }
+      }
       
       // Validate field types before query execution
       validateFieldTypes(data, fields, this.name);
@@ -541,6 +591,32 @@ class BaseModel {
       // Get fields and validate configuration
       const fields = this._getFields();
       
+      // Automatically apply tenant filtering if model has tenant_id field
+      const hasTenantIdField = fields.some(f => f.name === 'tenant_id');
+      if (hasTenantIdField) {
+        // Get tenant_id from options or global context
+        let tenantId = options.tenant_id || options.tenantId;
+        
+        // If not in options, try to get from global context (set by middleware)
+        if (tenantId === undefined && global.currentTenantId) {
+          tenantId = global.currentTenantId;
+        }
+        
+        // Apply tenant filtering if tenant_id is available
+        if (tenantId !== undefined && tenantId !== null) {
+          where = where || {};
+          where.tenant_id = tenantId;
+          
+          console.log('\n' + '█'.repeat(120));
+          console.log('█ [BASEMODEL] TENANT FILTERING APPLIED (findOne)');
+          console.log('█'.repeat(120));
+          console.log('Model:', this.name);
+          console.log('Tenant ID:', tenantId);
+          console.log('Where clause:', JSON.stringify(where));
+          console.log('█'.repeat(120) + '\n');
+        }
+      }
+      
       // Build SELECT query
       const queryOptions = {
         ...options,
@@ -557,9 +633,29 @@ class BaseModel {
       // Log query for debugging
       logQuery('findOne', this.name, sql, values);
       
+      console.log('\n' + '█'.repeat(120));
+      console.log('█ [BASEMODEL] findOne - SQL STATEMENT');
+      console.log('█'.repeat(120));
+      console.log('Model:', this.name);
+      console.log('Table:', this.tableName);
+      console.log('Where clause:', JSON.stringify(where));
+      console.log('SQL:', sql);
+      console.log('Values:', JSON.stringify(values));
+      console.log('█'.repeat(120) + '\n');
+      
       // Execute query
       const db = this._getDb();
       const result = await db.query(sql, values);
+      
+      console.log('\n' + '█'.repeat(120));
+      console.log('█ [BASEMODEL] findOne - QUERY RESULT');
+      console.log('█'.repeat(120));
+      console.log('Rows returned:', result.rows ? result.rows.length : 0);
+      if (result.rows && result.rows.length > 0) {
+        console.log('First row keys:', Object.keys(result.rows[0]));
+        console.log('First row data:', JSON.stringify(result.rows[0], null, 2));
+      }
+      console.log('█'.repeat(120) + '\n');
       
       // Return first result or null
       if (result.rows && result.rows.length > 0) {
@@ -569,7 +665,29 @@ class BaseModel {
           rows = mapJoinedResults(rows, relationshipMap, this.primaryKey);
         }
         
-        return this._mapResultToInstance(rows[0]);
+        console.log('\n' + '█'.repeat(120));
+        console.log('█ [BASEMODEL] findOne - BEFORE _mapResultToInstance');
+        console.log('█'.repeat(120));
+        console.log('Row to map:', JSON.stringify(rows[0], null, 2));
+        console.log('█'.repeat(120) + '\n');
+        
+        const instance = this._mapResultToInstance(rows[0]);
+        
+        console.log('\n' + '█'.repeat(120));
+        console.log('█ [BASEMODEL] findOne - AFTER _mapResultToInstance');
+        console.log('█'.repeat(120));
+        console.log('Instance keys:', Object.keys(instance));
+        console.log('Instance data:', {
+          id: instance.id,
+          email: instance.email,
+          name: instance.name,
+          role: instance.role,
+          tenant_id: instance.tenant_id,
+          active: instance.active
+        });
+        console.log('█'.repeat(120) + '\n');
+        
+        return instance;
       }
       
       return null;
@@ -617,12 +735,30 @@ class BaseModel {
       // Get fields and validate configuration
       const fields = this._getFields();
       
-      // Automatically apply tenant filtering if model has tenantId field
-      // and tenantId is provided in options
-      const hasTenantIdField = fields.some(f => f.name === 'tenantId' || f.name === 'tenant_id');
-      if (hasTenantIdField && options.tenantId !== undefined) {
-        options.where = options.where || {};
-        options.where.tenant_id = options.tenantId;
+      // Automatically apply tenant filtering if model has tenant_id field
+      const hasTenantIdField = fields.some(f => f.name === 'tenant_id');
+      if (hasTenantIdField) {
+        // Get tenant_id from options or global context
+        let tenantId = options.tenant_id || options.tenantId;
+        
+        // If not in options, try to get from global context (set by middleware)
+        if (tenantId === undefined && global.currentTenantId) {
+          tenantId = global.currentTenantId;
+        }
+        
+        // Apply tenant filtering if tenant_id is available
+        if (tenantId !== undefined && tenantId !== null) {
+          options.where = options.where || {};
+          options.where.tenant_id = tenantId;
+          
+          console.log('\n' + '█'.repeat(120));
+          console.log('█ [BASEMODEL] TENANT FILTERING APPLIED');
+          console.log('█'.repeat(120));
+          console.log('Model:', this.name);
+          console.log('Tenant ID:', tenantId);
+          console.log('Where clause:', JSON.stringify(options.where));
+          console.log('█'.repeat(120) + '\n');
+        }
       }
       
       // Build SELECT query
@@ -662,8 +798,8 @@ class BaseModel {
       let currentPage = 1;
       
       if (limit) {
-        // Execute count query to get total records (pass tenantId if available)
-        const countResult = await this.count(options.where || {}, { tenantId: options.tenantId });
+        // Execute count query to get total records (pass tenant_id if available)
+        const countResult = await this.count(options.where || {}, { tenant_id: options.tenant_id });
         total = countResult;
         totalPages = Math.ceil(total / limit);
         currentPage = Math.floor(offset / limit) + 1;
@@ -712,12 +848,31 @@ class BaseModel {
     let values = [];
     
     try {
-      // Automatically apply tenant filtering if model has tenantId field
+      // Automatically apply tenant filtering if model has tenant_id field
       const fields = this._getFields();
-      const hasTenantIdField = fields.some(f => f.name === 'tenantId' || f.name === 'tenant_id');
-      if (hasTenantIdField && options.tenantId !== undefined) {
-        where = where || {};
-        where.tenant_id = options.tenantId;
+      const hasTenantIdField = fields.some(f => f.name === 'tenant_id');
+      if (hasTenantIdField) {
+        // Get tenant_id from options or global context
+        let tenantId = options.tenant_id || options.tenantId;
+        
+        // If not in options, try to get from global context (set by middleware)
+        if (tenantId === undefined && global.currentTenantId) {
+          tenantId = global.currentTenantId;
+        }
+        
+        // Apply tenant filtering if tenant_id is available
+        if (tenantId !== undefined && tenantId !== null) {
+          where = where || {};
+          where.tenant_id = tenantId;
+          
+          console.log('\n' + '█'.repeat(120));
+          console.log('█ [BASEMODEL] TENANT FILTERING APPLIED (count)');
+          console.log('█'.repeat(120));
+          console.log('Model:', this.name);
+          console.log('Tenant ID:', tenantId);
+          console.log('Where clause:', JSON.stringify(where));
+          console.log('█'.repeat(120) + '\n');
+        }
       }
       
       // Build WHERE clause

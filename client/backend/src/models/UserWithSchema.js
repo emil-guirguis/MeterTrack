@@ -48,11 +48,11 @@ class User extends BaseModel {
             // NEW: Hierarchical tab structure with embedded field definitions
             formTabs: [
                 tab({
-                    name: 'User',
+                    name: 'General',
                     order: 1,
                     sections: [
                         section({
-                            name: 'Basic Information',
+                            name: 'Information',
                             order: 1,
                             fields: [
                                 field({
@@ -80,11 +80,57 @@ class User extends BaseModel {
                                     placeholder: 'email@yahoo.com',
                                     showOn: ['list', 'form'],
                                 }),
+                                field({
+                                    name: 'password',
+                                    order: 3,
+                                    type: FieldTypes.PASSWORD,
+                                    default: '',
+                                    required: true,
+                                    label: 'Password',
+                                    dbField: 'password',
+                                    maxLength: 200,
+                                    placeholder: '********',
+                                    showOn: ['form'],
+                                }),
                             ],
                         }),
                         section({
-                            name: 'Access Control',
+                            name: 'Status',
                             order: 2,
+                            maxWidth: '200px',
+                            fields: [
+                                field({
+                                    name: 'active',
+                                    order: 1,
+                                    type: FieldTypes.BOOLEAN,
+                                    default: true,
+                                    required: false,
+                                    label: 'Active Status',
+                                    dbField: 'active',
+                                    showOn: ['list', 'form'],
+                                }),
+                                field({
+                                    name: 'last_sign_in_at',
+                                    order: 2,
+                                    type: FieldTypes.DATE,
+                                    default: null,
+                                    required: false,
+                                    label: 'Last Login',
+                                    dbField: 'last_sign_in_at',
+                                    readOnly: true,
+                                    showOn: ['list', 'form'],
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+                tab({
+                    name: 'Security',
+                    order: 2,
+                    sections: [
+                        section({
+                            name: 'Access Control',
+                            order: 1,
                             fields: [
                                 field({
                                     name: 'role',
@@ -113,29 +159,31 @@ class User extends BaseModel {
                             ],
                         }),
                         section({
-                            name: 'Status',
-                            order: 3,
+                            name: 'Password Reset',
+                            order: 2,
                             fields: [
                                 field({
-                                    name: 'active',
+                                    name: 'password_reset_token',
                                     order: 1,
-                                    type: FieldTypes.BOOLEAN,
-                                    default: true,
+                                    type: FieldTypes.STRING,
+                                    default: '',
                                     required: false,
-                                    label: 'Active Status',
-                                    dbField: 'active',
-                                    showOn: ['list', 'form'],
+                                    label: 'Password Reset Token',
+                                    dbField: 'password_reset_token',
+                                    maxLength: 200,
+                                    readOnly: true,
+                                    showOn: ['form'],
                                 }),
                                 field({
-                                    name: 'lastLogin',
+                                    name: 'password_reset_expires_at',
                                     order: 2,
                                     type: FieldTypes.DATE,
                                     default: null,
                                     required: false,
-                                    label: 'Last Login',
-                                    dbField: 'last_sign_in_at',
+                                    label: 'Password Reset Expires At',
+                                    dbField: 'password_reset_expires_at',
                                     readOnly: true,
-                                    showOn: ['list', 'form'],
+                                    showOn: ['form'],
                                 }),
                             ],
                         }),
@@ -146,20 +194,23 @@ class User extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'ID',
                     dbField: 'id',
                 }),
-                tenantId: field({
+                tenant_id: field({
+                    name: 'tenant_id',
                     type: FieldTypes.NUMBER,
                     default: null,
-                    readOnly: true,
+                    readOnly: false,
                     label: 'Tenant ID',
                     dbField: 'tenant_id',
                 }),
                 passwordHash: field({
+                    name: 'passwordHash',
                     type: FieldTypes.STRING,
                     default: '',
                     required: false,
@@ -168,22 +219,6 @@ class User extends BaseModel {
                     maxLength: 200,
                     readOnly: true,
                 }),
-                createdAt: field({
-                    type: FieldTypes.DATE,
-                    default: null,
-                    readOnly: true,
-                    label: 'Created At',
-                    dbField: 'created_at',
-                    showOn: ['form'],
-                }),
-                updatedAt: field({
-                    type: FieldTypes.DATE,
-                    default: null,
-                    readOnly: true,
-                    label: 'Updated At',
-                    dbField: 'updated_at',
-                    showOn: ['form'],
-                })
             },
 
             // Relationships
@@ -208,7 +243,27 @@ class User extends BaseModel {
      * @returns {Promise<User|null>} User instance or null
      */
     static async findByEmail(email) {
-        return await this.findOne({ email });
+        console.log('\n' + '='.repeat(120));
+        console.log('[USER MODEL] findByEmail called with email:', email);
+        const result = await this.findOne({ email });
+
+        if (result) {
+            console.log('[USER MODEL] ✓ User found by email');
+            console.log('[USER MODEL] User object keys:', Object.keys(result));
+            console.log('[USER MODEL] User data:', {
+                id: result.id,
+                email: result.email,
+                name: result.name,
+                role: result.role,
+                tenant_id: result.tenant_id,
+                active: result.active
+            });
+        } else {
+            console.log('[USER MODEL] ✗ User NOT found by email');
+        }
+        console.log('='.repeat(120) + '\n');
+
+        return result;
     }
 
     /**

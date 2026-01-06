@@ -9,6 +9,11 @@ toUpperCase() Ctrl + Shift + U
 toLowerCase() Ctrl + Shift + L
 change theme ctrl + K + T
 
+Fold All (collapse all regions): Ctrl+K then Ctrl+0 (zero)
+Unfold All (expand all regions): Ctrl+K then Ctrl+J
+Fold the innermost region at the cursor: Ctrl+Shift+[
+Unfold the region at the cursor: Ctrl+Shift+]
+
 
 chrome 
 hard reset Ctrl + F5 ,   Ctrl + Shift + R

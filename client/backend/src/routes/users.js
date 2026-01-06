@@ -3,6 +3,7 @@ const express = require('express');
 const User = require('../models/UserWithSchema');
 const PermissionsService = require('../services/PermissionsService');
 const { requirePermission } = require('../middleware/auth');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 // Note: authenticateToken is now applied globally in server.js
@@ -68,7 +69,20 @@ router.get('/:id', requirePermission('user:read'), async (req, res) => {
 // Create user
 router.post('/', requirePermission('user:create'), async (req, res) => {
   try {
-    const userData = { ...req.body };
+    // CRITICAL: Always set tenant_id from authenticated user
+    // This is required for the foreign key constraint on tenant_id
+    const tenantId = req.user?.tenant_id || req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User must have a valid tenant_id to create users'
+      });
+    }
+    
+    const userData = { 
+      ...req.body,
+      tenant_id: tenantId
+    };
     
     // Auto-generate permissions based on role if not explicitly provided
     if (!userData.permissions || (Array.isArray(userData.permissions) && userData.permissions.length === 0)) {
@@ -108,39 +122,47 @@ router.post('/', requirePermission('user:create'), async (req, res) => {
         errors: Object.values(error.errors).map(e => e.message)
       });
     }
-    res.status(500).json({ success: false, message: 'Failed to create user' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create user',
+      error: error.message,
+      detail: error.detail,
+      code: error.code
+    });
   }
 });
 
 // Update user
-router.put('/:id', requirePermission('user:update'), async (req, res) => {
-  try {
-    // Find the user first
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    // Remove password from update data - use separate endpoint for password changes
-    const updateData = { ...req.body };
-    delete updateData.password;
-    
-    // Update the user using instance method
-    await user.update(updateData);
-    
-    res.json({ success: true, data: user });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: Object.values(error.errors).map(e => e.message)
-      });
-    }
-    res.status(500).json({ success: false, message: 'Failed to update user' });
+router.put('/:id', requirePermission('user:update'), asyncHandler(async (req, res) => {
+  // Find the user first
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
   }
-});
+
+  // CRITICAL: Protect tenant_id from being changed
+  // Validate that the user belongs to the authenticated user's tenant
+  const userTenantId = req.user?.tenant_id || req.user?.tenantId;
+  if (user.tenant_id !== userTenantId) {
+    return res.status(403).json({
+      success: false,
+      message: 'You do not have permission to update this user'
+    });
+  }
+
+  // Remove password and tenant_id from update data
+  // - password: use separate endpoint for password changes
+  // - tenant_id: cannot be changed
+  const updateData = { ...req.body };
+  delete updateData.password;
+  delete updateData.tenant_id;
+  delete updateData.tenantId;
+  
+  // Update the user using instance method
+  await user.update(updateData);
+  
+  res.json({ success: true, data: user });
+}));
 
 // Change user password
 router.put('/:id/password', requirePermission('user:update'), async (req, res) => {

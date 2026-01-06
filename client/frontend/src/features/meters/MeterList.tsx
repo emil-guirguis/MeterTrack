@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { BaseList } from '@framework/components/list/BaseList';
-import { useMetersEnhanced } from './metersStore';
+import { useMetersEnhanced, type Meter } from './metersStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useBaseList } from '@framework/components/list/hooks';
 import { useSchema } from '@framework/components/form/utils/schemaLoader';
-import type { Meter } from './meterConfig';
+import { generateColumnsFromSchema, generateFiltersFromSchema } from '@framework/components/list/utils/schemaColumnGenerator';
 import { Permission } from '../../types/auth';
 import type { ColumnDefinition } from '@framework/components/list/types';
-import { meterColumns, meterFilters, createMeterBulkActions, meterExportConfig } from './meterConfig';
 import './MeterList.css';
 import { tokenStorage } from '../../utils/tokenStorage';
 
@@ -23,7 +22,6 @@ export const MeterList: React.FC<MeterListProps> = ({
   onMeterCreate,
 }) => {
   const { checkPermission } = useAuth();
-  const meters = useMetersEnhanced();
   const { schema } = useSchema('meter');
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
   const canRead = checkPermission(Permission.METER_READ);
@@ -51,14 +49,11 @@ export const MeterList: React.FC<MeterListProps> = ({
   }, [canRead]);
 
   const customColumns: ColumnDefinition<Meter>[] = useMemo(() => {
-    let filteredColumns = meterColumns;
-    if (schema?.formFields) {
-      filteredColumns = meterColumns.filter(col => {
-        const fieldConfig = schema.formFields[col.key as string] as any;
-        return !fieldConfig?.showon || fieldConfig.showon.includes('list');
-      });
-    }
-    return filteredColumns.map(col => {
+    if (!schema?.formFields) return [];
+    
+    const generatedColumns = generateColumnsFromSchema(schema.formFields);
+    
+    return generatedColumns.map(col => {
       if (col.key === 'configuration') {
         return {
           ...col,
@@ -90,10 +85,18 @@ export const MeterList: React.FC<MeterListProps> = ({
     });
   }, [canRead, testingConnection, handleTestConnection, schema]);
 
+  const meterFilters = useMemo(() => {
+    if (!schema?.formFields) {
+      console.log('[MeterList] No schema.formFields available', { schema });
+      return [];
+    }
+    console.log('[MeterList] Generating filters from schema.formFields:', schema.formFields);
+    const filters = generateFiltersFromSchema(schema.formFields);
+    console.log('[MeterList] Generated filters:', filters);
+    return filters;
+  }, [schema]);
+
   const auth = useAuth();
-  const bulkUpdateStatusWrapper = async (ids: string[], status: string) => {
-    await meters.bulkUpdateStatus(ids, status as Meter['status']);
-  };
 
   const baseList = useBaseList<Meter, any>({
     entityName: 'meter',
@@ -117,11 +120,6 @@ export const MeterList: React.FC<MeterListProps> = ({
     },
     columns: customColumns,
     filters: meterFilters,
-    bulkActions: createMeterBulkActions(
-      { bulkUpdateStatus: bulkUpdateStatusWrapper },
-      (items) => baseList.handleExport(items)
-    ),
-    export: meterExportConfig,
     onEdit: onMeterEdit,
     onCreate: onMeterCreate,
     authContext: auth,

@@ -10,6 +10,7 @@ const db = require('./config/database');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const authEnhancedRoutes = require('./routes/auth-enhanced');
 const userRoutes = require('./routes/users');
 const locationRoutes = require('./routes/location');
 const contactRoutes = require('./routes/contacts');
@@ -31,7 +32,7 @@ const meterElementRoutes = require('./routes/meterElement');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 // Import tenant isolation middleware
-const { tenantContext } = require('../../../framework/backend/api/middleware/tenantContext');
+const { setTenantContext } = require('./middleware/tenantContext');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -513,28 +514,29 @@ const { authenticateToken } = require('./middleware/auth');
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', authEnhancedRoutes);
 
 // Apply authentication middleware globally to all protected routes
 // This must run BEFORE tenant context middleware
-app.use('/api/users', authenticateToken, tenantContext, userRoutes);
-app.use('/api/location', authenticateToken, tenantContext, locationRoutes);
-app.use('/api/contacts', authenticateToken, tenantContext, contactRoutes);
-app.use('/api/meters', authenticateToken, tenantContext, meterRoutes);
-app.use('/api/meterreadings', authenticateToken, tenantContext, meterReadingRoutes);
-app.use('/api/templates', authenticateToken, tenantContext, templateRoutes);
-app.use('/api/emails', authenticateToken, tenantContext, emailRoutes);
-app.use('/api/settings', authenticateToken, tenantContext, settingsRoutes);
-app.use('/api/upload', authenticateToken, tenantContext, uploadRoutes);
-app.use('/api/sync', authenticateToken, tenantContext, syncRoutes);
-app.use('/api/schema', authenticateToken, tenantContext, schemaRoutes);
-// app.use('/api/modbus', authenticateToken, tenantContext, modbusRoutes); // Temporarily disabled
-// app.use('/api', authenticateToken, tenantContext, directMeterRoutes); // Temporarily disabled
-app.use('/api/device', authenticateToken, tenantContext, devicesRoutes);
-app.use('/api/devices/:deviceId/registers', authenticateToken, tenantContext, deviceRegisterRoutes);
-app.use('/api/registers', authenticateToken, tenantContext, registersRoutes);
-app.use('/api/auto-collection', authenticateToken, tenantContext, autoCollectionRoutes);
-app.use('/api/meters/:meterId/elements', authenticateToken, tenantContext, meterElementRoutes);
-// app.use('/api/threading', authenticateToken, tenantContext, threadingRoutes); // TEMPORARILY DISABLED
+app.use('/api/users', authenticateToken, setTenantContext, userRoutes);
+app.use('/api/location', authenticateToken, setTenantContext, locationRoutes);
+app.use('/api/contacts', authenticateToken, setTenantContext, contactRoutes);
+app.use('/api/meters', authenticateToken, setTenantContext, meterRoutes);
+app.use('/api/meterreadings', authenticateToken, setTenantContext, meterReadingRoutes);
+app.use('/api/templates', authenticateToken, setTenantContext, templateRoutes);
+app.use('/api/emails', authenticateToken, setTenantContext, emailRoutes);
+app.use('/api/settings', authenticateToken, setTenantContext, settingsRoutes);
+app.use('/api/upload', authenticateToken, setTenantContext, uploadRoutes);
+app.use('/api/sync', authenticateToken, setTenantContext, syncRoutes);
+app.use('/api/schema', authenticateToken, setTenantContext, schemaRoutes);
+// app.use('/api/modbus', authenticateToken, setTenantContext, modbusRoutes); // Temporarily disabled
+// app.use('/api', authenticateToken, setTenantContext, directMeterRoutes); // Temporarily disabled
+app.use('/api/device', authenticateToken, setTenantContext, devicesRoutes);
+app.use('/api/devices/:deviceId/registers', authenticateToken, setTenantContext, deviceRegisterRoutes);
+app.use('/api/registers', authenticateToken, setTenantContext, registersRoutes);
+app.use('/api/auto-collection', authenticateToken, setTenantContext, autoCollectionRoutes);
+app.use('/api/meters/:meterId/elements', authenticateToken, setTenantContext, meterElementRoutes);
+// app.use('/api/threading', authenticateToken, setTenantContext, threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

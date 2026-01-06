@@ -1,4 +1,9 @@
-import type { RegisterMap } from './meterConfig';
+// RegisterMap TypeScript type
+export type RegisterMap = {
+  id?: string;
+  meter_id?: string;
+  [key: string]: any;
+};
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 

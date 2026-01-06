@@ -86,6 +86,7 @@ class MeterElement extends BaseModel {
       // Entity fields - read-only, system-managed
       entityFields: {
         id: field({
+          name: 'id',
           type: FieldTypes.NUMBER,
           default: null,
           readOnly: true,
@@ -104,7 +105,7 @@ class MeterElement extends BaseModel {
         tenant_id: field({
           type: FieldTypes.NUMBER,
           default: null,
-          readOnly: true,
+          readOnly: false,
           label: 'Tenant ID',
           dbField: 'tenant_id',
         }),

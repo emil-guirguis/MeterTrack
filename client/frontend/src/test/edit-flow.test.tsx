@@ -13,9 +13,8 @@ vi.mock('../store/entities/contactsStore', () => ({
         name: 'Test Contact 1',
         email: 'test1@example.com',
         phone: '555-0001',
-        category: 'customer',
-        status: 'active',
-        address: '123 Main St',
+        active: true,
+        street: '123 Main St',
         city: 'Test City',
         state: 'TS',
         zip: '12345',
@@ -26,9 +25,8 @@ vi.mock('../store/entities/contactsStore', () => ({
         name: 'Test Contact 2',
         email: 'test2@example.com',
         phone: '555-0002',
-        category: 'vendor',
-        status: 'active',
-        address: '456 Oak Ave',
+        active: true,
+        street: '456 Oak Ave',
         city: 'Test Town',
         state: 'TT',
         zip: '67890',
@@ -39,9 +37,8 @@ vi.mock('../store/entities/contactsStore', () => ({
         name: 'Test Contact 3',
         email: 'test3@example.com',
         phone: '555-0003',
-        category: 'customer',
-        status: 'inactive',
-        address: '789 Pine Rd',
+        active: false,
+        street: '789 Pine Rd',
         city: 'Test Village',
         state: 'TV',
         zip: '11111',
@@ -66,8 +63,7 @@ vi.mock('../components/contacts/ContactList', () => ({
         name: 'Test Contact 1',
         email: 'test1@example.com',
         phone: '555-0001',
-        category: 'customer',
-        status: 'active',
+        active: true,
       })}>
         Edit Contact 1
       </button>
@@ -76,8 +72,7 @@ vi.mock('../components/contacts/ContactList', () => ({
         name: 'Test Contact 2',
         email: 'test2@example.com',
         phone: '555-0002',
-        category: 'vendor',
-        status: 'active',
+        active: true,
       })}>
         Edit Contact 2
       </button>

@@ -13,22 +13,14 @@ import type { StatDefinition, BulkActionConfig, ExportConfig } from '@framework/
 import { Permission } from '../../types/auth';
 
 // ============================================================================
-// TYPE DEFINITION
+// TYPE DEFINITION - Uses backend schema as single source of truth
 // ============================================================================
 
 /**
- * Device TypeScript type
+ * Device TypeScript type - inferred from backend schema
+ * No duplicate type definition - relies on dynamic schema loading
  */
-export type Device = {
-  id: string;
-  manufacturer: string;
-  model_number: string;
-  description?: string;
-  type: string;
-  active?: boolean;
-  created_at?: Date;
-  updated_at?: Date;
-};
+export type Device = any; // Type will be inferred from backend schema at runtime
 
 // ============================================================================
 // LIST CONFIGURATION
@@ -64,7 +56,7 @@ export const deviceStats: StatDefinition<Device>[] = [
  * Bulk action configurations for device list
  */
 export function createDeviceBulkActions(
-  store: { bulkDelete: (ids: string[]) => Promise<void> }
+  store: { bulkDelete: (ids: number[]) => Promise<void> }
 ): BulkActionConfig<Device>[] {
   return [
     {
@@ -99,6 +91,7 @@ export const deviceExportConfig: ExportConfig<Device> = {
     'Updated',
   ],
   mapRow: (device: Device) => [
+    device.id,
     device.type,
     device.manufacturer,
     device.model_number || '',

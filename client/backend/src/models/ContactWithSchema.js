@@ -225,7 +225,7 @@ class Contact extends BaseModel {
                                     order: 6,
                                     type: FieldTypes.COUNTRY,
                                     default: 'US',
-                                    required: true,
+                                    required: false,
                                     label: 'Country',
                                     dbField: 'country',
                                     maxLength: 100,
@@ -292,16 +292,18 @@ class Contact extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'ID',
                     dbField: 'id',
                 }),
-                tenantId: field({
+                tenant_id: field({
+                    name: 'tenant_id',
                     type: FieldTypes.NUMBER,
                     default: 0,
-                    readOnly: true,
+                    readOnly: false,
                     label: 'Tenant ID',
                     dbField: 'tenant_id',
                 }),

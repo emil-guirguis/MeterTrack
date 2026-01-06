@@ -1,22 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DeviceList } from './DeviceList';
 import { DeviceForm } from './DeviceForm';
-import { EntityManagementPage, FormModal } from '@framework/components/modal';
+import { FormModal } from '@framework/components/modal';
 
 import { useDevicesEnhanced } from './devicesStore';
 import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
 
 import type { Device } from './deviceConfig';
 
-export const DeviceManagementPage: React.FC = () => (
-  <EntityManagementPage<Device, ReturnType<typeof useDevicesEnhanced>>
-    title="Device Management"
-    entityName="device"
-    ListComponent={DeviceList as unknown as React.ComponentType<any>}
-    FormComponent={DeviceForm}
-    useStore={useDevicesEnhanced}
-    LayoutComponent={AppLayoutWrapper}
-    ModalComponent={FormModal}
-    formProps={{ modalSize: 'xl' }}
-  />
-);
+export const DeviceManagementPage: React.FC = () => {
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const handleDeviceView = (device: Device) => {
+    setSelectedDevice(device);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setSelectedDevice(null);
+  };
+
+  return (
+    <AppLayoutWrapper title="Device Management">
+      <div className="entity-management-page">
+        <DeviceList onDeviceView={handleDeviceView} />
+
+        <FormModal
+          isOpen={showForm}
+          title="View Device"
+          onClose={handleFormClose}
+          showSaveButton={false}  // No save button for read-only
+          size="xl"
+        >
+          {showForm && selectedDevice && (
+            <DeviceForm
+              key={`view-${selectedDevice.id}`}
+              device={selectedDevice}
+              onCancel={handleFormClose}
+            />
+          )}
+        </FormModal>
+      </div>
+    </AppLayoutWrapper>
+  );
+};

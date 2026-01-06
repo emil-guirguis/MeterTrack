@@ -6,7 +6,6 @@
 
 1. **Main Dashboard Page** (`client/frontend/src/pages/Dashboard.tsx`)
    - Displays collapsible statistics section with multiple stat cards
-   - Shows live meter data retriever
    - Displays latest meter readings list
    - Uses grid layout for stat cards
    - Implements auto-refresh (30 seconds)

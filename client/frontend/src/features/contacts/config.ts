@@ -25,24 +25,12 @@ import type { Contact } from './types';
  */
 export const contactStats: StatDefinition<Contact>[] = [
   {
-    label: 'Customers',
-    value: (items: Contact[]) => Array.isArray(items) ? items.filter((c: Contact) => c.category === 'customer').length : 0,
-  },
-  {
-    label: 'Vendors',
-    value: (items: Contact[]) => Array.isArray(items) ? items.filter((c: Contact) => c.category === 'vendor').length : 0,
-  },
-  {
     label: 'Active Contacts',
-    value: (items: Contact[]) => Array.isArray(items) ? items.filter((c: Contact) => c.status === 'active').length : 0,
+    value: (items: Contact[]) => Array.isArray(items) ? items.filter((c: Contact) => c.active).length : 0,
   },
   {
-    label: 'Industries',
-    value: (items: Contact[]) => {
-      if (!Array.isArray(items)) return 0;
-      const industries = new Set(items.map((c: Contact) => (c as any).industry).filter(Boolean));
-      return industries.size;
-    },
+    label: 'Inactive Contacts',
+    value: (items: Contact[]) => Array.isArray(items) ? items.filter((c: Contact) => !c.active).length : 0,
   },
 ];
 
@@ -79,39 +67,33 @@ export const contactExportConfig: ExportConfig<Contact> = {
   filename: (date: string) => `contacts_export_${date}.csv`,
   headers: [
     'Name',
-    'Type',
+    'Company',
+    'Role',
     'Email',
     'Phone',
-    'Status',
+    'Active',
     'Street',
     'City',
     'State',
     'Zip Code',
     'Country',
-    'Industry',
-    'Website',
-    'Tags',
     'Notes',
     'Created',
   ],
   mapRow: (contact: Contact) => [
     contact.name,
-    contact.category,
-    contact.company || contact.role || '',
+    contact.company || '',
+    contact.role || '',
     contact.email,
     contact.phone,
-    contact.status,
+    contact.active ? 'Yes' : 'No',
     contact.street || '',
     contact.city || '',
     contact.state || '',
     contact.zip || '',
     contact.country || '',
-    (contact as any).businessType || '',
-    (contact as any).industry || '',
-    (contact as any).website || '',
-    contact.tags ? contact.tags.join(';') : '',
     contact.notes || '',
-    new Date(contact.createdat).toISOString(),
+    contact.created_at ? new Date(contact.created_at).toISOString() : '',
   ],
-  includeInfo: 'Contact export with full details including address, business info, and metadata',
+  includeInfo: 'Contact export with full details including address and contact information',
 };

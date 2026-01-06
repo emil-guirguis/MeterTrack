@@ -32,7 +32,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       entity={contact}
       store={contacts}
       onCancel={onCancel}
-      onLegacySubmit={onSubmit}
+      onSubmit={onSubmit}
       className="contact-form"
       loading={loading}
     />

@@ -184,8 +184,6 @@ export const tenantApi = {
         zip: response.data.tenant.zip,
         country: response.data.tenant.country,
         active: response.data.tenant.active,
-        created_at: response.data.tenant.created_at,
-        updated_at: response.data.tenant.updated_at,
       };
 
       console.log('✅ [Tenant] Successfully fetched tenant data:', tenantData);

@@ -58,10 +58,6 @@ export declare class SyncManager {
      */
     private checkClientConnectivity;
     /**
-     * Update queue size in status
-     */
-    private updateQueueSize;
-    /**
      * Get current sync status
      */
     getStatus(): SyncStatus;

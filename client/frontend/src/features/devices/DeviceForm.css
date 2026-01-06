@@ -136,3 +136,27 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* Read-only styling */
+.device-form--readonly {
+  opacity: 0.9;
+}
+
+.device-form--readonly .MuiInputBase-input {
+  cursor: default;
+}
+
+.device-form--readonly .MuiFormLabel-root {
+  color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.registers-grid--readonly {
+  opacity: 0.9;
+}
+
+.registers-grid--readonly .MuiDataGrid-cell {
+  cursor: default;
+}
+
+.device-list--readonly .MuiTableCell-root {
+  opacity: 0.9;
+}

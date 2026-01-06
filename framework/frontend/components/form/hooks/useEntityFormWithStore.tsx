@@ -112,8 +112,16 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
     
     console.log('========================================');
     console.log('[STORE SUBMIT] handleSubmit called');
-    console.log('[STORE SUBMIT] Entity:', JSON.stringify(entity, null, 2));
-    console.log('[STORE SUBMIT] Form data:', JSON.stringify(form.formData, null, 2));
+    try {
+      console.log('[STORE SUBMIT] Entity:', JSON.stringify(entity, null, 2));
+    } catch (e) {
+      console.log('[STORE SUBMIT] Entity: (circular structure, cannot stringify)');
+    }
+    try {
+      console.log('[STORE SUBMIT] Form data:', JSON.stringify(form.formData, null, 2));
+    } catch (e) {
+      console.log('[STORE SUBMIT] Form data: (circular structure, cannot stringify)');
+    }
     console.log('========================================');
     
     setIsSubmitting(true);
@@ -129,7 +137,7 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
         ? formDataToEntity(form.formData)
         : (form.formData as unknown as Partial<TEntity>);
       
-      console.log('[STORE SUBMIT] Transformed entity data:', JSON.stringify(entityData, null, 2));
+      console.log('[STORE SUBMIT] Transformed entity data:', entityData);
       
       let savedEntity: TEntity;
       
@@ -140,9 +148,9 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
         if (!updateMethod) {
           throw new Error(`Store does not have ${updateMethodName} or update method`);
         }
-        console.log('[STORE SUBMIT] Calling update method with data:', JSON.stringify(entityData, null, 2));
-        savedEntity = await updateMethod.call(store, String(entity.id), entityData);
-        console.log('[STORE SUBMIT] Update successful, saved entity:', JSON.stringify(savedEntity, null, 2));
+        console.log('[STORE SUBMIT] Calling update method with data:', entityData);
+        savedEntity = await updateMethod(String(entity.id), entityData);
+        console.log('[STORE SUBMIT] Update successful, saved entity:', savedEntity);
       } else {
         // Create new entity
         console.log('[STORE SUBMIT] Creating new entity');
@@ -150,9 +158,9 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
         if (!createMethod) {
           throw new Error(`Store does not have ${createMethodName} or create method`);
         }
-        console.log('[STORE SUBMIT] Calling create method with data:', JSON.stringify(entityData, null, 2));
-        savedEntity = await createMethod.call(store, entityData);
-        console.log('[STORE SUBMIT] Create successful, saved entity:', JSON.stringify(savedEntity, null, 2));
+        console.log('[STORE SUBMIT] Calling create method with data:', entityData);
+        savedEntity = await createMethod(entityData);
+        console.log('[STORE SUBMIT] Create successful, saved entity:', savedEntity);
       }
       
       // Validate saved entity has required properties
@@ -167,15 +175,17 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
         // Update list based on strategy
         if (effectiveUpdateStrategy === 'optimistic') {
           try {
-            // Check if store has optimistic methods
-            if (mode === 'create' && store.addItemToList) {
-              store.addItemToList(savedEntity);
-            } else if (mode === 'update' && store.updateItemInList) {
+            // For create: createItem already added to list, no need for addItemToList
+            // For update: use updateItemInList to update existing item
+            if (mode === 'update' && store.updateItemInList) {
               store.updateItemInList(savedEntity);
+            } else if (mode === 'create') {
+              // createItem already handled adding to list, nothing more needed
+              console.log('[useEntityFormWithStore] Create optimistic update already handled by createItem');
             } else {
               // Fallback if methods not available
               console.warn(
-                `[useEntityFormWithStore] Store missing optimistic ${mode === 'create' ? 'addItemToList' : 'updateItemInList'} method, falling back to reload`
+                `[useEntityFormWithStore] Store missing optimistic update method for ${mode}, falling back to reload`
               );
               if (store.fetchItems) {
                 await store.fetchItems();

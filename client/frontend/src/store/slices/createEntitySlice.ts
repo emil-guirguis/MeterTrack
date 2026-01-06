@@ -277,12 +277,21 @@ export const createEntityStore = <T extends { id: string }>(
           });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch items';
-          console.error('[fetchItems] Error:', errorMessage);
+          const errorDetail = (error as any)?.detail || (error as any)?.data?.detail || '';
+          const errorCode = (error as any)?.code || (error as any)?.data?.code || '';
+          const fullMessage = errorDetail ? `${errorMessage}: ${errorDetail}` : errorMessage;
+          
+          console.error('[fetchItems] Error:', {
+            message: errorMessage,
+            detail: errorDetail,
+            code: errorCode,
+            fullError: error
+          });
           
           set((state) => {
             state.list.loading = false;
-            state.list.error = errorMessage;
-            state.error = errorMessage;
+            state.list.error = fullMessage;
+            state.error = fullMessage;
           });
 
           throw error;
@@ -313,10 +322,20 @@ export const createEntityStore = <T extends { id: string }>(
           return item;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch item';
+          const errorDetail = (error as any)?.detail || (error as any)?.data?.detail || '';
+          const errorCode = (error as any)?.code || (error as any)?.data?.code || '';
+          const fullMessage = errorDetail ? `${errorMessage}: ${errorDetail}` : errorMessage;
+          
+          console.error('[fetchItemById] Error:', {
+            message: errorMessage,
+            detail: errorDetail,
+            code: errorCode,
+            fullError: error
+          });
           
           set((state) => {
             state.loading = false;
-            state.error = errorMessage;
+            state.error = fullMessage;
           });
 
           throw error;
@@ -343,10 +362,20 @@ export const createEntityStore = <T extends { id: string }>(
           return newItem;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to create item';
+          const errorDetail = (error as any)?.detail || (error as any)?.data?.detail || '';
+          const errorCode = (error as any)?.code || (error as any)?.data?.code || '';
+          const fullMessage = errorDetail ? `${errorMessage}: ${errorDetail}` : errorMessage;
+          
+          console.error('[createItem] Error:', {
+            message: errorMessage,
+            detail: errorDetail,
+            code: errorCode,
+            fullError: error
+          });
           
           set((state) => {
             state.loading = false;
-            state.error = errorMessage;
+            state.error = fullMessage;
           });
 
           throw error;
@@ -400,9 +429,19 @@ export const createEntityStore = <T extends { id: string }>(
           }
 
           const errorMessage = error instanceof Error ? error.message : 'Failed to update item';
+          const errorDetail = (error as any)?.detail || (error as any)?.data?.detail || '';
+          const errorCode = (error as any)?.code || (error as any)?.data?.code || '';
+          const fullMessage = errorDetail ? `${errorMessage}: ${errorDetail}` : errorMessage;
+          
+          console.error('[updateItemById] Error:', {
+            message: errorMessage,
+            detail: errorDetail,
+            code: errorCode,
+            fullError: error
+          });
           
           set((state) => {
-            state.error = errorMessage;
+            state.error = fullMessage;
           });
 
           throw error;

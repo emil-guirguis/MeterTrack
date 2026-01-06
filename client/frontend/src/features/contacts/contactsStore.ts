@@ -16,22 +16,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 // API SERVICE (Internal)
 // ============================================================================
 
-interface ContactFilters {
-  search?: string;
-  category?: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
-  status?: 'active' | 'inactive';
-  industry?: string;
-  businessType?: string;
-  tag?: string;
-  type?: 'customer' | 'vendor';
-}
-
 interface ContactListParams {
   page?: number;
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
-  filters?: ContactFilters;
+  filters?: Record<string, any>;
 }
 
 interface ContactListResponse {
@@ -74,7 +64,17 @@ class ContactAPI {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('[ContactAPI] Error response:', errorData);
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      
+      // Create a detailed error message
+      const errorMessage = errorData.detail || errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+      const error = new Error(errorMessage) as any;
+      error.status = response.status;
+      error.data = errorData;
+      error.detail = errorData.detail;
+      error.code = errorData.code;
+      error.errorType = errorData.errorType;
+      
+      throw error;
     }
 
     return response.json();
@@ -139,13 +139,6 @@ class ContactAPI {
     });
   }
 
-  async bulkUpdateStatus(contactIds: string[], status: 'active' | 'inactive'): Promise<{ modifiedCount: number }> {
-    const response = await this.request<{ data: { modifiedCount: number } }>('/contacts/bulk/status', {
-      method: 'PATCH',
-      body: JSON.stringify({ contactIds, status }),
-    });
-    return response.data;
-  }
 }
 
 const api = new ContactAPI();
@@ -215,15 +208,7 @@ export const useContactsEnhanced = () => {
     items,
     
     // Computed values
-    customers: items.filter(contact => contact.category === 'customer'),
-    vendors: items.filter(contact => contact.category === 'vendor'),
     activeContacts: items.filter(contact => contact.active),
     inactiveContacts: items.filter(contact => !contact.active),
-    
-    // Specialized queries
-    getCustomers: () => items.filter(c => c.category === 'customer'),
-    getVendors: () => items.filter(c => c.category === 'vendor'),
-    getContactsByTag: (tag: string) => items.filter(c => c.tags?.includes(tag)),
-    getVIPContacts: () => items.filter(c => c.tags?.includes('VIP')),
   };
 };

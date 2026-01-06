@@ -1,6 +1,6 @@
 import winston from 'winston';
 import { BACnetConfig } from './bacnet-client.js';
-import { SyncDatabase } from '../database/connection-pools.js';
+import { SyncDatabase } from '../data-sync/data-sync.js';
 export interface MeterConfig {
     id: string;
     name: string;

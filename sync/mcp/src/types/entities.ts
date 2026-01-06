@@ -41,15 +41,17 @@ export interface TenantEntity {
 }
 export interface MeterEntity {
   meter_id: number;
-  meter_element_id: number;
+  name: string;
   active: boolean;
   ip: string;
   port: string;
-  element: number;
+  meter_element_id: number;
+  element: string;
 }
 export interface MeterReadingEntity {
+  id?: number;
   meter_id: number;
-  meter_element_id: number;
+  name: string;
   timestamp: Date;
   data_point: string;
   value: number;
@@ -69,7 +71,7 @@ export interface SyncLog {
 
 export interface BatchUploadRequest {
   readings: Array<{
-    meter_id: string;
+    meter_id: number;
     timestamp: string;
     data_point: string;
     value: number;
@@ -119,12 +121,11 @@ export interface SyncDatabase {
   getTenant(): Promise<TenantEntity | null>;
   getMeters(activeOnly: boolean): Promise<MeterEntity[]>;
   upsertMeter(meter: MeterEntity): Promise<void>;
-  deleteInactiveMeter(meterId: string): Promise<void>;
+  deleteSyncMeter(meterId: number, meterElementId?: number): Promise<void>;
   logSyncOperation(batchSize: number, success: boolean, errorMessage?: string): Promise<void>;
   getUnsynchronizedReadings(limit: number): Promise<MeterReadingEntity[]>;
   deleteSynchronizedReadings(readingIds: number[]): Promise<number>;
   incrementRetryCount(readingIds: number[]): Promise<void>;
-  getUnsynchronizedCount(): Promise<number>;
   getSyncStats(hours: number): Promise<any>;
   getRecentReadings(hours: number): Promise<MeterReadingEntity[]>;
   getRecentSyncLogs(limit: number): Promise<SyncLog[]>;

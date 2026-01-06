@@ -1,0 +1,2 @@
+-- This migration is a reference only - the contact table already exists in the database
+-- The actual schema is defined in the database and matches the Contact model schema definition

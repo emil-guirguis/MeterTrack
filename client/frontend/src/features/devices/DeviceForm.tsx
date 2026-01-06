@@ -1,16 +1,14 @@
 /**
- * Device Form
+ * Device Form - READ-ONLY
  * 
- * Uses the dynamic schema-based BaseForm to render the device form.
- * All validation, field rendering, and form management is handled by BaseForm.
- * Fields are automatically organized into tabs and sections based on formGrouping metadata.
+ * Uses the dynamic schema-based BaseForm to render the device form in read-only mode.
+ * All fields are read-only as devices are managed externally.
+ * No create/update/delete operations are available.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
-import { FormTabs } from '@framework/components/form/FormTabs';
 import { useSchema } from '@framework/components/form/utils/schemaLoader';
-import { useFormTabs } from '@framework/components/form/hooks';
 import { useDevicesEnhanced } from './devicesStore';
 import { RegistersGrid } from './RegistersGrid';
 import type { Device } from './deviceConfig';
@@ -18,72 +16,86 @@ import './DeviceForm.css';
 
 interface DeviceFormProps {
   device?: Device;
-  onSubmit?: (data: any) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
 
-type TabType = string;
-
 export const DeviceForm: React.FC<DeviceFormProps> = ({
   device,
-  onSubmit,
   onCancel,
   loading = false,
 }) => {
   const devices = useDevicesEnhanced();
 
-  // Use schema from cache (prefetched at login)
-  const { schema } = useSchema('device');
+  // Use schema from cache (prefetched at login) - not used directly but needed for BaseForm
+  useSchema('device');
 
-  // Initialize activeTab state - will be set to first tab once schema loads
-  const [activeTab, setActiveTab] = useState<TabType>('');
+  // Read-only handler - no actual submission
+  const handleReadOnlySubmit = async () => {
+    // No-op: devices are read-only
+    console.log('Device form is read-only - no changes saved');
+  };
 
-  // Get all tabs from schema (using formTabs)
-  const { tabs: allTabs, tabList } = useFormTabs(schema?.formTabs, activeTab || 'dummy');
-  
-  // Set activeTab to first tab from schema on first load
-  React.useEffect(() => {
-    if (!activeTab && tabList?.length > 0) {
-      setActiveTab(tabList[0]);
+  // Custom field renderer for registers
+  const renderCustomField = (
+    fieldName: string,
+    fieldDef: any,
+    _value: any,
+    _error: string | undefined,
+    _isDisabled: boolean,
+    _onChange: (value: any) => void
+  ) => {
+    console.log('renderCustomField called for:', fieldName, { 
+      fieldDef, 
+      deviceId: device.id,
+      hasDevice: !!device,
+      deviceObject: device,
+      deviceKeys: device ? Object.keys(device) : []
+    });
+    
+    if (fieldName === 'registers') {
+      if (!device) {
+        console.log('No device object available');
+        return <div>No device selected</div>;
+      }
+      
+      // Get device ID - device.id represents the device_id for the API
+      const deviceId = device.id;
+      if (!deviceId && deviceId !== 0) {
+        console.log('Device has no id:', device);
+        console.log('Device keys:', Object.keys(device));
+        console.log('All device values:', device);
+        return <div>Device ID not available. Available keys: {Object.keys(device).join(', ')}</div>;
+      }
+      
+      console.log('Rendering custom RegistersGrid for field:', fieldName, 'with deviceId:', deviceId, 'type:', typeof deviceId);
+      return (
+        <RegistersGrid
+          deviceId={Number(deviceId)}
+          onError={(error) => console.error('RegistersGrid error:', error)}
+          onSuccess={(message) => console.log('RegistersGrid success:', message)}
+        />
+      );
     }
-  }, [tabList, activeTab]);
-
-  // Use the useFormTabs hook to organize fields into tabs and sections for the active tab
-  const { fieldSections } = useFormTabs(schema?.formTabs, activeTab);
+    return null; // Let BaseForm handle other fields normally
+  };
 
   return (
     <div className="device-form-container">
-      {/* Tab Navigation */}
-      <FormTabs
-        tabs={allTabs}
-        tabList={tabList}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        className="device-form__tabs"
-      />
-
       {/* Tab Content */}
       <div className="device-form__content">
-        {activeTab === 'Registers' && device?.id ? (
-          <RegistersGrid
-            deviceId={Number(device.id)}
-            onError={(error) => console.error('RegistersGrid error:', error)}
-            onSuccess={(message) => console.log('RegistersGrid success:', message)}
-          />
-        ) : (
-          <BaseForm
-            schemaName="device"
-            entity={device}
-            store={devices}
-            onCancel={onCancel}
-            onLegacySubmit={onSubmit}
-            className="device-form"
-            fieldSections={fieldSections}
-            loading={loading}
-            showTabs={false}
-          />
-        )}
+        <BaseForm
+          schemaName="device"
+          entity={device}
+          store={devices}
+          onCancel={onCancel}
+          onSubmit={handleReadOnlySubmit}
+          className="device-form device-form--readonly"
+          loading={loading}
+          showTabs={true}
+          onTabChange={undefined}
+          renderCustomField={renderCustomField}
+        />
       </div>
     </div>
   );

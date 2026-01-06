@@ -123,8 +123,24 @@ export function DataTable<T extends Record<string, any>>({
     const hasActions = onView || onEdit || onDelete;
     if (!hasActions) return null;
 
+    console.log('[DataTable] Rendering actions for item:', item, { onView: !!onView, onEdit: !!onEdit, onDelete: !!onDelete });
+
     return (
       <div className="data-table__actions">
+        {onView && (
+          <button
+            type="button"
+            className="data-table__action-btn data-table__action-btn--view"
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('[DataTable] View clicked for item:', item);
+              onView(item);
+            }}
+            title="View"
+          >
+            👁️
+          </button>
+        )}
         {onEdit && (
           <button
             type="button"

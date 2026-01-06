@@ -4,8 +4,8 @@ CREATE TABLE tenant (
     name VARCHAR(100) NOT NULL,
     
     url VARCHAR(255) NULL,
-    address VARCHAR(100) NULL,
-    address2 VARCHAR(100) NULL,
+    street VARCHAR(100) NULL,
+    street2 VARCHAR(100) NULL,
     city VARCHAR(50) NULL,
     state VARCHAR(50) NULL,
     zip VARCHAR(15) NULL,

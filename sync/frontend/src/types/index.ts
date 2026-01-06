@@ -1,14 +1,12 @@
 export interface Meter {
   id: number;
-  external_id: string;
   name: string;
-  bacnet_device_id: number | null;
-  bacnet_ip: string | null;
-  last_reading_at: string | null;
-  is_active: boolean;
-  created_at: string;
+  device_id: number | null;
+  ip: string | null;
+  port: number | null;
+  active: boolean;
+  element: string;
 }
-
 export interface MeterReading {
   id: number;
   meter_external_id: string;
@@ -17,15 +15,8 @@ export interface MeterReading {
   value: number;
   unit: string | null;
   is_synchronized: boolean;
-  created_at: string;
 }
 
-export interface TenantStatus {
-  is_connected: boolean;
-  last_sync_at: string | null;
-  queue_size: number;
-  sync_errors: TenantError[];
-}
 export interface SyncStatus {
   is_connected: boolean;
   last_sync_at: string | null;
@@ -77,6 +68,4 @@ export interface TenantInfo {
   zip?: string;
   country?: string;
   active?: boolean;
-  created_at: string;
-  updated_at?: string;
 }

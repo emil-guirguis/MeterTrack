@@ -100,8 +100,9 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
   }
 
   // Convert options to FormField format
+  // MUI Select requires string values, so we convert IDs to strings
   const formFieldOptions = options.map((option) => ({
-    value: option.id,
+    value: String(option.id),
     label: option.label,
   }));
 
@@ -111,7 +112,7 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
         name={fieldName}
         label={fieldDef.label}
         type="select"
-        value={value || ''}
+        value={value ? String(value) : ''}
         error={error}
         touched={!!error}
         help={fieldDef.description}
@@ -119,7 +120,15 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
         disabled={isDisabled || loading}
         placeholder={placeholderText}
         options={formFieldOptions}
-        onChange={(e: any) => onChange(e.target.value ? parseInt(e.target.value) : null)}
+        onChange={(e: any) => {
+          const selectedValue = e.target.value ? parseInt(e.target.value) : null;
+          console.log(`[ValidationFieldSelect] ${fieldName} onChange fired:`, {
+            rawValue: e.target.value,
+            parsedValue: selectedValue,
+            currentValue: value,
+          });
+          onChange(selectedValue);
+        }}
         onBlur={() => {}}
       />
     </div>

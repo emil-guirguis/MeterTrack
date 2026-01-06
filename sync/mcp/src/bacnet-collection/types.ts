@@ -67,7 +67,7 @@ export interface AgentStatus {
 // ==================== PENDING READING ====================
 
 export interface PendingReading {
-  meter_id: string;
+  meter_id: number;
   timestamp: Date;
   data_point: string;
   value: number;

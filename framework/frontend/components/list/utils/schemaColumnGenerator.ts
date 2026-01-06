@@ -155,12 +155,12 @@ export function generateFiltersFromSchema(
         return false;
       }
 
-      // Only include enum fields or boolean fields
-      if (!fieldDef.enumValues && fieldDef.type !== 'boolean') {
-        return false;
+      // Include enum fields, boolean fields, string fields, or number fields
+      if (fieldDef.enumValues || fieldDef.type === 'boolean' || fieldDef.type === 'string' || fieldDef.type === 'number') {
+        return true;
       }
 
-      return true;
+      return false;
     })
     .sort(([nameA], [nameB]) => {
       const indexA = fieldOrder.indexOf(nameA);
@@ -199,11 +199,10 @@ export function generateFiltersFromSchema(
             label: fieldDef.label || fieldName,
             type: 'select' as const,
             options: [
+              { label: 'All', value: '' },
               { label: 'Active', value: 'true' },
               { label: 'Inactive', value: 'false' },
-              { label: 'All Statuses', value: '' },
             ],
-            placeholder: '',
           };
         }
 
@@ -218,6 +217,36 @@ export function generateFiltersFromSchema(
             { label: 'No', value: 'false' },
           ],
           placeholder: `All ${fieldDef.label || fieldName}`,
+        };
+      }
+
+      if (fieldDef.type === 'string' && fieldDef.filtertable) {
+        // Text filter for string fields marked as filterable
+        return {
+          key: fieldName,
+          label: fieldDef.label || fieldName,
+          type: 'text' as const,
+          placeholder: `Search ${fieldDef.label || fieldName}...`,
+        };
+      }
+
+      if (fieldDef.type === 'string') {
+        // Text filter for all string fields with showOn: ['list']
+        return {
+          key: fieldName,
+          label: fieldDef.label || fieldName,
+          type: 'text' as const,
+          placeholder: `Search ${fieldDef.label || fieldName}...`,
+        };
+      }
+
+      if (fieldDef.type === 'number') {
+        // Text filter for number fields (for LIKE search on numeric values)
+        return {
+          key: fieldName,
+          label: fieldDef.label || fieldName,
+          type: 'text' as const,
+          placeholder: `Search ${fieldDef.label || fieldName}...`,
         };
       }
 

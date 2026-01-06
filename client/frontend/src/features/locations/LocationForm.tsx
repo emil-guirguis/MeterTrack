@@ -6,10 +6,9 @@
  * Includes all required fields from the location schema.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { BaseForm } from '@framework/components/form/BaseForm';
 import { useSchema } from '@framework/components/form/utils/schemaLoader';
-import { useFormTabs } from '@framework/components/form/hooks';
 import { useLocationsEnhanced } from './locationsStore';
 import type { Location } from '../../types/entities';
 
@@ -31,32 +30,16 @@ export const LocationForm: React.FC<LocationFormProps> = ({
   // Use schema from cache (prefetched at login)
   const { schema } = useSchema('location');
 
-  // Initialize activeTab state - will be set to first tab once schema loads
-  const [activeTab, setActiveTab] = useState<string>('');
-
-  // Get all tabs from schema (using formTabs)
-  const { tabList } = useFormTabs(schema?.formTabs, activeTab || 'dummy');
-  
-  // Set activeTab to first tab from schema on first load
-  React.useEffect(() => {
-    if (!activeTab && tabList?.length > 0) {
-      setActiveTab(tabList[0]);
-    }
-  }, [tabList, activeTab]);
-
-  // Use the useFormTabs hook to organize fields into tabs and sections for the active tab
-  const { fieldSections } = useFormTabs(schema?.formTabs, activeTab);
-
   return (
     <BaseForm
       schemaName="location"
       entity={location}
       store={locations}
       onCancel={onCancel}
-      onLegacySubmit={onSubmit}
+      onSubmit={onSubmit}
       className="location-form"
-      fieldSections={fieldSections}
       loading={loading}
+      showTabs={true}
     />
   );
 };

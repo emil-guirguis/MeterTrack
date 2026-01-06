@@ -2,7 +2,7 @@
  * Database module exports
  */
 
-export * from './connection-manager.js';
+export * from './data-sync.js';
 export { 
   UploadSyncManager, 
   UploadSyncResult, 

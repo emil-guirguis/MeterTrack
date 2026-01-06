@@ -63,30 +63,6 @@ export interface BusinessInfo {
   creditLimit?: number;
 }
 
-export interface ContactCreateRequest {
-  category: 'customer' | 'vendor' | 'contractor' | 'technician' | 'client';
-  name: string;
-  company?: string;
-  role?: string;
-  email: string;
-  phone: string;
-  street?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-  notes?: string;
-  // Legacy fields for backward compatibility
-  type?: 'customer' | 'vendor';
-  address?: Address;
-  businessInfo?: BusinessInfo;
-}
-
-export interface ContactUpdateRequest extends Partial<ContactCreateRequest> {
-  id: string;
-  status?: 'active' | 'inactive';
-}
-
 // Meter Management
 export interface MeterConfig {
   readingInterval: number; // in minutes
@@ -522,13 +498,6 @@ export const MeterType = {
 } as const;
 
 export type MeterType = typeof MeterType[keyof typeof MeterType];
-
-export const ContactType = {
-  CUSTOMER: 'customer',
-  VENDOR: 'vendor'
-} as const;
-
-export type ContactType = typeof ContactType[keyof typeof ContactType];
 
 export const ReadingQuality = {
   GOOD: 'good',

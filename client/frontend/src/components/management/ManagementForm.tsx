@@ -37,13 +37,8 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [showLocationForm, setShowLocationForm] = useState(false);
 
-  const handleDeviceEdit = (device: Device) => {
+  const handleDeviceView = (device: Device) => {
     setEditingDevice(device);
-    setShowDeviceForm(true);
-  };
-
-  const handleDeviceCreate = () => {
-    setEditingDevice(null);
     setShowDeviceForm(true);
   };
 
@@ -67,7 +62,7 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
     setEditingLocation(null);
   };
 
-  const deviceFormTitle = editingDevice ? 'Edit Device' : 'Create New Device';
+  const deviceFormTitle = editingDevice ? 'View Device' : 'Device Details';
   const locationFormTitle = editingLocation ? 'Edit Location' : 'Create New Location';
 
   return (
@@ -196,8 +191,7 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
         <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
           <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
             <DeviceList 
-              onDeviceEdit={handleDeviceEdit}
-              onDeviceCreate={handleDeviceCreate}
+              onDeviceView={handleDeviceView}
             />
           </Box>
         </DialogContent>

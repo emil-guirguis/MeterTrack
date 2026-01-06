@@ -94,13 +94,6 @@ export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {
   status?: 'active' | 'inactive' | 'maintenance';
 }
 
-export interface MeterFilters {
-  device?: string;
-  status?: string;
-  type?: string;
-  location?: string;
-}
-
 export interface MeterApiResponse {
   success: boolean;
   data: Meter | Meter[] | { items: Meter[]; pagination: any };

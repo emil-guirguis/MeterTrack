@@ -2,6 +2,7 @@
 const express = require('express');
 const Device = require('../models/DeviceWithSchema.js');
 const { requirePermission } = require('../middleware/auth');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
 // Note: authenticateToken is now applied globally in server.js
@@ -63,68 +64,8 @@ router.get('/:id', requirePermission('device:read'), async (req, res) => {
   }
 });
 
-// Create device
-router.post('/', requirePermission('device:create'), async (req, res) => {
-  try {
-    const device = new Device(req.body);
-    await device.save();
-    res.status(201).json({ success: true, data: device });
-  } catch (error) {
-    console.error('Error creating device:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: Object.values(error.errors).map(e => e.message)
-      });
-    }
-    res.status(500).json({ success: false, message: 'Failed to create device' });
-  }
-});
-
-// Update device
-router.put('/:id', requirePermission('device:update'), async (req, res) => {
-  try {
-    // Find the device first
-    const device = await Device.findById(req.params.id);
-    if (!device) {
-      return res.status(404).json({ success: false, message: 'Device not found' });
-    }
-    
-    // Update the device using instance method
-    await device.update(req.body);
-    
-    res.json({ success: true, data: device });
-  } catch (error) {
-    console.error('Error updating device:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: Object.values(error.errors).map(e => e.message)
-      });
-    }
-    res.status(500).json({ success: false, message: 'Failed to update device' });
-  }
-});
-
-// Delete device
-router.delete('/:id', requirePermission('device:delete'), async (req, res) => {
-  try {
-    // Find the device first
-    const device = await Device.findById(req.params.id);
-    if (!device) {
-      return res.status(404).json({ success: false, message: 'Device not found' });
-    }
-    
-    // Delete the device using instance method
-    await device.delete();
-    
-    res.json({ success: true, message: 'Device deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting device:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete device' });
-  }
-});
+// NOTE: Device module is READ-ONLY
+// CREATE, UPDATE, DELETE operations have been removed
+// Devices are managed externally and should not be modified through this API
 
 module.exports = router;

@@ -92,11 +92,6 @@ export class SyncManager {
         try {
             // Check Client System connectivity
             const isConnected = await this.checkClientConnectivity();
-            if (!isConnected) {
-                console.log('Client System unreachable, queueing readings');
-                await this.updateQueueSize();
-                return;
-            }
             // Get unsynchronized readings
             const readings = await this.database.getUnsynchronizedReadings(this.batchSize);
             if (readings.length === 0) {
@@ -108,7 +103,7 @@ export class SyncManager {
             const result = await this.uploadBatchWithRetry(readings);
             if (result.success) {
                 // Delete synchronized readings
-                const readingIds = readings.map((r) => r.meter_id);
+                const readingIds = readings.map((r) => r.id).filter((id) => id !== undefined);
                 const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
                 console.log(`Successfully synced and deleted ${deletedCount} readings`);
                 // Log success
@@ -127,8 +122,6 @@ export class SyncManager {
                 this.status.totalFailed += readings.length;
                 console.error(`Sync failed: ${result.error}`);
             }
-            // Update queue size
-            await this.updateQueueSize();
         }
         catch (error) {
             console.error('Sync error:', error);
@@ -168,14 +161,14 @@ export class SyncManager {
                 console.log(`Retry ${retryCount + 1}/${this.maxRetries} in ${delay}ms`);
                 await this.sleep(delay);
                 // Increment retry count in database
-                const readingIds = readings.map((r) => r.meter_id);
+                const readingIds = readings.map((r) => r.id).filter((id) => id !== undefined);
                 await this.database.incrementRetryCount(readingIds);
                 return this.uploadBatchWithRetry(readings, retryCount + 1);
             }
             // Max retries exceeded
             console.error(`Max retries (${this.maxRetries}) exceeded`);
             // Increment retry count one final time
-            const readingIds = readings.map((r) => r.meter_id);
+            const readingIds = readings.map((r) => r.id).filter((id) => id !== undefined);
             await this.database.incrementRetryCount(readingIds);
             return { success: false, error: `Max retries exceeded: ${errorMessage}` };
         }
@@ -192,18 +185,6 @@ export class SyncManager {
         catch (error) {
             this.status.isClientConnected = false;
             return false;
-        }
-    }
-    /**
-     * Update queue size in status
-     */
-    async updateQueueSize() {
-        try {
-            const count = await this.database.getUnsynchronizedCount();
-            this.status.queueSize = count;
-        }
-        catch (error) {
-            console.error('Failed to update queue size:', error);
         }
     }
     /**

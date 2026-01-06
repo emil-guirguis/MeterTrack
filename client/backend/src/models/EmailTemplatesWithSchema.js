@@ -90,7 +90,7 @@ class EmailTemplates extends BaseModel {
                 }),
                 isactive: field({
                     type: FieldTypes.BOOLEAN,
-                    default: false,
+                    default: true,
                     required: false,
                     label: 'Isactive',
                     dbField: 'isactive',
@@ -121,6 +121,7 @@ class EmailTemplates extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,

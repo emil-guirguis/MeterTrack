@@ -26,42 +26,67 @@ class PermissionsService {
   /**
    * Role-to-permission mappings as nested objects
    * Format: { module: { action: boolean } }
+   * 
+   * Organized by role with clear module grouping for maintainability
    */
   static ROLE_PERMISSIONS = {
     admin: {
+      // Full access to all user management
       user: { create: true, read: true, update: true, delete: true },
+      // Full access to all meter operations
       meter: { create: true, read: true, update: true, delete: true },
+      // Full access to all device operations
       device: { create: true, read: true, update: true, delete: true },
+      // Full access to all location operations
       location: { create: true, read: true, update: true, delete: true },
+      // Full access to all contact operations
       contact: { create: true, read: true, update: true, delete: true },
+      // Full access to all template operations
       template: { create: true, read: true, update: true, delete: true },
+      // Full access to settings
       settings: { read: true, update: true }
     },
     manager: {
+      // Can manage users but cannot delete
       user: { create: true, read: true, update: true, delete: false },
+      // Full access to meter operations
       meter: { create: true, read: true, update: true, delete: true },
+      // Full access to device operations
       device: { create: true, read: true, update: true, delete: true },
+      // Full access to location operations
       location: { create: true, read: true, update: true, delete: true },
+      // Full access to contact operations
       contact: { create: true, read: true, update: true, delete: true },
+      // Full access to template operations
       template: { create: true, read: true, update: true, delete: true },
+      // Can read and update settings
       settings: { read: true, update: true }
     },
     technician: {
+      // Read-only access to users
       user: { create: false, read: true, update: false, delete: false },
+      // Full access to meter operations
       meter: { create: true, read: true, update: true, delete: true },
+      // Full access to device operations
       device: { create: true, read: true, update: true, delete: true },
+      // Read-only access to locations
       location: { create: false, read: true, update: false, delete: false },
+      // Read-only access to contacts
       contact: { create: false, read: true, update: false, delete: false },
+      // Read-only access to templates
       template: { create: false, read: true, update: false, delete: false },
+      // Read-only access to settings
       settings: { read: true, update: false }
     },
     viewer: {
+      // Read-only access to all resources
       user: { create: false, read: true, update: false, delete: false },
       meter: { create: false, read: true, update: false, delete: false },
       device: { create: false, read: true, update: false, delete: false },
       location: { create: false, read: true, update: false, delete: false },
       contact: { create: false, read: true, update: false, delete: false },
       template: { create: false, read: true, update: false, delete: false },
+      // Read-only access to settings
       settings: { read: true, update: false }
     }
   };
@@ -201,6 +226,103 @@ class PermissionsService {
    */
   static getAvailableRoles() {
     return Object.keys(this.ROLE_PERMISSIONS);
+  }
+
+  /**
+   * Format permissions for UI display with grouped modules
+   * Returns an array of permission groups organized by module
+   * @param {Object} permissionsObj - Nested permissions object
+   * @returns {Array<Object>} Array of module groups with their permissions
+   * 
+   * Example output:
+   * [
+   *   {
+   *     module: 'user',
+   *     label: 'User Management',
+   *     permissions: [
+   *       { action: 'create', label: 'Create', allowed: true },
+   *       { action: 'read', label: 'Read', allowed: true },
+   *       ...
+   *     ]
+   *   },
+   *   ...
+   * ]
+   */
+  static formatPermissionsForUI(permissionsObj) {
+    if (!permissionsObj || typeof permissionsObj !== 'object') {
+      return [];
+    }
+
+    const moduleLabels = {
+      user: 'User Management',
+      meter: 'Meter Management',
+      device: 'Device Management',
+      location: 'Location Management',
+      contact: 'Contact Management',
+      template: 'Template Management',
+      settings: 'Settings'
+    };
+
+    const actionLabels = {
+      create: 'Create',
+      read: 'Read',
+      update: 'Update',
+      delete: 'Delete'
+    };
+
+    const groups = [];
+
+    for (const module of this.MODULES) {
+      if (module in permissionsObj) {
+        const actions = permissionsObj[module];
+        const permissions = [];
+
+        for (const action of (this.ACTIONS[module] || [])) {
+          if (action in actions) {
+            permissions.push({
+              action,
+              label: actionLabels[action] || action,
+              allowed: actions[action] === true
+            });
+          }
+        }
+
+        groups.push({
+          module,
+          label: moduleLabels[module] || module,
+          permissions
+        });
+      }
+    }
+
+    return groups;
+  }
+
+  /**
+   * Get a summary of permissions for a role
+   * Returns a human-readable summary of what a role can do
+   * @param {string} role - User role
+   * @returns {Object} Summary with role info and permission counts
+   */
+  static getPermissionsSummary(role) {
+    const permissions = this.getPermissionsByRole(role);
+    const flatArray = this.toFlatArray(permissions);
+    
+    const summary = {
+      role,
+      totalPermissions: flatArray.length,
+      byModule: {}
+    };
+
+    for (const module of this.MODULES) {
+      const modulePerms = flatArray.filter(p => p.startsWith(`${module}:`));
+      summary.byModule[module] = {
+        count: modulePerms.length,
+        permissions: modulePerms
+      };
+    }
+
+    return summary;
   }
 }
 

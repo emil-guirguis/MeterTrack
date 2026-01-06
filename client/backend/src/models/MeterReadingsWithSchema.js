@@ -877,6 +877,7 @@ class MeterReadings extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
+                    name: 'id',
                     type: FieldTypes.STRING,
                     default: null,
                     readOnly: true,

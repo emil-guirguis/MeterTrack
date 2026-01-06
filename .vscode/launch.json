@@ -2,29 +2,120 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Sync MCP Server",
+      "name": "Client Backend (Node.js)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/client/backend/src/server.js",
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}/client/backend",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "Sync MCP Server (Node.js)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/sync/mcp/dist/index.js",
       "restart": true,
-      "runtimeArgs": ["--nolazy"],
-      "protocol": "inspector",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": ["<node_internals>/**"],
-      "outputCapture": "std",
       "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
       "cwd": "${workspaceFolder}/sync/mcp",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "preLaunchTask": "build-sync-mcp",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/sync/mcp/dist/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/sync/mcp/dist/**/*.js"
+      ],
       "resolveSourceMapLocations": [
         "${workspaceFolder}/sync/mcp/**",
         "!**/node_modules/**"
-      ],
-      "env": {
-        "NODE_ENV": "development",
-        "LOG_LEVEL": "debug"
+      ]
+    },
+    {
+      "name": "Client Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/client/frontend/src",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*",
+        "webpack:///./src/*": "${webRoot}/*",
+        "webpack:///./~/*": "${workspaceFolder}/node_modules/*"
       },
-      "preLaunchTask": "build-sync-mcp"
+      "timeout": 30000,
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "Sync Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3003",
+      "webRoot": "${workspaceFolder}/sync/frontend/src",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*",
+        "webpack:///./src/*": "${webRoot}/*",
+        "webpack:///./~/*": "${workspaceFolder}/node_modules/*"
+      },
+      "timeout": 30000,
+      "preLaunchTask": "start-sync-frontend",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Client Backend",
+      "configurations": ["Client Backend (Node.js)"]
+    },
+    {
+      "name": "Debug Sync Backend",
+      "configurations": ["Sync MCP Server (Node.js)"]
+    },
+    {
+      "name": "Debug All Backends",
+      "configurations": [
+        "Client Backend (Node.js)",
+        "Sync MCP Server (Node.js)"
+      ]
+    },
+    {
+      "name": "Debug Client Full (Backend + Frontend)",
+      "configurations": [
+        "Client Backend (Node.js)",
+        "Client Frontend (Chrome)"
+      ]
+    },
+    {
+      "name": "Debug Sync Full (Backend + Frontend)",
+      "configurations": [
+        "Sync MCP Server (Node.js)",
+        "Sync Frontend (Chrome)"
+      ]
+    },
+    {
+      "name": "Debug Everything",
+      "configurations": [
+        "Client Backend (Node.js)",
+        "Client Frontend (Chrome)",
+        "Sync MCP Server (Node.js)",
+        "Sync Frontend (Chrome)"
+      ]
     }
   ]
 }

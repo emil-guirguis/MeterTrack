@@ -176,12 +176,14 @@ function parseForeignKeyError(error, modelName, tableName) {
         referencedTable,
         constraint,
         errorCode: '23503',
-        violationType: 'delete'
+        violationType: 'delete',
+        originalError: error.message,
+        detail: error.detail
       }
     );
   } else {
     return new ForeignKeyError(
-      `Invalid reference: ${field} with value '${value}' does not exist in ${referencedTable}`,
+      `Invalid reference: ${field} with value '${value}' does not exist in ${referencedTable}. ${error.detail || ''}`,
       {
         model: modelName,
         tableName,
@@ -190,7 +192,9 @@ function parseForeignKeyError(error, modelName, tableName) {
         referencedTable,
         constraint,
         errorCode: '23503',
-        violationType: 'insert_update'
+        violationType: 'insert_update',
+        originalError: error.message,
+        detail: error.detail
       }
     );
   }
