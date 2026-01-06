@@ -41,6 +41,7 @@ export interface TenantEntity {
 }
 export interface MeterEntity {
   meter_id: number;
+  device_id: number;
   name: string;
   active: boolean;
   ip: string;

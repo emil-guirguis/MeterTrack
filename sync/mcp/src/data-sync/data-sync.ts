@@ -670,6 +670,7 @@ export class SyncDatabase {
       // Prepare parameters
       const params = [
         meter.meter_id,
+        meter.device_id,
         meter.name,
         meter.active !== undefined ? meter.active : true,
         meter.ip || null,
@@ -681,9 +682,10 @@ export class SyncDatabase {
       console.log(`   ✓ All validations passed`);
       console.log(`   Executing INSERT/UPDATE query...`);
 
-      const sql = `INSERT INTO meter (id, name, active, ip, port, meter_element_id, element)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+      const sql = `INSERT INTO meter (id, device_id,name, active, ip, port, meter_element_id, element)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (id, meter_element_id) DO UPDATE SET
+           device_id = EXCLUDED.device_id,
            name = EXCLUDED.name,
            active = EXCLUDED.active,
            ip = EXCLUDED.ip,

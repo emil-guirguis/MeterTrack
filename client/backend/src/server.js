@@ -129,10 +129,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     await initializeNotificationScheduler();
     console.log('✅ [INIT] Notification scheduler initialized');
 
-    console.log('🔄 [INIT] Initializing meter data analyzer...');
-    // Initialize meter data analyzer
-    await initializeMeterDataAnalyzer();
-    console.log('✅ [INIT] Meter data analyzer initialized');
+    // console.log('🔄 [INIT] Initializing meter data analyzer...');
+    // // Initialize meter data analyzer
+    // await initializeMeterDataAnalyzer();
+    // console.log('✅ [INIT] Meter data analyzer initialized');
 
     console.log('🔄 [INIT] Initializing meter integration service...');
     // Initialize meter integration service
@@ -250,36 +250,36 @@ async function initializeNotificationScheduler() {
   }
 }
 
-/**
- * Initialize meter data analyzer
- */
-async function initializeMeterDataAnalyzer() {
-  try {
-    console.log('🔄 [METER_ANALYZER] Starting initialization...');
-    // Import MeterDataAnalyzer
-    const meterDataAnalyzer = require('./services/MeterDataAnalyzer');
-    console.log('🔄 [METER_ANALYZER] MeterDataAnalyzer imported');
+// /**
+//  * Initialize meter data analyzer
+//  */
+// async function initializeMeterDataAnalyzer() {
+//   try {
+//     console.log('🔄 [METER_ANALYZER] Starting initialization...');
+//     // Import MeterDataAnalyzer
+//     const meterDataAnalyzer = require('./services/MeterDataAnalyzer');
+//     console.log('🔄 [METER_ANALYZER] MeterDataAnalyzer imported');
     
-    // Initialize with default configuration
-    const result = await meterDataAnalyzer.initialize();
-    console.log('� [ METER_ANALYZER] Initialize result:', result);
+//     // Initialize with default configuration
+//     const result = await meterDataAnalyzer.initialize();
+//     console.log('� [ METER_ANALYZER] Initialize result:', result);
     
-    if (result.success) {
-      console.log('📊 [METER_ANALYZER] Initialized successfully');
+//     if (result.success) {
+//       console.log('📊 [METER_ANALYZER] Initialized successfully');
       
-      // Start monitoring if enabled
-      console.log('🔄 [METER_ANALYZER] Starting monitoring...');
-      meterDataAnalyzer.startMonitoring();
-      console.log('✅ [METER_ANALYZER] Monitoring started');
-    } else {
-      console.log('⚠️ [METER_ANALYZER] Initialization failed:', result.error);
-    }
-  } catch (error) {
-    console.error('❌ [METER_ANALYZER] Failed to initialize:', error.message);
-    console.error('❌ [METER_ANALYZER] Stack:', error.stack);
-    // Don't exit the process - the server can still run without analyzer
-  }
-}
+//       // Start monitoring if enabled
+//       console.log('🔄 [METER_ANALYZER] Starting monitoring...');
+//       meterDataAnalyzer.startMonitoring();
+//       console.log('✅ [METER_ANALYZER] Monitoring started');
+//     } else {
+//       console.log('⚠️ [METER_ANALYZER] Initialization failed:', result.error);
+//     }
+//   } catch (error) {
+//     console.error('❌ [METER_ANALYZER] Failed to initialize:', error.message);
+//     console.error('❌ [METER_ANALYZER] Stack:', error.stack);
+//     // Don't exit the process - the server can still run without analyzer
+//   }
+// }
 
 /**
  * Initialize meter integration service

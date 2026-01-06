@@ -164,7 +164,7 @@ export class MeterSyncAgent {
       );
 
       // Deactivate deleted meters (those in local but not in remote)
-      console.log(`\n➖ [Meter Sync] Processing deleted meters...`);
+      console.log(`\n➖ [Meter Sync] Processing meters to delete ...`);
       for (const localMeter of localMeters) {
         const compositeKey = `${localMeter.meter_id}:${localMeter.meter_element_id}`;
         const remoteMeter = remoteMap.get(compositeKey);
@@ -196,6 +196,7 @@ export class MeterSyncAgent {
           try {
             await this.syncDatabase.upsertMeter({
               meter_id: remoteMeter.meter_id,
+              device_id: remoteMeter.device_id,
               name: remoteMeter.name,
               ip: remoteMeter.ip,
               port: remoteMeter.port,
@@ -221,7 +222,9 @@ export class MeterSyncAgent {
           const hasChanges =
             localMeter.ip !== remoteMeter.ip ||
             localMeter.port !== remoteMeter.port ||
+            localMeter.device_id !== remoteMeter.device_id ||
             localMeter.active !== remoteMeter.active ||
+            localMeter.meter_element_id !== remoteMeter.meter_element_id ||
             localMeter.element !== remoteMeter.element ||
             !localMeter.active;
 
@@ -229,6 +232,7 @@ export class MeterSyncAgent {
             try {
               await this.syncDatabase.upsertMeter({
                 meter_id: remoteMeter.meter_id,
+                device_id: remoteMeter.device_id,
                 name: remoteMeter.name,
                 ip: remoteMeter.ip,
                 port: remoteMeter.port,
@@ -244,7 +248,6 @@ export class MeterSyncAgent {
           }
         }
       }
-
 
       // Get updated meter count
       const updatedLocalMeters = await this.syncDatabase.getMeters(true);
@@ -315,7 +318,7 @@ export class MeterSyncAgent {
   private async getRemoteMeters(tenantId: number): Promise<MeterEntity[]> {
     try {
       const query = `
-        SELECT m.id AS meter_id, m.ip,m.port,m.active,me.element,
+        SELECT m.id AS meter_id, m.ip,m.port,m.active,me.element, m.device_id,
                me.id AS meter_element_id, 
                m.name || '-' || me.name AS name
           FROM meter m
