@@ -5,7 +5,7 @@
 
 const nodemailer = require('nodemailer');
 const TemplateRenderer = require('./TemplateRenderer');
-const EmailTemplate = require('../models/EmailTemplatesWithSchema');
+// const EmailTemplate = require('../models/EmailTemplatesWithSchema');
 const db = require('../config/database');
 
 class EmailService {
@@ -181,17 +181,17 @@ class EmailService {
                 ...options
             });
 
-            // Record template usage
-            if (emailResult.success) {
-                try {
-                    const template = await EmailTemplate.findById(templateId);
-                    if (template) {
-                        await template.incrementUsage();
-                    }
-                } catch (error) {
-                    console.warn('Failed to record template usage:', this.getErrorMessage(error));
-                }
-            }
+            // // Record template usage
+            // if (emailResult.success) {
+            //     try {
+            //         const template = await EmailTemplate.findById(templateId);
+            //         if (template) {
+            //             await template.incrementUsage();
+            //         }
+            //     } catch (error) {
+            //         console.warn('Failed to record template usage:', this.getErrorMessage(error));
+            //     }
+            // }
 
             return {
                 success: emailResult.success,

@@ -51,31 +51,6 @@ export const deviceStats: StatDefinition<Device>[] = [
     },
   },
 ];
-
-/**
- * Bulk action configurations for device list
- */
-export function createDeviceBulkActions(
-  store: { bulkDelete: (ids: number[]) => Promise<void> }
-): BulkActionConfig<Device>[] {
-  return [
-    {
-      id: 'delete',
-      label: 'Delete Selected',
-      icon: 'delete',
-      color: 'error',
-      confirm: true,
-      confirmMessage: (items: Device[]) =>
-        `Are you sure you want to delete ${items.length} device(s)? This action cannot be undone.`,
-      action: async (items: Device[]) => {
-        const ids = items.map(item => item.id);
-        await store.bulkDelete(ids);
-      },
-      requirePermission: Permission.DEVICE_DELETE,
-    },
-  ];
-}
-
 /**
  * Export configuration for device list
  */
@@ -91,7 +66,7 @@ export const deviceExportConfig: ExportConfig<Device> = {
     'Updated',
   ],
   mapRow: (device: Device) => [
-    device.id,
+    device.device_id,
     device.type,
     device.manufacturer,
     device.model_number || '',

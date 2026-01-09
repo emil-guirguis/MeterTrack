@@ -37,13 +37,9 @@ export default function MeterCard({
           />
         </Box>
 
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          ID: {meter.external_id}
-        </Typography>
-
-        {meter.bacnet_ip && (
+        {meter.ip && (
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            BACnet IP: {meter.bacnet_ip}
+            BACnet IP: {meter.ip}
           </Typography>
         )}
 

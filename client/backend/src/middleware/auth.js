@@ -16,7 +16,27 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (tokenError) {
+      if (tokenError instanceof Error) {
+        if (tokenError.name === 'TokenExpiredError') {
+          return res.status(401).json({
+            success: false,
+            message: 'Token expired'
+          });
+        }
+        
+        if (tokenError.name === 'JsonWebTokenError') {
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid token'
+          });
+        }
+      }
+      throw tokenError;
+    }
     
     console.log('\n' + '█'.repeat(120));
     console.log('█ [AUTH] Token decoded');
@@ -24,23 +44,27 @@ const authenticateToken = async (req, res, next) => {
     console.log('Decoded token:', decoded);
     console.log('█'.repeat(120) + '\n');
     
-    const user = await User.findById(decoded.userId);
-    
-    // CRITICAL: Always set tenant_id from JWT token
-    // This ensures tenant_id is available even if deserialization didn't work
-    if (user && decoded.tenant_id) {
-      user.tenant_id = decoded.tenant_id;
-    } else if (user && !user.tenant_id && decoded.tenant_id) {
-      // Fallback: if user doesn't have tenant_id, use JWT token value
-      user.tenant_id = decoded.tenant_id;
+    // Validate that userId exists in token
+    if (!decoded.userId) {
+      console.error('[AUTH] Token missing userId field');
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token - missing user ID'
+      });
     }
     
-    console.log('\n' + '█'.repeat(120));
-    console.log('█ [AUTH] User.findById result');
-    console.log('█'.repeat(120));
-    console.log('User object keys:', Object.keys(user || {}));
-    console.log('User object:', JSON.stringify(user, null, 2));
-    console.log('█'.repeat(120) + '\n');
+    let user;
+    try {
+      user = await User.findById(decoded.userId);
+    } catch (userLookupError) {
+      console.error('[AUTH] Error looking up user:', userLookupError);
+      const errorMsg = userLookupError instanceof Error ? userLookupError.message : 'Unknown error';
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to verify user',
+        detail: `User lookup failed: ${errorMsg}`
+      });
+    }
     
     if (!user) {
       return res.status(401).json({
@@ -63,58 +87,20 @@ const authenticateToken = async (req, res, next) => {
     // CRITICAL: Set global tenant context for automatic filtering
     global.currentTenantId = user.tenant_id;
     
-    console.log('\n' + '█'.repeat(120));
-    console.log('█ [AUTH] GLOBAL TENANT CONTEXT SET');
-    console.log('█'.repeat(120));
-    console.log('User ID:', user.id);
-    console.log('User Email:', user.email);
-    console.log('Tenant ID:', user.tenant_id);
-    console.log('Global tenant context set to:', global.currentTenantId);
-    console.log('█'.repeat(120) + '\n');
-    
     // Derive permissions from role using PermissionsService
     const PermissionsService = require('../services/PermissionsService');
     const userRole = (user.role || 'viewer').toLowerCase();
     const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
     let permissions = PermissionsService.toFlatArray(permissionsObj);
     
-    // If user has permissions in database, use those instead (convert from nested object format to flat array)
-    // @ts-ignore - permissions is dynamically set by schema initialization
-    if (user.permissions) {
-      let permissionsToConvert = user.permissions;
-      
-      // If permissions is a JSON string, parse it first
-      if (typeof permissionsToConvert === 'string') {
-        try {
-          permissionsToConvert = JSON.parse(permissionsToConvert);
-          console.log('[AUTH MIDDLEWARE] Parsed permissions from JSON string');
-        } catch (e) {
-          console.warn('[AUTH MIDDLEWARE] Failed to parse permissions JSON:', e);
-          permissionsToConvert = null;
-        }
+    // If user has permissions in database, use those instead
+    if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
+      try {
+        permissions = PermissionsService.toFlatArray(user.permissions);
+      } catch (e) {
+        console.warn('[AUTH MIDDLEWARE] Failed to convert permissions, using role-based:', e.message);
       }
-      
-      // Now convert to flat array
-      if (permissionsToConvert && typeof permissionsToConvert === 'object' && !Array.isArray(permissionsToConvert)) {
-        // Convert nested object format: { module: { action: true } } to flat array: ['module:action']
-        console.log('[AUTH MIDDLEWARE] Converting nested permissions object to flat array');
-        permissions = PermissionsService.toFlatArray(permissionsToConvert);
-      } else if (Array.isArray(permissionsToConvert) && permissionsToConvert.length > 0) {
-        // Handle old array format as fallback
-        console.log('[AUTH MIDDLEWARE] Using existing array permissions');
-        permissions = permissionsToConvert;
-      } else {
-        console.log('[AUTH MIDDLEWARE] Using role-based permissions for role:', userRole);
-      }
-    } else {
-      console.log('[AUTH MIDDLEWARE] No stored permissions, using role-based permissions for role:', userRole);
     }
-    
-    console.log('[AUTH MIDDLEWARE] Final permissions:', {
-      count: permissions.length,
-      sample: permissions.slice(0, 3),
-      isArray: Array.isArray(permissions)
-    });
     
     user.permissions = permissions;
     
@@ -123,44 +109,17 @@ const authenticateToken = async (req, res, next) => {
       user.tenant_id = user.tenant.id || user.tenant;
     }
     
-    console.log('[AUTH MIDDLEWARE] User loaded:', {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      tenant_id: user.tenant_id,
-      active: user.active
-    });
-    
     req.user = user;
-    
-    // Also set req.auth for compatibility with tenant context middleware
-    req.auth = {
-      user: user
-    };
+    req.auth = { user: user };
     
     next();
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({
-          success: false,
-          message: 'Token expired'
-        });
-      }
-      
-      if (error.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid token'
-        });
-      }
-    }
-
-    console.error('Auth middleware error:', error);
+    console.error('Auth middleware error:', error instanceof Error ? error.message : error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
-      message: 'Authentication error'
+      message: 'Authentication error',
+      detail: errorMsg
     });
   }
 };
@@ -232,7 +191,7 @@ const verifyApiKey = async (apiKey, hashedApiKey) => {
 const getSiteIdFromApiKey = async (apiKey) => {
   try {
     const result = await db.query(
-      'SELECT id FROM sites WHERE api_key = $1 AND is_active = true',
+      'SELECT tenant_id FROM tenant WHERE api_key = $1 AND is_active = true',
       [apiKey]
     );
     

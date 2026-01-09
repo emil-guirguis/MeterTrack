@@ -356,19 +356,6 @@ class BaseModel {
    *   await client.query('UPDATE meter SET status = $1 WHERE id = $2', ['active', 2]);
    * });
    * 
-   * @example
-   * // Create multiple related records in a transaction
-   * const result = await Device.transaction(async (client) => {
-   *   const device = await client.query(
-   *     'INSERT INTO device (name) VALUES ($1) RETURNING *',
-   *     ['New Device']
-   *   );
-   *   await client.query(
-   *     'INSERT INTO meter (device_id, name) VALUES ($1, $2)',
-   *     [device.rows[0].id, 'New Meter']
-   *   );
-   *   return device.rows[0];
-   * });
    */
   static async transaction(callback) {
     try {
@@ -564,8 +551,11 @@ class BaseModel {
       return null;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this._handleDatabaseError(err, 'findById', sql, values);
-      return null; // Ensure function returns
+      console.error(`[${this.name}] findById error:`, err.message);
+      console.error(`[${this.name}] SQL:`, sql);
+      console.error(`[${this.name}] Values:`, values);
+      // Propagate the error instead of handling it silently
+      throw err;
     }
   }
 
@@ -678,7 +668,7 @@ class BaseModel {
         console.log('█'.repeat(120));
         console.log('Instance keys:', Object.keys(instance));
         console.log('Instance data:', {
-          id: instance.id,
+          users_id: instance.users_id,
           email: instance.email,
           name: instance.name,
           role: instance.role,

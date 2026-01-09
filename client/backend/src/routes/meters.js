@@ -30,7 +30,7 @@ router.get('/', requirePermission('meter:read'), async (req, res) => {
       where,
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
-      tenantId: req.user?.tenantId // Automatic tenant filtering
+      tenant_id: req.user?.tenant_id || req.user?.tenantId // Automatic tenant filtering
     };
 
     // Get meters

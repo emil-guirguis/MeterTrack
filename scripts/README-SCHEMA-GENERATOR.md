@@ -59,7 +59,7 @@ class Meter extends BaseModel {
     super(meterData);
     
     // All database fields automatically mapped
-    this.id = meterData.id;
+    this.meter_id = meterData.meter_id;
     this.name = meterData.name;
     this.type = meterData.type;
     // ... more fields

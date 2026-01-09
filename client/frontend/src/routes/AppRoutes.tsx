@@ -4,6 +4,7 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { ProtectedRoute, AuthGuard } from '../components/auth';
 import AppLayoutWrapper from '../components/layout/AppLayoutWrapper';
 import LoginPage from '../pages/LoginPage';
+import { ForgotPasswordPage, PasswordResetPage, TwoFactorManagementPage } from '../pages/auth';
 import { Dashboard } from '../pages/Dashboard';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../features/users';
@@ -37,6 +38,8 @@ const AppRoutes: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<PasswordResetPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* Protected Routes - Require Authentication */}
@@ -45,6 +48,18 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 2FA Management Route */}
+        <Route
+          path="/security/2fa"
+          element={
+            <ProtectedRoute>
+              <AppLayoutWrapper title="Two-Factor Authentication">
+                <TwoFactorManagementPage />
+              </AppLayoutWrapper>
             </ProtectedRoute>
           }
         />

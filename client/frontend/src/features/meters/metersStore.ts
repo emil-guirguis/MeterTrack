@@ -6,7 +6,7 @@ import { tokenStorage } from '../../utils/tokenStorage';
 
 // Meter TypeScript type
 export type Meter = {
-  id: string;
+  meter_id: number;
   name: string;
   serial_number: string;
   device_id: number;

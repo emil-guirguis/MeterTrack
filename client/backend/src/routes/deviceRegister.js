@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 
     // Verify device exists
     const deviceResult = await db.query(
-      'SELECT id FROM device WHERE id = $1',
+      'SELECT device_id FROM device WHERE device_id = $1',
       [deviceId]
     );
 
@@ -27,10 +27,10 @@ router.get('/', async (req, res) => {
 
     // Get all device registers with joined register data
     const registers = await db.query(
-      `SELECT dr.id, dr.device_id, dr.register_id,
+      `SELECT dr.device_register_id, dr.device_id, dr.register_id,
               r.id as r_id, r.register, r.name, r.unit, r.field_name
        FROM device_register dr
-       JOIN register r ON dr.register_id = r.id
+          JOIN register r ON dr.register_id = r.register_id
        WHERE dr.device_id = $1
        ORDER BY r.register ASC`,
       [deviceId]
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 
     // Transform response to include nested register object
     const data = registers.rows.map((row) => ({
-      id: row.id,
+      register_id: row.register_id,
       device_id: row.device_id,
       register_id: row.register_id,
       register: {

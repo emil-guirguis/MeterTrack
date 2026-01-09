@@ -51,7 +51,7 @@ export const Permission = {
 export type Permission = typeof Permission[keyof typeof Permission];
 
 export interface User {
-  id: string;
+  users_id: string;
   email: string;
   name: string;
   client: string;
@@ -75,6 +75,9 @@ export interface AuthResponse {
   refreshToken: string;
   expiresIn: number;
   locations?: any[]; // Locations for the user's tenant
+  requires_2fa?: boolean; // Whether 2FA is required
+  session_token?: string; // Temporary session token for 2FA verification
+  twofa_method?: 'totp' | 'email_otp' | 'sms_otp'; // The 2FA method to use
 }
 
 export interface AuthState {
@@ -125,10 +128,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.METER_DELETE,
     
     // Full device management
-    Permission.DEVICE_CREATE,
     Permission.DEVICE_READ,
-    Permission.DEVICE_UPDATE,
-    Permission.DEVICE_DELETE,
     
     // Settings read/update
     Permission.SETTINGS_READ,
@@ -157,10 +157,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.METER_DELETE,
     
     // Full device management
-    Permission.DEVICE_CREATE,
     Permission.DEVICE_READ,
-    Permission.DEVICE_UPDATE,
-    Permission.DEVICE_DELETE,
     
     // Read-only settings
     Permission.SETTINGS_READ,

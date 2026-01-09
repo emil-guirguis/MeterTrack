@@ -19,10 +19,10 @@ import winston from 'winston';
 import { Pool } from 'pg';
 import { syncPool, remotePool, initializePools, closePools } from './data-sync/data-sync.js';
 import { MeterCollector, CollectorConfig } from './meter-collection/collector.js';
-import { SyncManager, createSyncManagerFromEnv } from './sync-service/sync-manager.js';
-import { ClientSystemApiClient } from './sync-service/api-client.js';
+import { SyncManager, createSyncManagerFromEnv } from './remote_to_local-sync/sync-manager.js';
+import { ClientSystemApiClient } from './api/client-system-api.js';
 import { LocalApiServer, createAndStartLocalApiServer } from './api/server.js';
-import { MeterSyncAgent } from './sync-service/meter-sync-agent.js';
+import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
 import { SyncDatabase as SyncDatabaseInterface } from './types/entities.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
@@ -69,7 +69,7 @@ class SyncMcpServer {
   private syncDatabase?: SyncDatabase;
   private meterCollector?: MeterCollector;
   private syncManager?: SyncManager;
-  private meterSyncAgent?: MeterSyncAgent;
+  private remoteToLocalSyncAgent?: RemoteToLocalSyncAgent;
   private bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
   private apiServer?: LocalApiServer;
   private remotePool?: Pool;
@@ -92,27 +92,6 @@ class SyncMcpServer {
   }
 
 
-
-  /**
-   * Synchronize tenant from remote database
-   */
-  private async syncTenantFromRemote(remotePool: Pool): Promise<void> {
-    try {
-      const tenantId = parseInt(process.env.TENANT_ID || '0', 10);
-
-      if (tenantId === 0) {
-        console.warn('⚠️  [Services] TENANT_ID not configured, skipping tenant sync');
-        return;
-      }
-
-      console.log(`🔄 [Services] Synchronizing tenant ${tenantId} from remote database...`);
-      // TODO: Implement tenant sync when database service is available
-      console.log(`✅ [Services] Tenant synchronized successfully`);
-    } catch (error) {
-      console.error('❌ [Services] Failed to synchronize tenant:', error);
-      logger.error('Tenant sync error:', error);
-    }
-  }
 
   /**
    * Initialize services
@@ -161,29 +140,93 @@ class SyncMcpServer {
       // DISABLED: await this.bacnetMeterReadingAgent.start();
       console.log('⏸️  [Services] BACnet Meter Reading Agent disabled (not started)');
 
+      // Load API key from environment variable
+      const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
+      if (apiKeyFromEnv) {
+        console.log(`✅ [Services] API key loaded from environment: ${apiKeyFromEnv.substring(0, 8)}...`);
+      } else {
+        console.warn('⚠️  [Services] No API key in environment variable CLIENT_API_KEY');
+      }
+
       // Initialize Meter Sync Agent
-      console.log('🔄 [Services] Initializing Meter Sync Agent...');
+      console.log('🔄 [Services] Initializing Remote to Local Sync Agent...');
       remotePool = this.createRemoteDatabasePool();
       this.remotePool = remotePool;
       if (this.syncDatabase) {
-        this.meterSyncAgent = new MeterSyncAgent({
+        this.remoteToLocalSyncAgent = new RemoteToLocalSyncAgent({
           syncDatabase: this.syncDatabase,
           remotePool: remotePool,
           syncIntervalMinutes: parseInt(process.env.METER_SYNC_INTERVAL_MINUTES || '60', 10),
           enableAutoSync: process.env.METER_SYNC_AUTO_START !== 'false',
         });
-        console.log('✅ [Services] Meter Sync Agent initialized');
+        console.log('✅ [Services] Remote to Local Sync Agent initialized');
 
-        // Start Meter Sync Agent
-        console.log('▶️  [Services] Starting Meter Sync Agent...');
-        await this.meterSyncAgent.start();
-        console.log('✅ [Services] Meter Sync Agent started');
+        // Start Meter Sync Agent (which includes tenant sync as Phase 0)
+        console.log('▶️  [Services] Starting Remote to Local Sync Agent...');
+        await this.remoteToLocalSyncAgent.start();
+        console.log('✅ [Services] Remote to Local Sync Agent started');
+
+        // Store API key in local sync database tenant table
+        console.log('🔑 [Services] Storing API key in local sync database...');
+        try {
+          const tenant = await this.syncDatabase.getTenant();
+          if (tenant && apiKeyFromEnv) {
+            // Update tenant with API key from environment
+            await this.syncDatabase.updateTenantApiKey(apiKeyFromEnv);
+            console.log(`✅ [Services] API key stored in database: ${apiKeyFromEnv.substring(0, 8)}...`);
+          }
+        } catch (err) {
+          console.warn('⚠️  [Services] Failed to store API key in database:', err);
+        }
+      }
+
+      // Initialize Sync Manager
+      console.log('🔄 [Services] Initializing Sync Manager...');
+      try {
+        // Load API key from environment (already loaded above)
+        let apiKeyFromDb = apiKeyFromEnv;
+        
+        // Try to load from database as fallback
+        if (!apiKeyFromDb) {
+          try {
+            if (this.syncDatabase) {
+              const tenant = await this.syncDatabase.getTenant();
+              if (tenant && tenant.api_key) {
+                apiKeyFromDb = tenant.api_key;
+                console.log(`✅ [Services] API key loaded from database: ${apiKeyFromDb.substring(0, 8)}...`);
+              }
+            }
+          } catch (err) {
+            console.warn('⚠️  [Services] Failed to load API key from database');
+          }
+        }
+
+        const apiClient = new ClientSystemApiClient({
+          apiUrl: process.env.CLIENT_API_URL || 'http://localhost:3001/api',
+          apiKey: apiKeyFromDb,
+          timeout: parseInt(process.env.API_TIMEOUT || '30000', 10),
+          maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
+        });
+        console.log('✅ [Services] Client System API Client created');
+
+        if (this.syncDatabase) {
+          this.syncManager = createSyncManagerFromEnv(this.syncDatabase, apiClient);
+          console.log('✅ [Services] Sync Manager initialized');
+
+          // Start Sync Manager
+          console.log('▶️  [Services] Starting Sync Manager...');
+          await this.syncManager.start();
+          console.log('✅ [Services] Sync Manager started');
+        }
+      } catch (error) {
+        console.error('❌ [Services] Failed to initialize Sync Manager:', error);
+        throw error;
       }
 
       // Initialize Local API Server
       console.log('🌐 [Services] Initializing Local API Server...');
       if (this.syncDatabase) {
-        this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.syncManager, this.meterSyncAgent, this.bacnetMeterReadingAgent);
+        this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.syncManager, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, remotePool);
         console.log('✅ [Services] Local API Server started');
       }
 
@@ -212,6 +255,33 @@ class SyncMcpServer {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     } as any);
+  }
+
+  /**
+   * Wait for tenant sync to complete by polling the database
+   */
+  private async waitForTenantSync(timeoutMs: number = 5000): Promise<void> {
+    const startTime = Date.now();
+    const pollIntervalMs = 100;
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        if (this.syncDatabase) {
+          const tenant = await this.syncDatabase.getTenant();
+          if (tenant && tenant.api_key) {
+            console.log('✅ [Services] Tenant sync completed - API key is available');
+            return;
+          }
+        }
+      } catch (error) {
+        // Ignore errors during polling
+      }
+
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    }
+
+    console.warn('⚠️  [Services] Timeout waiting for tenant sync, proceeding anyway');
   }
 
   /**
@@ -548,7 +618,7 @@ class SyncMcpServer {
 
     if (meterId) {
       // Filter for specific meter
-      const meterStatus = status.meters.find((m: any) => m.id === meterId);
+      const meterStatus = status.meters.find((m: any) => m.meter_id === meterId);
       if (!meterStatus) {
         throw new Error(`Meter not found: ${meterId}`);
       }
@@ -696,8 +766,8 @@ class SyncMcpServer {
       await this.syncManager.stop();
     }
 
-    if (this.meterSyncAgent) {
-      await this.meterSyncAgent.stop();
+    if (this.remoteToLocalSyncAgent) {
+      await this.remoteToLocalSyncAgent.stop();
     }
 
     if (this.apiServer) {

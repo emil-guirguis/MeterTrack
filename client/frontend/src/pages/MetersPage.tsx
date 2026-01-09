@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { MeterList, MeterForm } from '../features/meters';
-import { useMetersEnhanced } from '../features/meters/metersStore';
-import { EntityManagementPage, FormModal } from '@framework/components/modal';
-
-import type { Meter, CreateMeterRequest } from '../features/meters/meterConfig';
+import { useMetersEnhanced, type Meter } from '../features/meters/metersStore';
+import { FormModal } from '@framework/components/modal';
 import './MetersPage.css';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view';
@@ -29,7 +27,7 @@ const MetersPage: React.FC = () => {
     setViewMode('view');
   };
 
-  const handleFormSubmit = async (data: CreateMeterRequest) => {
+  const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
       if (viewMode === 'create') {
@@ -58,12 +56,14 @@ const MetersPage: React.FC = () => {
         <h3>{meter.meterId}</h3>
         <div className="meter-details__actions">
           <button
+            type="button"
             className="btn btn--secondary btn--sm"
             onClick={() => handleEditMeter(meter)}
           >
             Edit
           </button>
           <button
+            type="button"
             className="btn btn--secondary btn--sm"
             onClick={() => setViewMode('list')}
           >

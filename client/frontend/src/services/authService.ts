@@ -36,20 +36,28 @@ class AuthService {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Only retry if it's a 401, not already retried, and not a refresh token request
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
           originalRequest._retry = true;
 
           try {
             const refreshToken = tokenStorage.getRefreshToken();
-            if (refreshToken) {
-              const response = await this.refreshToken(refreshToken);
-              tokenStorage.updateTokens(response.token, response.refreshToken, response.expiresIn);
-              
-              // Retry original request with new token
-              originalRequest.headers.Authorization = `Bearer ${response.token}`;
-              return this.apiClient(originalRequest);
+            if (!refreshToken) {
+              // No refresh token, go to login
+              tokenStorage.clearTokens();
+              window.location.href = '/login';
+              return Promise.reject(error);
             }
+
+            console.log('[AUTH] Attempting token refresh...');
+            const response = await this.refreshToken(refreshToken);
+            tokenStorage.updateTokens(response.token, response.refreshToken, response.expiresIn);
+            
+            // Retry original request with new token
+            originalRequest.headers.Authorization = `Bearer ${response.token}`;
+            return this.apiClient(originalRequest);
           } catch (refreshError) {
+            console.error('[AUTH] Token refresh failed:', refreshError);
             // Refresh failed, clear tokens and redirect to login
             tokenStorage.clearTokens();
             window.location.href = '/login';
@@ -65,76 +73,89 @@ class AuthService {
   // Login method
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      console.log('🔐 Attempting login with:', { email: credentials.email, baseURL: this.apiClient.defaults.baseURL });
-      const response: AxiosResponse<{ success: boolean; data: AuthResponse }> = await this.apiClient.post('/auth/login', credentials);
-      console.log('✅ Login successful:', response.data);
+      console.log('🔐 [LOGIN] Starting login process');
+      console.log('🔐 [LOGIN] Credentials:', { email: credentials.email, password: '***' });
+      console.log('🔐 [LOGIN] API Client baseURL:', this.apiClient.defaults.baseURL);
+      
+      let response;
+      try {
+        response = await this.apiClient.post('/auth/login', credentials);
+        console.log('✅ [LOGIN] POST request succeeded');
+      } catch (postError) {
+        console.error('❌ [LOGIN] POST request failed');
+        throw postError;
+      }
+      
+      console.log('✅ [LOGIN] Response received');
+      console.log('✅ [LOGIN] Response status:', response.status);
+      console.log('✅ [LOGIN] Response data:', response.data);
       
       const authResponse = response.data.data;
       
-      console.log('📋 [AUTH SERVICE] Login response user:', {
-        id: authResponse.user.id,
+      console.log('✅ [LOGIN] Extracted authResponse');
+      console.log('📋 [LOGIN] User data:', {
+        users_id: authResponse.user.users_id,
         email: authResponse.user.email,
         role: authResponse.user.role,
-        permissions: authResponse.user.permissions,
-        permissionsCount: authResponse.user.permissions?.length || 0
       });
       
       // Store tenant ID in localStorage for form validation field options
       const tenantId = authResponse.user.client;
+      console.log('💾 [LOGIN] Tenant ID from response:', tenantId);
       localStorage.setItem('tenantId', tenantId);
-      console.log('💾 Tenant ID stored in localStorage:', tenantId);
+      console.log('💾 [LOGIN] Tenant ID stored in localStorage');
       
       // IMPORTANT: Store token FIRST before fetching locations
-      // The location endpoint requires authentication
-      console.log('💾 [AUTH] Storing token before fetching locations');
+      console.log('💾 [LOGIN] About to store tokens');
+      console.log('💾 [LOGIN] Token:', authResponse.token ? authResponse.token.substring(0, 50) + '...' : 'MISSING');
+      console.log('💾 [LOGIN] RefreshToken:', authResponse.refreshToken ? authResponse.refreshToken.substring(0, 50) + '...' : 'MISSING');
+      console.log('💾 [LOGIN] ExpiresIn:', authResponse.expiresIn);
+      
       this.storeTokens(authResponse.token, authResponse.refreshToken, authResponse.expiresIn);
+      
+      console.log('💾 [LOGIN] Tokens stored, verifying...');
+      console.log('💾 [LOGIN] Token in localStorage:', localStorage.getItem('auth_token') ? 'EXISTS' : 'MISSING');
+      console.log('💾 [LOGIN] Token in sessionStorage:', sessionStorage.getItem('auth_token') ? 'EXISTS' : 'MISSING');
+      console.log('💾 [LOGIN] getStoredToken():', this.getStoredToken() ? 'EXISTS' : 'MISSING');
       
       // Fetch locations for the user's tenant
       try {
-        console.log('📍 [AUTH] Fetching locations for tenant:', tenantId);
-        console.log('📍 [AUTH] API Base URL:', this.apiClient.defaults.baseURL);
+        console.log('📍 [LOGIN] Fetching locations for tenant:', tenantId);
         
-        // Note: tenant filtering is automatic in the backend via req.user.tenantId
-        // We don't need to pass filter.tenant_id as a query parameter
         const locationsResponse: AxiosResponse<{ success: boolean; data: { items: Location[]; pagination: any } }> = await this.apiClient.get(
           `/location`
         );
         
-        console.log('📍 [AUTH] Location response received:', locationsResponse.status);
-        console.log('📍 [AUTH] Location response data:', locationsResponse.data);
+        console.log('📍 [LOGIN] Location response received:', locationsResponse.status);
         
         if (locationsResponse.data.success && locationsResponse.data.data?.items) {
           authResponse.locations = locationsResponse.data.data.items;
-          console.log('✅ [AUTH] Locations fetched successfully:', authResponse.locations.length, 'locations');
-          authResponse.locations.forEach((loc: any, idx: number) => {
-            console.log(`  [${idx}] ID: ${loc.id}, Name: ${loc.name}, Tenant: ${loc.tenant_id}`);
-          });
+          console.log('✅ [LOGIN] Locations fetched successfully:', authResponse.locations.length, 'locations');
         } else {
-          console.warn('⚠️ [AUTH] Location response missing items:', locationsResponse.data);
+          console.warn('⚠️ [LOGIN] Location response missing items:', locationsResponse.data);
           authResponse.locations = [];
         }
       } catch (locationError) {
-        // Don't block login if location fetch fails
-        console.warn('⚠️ [AUTH] Failed to fetch locations, continuing with login:', locationError);
-        if (axios.isAxiosError(locationError)) {
-          console.error('❌ [AUTH] Location fetch error details:', {
-            status: locationError.response?.status,
-            data: locationError.response?.data,
-            message: locationError.message
-          });
-        }
+        console.warn('⚠️ [LOGIN] Failed to fetch locations, continuing with login:', locationError);
         authResponse.locations = [];
       }
       
+      console.log('✅ [LOGIN] Login process completed successfully');
       return authResponse;
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('❌ [LOGIN] Login error caught');
+      console.error('❌ [LOGIN] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('❌ [LOGIN] Error message:', error instanceof Error ? error.message : String(error));
+      
       if (axios.isAxiosError(error)) {
-        console.error('Response data:', error.response?.data);
-        console.error('Response status:', error.response?.status);
+        console.error('❌ [LOGIN] Axios error details:');
+        console.error('  - Status:', error.response?.status);
+        console.error('  - Data:', error.response?.data);
         const message = error.response?.data?.message || 'Login failed';
         throw new Error(message);
       }
+      
+      console.error('❌ [LOGIN] Non-Axios error:', error);
       throw new Error('Network error occurred');
     }
   }
@@ -257,6 +278,174 @@ class AuthService {
   // Get current user from token
   getCurrentUserFromToken(): User | null {
     return tokenStorage.getUserFromToken();
+  }
+
+  // Change password
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<{ message: string }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; message: string }> = await this.apiClient.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+        confirmPassword
+      });
+      return { message: response.data.message };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Password change failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Forgot password - request password reset link
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; message: string }> = await this.apiClient.post('/auth/forgot-password', {
+        email
+      });
+      return { message: response.data.message };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Password reset request failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Reset password with token
+  async resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<{ message: string }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; message: string }> = await this.apiClient.post('/auth/reset-password', {
+        token,
+        newPassword,
+        confirmPassword
+      });
+      return { message: response.data.message };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Password reset failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Setup 2FA
+  async setup2FA(method: string, phoneNumber?: string): Promise<{ secret?: string; qr_code?: string; backup_codes?: any[] }> {
+    try {
+      const payload: any = { method };
+      if (phoneNumber) {
+        payload.phone_number = phoneNumber;
+      }
+      const response: AxiosResponse<{ success: boolean; data: any }> = await this.apiClient.post('/auth/2fa/setup', payload);
+      return response.data.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || '2FA setup failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Verify 2FA setup
+  async verify2FASetup(method: string, code: string): Promise<{ message: string; backup_codes?: any[] }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; message: string; data?: any }> = await this.apiClient.post('/auth/2fa/verify-setup', {
+        method,
+        code
+      });
+      return {
+        message: response.data.message,
+        backup_codes: response.data.data?.backup_codes
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || '2FA verification failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Verify 2FA during login
+  async verify2FA(sessionToken: string, code: string): Promise<AuthResponse> {
+    try {
+      const response: AxiosResponse<{ success: boolean; data: AuthResponse }> = await this.apiClient.post('/auth/verify-2fa', {
+        session_token: sessionToken,
+        code
+      });
+      return response.data.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || '2FA verification failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Disable 2FA
+  async disable2FA(method: string, password: string): Promise<{ message: string }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; message: string }> = await this.apiClient.post('/auth/2fa/disable', {
+        method,
+        password
+      });
+      return { message: response.data.message };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || '2FA disable failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Get 2FA methods
+  async get2FAMethods(): Promise<any[]> {
+    try {
+      const response: AxiosResponse<{ success: boolean; data: { methods: any[] } }> = await this.apiClient.get('/auth/2fa/methods');
+      return response.data.data.methods;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Failed to fetch 2FA methods';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Regenerate backup codes
+  async regenerateBackupCodes(password: string): Promise<{ backup_codes: any[] }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; data: { backup_codes: any[] } }> = await this.apiClient.post('/auth/2fa/regenerate-backup-codes', {
+        password
+      });
+      return { backup_codes: response.data.data.backup_codes };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Failed to regenerate backup codes';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
+  }
+
+  // Admin reset user password
+  async adminResetPassword(userId: number): Promise<{ message: string }> {
+    try {
+      const response: AxiosResponse<{ success: boolean; message: string }> = await this.apiClient.post(`/users/${userId}/reset-password`);
+      return { message: response.data.message };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || 'Admin password reset failed';
+        throw new Error(message);
+      }
+      throw new Error('Network error occurred');
+    }
   }
 }
 

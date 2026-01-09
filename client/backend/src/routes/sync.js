@@ -17,51 +17,6 @@ const logQuery = (query, params = []) => {
   console.log('==================\n');
 };
 
-/**
- * POST /api/sync/auth
- * Authenticate Sync and verify API key
- */
-router.post('/auth', authenticateSyncServer, async (req, res) => {
-  try {
-    // If middleware passes, authentication is successful
-    const query = 'SELECT id, name FROM sites WHERE id = $1';
-    const params = [req.siteId];
-    logQuery(query, params);
-    const result = await db.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Site not found'
-      });
-    }
-
-    const site = result.rows[0];
-    if (!site) {
-      return res.status(404).json({
-        success: false,
-        message: 'Site not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Authentication successful',
-      site: {
-        id: site['id'],
-        name: site['name']
-      }
-    });
-  } catch (error) {
-    console.error('Sync auth error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    res.status(500).json({
-      success: false,
-      message: 'Authentication error',
-      error: errorMessage
-    });
-  }
-});
 
 /**
  * POST /api/sync/readings/batch
@@ -107,7 +62,7 @@ router.post(
         for (const reading of readings) {
           try {
             // Find or create meter
-            const meterQuery = 'SELECT id FROM meter WHERE  tenant_id = $2';
+            const meterQuery = 'SELECT meter_id FROM meter WHERE  tenant_id = $2';
             const meterParams = [siteId, reading.meter_id];
             logQuery(meterQuery, meterParams);
             let meterResult = await client.query(meterQuery, meterParams);
@@ -173,102 +128,6 @@ router.post(
   }
 );
 
-/**
- * GET /api/sync/config
- * Download configuration for Sync
- */
-router.get('/config', authenticateSyncServer, async (req, res) => {
-  try {
-    const siteId = req.siteId;
-
-    // Get site information
-    const siteQuery = 'SELECT id, name FROM sites WHERE id = $1';
-    const siteParams = [siteId];
-    logQuery(siteQuery, siteParams);
-    const siteResult = await db.query(siteQuery, siteParams);
-
-    if (siteResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Site not found'
-      });
-    }
-
-    // Get meters for this site
-    const metersQuery = `SELECT id, external_id, name, bacnet_device_id, bacnet_ip 
-       FROM meter 
-       WHERE site_id = $1`;
-    const metersParams = [siteId];
-    logQuery(metersQuery, metersParams);
-    const metersResult = await db.query(metersQuery, metersParams);
-
-    const site = siteResult.rows[0];
-    if (!site) {
-      return res.status(404).json({
-        success: false,
-        message: 'Site not found'
-      });
-    }
-
-    const meters = metersResult.rows || [];
-
-    res.json({
-      success: true,
-      config: {
-        site: {
-          id: site['id'],
-          name: site['name']
-        },
-        meters: meters.map(meter => ({
-          external_id: meter['external_id'],
-          name: meter['name'],
-          bacnet_device_id: meter['bacnet_device_id'],
-          bacnet_ip: meter['bacnet_ip']
-        })),
-        sync_interval_minutes: 5,
-        batch_size: 1000
-      }
-    });
-  } catch (error) {
-    console.error('Config download error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    res.status(500).json({
-      success: false,
-      message: 'Config download error',
-      error: errorMessage
-    });
-  }
-});
-
-/**
- * POST /api/sync/heartbeat
- * Health check and heartbeat from Sync
- */
-router.post('/heartbeat', authenticateSyncServer, async (req, res) => {
-  try {
-    const siteId = req.siteId;
-
-    // Update last heartbeat timestamp
-    const heartbeatQuery = 'UPDATE sites SET last_heartbeat = NOW() WHERE id = $1';
-    const heartbeatParams = [siteId];
-    logQuery(heartbeatQuery, heartbeatParams);
-    await db.query(heartbeatQuery, heartbeatParams);
-
-    res.json({
-      success: true,
-      message: 'Heartbeat received',
-      server_time: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Heartbeat error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    res.status(500).json({
-      success: false,
-      message: 'Heartbeat error',
-      error: errorMessage
-    });
-  }
-});
 
 /**
  * GET /api/sync/getmeters  
@@ -277,10 +136,10 @@ router.post('/heartbeat', authenticateSyncServer, async (req, res) => {
 router.get('/getmeters', authenticateSyncServer, async (req, res) => {
   try {
     const tenantId = req.tenantId;
-    const sql = `select m.id as meter_id, m.device_id, m.ip, m.port, m.active ,  
+    const sql = `select m.meter_id, m.device_id, m.ip, m.port, m.active ,  
                 me.meter_element_id, me.element, me.name as name 
                  from meter m
-                 	  join meter_element me on me.meter_id = m.id
+                 	  join meter_element me on me.meter_id = m.meter_id
                  where m.tenant_id = $1`;
 
     const params = [tenantId];

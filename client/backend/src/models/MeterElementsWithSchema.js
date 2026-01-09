@@ -86,15 +86,16 @@ class MeterElement extends BaseModel {
       // Entity fields - read-only, system-managed
       entityFields: {
         id: field({
-          name: 'id',
+          name: 'meter_element_id',
           type: FieldTypes.NUMBER,
           default: null,
           readOnly: true,
           label: 'ID',
-          dbField: 'id',
+          dbField: 'meter_element_id',
         }),
 
         meter_id: field({
+          name: 'meter_id',
           type: FieldTypes.NUMBER,
           default: null,
           readOnly: true,
@@ -103,6 +104,7 @@ class MeterElement extends BaseModel {
         }),
 
         tenant_id: field({
+          name: 'tenant_id',
           type: FieldTypes.NUMBER,
           default: null,
           readOnly: false,
@@ -111,6 +113,7 @@ class MeterElement extends BaseModel {
         }),
 
         created_at: field({
+          name: 'created_at',
           type: FieldTypes.DATE,
           default: null,
           readOnly: true,
@@ -119,6 +122,7 @@ class MeterElement extends BaseModel {
         }),
 
         updated_at: field({
+          name: 'updated_at',
           type: FieldTypes.DATE,
           default: null,
           readOnly: true,

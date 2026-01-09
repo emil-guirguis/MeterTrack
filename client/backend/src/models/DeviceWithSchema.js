@@ -191,13 +191,13 @@ class Device extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'id',
+                    name: 'device_id',
                     order: 1,
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'Id',
-                    dbField: 'id',
+                    dbField: 'device_id',
                 }),
             },
 

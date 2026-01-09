@@ -362,7 +362,7 @@ describe('Tenant Utilities', () => {
 
     describe('UPDATE queries', () => {
       test('should add WHERE clause to UPDATE query', () => {
-        const query = 'UPDATE users SET name = ? WHERE id = ?';
+        const query = 'UPDATE users SET name = ? WHERE users_id = ?';
 
         const result = injectTenantFilter(query, tenantId);
 
@@ -380,7 +380,7 @@ describe('Tenant Utilities', () => {
       });
 
       test('should handle UPDATE with LIMIT', () => {
-        const query = 'UPDATE users SET status = ? WHERE id = ? LIMIT 1';
+        const query = 'UPDATE users SET status = ? WHERE users_id = ? LIMIT 1';
 
         const result = injectTenantFilter(query, tenantId);
 
@@ -392,7 +392,7 @@ describe('Tenant Utilities', () => {
 
     describe('DELETE queries', () => {
       test('should add WHERE clause to DELETE query', () => {
-        const query = 'DELETE FROM users WHERE id = ?';
+        const query = 'DELETE FROM users WHERE users_id = ?';
 
         const result = injectTenantFilter(query, tenantId);
 
@@ -470,7 +470,7 @@ describe('Tenant Utilities', () => {
       });
 
       test('should handle uppercase update', () => {
-        const query = 'UPDATE users SET name = ? WHERE id = ?';
+        const query = 'UPDATE users SET name = ? WHERE users_id = ?';
 
         const result = injectTenantFilter(query, tenantId);
 

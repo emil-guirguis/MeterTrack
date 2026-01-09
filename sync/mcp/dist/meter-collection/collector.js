@@ -64,7 +64,7 @@ export class MeterCollector {
             this.logger.info(`Loaded ${this.meters.length} meters from configuration`);
             // Log meter details
             this.meters.forEach(meter => {
-                this.logger.info(`Meter: ${meter.name} (${meter.id})`, {
+                this.logger.info(`Meter: ${meter.name} (${meter.meter_id})`, {
                     deviceId: meter.bacnet_device_id,
                     ip: meter.bacnet_ip,
                     dataPoints: meter.data_points.length
@@ -192,14 +192,14 @@ export class MeterCollector {
                 await this.collectMeterData(meter);
                 successCount++;
                 // Reset error count for this meter on success
-                this.meterErrorCounts.set(meter.id, 0);
+                this.meterErrorCounts.set(meter.meter_id, 0);
             }
             catch (error) {
                 errorCount++;
                 // Track errors per meter
-                const currentErrors = this.meterErrorCounts.get(meter.id) || 0;
-                this.meterErrorCounts.set(meter.id, currentErrors + 1);
-                this.logger.error(`Failed to collect data from meter ${meter.name} (${meter.id})`, {
+                const currentErrors = this.meterErrorCounts.get(meter.meter_id) || 0;
+                this.meterErrorCounts.set(meter.meter_id, currentErrors + 1);
+                this.logger.error(`Failed to collect data from meter ${meter.name} (${meter.meter_id})`, {
                     error: error instanceof Error ? error.message : String(error),
                     consecutiveErrors: currentErrors + 1
                 });
@@ -217,7 +217,7 @@ export class MeterCollector {
      * Collect data from a single meter
      */
     async collectMeterData(meter) {
-        this.logger.debug(`Collecting data from meter ${meter.name} (${meter.id})`);
+        this.logger.debug(`Collecting data from meter ${meter.name} (${meter.meter_id})`);
         // Convert config data points to BACnet data points
         const dataPoints = meter.data_points.map(dp => ({
             objectType: dp.object_type,
@@ -230,7 +230,7 @@ export class MeterCollector {
         // Store each reading
         for (const reading of readings) {
             // Update meterId to use the configured meter ID
-            reading.meterId = meter.id;
+            reading.meterId = meter.meter_id;
             await this.storeReading(reading);
         }
         this.logger.debug(`Collected ${readings.length} readings from meter ${meter.name}`);
@@ -250,7 +250,7 @@ export class MeterCollector {
                 }
                 else {
                     unhealthyCount++;
-                    this.logger.warn(`Meter ${meter.name} (${meter.id}) health check failed`);
+                    this.logger.warn(`Meter ${meter.name} (${meter.meter_id}) health check failed`);
                 }
             }
             this.logger.info('Health check complete', {
@@ -268,10 +268,10 @@ export class MeterCollector {
      */
     async getStatus() {
         const meterStatuses = await Promise.all(this.meters.map(async (meter) => {
-            const errorCount = this.meterErrorCounts.get(meter.id) || 0;
+            const errorCount = this.meterErrorCounts.get(meter.meter_id) || 0;
             const isHealthy = await this.bacnetClient.testConnection(meter.bacnet_device_id, meter.bacnet_ip);
             return {
-                id: meter.id,
+                meter_id: meter.meter_id,
                 name: meter.name,
                 deviceId: meter.bacnet_device_id,
                 ip: meter.bacnet_ip,

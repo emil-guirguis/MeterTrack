@@ -37,7 +37,7 @@ async function debugLoginFlow() {
     console.log(DIVIDER);
 
     const dbResult = await db.query(
-      `SELECT id, email, name, role, tenant_id, active, passwordhash 
+      `SELECT users_id, email, name, role, tenant_id, active, passwordhash 
        FROM users WHERE email = $1`,
       [email]
     );
@@ -106,11 +106,11 @@ async function debugLoginFlow() {
     console.log(DIVIDER);
 
     console.log('Token generation inputs:');
-    console.log(`  - userId: ${user.id} (type: ${typeof user.id})`);
+    console.log(`  - userId: ${user.id} (type: ${typeof user.users_id})`);
     console.log(`  - tenant_id: ${user.tenant_id} (type: ${typeof user.tenant_id})`);
 
     const token = jwt.sign(
-      { userId: user.id, tenant_id: user.tenant_id },
+      { userId: user.users_id, tenant_id: user.tenant_id },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );

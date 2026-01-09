@@ -28,7 +28,7 @@ async function insertTestData() {
     console.log('Inserting test data...\n');
     
     // Check for existing meters
-    const meterResult = await pool.query('SELECT id, name FROM meter LIMIT 5');
+    const meterResult = await pool.query('SELECT meter_id, name FROM meter LIMIT 5');
     
     if (meterResult.rows.length === 0) {
       console.log('No meters found. Creating a test meter...');
@@ -40,25 +40,25 @@ async function insertTestData() {
         RETURNING id, name
       `);
       
-      console.log(`Created meter: ${insertMeter.rows[0].name} (ID: ${insertMeter.rows[0].id})`);
+      console.log(`Created meter: ${insertMeter.rows[0].name} (ID: ${insertMeter.rows[0].meter_id})`);
       meterResult.rows.push(insertMeter.rows[0]);
     } else {
       console.log(`Found ${meterResult.rows.length} existing meters`);
-      meterResult.rows.forEach(m => console.log(`  - ${m.name} (ID: ${m.id})`));
+      meterResult.rows.forEach(m => console.log(`  - ${m.name} (ID: ${m.meter_id})`));
     }
     
-    const meterId = meterResult.rows[0].id;
+    const meterId = meterResult.rows[0].meter_id;
     
     // Get a valid tenant_id
-    const tenantResult = await pool.query('SELECT id FROM tenant LIMIT 1');
+    const tenantResult = await pool.query('SELECT tenant_id FROM tenant LIMIT 1');
     
     if (tenantResult.rows.length === 0) {
       console.log('❌ No tenants found in database. Cannot insert meter readings.');
       return;
     }
     
-    const tenantId = tenantResult.rows[0].id;
-    console.log(`Using tenant ID: ${tenantId}`);
+    const tenantId = tenantResult.rows[0].tenant_id;
+    console.log(`Using tenant: ${tenantId}`);
     
     // Insert test meter readings
     console.log(`\nInserting test meter readings for meter ID ${meterId}...`);

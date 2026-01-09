@@ -54,7 +54,7 @@ router.post('/login', [
 
     // DEBUG: Check database directly
     const db = require('../config/database');
-    const dbCheck = await db.query('SELECT id, email, name, role, tenant_id, active FROM users WHERE email = $1', [email]);
+    const dbCheck = await db.query('SELECT users_id, email, name, role, tenant_id, active FROM users WHERE email = $1', [email]);
     console.log('[AUTH LOGIN] DATABASE CHECK - Raw query result:', dbCheck.rows);
 
     const user = await User.findByEmail(email);
@@ -71,7 +71,7 @@ router.post('/login', [
     console.log('[AUTH LOGIN] User object keys:', Object.keys(user));
     console.log('[AUTH LOGIN] User object:', {
       // @ts-ignore - properties are dynamically set by schema initialization
-      id: user.id,
+      users_id: user.users_id,
       // @ts-ignore
       email: user.email,
       // @ts-ignore
@@ -96,7 +96,7 @@ router.post('/login', [
       // @ts-ignore - passwordHash is dynamically set by schema initialization
       if (!user.passwordHash) {
         // @ts-ignore - id is dynamically set by schema initialization
-        console.error(`[AUTH LOGIN] ✗ Authentication failed: User ${email} (ID: ${user.id}) has no password hash`);
+        console.error(`[AUTH LOGIN] ✗ Authentication failed: User ${email} (ID: ${user.users_id}) has no password hash`);
       }
       return res.status(401).json({
         success: false,
@@ -118,7 +118,7 @@ router.post('/login', [
     console.log('[AUTH LOGIN] ✓ User is active');
     console.log('[AUTH LOGIN] Step 4: Preparing token generation');
     // @ts-ignore - properties are dynamically set by schema initialization
-    console.log('[AUTH LOGIN] User ID:', user.id);
+    console.log('[AUTH LOGIN] User ID:', user.user_id);
     // @ts-ignore
     console.log('[AUTH LOGIN] User tenant_id:', user.tenant_id);
     // @ts-ignore
@@ -134,29 +134,17 @@ router.post('/login', [
 
     // Generate tokens
     // @ts-ignore - properties are dynamically set by schema initialization
-    console.log('[AUTH LOGIN] Step 5: Generating tokens with userId:', user.id, 'and tenant_id:', user.tenant_id);
-    console.log('[AUTH LOGIN] CRITICAL DEBUG - About to generate token');
-    console.log('[AUTH LOGIN] user object full dump:', JSON.stringify(user, null, 2));
-    // @ts-ignore - tenant_id is dynamically set by schema initialization
-    console.log('[AUTH LOGIN] user.tenant_id value:', user.tenant_id);
-    // @ts-ignore - tenant_id is dynamically set by schema initialization
-    console.log('[AUTH LOGIN] user.tenant_id type:', typeof user.tenant_id);
-    // @ts-ignore - properties are dynamically set by schema initialization
-    console.log('[AUTH LOGIN] Calling generateToken with:', { userId: user.id, tenant_id: user.tenant_id });
-
+    const logMsg = `[AUTH LOGIN] Step 5: userId=${user.users_id}, tenant_id=${user.tenant_id}`;
+    console.log(logMsg);
+    
     // @ts-ignore - id and tenant_id are dynamically set by schema initialization
     const token = generateToken(user.id, user.tenant_id);
     // @ts-ignore - id and tenant_id are dynamically set by schema initialization
     const refreshToken = generateRefreshToken(user.id, user.tenant_id);
 
-    console.log('[AUTH LOGIN] Token generated. Decoding to verify...');
+    console.log('[AUTH LOGIN] Token generated');
     const decoded = jwt.decode(token);
     console.log('[AUTH LOGIN] Decoded token:', decoded);
-
-    // @ts-ignore
-    console.log('[AUTH LOGIN] ✓ Tokens generated');
-    // @ts-ignore
-    console.log('[AUTH LOGIN] Token payload will contain: userId:', user.id, ', tenant_id:', user.tenant_id);
 
     // Calculate expiration time
     const expiresIn = rememberMe ? 7 * 24 * 60 * 60 : 60 * 60; // 7 days or 1 hour
@@ -165,16 +153,16 @@ router.post('/login', [
     let tenant = null;
     try {
       // @ts-ignore - id is dynamically set by schema initialization
-      const userId = user.id;
+      const userId = user.users_id;
       const tenantResult = await require('../config/database').query(
-        'SELECT * FROM tenant WHERE id = (SELECT tenant_id FROM users WHERE id = $1)',
+        'SELECT * FROM tenant WHERE tenant_id = (SELECT tenant_id FROM users WHERE users_id = $1)',
         [userId]
       );
       if (tenantResult.rows.length > 0) {
         // Cast database row to object type
         const tenantRow = /** @type {Record<string, any>} */ (tenantResult.rows[0]);
         tenant = {
-          id: tenantRow.id,
+          tenant_id: tenantRow.tenant_id,
           name: tenantRow.name,
           url: tenantRow.url,
           street: tenantRow.street,
@@ -210,7 +198,7 @@ router.post('/login', [
       data: {
         user: {
           // @ts-ignore - properties are dynamically set by schema initialization
-          id: user.id,
+          users_id: user.users_id,
           // @ts-ignore
           email: user.email,
           // @ts-ignore
@@ -231,7 +219,7 @@ router.post('/login', [
     };
 
     console.log('[AUTH DEBUG] Login response:', {
-      userId: responseData.data.user.id,
+      userId: responseData.data.user.users_id,
       email: responseData.data.user.email,
       client: responseData.data.user.client,
       hasToken: !!responseData.data.token,
@@ -269,8 +257,50 @@ router.post('/refresh', [
     const { refreshToken } = req.body;
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    } catch (tokenError) {
+      if (tokenError instanceof Error) {
+        if (tokenError.name === 'TokenExpiredError') {
+          return res.status(401).json({
+            success: false,
+            message: 'Refresh token expired'
+          });
+        }
+        
+        if (tokenError.name === 'JsonWebTokenError') {
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid refresh token'
+          });
+        }
+      }
+      throw tokenError;
+    }
+
+    // Validate that userId exists in token
+    if (!decoded.userId) {
+      console.error('[REFRESH] Token missing userId field');
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token - missing user ID'
+      });
+    }
+
+    // Look up user by decoded.userId
+    let user;
+    try {
+      user = await User.findById(decoded.userId);
+    } catch (userLookupError) {
+      console.error('[REFRESH] Error looking up user:', userLookupError);
+      const errorMsg = userLookupError instanceof Error ? userLookupError.message : 'Unknown error';
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to refresh token',
+        detail: `User lookup failed: ${errorMsg}`
+      });
+    }
 
     if (!user || !user.active) {
       return res.status(401).json({
@@ -279,7 +309,8 @@ router.post('/refresh', [
       });
     }
 
-    // Generate new tokens with tenant_id
+    // Generate new tokens with consistent parameter naming
+    // Ensure userId is passed as first parameter, tenant_id as second
     const newToken = generateToken(user.id, user.tenant_id || decoded.tenant_id);
     const newRefreshToken = generateRefreshToken(user.id, user.tenant_id || decoded.tenant_id);
 
@@ -298,7 +329,7 @@ router.post('/refresh', [
       success: true,
       data: {
         user: {
-          id: user.id,
+          users_id: user.users_id,
           email: user.email,
           name: user.name,
           role: user.role,
@@ -315,9 +346,11 @@ router.post('/refresh', [
   } catch (error) {
     const err = /** @type {Error} */ (error);
     console.error('Refresh token error:', err);
-    res.status(401).json({
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({
       success: false,
-      message: 'Invalid refresh token'
+      message: 'Refresh token error',
+      detail: process.env.NODE_ENV === 'development' ? errorMsg : undefined
     });
   }
 });
@@ -337,8 +370,10 @@ router.get('/verify', authenticateToken, async (req, res) => {
     }
 
     // Map user object to include client field and permissions
+    // Ensure users_id is set from id field (schema maps users_id to id)
     const userResponse = {
       ...req.user,
+      users_id: req.user.users_id,
       permissions: permissions,
       // @ts-ignore - tenant_id is dynamically set by schema initialization
       client: req.user.tenant_id
@@ -418,7 +453,7 @@ router.post('/bootstrap', [
 
     try {
       // Check if a default tenant exists
-      const tenantResult = await db.query('SELECT id FROM tenant LIMIT 1');
+      const tenantResult = await db.query('SELECT tenant_id FROM tenant LIMIT 1');
       if (tenantResult.rows && tenantResult.rows.length > 0) {
         const tenantRow = /** @type {Record<string, any>} */ (tenantResult.rows[0]);
         tenantId = tenantRow.id;
@@ -463,7 +498,7 @@ router.post('/bootstrap', [
       message: 'Admin user created successfully',
       data: {
         user: {
-          id: user.id,
+          users_id: user.users_id,
           email: user.email,
           name: user.name,
           role: user.role,

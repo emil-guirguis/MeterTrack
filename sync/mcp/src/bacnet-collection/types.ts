@@ -24,7 +24,7 @@ export interface BACnetReadResult {
 // ==================== CACHED METER ====================
 
 export interface CachedMeter {
-  id: string;
+  meter_id: string;
   name: string;
   ip: string;
   port: string;

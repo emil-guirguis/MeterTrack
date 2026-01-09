@@ -4,7 +4,7 @@ const db = require('./src/config/database');
   try {
     await db.connect();
     const result = await db.query(
-      'SELECT id, email, tenant_id FROM users WHERE email = $1',
+      'SELECT users_id, email, tenant_id FROM users WHERE email = $1',
       ['admin@example.com']
     );
     console.log('Current user:', JSON.stringify(result.rows[0], null, 2));

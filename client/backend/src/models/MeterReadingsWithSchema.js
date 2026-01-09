@@ -41,6 +41,8 @@ class MeterReadings extends BaseModel {
             tableName: 'meter_reading',
             description: 'MeterReadings entity',
             
+            customListColumns: {},
+            
             // Form fields - user can edit these
             formFields: {
                 source: field({
@@ -877,21 +879,23 @@ class MeterReadings extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'id',
+                    name: 'meter_reading_id',
                     type: FieldTypes.STRING,
                     default: null,
                     readOnly: true,
                     label: 'Id',
-                    dbField: 'id',
+                    dbField: 'meter_reading_id',
                 }),
                 createdat: field({
+                    name: 'createdat',
                     type: FieldTypes.DATE,
                     default: null,
                     readOnly: true,
                     label: 'Createdat',
-                    dbField: 'createdat',
+                    dbField: 'created_at',
                 }),
                 tenantId: field({
+                    name: 'tenantId',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,

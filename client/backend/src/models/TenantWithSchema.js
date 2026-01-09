@@ -138,12 +138,12 @@ class Tenant extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'id',
+                    name: 'tenant_id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'ID',
-                    dbField: 'id',
+                    dbField: 'tenant_id',
                 }),
                 createdAt: field({
                     type: FieldTypes.DATE,

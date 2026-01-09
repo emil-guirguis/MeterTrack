@@ -47,7 +47,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   ) => {
     console.log('renderCustomField called for:', fieldName, { 
       fieldDef, 
-      deviceId: device.id,
+      deviceId: device.device_id,
       hasDevice: !!device,
       deviceObject: device,
       deviceKeys: device ? Object.keys(device) : []

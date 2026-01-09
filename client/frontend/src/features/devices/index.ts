@@ -11,7 +11,7 @@ export { RegistersGrid } from './RegistersGrid';
 export { useDevicesEnhanced, useDevice, useDeviceStore } from './devicesStore';
 export {
   deviceStats,
-  createDeviceBulkActions,
   deviceExportConfig,
   type Device,
 } from './deviceConfig';
+export { createDeviceBulkActions } from '@framework/components/list/config/listBulkActions';

@@ -10,7 +10,7 @@
 import winston from 'winston';
 import { UploadSyncManager, UploadSyncResult } from './upload-sync-manager';
 import { DownloadSyncManager, MeterSyncResult, TenantSyncResult } from './download-sync-manager';
-import { ErrorHandler } from './error-handler';
+import { ErrorHandler } from '../helpers/error-handler';
 
 export interface SyncCycleResult {
   success: boolean;
@@ -213,7 +213,7 @@ export class SyncScheduler {
             updatedMeterIds: [],
           };
         } else {
-          const tenantId = tenantRows[0].id;
+          const tenantId = tenantRows[0].tenant_id;
           meterDownloadResult = await this.downloadManager.syncMeterConfigurations(tenantId);
         }
       } catch (error) {

@@ -143,6 +143,7 @@ const CompanyInfoForm: React.FC<CompanyInfoFormProps> = ({ values, onChange, onS
       </FormSection>
       
       <FormActions
+        onSubmit={onSubmit}
         onCancel={onCancel}
         submitLabel="Save"
         cancelLabel="Cancel"

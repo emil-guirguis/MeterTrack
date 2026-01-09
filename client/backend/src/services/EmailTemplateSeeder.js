@@ -134,6 +134,154 @@ class EmailTemplateSeeder {
     static getDefaultTemplates() {
         return [
             {
+                name: 'Password Reset Request',
+                subject: 'Reset Your Password - {{company_name}}',
+                content: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset Request</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .reset-box { background: #e3f2fd; padding: 20px; border-left: 4px solid #2196f3; margin: 20px 0; text-align: center; }
+        .reset-button { display: inline-block; background: #2196f3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+        .reset-button:hover { background: #1976d2; }
+        .warning-box { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
+        .instructions { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .instructions ol { margin: 0; padding-left: 20px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+        .security-note { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Password Reset Request</h2>
+            <p>Dear {{user_name}},</p>
+        </div>
+
+        <p>We received a request to reset the password for your {{company_name}} account. If you did not make this request, you can safely ignore this email.</p>
+
+        <div class="reset-box">
+            <p><strong>Click the button below to reset your password:</strong></p>
+            <a href="{{reset_link}}" class="reset-button">Reset Password</a>
+            <p style="margin-top: 15px; font-size: 12px; color: #666;">Or copy and paste this link in your browser:<br>{{reset_link}}</p>
+        </div>
+
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> This password reset link will expire in <strong>24 hours</strong>. If the link has expired, you can request a new one from the login page.
+        </div>
+
+        <div class="instructions">
+            <h3>What to do next:</h3>
+            <ol>
+                <li>Click the "Reset Password" button above</li>
+                <li>Enter your new password (must be at least 12 characters)</li>
+                <li>Confirm your new password</li>
+                <li>You'll be redirected to the login page</li>
+                <li>Log in with your new password</li>
+            </ol>
+        </div>
+
+        <div class="security-note">
+            <strong>🔒 Security Tip:</strong> Your password should be unique and contain uppercase letters, lowercase letters, numbers, and special characters. Never share your password with anyone.
+        </div>
+
+        <p>If you did not request a password reset, please contact our support team immediately at {{support_email}}.</p>
+
+        <div class="footer">
+            <p>Best regards,<br>{{company_name}} Security Team</p>
+            <p style="font-size: 12px; color: #999;">This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+                category: 'authentication',
+                variables: [
+                    { name: 'user_name', description: 'Name of the user', type: 'text', required: true },
+                    { name: 'reset_link', description: 'Password reset link with token', type: 'text', required: true },
+                    { name: 'company_name', description: 'Company name', type: 'text', required: true },
+                    { name: 'support_email', description: 'Support team email address', type: 'text', required: true }
+                ]
+            },
+            {
+                name: 'Two-Factor Authentication Code',
+                subject: 'Your {{company_name}} Verification Code: {{otp_code}}',
+                content: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Factor Authentication Code</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .code-box { background: #e3f2fd; padding: 20px; border-left: 4px solid #2196f3; margin: 20px 0; text-align: center; }
+        .code-display { font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2196f3; font-family: 'Courier New', monospace; margin: 15px 0; }
+        .expiration-warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
+        .security-info { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 13px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+        .alert-box { background: #ffebee; padding: 15px; border-left: 4px solid #d32f2f; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Two-Factor Authentication Code</h2>
+            <p>Dear {{user_name}},</p>
+        </div>
+
+        <p>You requested a verification code to log in to your {{company_name}} account. Use the code below to complete your login:</p>
+
+        <div class="code-box">
+            <p><strong>Your verification code is:</strong></p>
+            <div class="code-display">{{otp_code}}</div>
+            <p style="margin-top: 15px; font-size: 12px; color: #666;">This code is valid for <strong>5 minutes</strong></p>
+        </div>
+
+        <div class="expiration-warning">
+            <strong>⏰ Important:</strong> This code will expire in <strong>5 minutes</strong>. If you don't use it in time, you'll need to request a new code.
+        </div>
+
+        <div class="security-info">
+            <strong>🔒 Security Reminder:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Never share this code with anyone</li>
+                <li>{{company_name}} staff will never ask for your verification code</li>
+                <li>If you didn't request this code, someone may be trying to access your account</li>
+            </ul>
+        </div>
+
+        {{#if suspicious_activity}}
+        <div class="alert-box">
+            <strong>⚠️ Suspicious Activity Detected:</strong> If you did not attempt to log in, please change your password immediately and contact our support team.
+        </div>
+        {{/if}}
+
+        <p>If you did not request this code, please ignore this email. Your account remains secure.</p>
+
+        <div class="footer">
+            <p>Best regards,<br>{{company_name}} Security Team</p>
+            <p style="font-size: 12px; color: #999;">This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+                category: 'authentication',
+                variables: [
+                    { name: 'user_name', description: 'Name of the user', type: 'text', required: true },
+                    { name: 'otp_code', description: '6-digit verification code', type: 'text', required: true },
+                    { name: 'company_name', description: 'Company name', type: 'text', required: true },
+                    { name: 'suspicious_activity', description: 'Flag indicating suspicious activity', type: 'boolean', required: false }
+                ]
+            },
+            {
                 name: 'Total Meter Reading (30 Days)',
                 subject: 'Monthly Meter Reading Summary - {{location_name}}',
                 content: `

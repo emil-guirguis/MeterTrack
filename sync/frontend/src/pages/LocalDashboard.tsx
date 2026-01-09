@@ -64,7 +64,7 @@ export default function LocalDashboard() {
   // Calculate meter statuses
   const meterStatuses = meters.map((meter) => {
     const meterReadings = readings.filter(
-      (r) => r.meter_external_id === meter.external_id
+      (r) => r.meter_id === meter.meter_id
     );
     const lastReading = meterReadings.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -169,7 +169,7 @@ export default function LocalDashboard() {
       </Typography>
       <Grid container spacing={2} mb={3}>
         {meterStatuses.map(({ meter, isConnected, lastReading, readingCount }) => (
-          <Grid item xs={12} sm={6} md={4} key={meter.id}>
+          <Grid item xs={12} sm={6} md={4} key={meter.meter_id}>
             <MeterCard
               meter={meter}
               isConnected={isConnected}

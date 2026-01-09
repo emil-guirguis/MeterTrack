@@ -76,7 +76,7 @@ async function generateSummaryReport(args: GenerateReportArgs) {
 
   const query = `
     SELECT 
-      s.id as site_id,
+      s.tenant_id,
       s.name as site_name,
       COUNT(DISTINCT m.id) as meter_count,
       COUNT(mr.id) as reading_count,
@@ -86,11 +86,11 @@ async function generateSummaryReport(args: GenerateReportArgs) {
       AVG(mr.value) as avg_value,
       SUM(mr.value) as total_value,
       mr.unit
-    FROM sites s
-    INNER JOIN meters m ON s.id = m.site_id
+    FROM tenant s
+       INNER JOIN meters m ON s.tenant_id = m.site_id
     INNER JOIN meter_reading mr ON m.id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
-    GROUP BY s.id, s.name, mr.data_point, mr.unit
+    GROUP BY t.tenant_id, s.name, mr.data_point, mr.unit
     ORDER BY s.name, mr.data_point
   `;
 
@@ -246,11 +246,11 @@ async function generateComparisonReport(args: GenerateReportArgs) {
       AVG(mr.value) as avg_value,
       SUM(mr.value) as total_value,
       mr.unit
-    FROM sites s
-    INNER JOIN meters m ON s.id = m.site_id
-    INNER JOIN meter_reading mr ON m.id = mr.meter_id
+    FROM tenant s
+    INNER JOIN meters m ON s.tenant_id = m.tenant_id
+    INNER JOIN meter_reading mr ON m.meter_id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
-    GROUP BY s.id, s.name, mr.data_point, mr.unit
+    GROUP BY s.tenant_id, s.name, mr.data_point, mr.unit
     ORDER BY s.name, mr.data_point
   `;
 

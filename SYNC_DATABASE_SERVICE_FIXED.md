@@ -62,11 +62,11 @@ export class SyncDatabaseService implements SyncDatabase {
 
   async getTenant(): Promise<TenantEntity | null> {
     const query = `
-      SELECT id as tenant_id, name, url, street, street2, city, state, zip, country
+      SELECT tenant_id, name, url, street, street2, city, state, zip, country
       FROM tenant
       LIMIT 1
     `;
-    const result = await this.pool.query(query);
+    const result = await execQuery(this.pool, query);
     return result.rows[0] || null;
   }
   

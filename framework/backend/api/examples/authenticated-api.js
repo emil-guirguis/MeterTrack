@@ -59,7 +59,7 @@ class UserService extends BaseService {
       // Generate JWT token
       const token = generateToken({
         user: {
-          id: user.id,
+          users_id: user.users_id,
           email: user.email,
           roles: user.roles || [],
           permissions: user.permissions || []
@@ -70,7 +70,7 @@ class UserService extends BaseService {
         success: true,
         data: {
           user: {
-            id: user.id,
+            users_id: user.users_id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
@@ -113,7 +113,7 @@ class UserService extends BaseService {
       const user = result.data;
       const token = generateToken({
         user: {
-          id: user.id,
+          users_id: user.users_id,
           email: user.email,
           roles: user.roles,
           permissions: user.permissions
@@ -124,7 +124,7 @@ class UserService extends BaseService {
         success: true,
         data: {
           user: {
-            id: user.id,
+            users_id: user.users_id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,

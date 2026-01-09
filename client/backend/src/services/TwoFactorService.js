@@ -10,20 +10,18 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 
 class TwoFactorService {
-  // ===== TOTP Methods =====
-
   /**
    * Generate TOTP secret and QR code
-   * @param {string} email - User email for QR code label
-   * @returns {Promise<Object>} { secret: string, qr_code: string }
+   * @param {string} userEmail - User's email for QR code label
+   * @returns {Promise<Object>} { secret, qr_code }
    */
-  static async generateTOTPSecret(email) {
+  async generateTOTPSecret(userEmail) {
     try {
       // Generate secret
       const secret = speakeasy.generateSecret({
-        name: `MeterIt Pro (${email})`,
+        name: `MeterIt Pro (${userEmail})`,
         issuer: 'MeterIt Pro',
-        length: 32
+        length: 32,
       });
 
       // Generate QR code
@@ -32,10 +30,10 @@ class TwoFactorService {
       return {
         secret: secret.base32,
         qr_code,
-        otpauth_url: secret.otpauth_url
+        manual_entry_key: secret.base32,
       };
     } catch (error) {
-      console.error('[2FA SERVICE] Error generating TOTP secret:', error);
+      console.error('Error generating TOTP secret:', error);
       throw error;
     }
   }
@@ -46,368 +44,315 @@ class TwoFactorService {
    * @param {string} code - 6-digit code from authenticator app
    * @returns {boolean} True if code is valid
    */
-  static verifyTOTPCode(secret, code) {
+  verifyTOTPCode(secret, code) {
     try {
+      // Verify with 1-step window (30 seconds before and after)
       const isValid = speakeasy.totp.verify({
         secret: secret,
         encoding: 'base32',
         token: code,
-        window: 2 // Allow 2 time windows (±30 seconds)
+        window: 1,
       });
 
       return isValid;
     } catch (error) {
-      console.error('[2FA SERVICE] Error verifying TOTP code:', error);
+      console.error('Error verifying TOTP code:', error);
       return false;
     }
   }
 
   /**
    * Generate backup codes
-   * @param {number} [count=10] - Number of backup codes to generate
-   * @returns {Array<string>} Array of backup codes
+   * @param {number} count - Number of codes to generate (default 10)
+   * @returns {Array<Object>} Array of { code, code_hash }
    */
-  static generateBackupCodes(count = 10) {
+  generateBackupCodes(count = 10) {
     const codes = [];
+
     for (let i = 0; i < count; i++) {
-      // Generate 8-character alphanumeric codes
+      // Generate 8-character alphanumeric code
       const code = crypto.randomBytes(4).toString('hex').toUpperCase();
-      codes.push(code);
+      const code_hash = bcrypt.hashSync(code, 10);
+
+      codes.push({
+        code,
+        code_hash,
+      });
     }
+
     return codes;
   }
 
   /**
    * Store backup codes in database
-   * @param {number} userId - User ID
-   * @param {Array<string>} codes - Array of backup codes
+   * @param {number} user_id - User ID
+   * @param {Array<Object>} codes - Array of { code, code_hash }
    * @returns {Promise<void>}
    */
-  static async storeBackupCodes(userId, codes) {
+  async storeBackupCodes(user_id, codes) {
     try {
       // Delete existing backup codes for this user
       await db.query(
         'DELETE FROM user_2fa_backup_codes WHERE user_id = $1',
-        [userId]
+        [user_id]
       );
 
-      // Hash and store new codes
-      for (const code of codes) {
-        const salt = await bcrypt.genSalt(10);
-        const code_hash = await bcrypt.hash(code, salt);
-
+      // Insert new backup codes
+      for (const { code_hash } of codes) {
         await db.query(
           `INSERT INTO user_2fa_backup_codes (user_id, code_hash, is_used, created_at)
-           VALUES ($1, $2, false, CURRENT_TIMESTAMP)`,
-          [userId, code_hash]
+           VALUES ($1, $2, false, NOW())`,
+          [user_id, code_hash]
         );
       }
-
-      console.log('[2FA SERVICE] Backup codes stored for user:', userId);
     } catch (error) {
-      console.error('[2FA SERVICE] Error storing backup codes:', error);
+      console.error('Error storing backup codes:', error);
       throw error;
     }
   }
 
   /**
-   * Verify and use a backup code
-   * @param {number} userId - User ID
+   * Verify backup code
+   * @param {number} user_id - User ID
    * @param {string} code - Backup code to verify
    * @returns {Promise<boolean>} True if code is valid and unused
    */
-  static async verifyBackupCode(userId, code) {
+  async verifyBackupCode(user_id, code) {
     try {
       // Find unused backup codes for this user
       const result = await db.query(
-        `SELECT id, code_hash FROM user_2fa_backup_codes 
-         WHERE user_id = $1 AND is_used = false`,
-        [userId]
+        `SELECT id, code_hash FROM user_2fa_backup_codes
+         WHERE user_id = $1 AND is_used = false
+         LIMIT 10`,
+        [user_id]
       );
 
-      if (!result.rows || result.rows.length === 0) {
-        console.log('[2FA SERVICE] No unused backup codes found for user:', userId);
+      if (result.rows.length === 0) {
+        console.log('No unused backup codes found for user:', user_id);
         return false;
       }
 
       // Check each code
       for (const row of result.rows) {
-        const isValid = await bcrypt.compare(code, row.code_hash);
+        const isValid = bcrypt.compareSync(code, row.code_hash);
         if (isValid) {
           // Mark code as used
           await db.query(
-            `UPDATE user_2fa_backup_codes 
-             SET is_used = true, used_at = CURRENT_TIMESTAMP 
+            `UPDATE user_2fa_backup_codes
+             SET is_used = true, used_at = NOW()
              WHERE id = $1`,
             [row.id]
           );
-
-          console.log('[2FA SERVICE] Backup code verified and used for user:', userId);
           return true;
         }
       }
 
-      console.log('[2FA SERVICE] Backup code does not match for user:', userId);
       return false;
     } catch (error) {
-      console.error('[2FA SERVICE] Error verifying backup code:', error);
+      console.error('Error verifying backup code:', error);
       return false;
     }
   }
 
-  // ===== Email OTP Methods =====
-
   /**
-   * Generate email OTP code
-   * @returns {string} 6-digit OTP code
+   * Generate Email OTP code
+   * @returns {string} 6-digit code
    */
-  static generateEmailOTP() {
-    // Generate 6-digit code
+  generateEmailOTP() {
+    // Generate 6-digit random code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     return code;
   }
 
   /**
-   * Store email OTP in database (temporary)
-   * @param {number} userId - User ID
+   * Store Email OTP in database
+   * @param {number} user_id - User ID
    * @param {string} code - OTP code
+   * @param {number} expiresInMinutes - Expiration time in minutes (default 5)
    * @returns {Promise<void>}
    */
-  static async storeEmailOTP(userId, code) {
+  async storeEmailOTP(user_id, code, expiresInMinutes = 5) {
     try {
-      // Store in a temporary table or cache
-      // For now, we'll use a simple approach with a temporary column
-      // In production, consider using Redis for better performance
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expires_at = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+      const code_hash = bcrypt.hashSync(code, 10);
 
-      // Store in auth_logs with details
+      // Delete existing OTP for this user
       await db.query(
-        `INSERT INTO auth_logs (user_id, event_type, status, details, created_at)
-         VALUES ($1, 'email_otp_generated', 'success', $2, CURRENT_TIMESTAMP)`,
-        [userId, JSON.stringify({ code, expires_at: expiresAt.toISOString() })]
+        'DELETE FROM email_otp_codes WHERE user_id = $1',
+        [user_id]
       );
 
-      console.log('[2FA SERVICE] Email OTP stored for user:', userId);
+      // Store new OTP
+      await db.query(
+        `INSERT INTO email_otp_codes (user_id, code_hash, expires_at, attempts, created_at)
+         VALUES ($1, $2, $3, 0, NOW())`,
+        [user_id, code_hash, expires_at]
+      );
     } catch (error) {
-      console.error('[2FA SERVICE] Error storing email OTP:', error);
+      console.error('Error storing email OTP:', error);
       throw error;
     }
   }
 
   /**
-   * Verify email OTP code
-   * @param {number} userId - User ID
+   * Verify Email OTP code
+   * @param {number} user_id - User ID
    * @param {string} code - OTP code to verify
-   * @returns {Promise<boolean>} True if code is valid
+   * @returns {Promise<Object>} { isValid, attemptsRemaining, isLocked }
    */
-  static async verifyEmailOTP(userId, code) {
+  async verifyEmailOTP(user_id, code) {
     try {
-      // Find the most recent email OTP for this user
+      // Get OTP record
       const result = await db.query(
-        `SELECT details FROM auth_logs 
-         WHERE user_id = $1 
-         AND event_type = 'email_otp_generated'
-         AND status = 'success'
-         ORDER BY created_at DESC 
-         LIMIT 1`,
-        [userId]
+        `SELECT id, code_hash, expires_at, attempts FROM email_otp_codes
+         WHERE user_id = $1`,
+        [user_id]
       );
 
-      if (!result.rows || result.rows.length === 0) {
-        console.log('[2FA SERVICE] No email OTP found for user:', userId);
-        return false;
+      if (result.rows.length === 0) {
+        return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
-      const details = result.rows[0].details;
-      const storedCode = details.code;
-      const expiresAt = new Date(details.expires_at);
+      const otpRecord = result.rows[0];
 
-      // Check if code has expired
-      if (new Date() > expiresAt) {
-        console.log('[2FA SERVICE] Email OTP has expired for user:', userId);
-        return false;
+      // Check if locked (3 failed attempts)
+      if (otpRecord.attempts >= 3) {
+        return { isValid: false, attemptsRemaining: 0, isLocked: true };
       }
 
-      // Check if code matches
-      if (code !== storedCode) {
-        console.log('[2FA SERVICE] Email OTP does not match for user:', userId);
-        return false;
+      // Check if expired
+      if (new Date() > new Date(otpRecord.expires_at)) {
+        return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
-      console.log('[2FA SERVICE] Email OTP verified for user:', userId);
-      return true;
+      // Verify code
+      const isValid = bcrypt.compareSync(code, otpRecord.code_hash);
+
+      if (isValid) {
+        // Delete OTP on successful verification
+        await db.query(
+          'DELETE FROM email_otp_codes WHERE id = $1',
+          [otpRecord.id]
+        );
+        return { isValid: true, attemptsRemaining: 3, isLocked: false };
+      } else {
+        // Increment attempts
+        const newAttempts = otpRecord.attempts + 1;
+        await db.query(
+          'UPDATE email_otp_codes SET attempts = $1 WHERE id = $2',
+          [newAttempts, otpRecord.id]
+        );
+
+        const attemptsRemaining = Math.max(0, 3 - newAttempts);
+        const isLocked = newAttempts >= 3;
+
+        return { isValid: false, attemptsRemaining, isLocked };
+      }
     } catch (error) {
-      console.error('[2FA SERVICE] Error verifying email OTP:', error);
-      return false;
+      console.error('Error verifying email OTP:', error);
+      return { isValid: false, attemptsRemaining: 0, isLocked: false };
     }
   }
 
-  // ===== SMS OTP Methods =====
-
   /**
    * Generate SMS OTP code
-   * @returns {string} 6-digit OTP code
+   * @returns {string} 6-digit code
    */
-  static generateSMSOTP() {
-    // Generate 6-digit code
+  generateSMSOTP() {
+    // Generate 6-digit random code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     return code;
   }
 
   /**
-   * Store SMS OTP in database (temporary)
-   * @param {number} userId - User ID
+   * Store SMS OTP in database
+   * @param {number} user_id - User ID
    * @param {string} code - OTP code
+   * @param {number} expiresInMinutes - Expiration time in minutes (default 5)
    * @returns {Promise<void>}
    */
-  static async storeSMSOTP(userId, code) {
+  async storeSMSOTP(user_id, code, expiresInMinutes = 5) {
     try {
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expires_at = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+      const code_hash = bcrypt.hashSync(code, 10);
 
-      // Store in auth_logs with details
+      // Delete existing OTP for this user
       await db.query(
-        `INSERT INTO auth_logs (user_id, event_type, status, details, created_at)
-         VALUES ($1, 'sms_otp_generated', 'success', $2, CURRENT_TIMESTAMP)`,
-        [userId, JSON.stringify({ code, expires_at: expiresAt.toISOString() })]
+        'DELETE FROM sms_otp_codes WHERE user_id = $1',
+        [user_id]
       );
 
-      console.log('[2FA SERVICE] SMS OTP stored for user:', userId);
+      // Store new OTP
+      await db.query(
+        `INSERT INTO sms_otp_codes (user_id, code_hash, expires_at, attempts, created_at)
+         VALUES ($1, $2, $3, 0, NOW())`,
+        [user_id, code_hash, expires_at]
+      );
     } catch (error) {
-      console.error('[2FA SERVICE] Error storing SMS OTP:', error);
+      console.error('Error storing SMS OTP:', error);
       throw error;
     }
   }
 
   /**
    * Verify SMS OTP code
-   * @param {number} userId - User ID
+   * @param {number} user_id - User ID
    * @param {string} code - OTP code to verify
-   * @returns {Promise<boolean>} True if code is valid
+   * @returns {Promise<Object>} { isValid, attemptsRemaining, isLocked }
    */
-  static async verifySMSOTP(userId, code) {
+  async verifySMSOTP(user_id, code) {
     try {
-      // Find the most recent SMS OTP for this user
+      // Get OTP record
       const result = await db.query(
-        `SELECT details FROM auth_logs 
-         WHERE user_id = $1 
-         AND event_type = 'sms_otp_generated'
-         AND status = 'success'
-         ORDER BY created_at DESC 
-         LIMIT 1`,
-        [userId]
+        `SELECT id, code_hash, expires_at, attempts FROM sms_otp_codes
+         WHERE user_id = $1`,
+        [user_id]
       );
 
-      if (!result.rows || result.rows.length === 0) {
-        console.log('[2FA SERVICE] No SMS OTP found for user:', userId);
-        return false;
+      if (result.rows.length === 0) {
+        return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
-      const details = result.rows[0].details;
-      const storedCode = details.code;
-      const expiresAt = new Date(details.expires_at);
+      const otpRecord = result.rows[0];
 
-      // Check if code has expired
-      if (new Date() > expiresAt) {
-        console.log('[2FA SERVICE] SMS OTP has expired for user:', userId);
-        return false;
+      // Check if locked (3 failed attempts)
+      if (otpRecord.attempts >= 3) {
+        return { isValid: false, attemptsRemaining: 0, isLocked: true };
       }
 
-      // Check if code matches
-      if (code !== storedCode) {
-        console.log('[2FA SERVICE] SMS OTP does not match for user:', userId);
-        return false;
+      // Check if expired
+      if (new Date() > new Date(otpRecord.expires_at)) {
+        return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
-      console.log('[2FA SERVICE] SMS OTP verified for user:', userId);
-      return true;
+      // Verify code
+      const isValid = bcrypt.compareSync(code, otpRecord.code_hash);
+
+      if (isValid) {
+        // Delete OTP on successful verification
+        await db.query(
+          'DELETE FROM sms_otp_codes WHERE id = $1',
+          [otpRecord.id]
+        );
+        return { isValid: true, attemptsRemaining: 3, isLocked: false };
+      } else {
+        // Increment attempts
+        const newAttempts = otpRecord.attempts + 1;
+        await db.query(
+          'UPDATE sms_otp_codes SET attempts = $1 WHERE id = $2',
+          [newAttempts, otpRecord.id]
+        );
+
+        const attemptsRemaining = Math.max(0, 3 - newAttempts);
+        const isLocked = newAttempts >= 3;
+
+        return { isValid: false, attemptsRemaining, isLocked };
+      }
     } catch (error) {
-      console.error('[2FA SERVICE] Error verifying SMS OTP:', error);
-      return false;
-    }
-  }
-
-  // ===== 2FA Method Management =====
-
-  /**
-   * Store 2FA method in database
-   * @param {number} userId - User ID
-   * @param {string} methodType - 'totp', 'email_otp', or 'sms_otp'
-   * @param {Object} [data] - Additional data (secret_key, phone_number)
-   * @returns {Promise<Object>} Stored 2FA method record
-   */
-  static async store2FAMethod(userId, methodType, data = {}) {
-    try {
-      const result = await db.query(
-        `INSERT INTO user_2fa_methods (user_id, method_type, secret_key, phone_number, is_enabled, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-         ON CONFLICT (user_id, method_type) 
-         DO UPDATE SET secret_key = $3, phone_number = $4, is_enabled = true, updated_at = CURRENT_TIMESTAMP
-         RETURNING id, user_id, method_type, is_enabled, created_at`,
-        [userId, methodType, data.secret_key || null, data.phone_number || null]
-      );
-
-      if (!result.rows || result.rows.length === 0) {
-        throw new Error('Failed to store 2FA method');
-      }
-
-      console.log('[2FA SERVICE] 2FA method stored:', methodType, 'for user:', userId);
-      return result.rows[0];
-    } catch (error) {
-      console.error('[2FA SERVICE] Error storing 2FA method:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get user's 2FA methods
-   * @param {number} userId - User ID
-   * @returns {Promise<Array>} Array of 2FA methods
-   */
-  static async get2FAMethods(userId) {
-    try {
-      const result = await db.query(
-        `SELECT id, method_type, is_enabled, created_at 
-         FROM user_2fa_methods 
-         WHERE user_id = $1 
-         ORDER BY created_at ASC`,
-        [userId]
-      );
-
-      return result.rows || [];
-    } catch (error) {
-      console.error('[2FA SERVICE] Error getting 2FA methods:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Disable 2FA method
-   * @param {number} userId - User ID
-   * @param {string} methodType - 'totp', 'email_otp', or 'sms_otp'
-   * @returns {Promise<boolean>} True if disabled successfully
-   */
-  static async disable2FAMethod(userId, methodType) {
-    try {
-      const result = await db.query(
-        `UPDATE user_2fa_methods 
-         SET is_enabled = false, updated_at = CURRENT_TIMESTAMP 
-         WHERE user_id = $1 AND method_type = $2
-         RETURNING id`,
-        [userId, methodType]
-      );
-
-      if (!result.rows || result.rows.length === 0) {
-        console.log('[2FA SERVICE] 2FA method not found:', methodType, 'for user:', userId);
-        return false;
-      }
-
-      console.log('[2FA SERVICE] 2FA method disabled:', methodType, 'for user:', userId);
-      return true;
-    } catch (error) {
-      console.error('[2FA SERVICE] Error disabling 2FA method:', error);
-      return false;
+      console.error('Error verifying SMS OTP:', error);
+      return { isValid: false, attemptsRemaining: 0, isLocked: false };
     }
   }
 }
 
-module.exports = TwoFactorService;
+module.exports = new TwoFactorService();

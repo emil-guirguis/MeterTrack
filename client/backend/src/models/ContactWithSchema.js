@@ -292,12 +292,12 @@ class Contact extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'id',
+                    name: 'contact_id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'ID',
-                    dbField: 'id',
+                    dbField: 'contact_id',
                 }),
                 tenant_id: field({
                     name: 'tenant_id',

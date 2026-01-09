@@ -1,5 +1,5 @@
 export interface Meter {
-  id: number;
+  meter_id: number;
   name: string;
   device_id: number | null;
   ip: string | null;
@@ -9,12 +9,13 @@ export interface Meter {
 }
 export interface MeterReading {
   id: number;
-  meter_external_id: string;
+  meter_id: number;
   timestamp: string;
   data_point: string;
   value: number;
   unit: string | null;
   is_synchronized: boolean;
+  retry_count?: number;
 }
 
 export interface SyncStatus {
@@ -44,7 +45,7 @@ export interface SyncError {
 }
 
 export interface TenantError {
-  id: number;
+  tenant_id: number;
   batch_size: number;
   error_message: string;
   synced_at: string;
@@ -58,7 +59,7 @@ export interface MeterStatus {
 }
 
 export interface TenantInfo {
-  id: number;
+  tenant_id: number;
   name: string;
   url?: string;
   street?: string;

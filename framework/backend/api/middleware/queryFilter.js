@@ -28,7 +28,7 @@ function queryFilter(req, res, next) {
     // If no tenant context, reject the request
     if (!tenantId) {
       logger.warn('Query filter middleware: No tenant context found', {
-        userId: req.auth?.user?.id,
+        userId: req.auth?.user?.users_id,
         path: req.path,
         method: req.method,
         timestamp: new Date().toISOString()
@@ -36,7 +36,7 @@ function queryFilter(req, res, next) {
 
       // Log query execution failure
       logQueryExecutionFailure({
-        userId: req.auth?.user?.id,
+        userId: req.auth?.user?.users_id,
         query: 'unknown',
         operation: 'UNKNOWN',
         path: req.path,
@@ -47,7 +47,7 @@ function queryFilter(req, res, next) {
 
       // Log audit trail for denied query
       logAuditTrail({
-        userId: req.auth?.user?.id,
+        userId: req.auth?.user?.users_id,
         userTenantId: 'unknown',
         action: 'QUERY_EXECUTION',
         resourceType: 'database',
@@ -77,7 +77,7 @@ function queryFilter(req, res, next) {
 
     // Log successful query filter setup (debug level)
     logger.debug('Query filter middleware initialized:', {
-      userId: req.auth?.user?.id,
+      userId: req.auth?.user?.users_id,
       tenantId,
       timestamp: new Date().toISOString()
     });
@@ -88,7 +88,7 @@ function queryFilter(req, res, next) {
 
     // Log query execution failure
     logQueryExecutionFailure({
-      userId: req.auth?.user?.id,
+      userId: req.auth?.user?.users_id,
       query: 'unknown',
       operation: 'UNKNOWN',
       path: req.path,
@@ -128,7 +128,7 @@ function optionalQueryFilter(req, res, next) {
       };
 
       logger.debug('Optional query filter middleware initialized:', {
-        userId: req.auth?.user?.id,
+        userId: req.auth?.user?.users_id,
         tenantId,
         timestamp: new Date().toISOString()
       });

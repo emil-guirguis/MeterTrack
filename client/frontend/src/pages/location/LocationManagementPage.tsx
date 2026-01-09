@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { AppLayout } from '../../components/layout';
+import { AppLayoutWrapper } from '../../components/layout';
 import { LocationList } from '../../features/locations/LocationList';
 import { LocationForm } from '../../features/locations/LocationForm';
 import { useLocationsEnhanced } from '../../features/locations/locationsStore';
@@ -28,14 +28,6 @@ export const LocationManagementPage: React.FC = () => {
   const canView = checkPermission(  Permission.LOCATION_READ);
 
   // Handle location selection for viewing details
-  const handleLocationSelect = useCallback((location: Location) => {
-    if (!canView) return;
-    
-    setSelectedLocation(location);
-    setViewMode('detail');
-  }, [canView]);
-
-  // Handle location edit
   const handleLocationEdit = useCallback((location: Location) => {
     if (!canUpdate) return;
     
@@ -60,7 +52,7 @@ export const LocationManagementPage: React.FC = () => {
         await locations.createLocation(data as LocationCreateRequest);
       } else if (viewMode === 'edit' && selectedLocation) {
         const updateData = data as LocationUpdateRequest;
-        await locations.updateLocation(updateData.id, updateData);
+        await locations.updateLocation(updateData.location_id, updateData);
       }
       
       // Return to list
@@ -83,19 +75,6 @@ export const LocationManagementPage: React.FC = () => {
     setViewMode('list');
     setSelectedLocation(null);
   }, []);
-
-  // Handle back to list navigation
-  const handleBackToList = useCallback(() => {
-    setViewMode('list');
-    setSelectedLocation(null);
-  }, []);
-
-  // Handle location detail edit
-  const handleDetailEdit = useCallback(() => {
-    if (!canUpdate || !selectedLocation) return;
-    
-    setViewMode('edit');
-  }, [canUpdate, selectedLocation]);
 
   // Render different views based on current mode
   const renderContent = () => {
@@ -133,7 +112,7 @@ export const LocationManagementPage: React.FC = () => {
   // Don't render if user doesn't have read permission
   if (!canView) {
     return (
-      <AppLayout 
+      <AppLayoutWrapper 
         title="Location Management" 
         breadcrumbs={breadcrumbs}
       >
@@ -143,12 +122,12 @@ export const LocationManagementPage: React.FC = () => {
             <p>You don't have permission to view location information.</p>
           </div>
         </div>
-      </AppLayout>
+      </AppLayoutWrapper>
     );
   }
 
   return (
-    <AppLayout 
+    <AppLayoutWrapper 
       title="Location Management" 
       breadcrumbs={breadcrumbs}
     >
@@ -158,6 +137,6 @@ export const LocationManagementPage: React.FC = () => {
           {renderContent()}
         </div>
       </div>
-    </AppLayout>
+    </AppLayoutWrapper>
   );
 };

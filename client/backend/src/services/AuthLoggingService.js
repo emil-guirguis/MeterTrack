@@ -18,18 +18,18 @@ class AuthLoggingService {
    * @returns {Promise<Object>} Logged event record
    */
   static async logEvent({
-    userId = null,
+    userId,
     eventType,
     status,
-    ipAddress = null,
-    userAgent = null,
-    details = null
+    ipAddress,
+    userAgent,
+    details
   }) {
     try {
       const result = await db.query(
         `INSERT INTO auth_logs (user_id, event_type, status, ip_address, user_agent, details, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-         RETURNING id, user_id, event_type, status, created_at`,
+         RETURNING auth_logs_id, user_id, event_type, status, created_at`,
         [
           userId,
           eventType,
@@ -153,7 +153,7 @@ class AuthLoggingService {
   static async getLoginHistory(userId, limit = 50) {
     try {
       const result = await db.query(
-        `SELECT id, event_type, status, ip_address, user_agent, details, created_at 
+        `SELECT auth_logs_id, event_type, status, ip_address, user_agent, details, created_at 
          FROM auth_logs 
          WHERE user_id = $1 AND event_type = 'login'
          ORDER BY created_at DESC 
@@ -168,79 +168,84 @@ class AuthLoggingService {
     }
   }
 
-  /**
-   * Get authentication events for user
-   * @param {number} userId - User ID
-   * @param {string} [eventType] - Filter by event type
-   * @param {number} [limit=50] - Number of records to return
-   * @returns {Promise<Array>} Array of auth events
-   */
-  static async getAuthEvents(userId, eventType = null, limit = 50) {
-    try {
-      let query = `SELECT id, event_type, status, ip_address, user_agent, details, created_at 
-                   FROM auth_logs 
-                   WHERE user_id = $1`;
-      const params = [userId];
+  // /**
+  //  * Get authentication events for user
+  //  * @param {number} userId - User ID
+  //  * @param {string} [eventType] - Filter by event type
+  //  * @param {number} [limit=50] - Number of records to return
+  //  * @returns {Promise<Array>} Array of auth events
+  //  */
+  // static async getAuthEvents(userId, eventType, limit = 50) {
+  //   try {
+  //     let query = `SELECT auth_logs_id, event_type, status, ip_address, user_agent, details, created_at 
+  //                  FROM auth_logs 
+  //                  WHERE user_id = $1`;
+  //     const params = [userId];
+  //     let paramIndex = 2;
 
-      if (eventType) {
-        query += ` AND event_type = $2`;
-        params.push(eventType);
-      }
+  //     if (eventType) {
+  //       query += ` AND event_type = $${paramIndex}`;
+  //       params.push(eventType);
+  //       paramIndex++;
+  //     }
 
-      query += ` ORDER BY created_at DESC LIMIT ${limit}`;
+  //     query += ` ORDER BY created_at DESC LIMIT $${paramIndex}`;
+  //     params.push(limit);
 
-      const result = await db.query(query, params);
-      return result.rows || [];
-    } catch (error) {
-      console.error('[AUTH LOG] Error getting auth events:', error);
-      return [];
-    }
-  }
+  //     const result = await db.query(query, params);
+  //     return result.rows || [];
+  //   } catch (error) {
+  //     console.error('[AUTH LOG] Error getting auth events:', error);
+  //     return [];
+  //   }
+  // }
 
-  /**
-   * Get failed login attempts for user
-   * @param {number} userId - User ID
-   * @param {number} [minutes=60] - Time window in minutes
-   * @returns {Promise<number>} Number of failed attempts
-   */
-  static async getFailedLoginAttempts(userId, minutes = 60) {
-    try {
-      const result = await db.query(
-        `SELECT COUNT(*) as count 
-         FROM auth_logs 
-         WHERE user_id = $1 
-         AND event_type = 'login'
-         AND status = 'failed'
-         AND created_at > CURRENT_TIMESTAMP - INTERVAL '${minutes} minutes'`,
-        [userId]
-      );
+  // /**
+  //  * Get failed login attempts for user
+  //  * @param {number} userId - User ID
+  //  * @param {number} [minutes=60] - Time window in minutes
+  //  * @returns {Promise<number>} Number of failed attempts
+  //  */
+  // static async getFailedLoginAttempts(userId, minutes = 60) {
+  //   try {
+  //     const result = await db.query(
+  //       `SELECT COUNT(*) as count 
+  //        FROM auth_logs 
+  //        WHERE user_id = $1 
+  //        AND event_type = 'login'
+  //        AND status = 'failed'
+  //        AND created_at > CURRENT_TIMESTAMP - INTERVAL '${minutes} minutes'`,
+  //       [userId]
+  //     );
 
-      return parseInt(result.rows[0].count, 10);
-    } catch (error) {
-      console.error('[AUTH LOG] Error getting failed login attempts:', error);
-      return 0;
-    }
-  }
+  //     const count = result.rows && result.rows.length > 0 ? parseInt(result.rows[0].count, 10) : 0;
+  //     return count;
+  //   } catch (error) {
+  //     console.error('[AUTH LOG] Error getting failed login attempts:', error);
+  //     return 0;
+  //   }
+  // }
 
-  /**
-   * Clean up old auth logs
-   * @param {number} [daysOld=90] - Delete logs older than this many days
-   * @returns {Promise<number>} Number of logs deleted
-   */
-  static async cleanupOldLogs(daysOld = 90) {
-    try {
-      const result = await db.query(
-        `DELETE FROM auth_logs 
-         WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '${daysOld} days'`
-      );
+  // /**
+  //  * Clean up old auth logs
+  //  * @param {number} [daysOld=90] - Delete logs older than this many days
+  //  * @returns {Promise<number>} Number of logs deleted
+  //  */
+  // static async cleanupOldLogs(daysOld = 90) {
+  //   try {
+  //     const result = await db.query(
+  //       `DELETE FROM auth_logs 
+  //        WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '${daysOld} days'`
+  //     );
 
-      console.log('[AUTH LOG] Cleaned up', result.rowCount, 'old auth logs');
-      return result.rowCount;
-    } catch (error) {
-      console.error('[AUTH LOG] Error cleaning up old logs:', error);
-      return 0;
-    }
-  }
+  //     const rowCount = result.rowCount || 0;
+  //     console.log('[AUTH LOG] Cleaned up', rowCount, 'old auth logs');
+  //     return rowCount;
+  //   } catch (error) {
+  //     console.error('[AUTH LOG] Error cleaning up old logs:', error);
+  //     return 0;
+  //   }
+  // }
 }
 
 module.exports = AuthLoggingService;

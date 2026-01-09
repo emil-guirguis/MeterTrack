@@ -73,7 +73,7 @@ class BaseController {
 
     if (!tenantId) {
       this.logger.warn('Request rejected: missing or invalid tenant context', {
-        userId: req.auth?.user?.id,
+        userId: req.auth?.user?.users_id,
         timestamp: new Date().toISOString()
       });
       this.sendError(res, 'Tenant context not found', 401);

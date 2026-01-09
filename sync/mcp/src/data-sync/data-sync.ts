@@ -7,6 +7,7 @@
 
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { TenantEntity, MeterEntity, MeterReadingEntity, SyncLog } from '../types/entities.js';
+import { execQuery } from '../helpers/sql-functions.js';
 
 export interface DatabaseConfig {
   host: string;
@@ -226,9 +227,7 @@ export class SyncDatabase {
   async testConnectionLocal(): Promise<boolean> {
     try {
       const query = 'SELECT NOW()';
-      console.log('\n🔍 [SQL] Testing local database connection:', query);
-      const result = await this.pool.query(query);
-      console.log('✅ [SQL] Local database connection test successful, result:', result.rows[0]);
+      const result = await execQuery(this.pool, query);
       return result.rows.length > 0;
     } catch (error) {
       console.error('❌ [SQL] Local database connection test failed:', error);
@@ -242,8 +241,7 @@ export class SyncDatabase {
   async testConnectionRemote(remotePool: Pool): Promise<boolean> {
     try {
       const query = 'SELECT NOW()';
-      console.log('\n🔍 [SQL] Testing remote database connection:', query);
-      const result = await remotePool.query(query);
+      const result = await execQuery(remotePool, query);
       console.log('✅ [SQL] Remote database connection test successful, result:', result.rows[0]);
       return result.rows.length > 0;
     } catch (error) {
@@ -256,9 +254,9 @@ export class SyncDatabase {
    */
   async deleteSyncMeter(meterId: number, meterElementId?: number): Promise<void> {
     if (meterElementId) {
-      await this.pool.query('DELETE FROM meter WHERE id = $1 AND meter_element_id = $2', [meterId, meterElementId]);
+      await this.pool.query('DELETE FROM meter WHERE meter_id = $1 AND meter_element_id = $2', [meterId, meterElementId]);
     } else {
-      await this.pool.query('DELETE FROM meter WHERE id = $1', [meterId]);
+      await this.pool.query('DELETE FROM meter WHERE meter_id = $1', [meterId]);
     }
     
   } 
@@ -274,11 +272,8 @@ export class SyncDatabase {
   async validateTenantTable(): Promise<TenantEntity | null> {
     try {
       const query = 'SELECT * FROM tenant';
-      console.log('\n🔍 [SQL] Validating tenant table:', query);
-      const result = await this.pool.query(query);
-
+      const result = await execQuery(this.pool, query);
       const rowCount = result.rows.length;
-      console.log(`📋 [SQL] Tenant table query returned ${rowCount} row(s)`);
 
       if (rowCount === 0) {
         console.warn('⚠️  [SQL] Tenant table exists but has no records - sync database not set up yet');
@@ -326,7 +321,7 @@ export class SyncDatabase {
   * Get meter by ID
   */
   async getMeterById(id: number): Promise<MeterEntity | null> {
-    const result = await this.pool.query('SELECT * FROM meter WHERE id = $1', [id] );
+    const result = await this.pool.query('SELECT * FROM meter WHERE meter_id = $1', [id] );
     return result.rows[0] || null;
   }
 
@@ -336,7 +331,7 @@ export class SyncDatabase {
    */
   async updateMeterLastReading(externalId: string, timestamp: Date): Promise<void> {
     await this.pool.query(
-      'UPDATE meter SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE meter SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE meter_id = $2',
       [timestamp, externalId]
     );
   }
@@ -414,9 +409,7 @@ export class SyncDatabase {
     const query = `SELECT * FROM meter_reading
        WHERE timestamp >= NOW() - INTERVAL '${hours} hours'
        ORDER BY timestamp DESC`;
-    console.log('\n🔍 [SQL] Querying recent readings:', query);
-    const result = await this.pool.query(query, []);
-    console.log(`📋 [SQL] Query returned ${result.rows.length} reading(s)`);
+    const result = await execQuery(this.pool, query, [], 'data-sync.ts>getRecentReadings');
     return result.rows;
   }
 
@@ -431,7 +424,7 @@ export class SyncDatabase {
     const result = await this.pool.query(
       `UPDATE meter_reading
        SET is_synchronized = true 
-       WHERE id = ANY($1::int[])`,
+       WHERE meter_reading_id = ANY($1::int[])`,
       [readingIds]
     );
     return result.rowCount || 0;
@@ -458,15 +451,9 @@ export class SyncDatabase {
    */
   async getTenant(): Promise<TenantEntity | null> {
     try {
-      const query = 'SELECT id AS tenant_id, * FROM tenant';
-      console.log('\n🔍 [SQL] Querying tenant:', query);
-      const result = await this.pool.query(query);
-      console.log(`📋 [SQL] Query returned ${result.rows.length} row(s)`);
-      if (result.rows.length > 0) {
-        console.log('📊 [SQL] Tenant data:', JSON.stringify(result.rows[0], null, 2));
-      }
+      const query = 'SELECT * FROM tenant';
+      const result = await execQuery(this.pool, query);
       const tenant = result.rows[0] || null;
-      console.log(`✅ [SQL] Returning tenant:`, tenant);
       return tenant;
     } catch (error) {
       console.error('❌ [SQL] Error querying tenant:', error);
@@ -474,134 +461,172 @@ export class SyncDatabase {
     }
   }
 
+  // /**
+  //  * Synchronize tenant from remote database to local database
+  //  * 
+  //  * Queries the remote database for a tenant record by ID and upserts it to the local database.
+  //  * Preserves the original tenant ID from the remote database.
+  //  * 
+  //  * @param remotePool - Connection pool to the remote database
+  //  * @param tenantId - The ID of the tenant to synchronize
+  //  * @returns The synchronized tenant record
+  //  * @throws Error if the remote database query fails or tenant is not found
+  //  */
+  // async syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<TenantEntity> {
+  //   try {
+  //     // Query remote database for tenant record
+  //     console.log(`\n🔍 [SYNC] Querying remote database for tenant : ${tenantId}`);
+  //     const remoteQuery = 'SELECT * FROM tenant WHERE id = $1';
+  //     const remoteResult = await remotePool.query(remoteQuery, [tenantId]);
+
+  //     if (remoteResult.rows.length === 0) {
+  //       throw new Error(`Tenant with ID ${tenantId} not found in remote database`);
+  //     }
+
+  //     const remoteRow = remoteResult.rows[0];
+  //     console.log(`✅ [SYNC] Found tenant in remote database:`, JSON.stringify(remoteRow, null, 2));
+
+  //     // Map remote row to TenantEntity
+  //     const remoteTenant: TenantEntity = {
+  //       tenant_id: remoteRow.id || remoteRow.tenant_id,
+  //       name: remoteRow.name,
+  //       url: remoteRow.url,
+  //       street: remoteRow.street,
+  //       street2: remoteRow.street2,
+  //       city: remoteRow.city,
+  //       state: remoteRow.state,
+  //       zip: remoteRow.zip,
+  //       country: remoteRow.country,
+  //     };
+
+  //     // Upsert to local database, preserving the original tenant ID
+  //     console.log(`\n📝 [SYNC] Upserting tenant to local database with: ${remoteTenant.tenant_id}`);
+
+  //     const existing = await this.getTenant();
+
+  //     let localTenant: TenantEntity;
+
+  //     if (existing) {
+  //       // Update existing tenant, preserving the ID from remote
+  //       const sql = `UPDATE tenant 
+  //         SET name = $1, 
+  //             url = $2, 
+  //             street = $3, 
+  //             street2 = $4, 
+  //             city = $5, 
+  //             state = $6, 
+  //             zip = $7, 
+  //             country = $8,
+  //             updated_at = CURRENT_TIMESTAMP 
+  //         WHERE id = $9 
+  //         RETURNING *`;
+
+  //       try {
+  //         const updateResult = await this.pool.query(sql, [
+  //           remoteTenant.name,
+  //           remoteTenant.url || null,
+  //           remoteTenant.street || null,
+  //           remoteTenant.street2 || null,
+  //           remoteTenant.city || null,
+  //           remoteTenant.state || null,
+  //           remoteTenant.zip || null,
+  //           remoteTenant.country || null,
+  //           existing.tenant_id
+  //         ]);
+  //         localTenant = updateResult.rows[0];
+  //       } catch (error: any) {
+  //         // If some columns don't exist, update with available fields
+  //         if (error.message.includes('does not exist')) {
+  //           console.warn('⚠️ [SYNC] Some columns do not exist, updating with available fields');
+  //           const basicUpdateQuery = `UPDATE tenant 
+  //             SET name = $1, 
+  //                 updated_at = CURRENT_TIMESTAMP 
+  //             WHERE tenant_id = $2 
+  //             RETURNING *`;
+  //           const basicUpdateResult = await this.pool.query(basicUpdateQuery, [
+  //             remoteTenant.name,
+  //             existing.tenant_id
+  //           ]);
+  //           localTenant = basicUpdateResult.rows[0];
+  //         } else {
+  //           throw error;
+  //         }
+  //       }
+  //     } else {
+  //       // Insert new tenant with the remote ID
+  //       const insertQuery = `INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country) 
+  //         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+  //         RETURNING *`;
+
+  //       try {
+  //         const insertResult = await this.pool.query(insertQuery, [
+  //           remoteTenant.tenant_id,
+  //           remoteTenant.name,
+  //           remoteTenant.url || null,
+  //           remoteTenant.street || null,
+  //           remoteTenant.street2 || null,
+  //           remoteTenant.city || null,
+  //           remoteTenant.state || null,
+  //           remoteTenant.zip || null,
+  //           remoteTenant.country || null
+  //         ]);
+  //         localTenant = insertResult.rows[0];
+  //       } catch (error: any) {
+  //         // If columns don't exist, insert with basic fields only
+  //         if (error.message.includes('does not exist')) {
+  //           console.warn('⚠️ [SYNC] Some columns do not exist, inserting with basic fields only');
+  //           const basicInsertQuery = `INSERT INTO tenant (name) VALUES ($1) RETURNING *`;
+  //           const basicInsertResult = await this.pool.query(basicInsertQuery, [remoteTenant.name]);
+  //           localTenant = basicInsertResult.rows[0];
+  //         } else {
+  //           throw error;
+  //         }
+  //       }
+  //     }
+
+  //     console.log(`✅ [SYNC] Successfully synchronized tenant to local database:`, JSON.stringify(localTenant, null, 2));
+  //     return localTenant;
+  //   } catch (error) {
+  //     console.error(`❌ [SYNC] Error synchronizing tenant from remote:`, error);
+  //     throw error;
+  //   }
+  // }
+
   /**
-   * Synchronize tenant from remote database to local database
+   * Update tenant API key
    * 
-   * Queries the remote database for a tenant record by ID and upserts it to the local database.
-   * Preserves the original tenant ID from the remote database.
+   * Updates the API key for the existing tenant in the local database.
+   * This is used to store the API key from the environment variable.
    * 
-   * @param remotePool - Connection pool to the remote database
-   * @param tenantId - The ID of the tenant to synchronize
-   * @returns The synchronized tenant record
-   * @throws Error if the remote database query fails or tenant is not found
+   * @param apiKey - The API key to store
+   * @throws Error if the update fails
    */
-  async syncTenantFromRemote(remotePool: Pool, tenantId: number): Promise<TenantEntity> {
+  async updateTenantApiKey(apiKey: string): Promise<void> {
     try {
-      // Query remote database for tenant record
-      console.log(`\n🔍 [SYNC] Querying remote database for tenant ID: ${tenantId}`);
-      const remoteQuery = 'SELECT * FROM tenant WHERE id = $1';
-      const remoteResult = await remotePool.query(remoteQuery, [tenantId]);
-
-      if (remoteResult.rows.length === 0) {
-        throw new Error(`Tenant with ID ${tenantId} not found in remote database`);
+      console.log(`\n🔑 [SYNC] Updating tenant API key...`);
+      
+      const tenant = await this.getTenant();
+      if (!tenant) {
+        console.warn('⚠️  [SYNC] No tenant found, cannot update API key');
+        return;
       }
 
-      const remoteRow = remoteResult.rows[0];
-      console.log(`✅ [SYNC] Found tenant in remote database:`, JSON.stringify(remoteRow, null, 2));
+      const sql = `UPDATE tenant SET api_key = $1, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = $2`;
+      const result = await this.pool.query(sql, [apiKey, tenant.tenant_id]);
 
-      // Map remote row to TenantEntity
-      const remoteTenant: TenantEntity = {
-        tenant_id: remoteRow.id || remoteRow.tenant_id,
-        name: remoteRow.name,
-        url: remoteRow.url,
-        street: remoteRow.street,
-        street2: remoteRow.street2,
-        city: remoteRow.city,
-        state: remoteRow.state,
-        zip: remoteRow.zip,
-        country: remoteRow.country,
-      };
-
-      // Upsert to local database, preserving the original tenant ID
-      console.log(`\n📝 [SYNC] Upserting tenant to local database with ID: ${remoteTenant.tenant_id}`);
-
-      const existing = await this.getTenant();
-
-      let localTenant: TenantEntity;
-
-      if (existing) {
-        // Update existing tenant, preserving the ID from remote
-        const sql = `UPDATE tenant 
-          SET name = $1, 
-              url = $2, 
-              street = $3, 
-              street2 = $4, 
-              city = $5, 
-              state = $6, 
-              zip = $7, 
-              country = $8,
-              updated_at = CURRENT_TIMESTAMP 
-          WHERE id = $9 
-          RETURNING *`;
-
-        try {
-          const updateResult = await this.pool.query(sql, [
-            remoteTenant.name,
-            remoteTenant.url || null,
-            remoteTenant.street || null,
-            remoteTenant.street2 || null,
-            remoteTenant.city || null,
-            remoteTenant.state || null,
-            remoteTenant.zip || null,
-            remoteTenant.country || null,
-            existing.tenant_id
-          ]);
-          localTenant = updateResult.rows[0];
-        } catch (error: any) {
-          // If some columns don't exist, update with available fields
-          if (error.message.includes('does not exist')) {
-            console.warn('⚠️ [SYNC] Some columns do not exist, updating with available fields');
-            const basicUpdateQuery = `UPDATE tenant 
-              SET name = $1, 
-                  updated_at = CURRENT_TIMESTAMP 
-              WHERE id = $2 
-              RETURNING *`;
-            const basicUpdateResult = await this.pool.query(basicUpdateQuery, [
-              remoteTenant.name,
-              existing.tenant_id
-            ]);
-            localTenant = basicUpdateResult.rows[0];
-          } else {
-            throw error;
-          }
-        }
+      if (result.rowCount === 0) {
+        console.warn('⚠️  [SYNC] No rows updated when setting API key');
       } else {
-        // Insert new tenant with the remote ID
-        const insertQuery = `INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-          RETURNING *`;
-
-        try {
-          const insertResult = await this.pool.query(insertQuery, [
-            remoteTenant.tenant_id,
-            remoteTenant.name,
-            remoteTenant.url || null,
-            remoteTenant.street || null,
-            remoteTenant.street2 || null,
-            remoteTenant.city || null,
-            remoteTenant.state || null,
-            remoteTenant.zip || null,
-            remoteTenant.country || null
-          ]);
-          localTenant = insertResult.rows[0];
-        } catch (error: any) {
-          // If columns don't exist, insert with basic fields only
-          if (error.message.includes('does not exist')) {
-            console.warn('⚠️ [SYNC] Some columns do not exist, inserting with basic fields only');
-            const basicInsertQuery = `INSERT INTO tenant (name) VALUES ($1) RETURNING *`;
-            const basicInsertResult = await this.pool.query(basicInsertQuery, [remoteTenant.name]);
-            localTenant = basicInsertResult.rows[0];
-          } else {
-            throw error;
-          }
-        }
+        console.log(`✅ [SYNC] Successfully updated tenant API key: ${apiKey.substring(0, 8)}...`);
       }
-
-      console.log(`✅ [SYNC] Successfully synchronized tenant to local database:`, JSON.stringify(localTenant, null, 2));
-      return localTenant;
-    } catch (error) {
-      console.error(`❌ [SYNC] Error synchronizing tenant from remote:`, error);
-      throw error;
+    } catch (error: any) {
+      // If api_key column doesn't exist, log warning but don't fail
+      if (error.message.includes('does not exist') || error.code === '42703') {
+        console.warn('⚠️  [SYNC] API key column does not exist in tenant table, skipping update');
+      } else {
+        console.error(`❌ [SYNC] Error updating tenant API key:`, error);
+        throw error;
+      }
     }
   }
 
@@ -642,12 +667,10 @@ export class SyncDatabase {
    */
   async getMeters(activeOnly: boolean = true): Promise<MeterEntity[]> {
     const query = activeOnly
-      ? 'SELECT id AS meter_id, name, active, ip, port, meter_element_id, element FROM meter WHERE active = true ORDER BY name'
-      : 'SELECT id AS meter_id, name, active, ip, port, meter_element_id, element FROM meter ORDER BY name';
-    console.log('\n🔍 [SQL] Querying meters:', query);
-    const result = await this.pool.query(query);
-    console.log(`📋 [SQL] Query returned ${result.rows.length} meter(s)`);
-    return result.rows;
+      ? 'SELECT meter_id, name, active, ip, port, meter_element_id, element FROM meter WHERE active = true ORDER BY name'
+      : 'SELECT meter_id, name, active, ip, port, meter_element_id, element FROM meter ORDER BY name';
+      const result = await execQuery(this.pool, query);
+      return result.rows;
   }
 
   /**
@@ -738,9 +761,7 @@ export class SyncDatabase {
          WHERE is_synchronized = false
          ORDER BY created_at ASC
          LIMIT $1`;
-      console.log('\n🔍 [SQL] Querying unsynchronized readings:', query, `[limit: ${limit}]`);
-      const result = await this.pool.query(query, [limit]);
-      console.log(`📋 [SQL] Query returned ${result.rows.length} reading(s)`);
+      const result = await execQuery(this.pool, query, [limit], 'data-sync.ts>getUnsynchronizedReadings');
       return result.rows;
     } catch (error) {
       console.error('❌ [SQL] Failed to get unsynchronized readings:', error);
@@ -759,7 +780,7 @@ export class SyncDatabase {
     try {
       const result = await this.pool.query(
         `DELETE FROM meter_reading
-         WHERE id = ANY($1::int[]) AND is_synchronized = true`,
+         WHERE meter_reading_id = ANY($1::int[]) AND is_synchronized = true`,
         [readingIds]
       );
       const deletedCount = result.rowCount || 0;
@@ -783,7 +804,7 @@ export class SyncDatabase {
       await this.pool.query(
         `UPDATE meter_reading
          SET retry_count = retry_count + 1
-         WHERE id = ANY($1::int[])`,
+         WHERE meter_reading_id = ANY($1::int[])`,
         [readingIds]
       );
       console.log(`✅ [SQL] Incremented retry count for ${readingIds.length} reading(s)`);
@@ -836,13 +857,178 @@ export class SyncDatabase {
   async getRecentSyncLogs(limit: number = 100): Promise<SyncLog[]> {
     try {
       const query = `SELECT * FROM sync_log ORDER BY synced_at DESC LIMIT $1`;
-      console.log('\n🔍 [SQL] Querying recent sync logs:', query, `[limit: ${limit}]`);
-      const result = await this.pool.query(query, [limit]);
-      console.log(`📋 [SQL] Query returned ${result.rows.length} log(s)`);
+      const result = await execQuery(this.pool, query, [limit], 'data-sync.ts>getRecentSyncLogs');
       return result.rows;
     } catch (error) {
       console.error('❌ [SQL] Failed to get recent sync logs:', error);
       throw error;
+    }
+  }
+
+  // ==================== REGISTER METHODS ====================
+
+  /**
+   * Get all registers from the sync database (implements SyncDatabase interface)
+   */
+  async getRegisters(): Promise<any[]> {
+    try {
+      const query = `SELECT register_id, name, register, unit, field_name FROM register ORDER BY register_id`;
+      const result = await execQuery(this.pool, query);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to get registers:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert a register into the sync database (implements SyncDatabase interface)
+   */
+  async upsertRegister(register: any): Promise<void> {
+    try {
+      const registerId = register?.id || 'UNKNOWN';
+      console.log(`\n🔄 [SYNC SQL] Starting upsert for register: ${registerId}`);
+      console.log(`   Input data:`, JSON.stringify(register, null, 2));
+
+      if (!register) {
+        throw new Error('Register object is required');
+      }
+      if (!register.device_register_id) {
+        throw new Error('Register ID is required for upsert');
+      }
+
+      const sql = `INSERT INTO register (register_id, name, register, unit, field_name)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           register = EXCLUDED.register,
+           unit = EXCLUDED.unit,
+           field_name = EXCLUDED.field_name
+         RETURNING *`;
+
+      console.log(`[SYNC SQL] ${sql}`);
+      const params = [register.register_id, register.name, register.register, register.unit, register.field_name];
+      console.log(`   Parameters:`, JSON.stringify(params, null, 2));
+
+      const result = await this.pool.query(sql, params);
+
+      if (!result || !result.rows || result.rows.length === 0) {
+        throw new Error(`Upsert failed: No rows returned for register ${registerId}`);
+      }
+
+      console.log(`✅ [SYNC SQL] Successfully upserted register: ${registerId}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`\n❌ [SYNC SQL] FAILED to upsert register: ${register?.register_id || 'UNKNOWN'}`);
+      console.error(`   Error Message: ${errorMessage}`);
+      throw new Error(`Failed to upsert register ${register?.register_id || 'UNKNOWN'}: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Delete a register from the sync database (implements SyncDatabase interface)
+   */
+  async deleteRegister(registerId: number): Promise<void> {
+    try {
+      console.log(`\n🗑️  [SYNC SQL] Deleting register: ${registerId}`);
+      const sql = `DELETE FROM register WHERE register_id = $1`;
+      console.log(`[SYNC SQL] ${sql}`);
+      console.log(`   Parameters: [${registerId}]`);
+
+      const result = await this.pool.query(sql, [registerId]);
+      console.log(`✅ [SYNC SQL] Successfully deleted register: ${registerId} (${result.rowCount} row(s) affected)`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`\n❌ [SYNC SQL] FAILED to delete register: ${registerId}`);
+      console.error(`   Error Message: ${errorMessage}`);
+      throw new Error(`Failed to delete register ${registerId}: ${errorMessage}`);
+    }
+  }
+
+  // ==================== DEVICE_REGISTER METHODS ====================
+
+  /**
+   * Get all device_register associations from the sync database (implements SyncDatabase interface)
+   */
+  async getDeviceRegisters(): Promise<any[]> {
+    try {
+      const query = `SELECT device_register_id, device_id, register_id, created_at, updated_at FROM device_register ORDER BY device_id, register_id`;
+      const result = await execQuery(this.pool, query);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to get device_register associations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert a device_register association into the sync database (implements SyncDatabase interface)
+   */
+  async upsertDeviceRegister(deviceRegister: any): Promise<void> {
+    try {
+      const key = `${deviceRegister?.device_id}-${deviceRegister?.register_id}` || 'UNKNOWN';
+      console.log(`\n🔄 [SYNC SQL] Starting upsert for device_register: ${key}`);
+      console.log(`   Input data:`, JSON.stringify(deviceRegister, null, 2));
+
+      if (!deviceRegister) {
+        throw new Error('Device_register object is required');
+      }
+      if (!deviceRegister.device_id || !deviceRegister.register_id) {
+        throw new Error('Device ID and Register ID are required for upsert');
+      }
+
+      const sql = `
+         INSERT INTO device_register (device_register_id, device_id, register_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (device_register_id, device_id, register_id)) DO UPDATE SET
+           		 device_register_id=EXCLUDED.device_register_id,
+               device_id = EXCLUDED.device_id,
+               register_id = EXCLUDED.register_id
+         RETURNING *`;
+
+      console.log(`[SYNC SQL] ${sql}`);
+      const params = [
+        deviceRegister.device_register_id,
+        deviceRegister.device_id,
+        deviceRegister.register_id,
+      ];
+      console.log(`   Parameters:`, JSON.stringify(params, null, 2));
+
+      const result = await this.pool.query(sql, params);
+
+      if (!result || !result.rows || result.rows.length === 0) {
+        throw new Error(`Upsert failed: No rows returned for device_register ${key}`);
+      }
+
+      console.log(`✅ [SYNC SQL] Successfully upserted device_register: ${key}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const key = `${deviceRegister?.device_id}-${deviceRegister?.register_id}` || 'UNKNOWN';
+      console.error(`\n❌ [SYNC SQL] FAILED to upsert device_register: ${key}`);
+      console.error(`   Error Message: ${errorMessage}`);
+      throw new Error(`Failed to upsert device_register ${key}: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Delete a device_register association from the sync database (implements SyncDatabase interface)
+   */
+  async deleteDeviceRegister(deviceId: number, registerId: number): Promise<void> {
+    try {
+      const key = `${deviceId}-${registerId}`;
+      console.log(`\n🗑️  [SYNC SQL] Deleting device_register: ${key}`);
+      const sql = `DELETE FROM device_register WHERE device_id = $1 AND register_id = $2`;
+      console.log(`[SYNC SQL] ${sql}`);
+      console.log(`   Parameters: [${deviceId}, ${registerId}]`);
+
+      const result = await this.pool.query(sql, [deviceId, registerId]);
+      console.log(`✅ [SYNC SQL] Successfully deleted device_register: ${key} (${result.rowCount} row(s) affected)`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const key = `${deviceId}-${registerId}`;
+      console.error(`\n❌ [SYNC SQL] FAILED to delete device_register: ${key}`);
+      console.error(`   Error Message: ${errorMessage}`);
+      throw new Error(`Failed to delete device_register ${key}: ${errorMessage}`);
     }
   }
 }

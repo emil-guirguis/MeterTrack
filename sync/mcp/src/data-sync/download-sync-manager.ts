@@ -7,10 +7,11 @@
 
 import { Pool } from 'pg';
 import winston from 'winston';
-import { ErrorHandler } from './error-handler';
+import { ErrorHandler } from '../helpers/error-handler';
 
 export interface MeterConfiguration {
-  id: number;
+  meter_id: number;
+  tenant_id: number;
   device_id: number;
   ip: string;
   element: string;
@@ -19,7 +20,7 @@ export interface MeterConfiguration {
 }
 
 export interface Tenant {
-  id: number;
+  tenant_id: number;
   name: string;
   url?: string;
   street?: string;
@@ -81,7 +82,7 @@ export class DownloadSyncManager {
 
   async getTenantId(): Promise<any[]> {
     this.logger.info('Getting tenant ID');
-    const result = await this.localPool.query('SELECT id from tenant t');
+    const result = await this.localPool.query('SELECT tenant_id from tenant t');
     return result.rows;
   } 
 
@@ -158,9 +159,9 @@ export class DownloadSyncManager {
   return this.errorHandler.handleQueryError(
     async () => {
       const result = await this.remotePool.query(
-        `SELECT id as meter_id, device_id, ip, port, active, me.element 
+        `SELECT meter_id, device_id, ip, port, active, me.element 
            FROM meter m
-              JOIN meter_element me on (me.meter_id = m.id)
+              JOIN meter_element me on (me.meter_id = m.meter_id)
            WHERE m.tenant_id = $1`,
         [
           tenantId,
@@ -213,26 +214,26 @@ export class DownloadSyncManager {
   // Create a map of local meters by ID for quick lookup
   const localMeterMap = new Map<number, MeterConfiguration>();
   for(const meter of localMeters) {
-    localMeterMap.set(meter.id, meter);
+    localMeterMap.set(meter.meter_id, meter);
   }
 
     // Process each remote meter
     for(const remoteMeter of remoteMeters) {
-    const localMeter = localMeterMap.get(remoteMeter.id);
+    const localMeter = localMeterMap.get(remoteMeter.meter_id);
 
     if (!localMeter) {
       // Meter doesn't exist locally - insert it
       await this.insertMeter(remoteMeter);
-      newMeterIds.push(remoteMeter.id);
-      this.logger.info(`New meter added: ${remoteMeter.id}`);
+      newMeterIds.push(remoteMeter.meter_id);
+      this.logger.info(`New meter added: ${remoteMeter.meter_id}`);
     } else if (this.meterHasChanged(remoteMeter, localMeter)) {
       // Meter exists but has been updated - update it
       await this.updateMeter(remoteMeter);
-      updatedMeterIds.push(remoteMeter.id);
+      updatedMeterIds.push(remoteMeter.meter_id);
 
       // Log which fields changed
       const changedFields = this.getChangedMeterFields(remoteMeter, localMeter);
-      this.logger.info(`Meter updated: ${remoteMeter.id} - fields changed: ${changedFields.join(', ')}`);
+      this.logger.info(`Meter updated: ${remoteMeter.meter_id} - fields changed: ${changedFields.join(', ')}`);
     }
   }
 
@@ -277,11 +278,11 @@ export class DownloadSyncManager {
   try {
     await this.localPool.query(
       `INSERT INTO meter (
-          id, name, device_id, ip, port,  active, element
+          meter_id, name, device_id, ip, port,  active, element
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
-        meter.id,
+        meter.meter_id,
         meter.device_id,
         meter.ip,
         meter.port,
@@ -290,7 +291,7 @@ export class DownloadSyncManager {
     );
   } catch(error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    this.logger.error(`Failed to insert meter ${meter.id}:`, errorMessage);
+    this.logger.error(`Failed to insert meter ${meter.meter_id}:`, errorMessage);
     throw error;
   }
 }
@@ -308,19 +309,19 @@ export class DownloadSyncManager {
              port = $3,
              active = $4,
              element = $5
-         WHERE id = $6`,
+         WHERE meter_id = $6`,
       [
         meter.device_id,
         meter.ip,
         meter.port,
         meter.active,
         meter.element,
-        meter.id
+        meter.meter_id
         ]
     );
   } catch(error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    this.logger.error(`Failed to update meter ${meter.id}:`, errorMessage);
+    this.logger.error(`Failed to update meter ${meter.meter_id}:`, errorMessage);
     throw error;
   }
 }
@@ -416,7 +417,7 @@ return {
   return this.errorHandler.handleQueryError(
     async () => {
       const result = await this.remotePool.query(
-        `SELECT id, name, url, street, street2, city, state, zip, country, active
+        `SELECT tenant_id, name, url, street, street2, city, state, zip, country, active
            FROM tenant`
       );
 
@@ -438,7 +439,7 @@ return {
   return this.errorHandler.handleQueryError(
     async () => {
       const result = await this.localPool.query(
-        `SELECT id, name, url, street, street2, city, state, zip, country, active
+        `SELECT tenant_id, name, url, street, street2, city, state, zip, country, active
            FROM tenant`
       );
 
@@ -470,27 +471,27 @@ return {
 // Create a map of local tenants by ID for quick lookup
 const localTenantMap = new Map<number, Tenant>();
 for (const tenant of localTenants) {
-  localTenantMap.set(tenant.id, tenant);
+  localTenantMap.set(tenant.tenant_id, tenant);
 }
 
 // Process each remote tenant
 for (const remoteTenant of remoteTenants) {
-  const localTenant = localTenantMap.get(remoteTenant.id);
+  const localTenant = localTenantMap.get(remoteTenant.tenant_id);
 
   if (!localTenant) {
     // Tenant doesn't exist locally - insert it
     await this.insertTenant(remoteTenant);
-    newTenantIds.push(remoteTenant.id);
-    this.logger.info(`New tenant added: ${remoteTenant.id} - ${remoteTenant.name}`);
+    newTenantIds.push(remoteTenant.tenant_id);
+    this.logger.info(`New tenant added: ${remoteTenant.tenant_id} - ${remoteTenant.name}`);
   } else if (this.tenantHasChanged(remoteTenant, localTenant)) {
     // Tenant exists but has been updated - update it
     await this.updateTenant(remoteTenant);
-    updatedTenantIds.push(remoteTenant.id);
+    updatedTenantIds.push(remoteTenant.tenant_id);
 
     // Track which fields changed
     const changedFields = this.getChangedTenantFields(remoteTenant, localTenant);
     tenantChanges.push({
-      tenant_id: remoteTenant.id,
+      tenant_id: remoteTenant.tenant_id,
       changedFields,
     });
   }
@@ -550,7 +551,7 @@ return { newTenantIds, updatedTenantIds, tenantChanges };
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
-        tenant.id,
+        tenant.tenant_id,
         tenant.name,
         tenant.url,
         tenant.street,
@@ -564,7 +565,7 @@ return { newTenantIds, updatedTenantIds, tenantChanges };
     );
   } catch(error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    this.logger.error(`Failed to insert tenant ${tenant.id}:`, errorMessage);
+    this.logger.error(`Failed to insert tenant ${tenant.tenant_id}:`, errorMessage);
     throw error;
   }
 }
@@ -588,9 +589,9 @@ return { newTenantIds, updatedTenantIds, tenantChanges };
              active = $10,
              updated_at = $11,
              meter_reading_batch_count = $12
-         WHERE id = $1`,
+         WHERE tenant_id = $1`,
       [
-        tenant.id,
+        tenant.tenant_id,
         tenant.name,
         tenant.url,
         tenant.street,
@@ -604,7 +605,7 @@ return { newTenantIds, updatedTenantIds, tenantChanges };
     );
   } catch(error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    this.logger.error(`Failed to update tenant ${tenant.id}:`, errorMessage);
+    this.logger.error(`Failed to update tenant ${tenant.tenant_id}:`, errorMessage);
     throw error;
   }
 }

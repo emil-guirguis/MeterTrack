@@ -45,36 +45,12 @@ let threadingService = null;
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
-// Increased limits for development - schema prefetch makes multiple requests
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests per 15 min in dev, 100 in prod
-  message: 'Too many requests from this IP, please try again later.',
-  skip: (req, res) => {
-    // Skip rate limiting for schema endpoints during development
-    if (process.env.NODE_ENV !== 'production' && req.path.includes('/schema')) {
-      console.log('🔄 [RATE_LIMIT] Skipping rate limit for schema endpoint:', req.path);
-      return true;
-    }
-    return false;
-  },
-  handler: (req, res) => {
-    console.error('❌ [RATE_LIMIT] Rate limit exceeded for IP:', req.ip);
-    console.error('❌ [RATE_LIMIT] Path:', req.path);
-    res.status(429).json({
-      success: false,
-      message: 'Too many requests from this IP, please try again later.'
-    });
-  }
-});
-app.use('/api/', limiter);
-
-// CORS configuration
+// CORS configuration - MUST come before rate limiting
 const allowedOrigins = process.env.FRONTEND_URL 
   ? process.env.FRONTEND_URL.split(',')
   : ['http://localhost:5173', 'http://localhost:5174'];
 
+// Apply CORS globally FIRST
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -97,6 +73,11 @@ app.use(cors({
 
 // Handle preflight requests explicitly
 app.options('*', cors());
+
+// Rate limiting - DISABLED FOR NOW to debug CORS issues
+// TODO: Re-enable after CORS is working
+// const limiter = rateLimit({...});
+// app.use('/api/', limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

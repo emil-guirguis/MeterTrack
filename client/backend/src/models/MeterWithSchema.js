@@ -289,16 +289,17 @@ class Meter extends BaseModel {
       // Entity fields - read-only, system-managed
       entityFields: {
         id: field({
-          name: 'id',
+          name: 'meter_id',
           type: FieldTypes.NUMBER,
           default: null,
           readOnly: true,
           label: 'ID',
-          dbField: 'id',
+          dbField: 'meter_id',
         }),
 
 
         tenant_id: field({
+          name: 'tenant_id',
           type: FieldTypes.NUMBER,
           default: 0,
           readOnly: false,
@@ -430,7 +431,7 @@ function transformMeterToResponse(meterData, relatedData = {}) {
   const serialNumber = meterData.serial_number || meterData.serialnumber;
 
   return {
-    id: meterData.id,
+    meter_id: meterData.meter_id,
     name: meterData.name,
     serial_number: serialNumber,
     device: device?.manufacturer || null,
@@ -486,7 +487,7 @@ function normalizeRequestBody(reqBody) {
  */
 function transformCreatedMeterToResponse(meterData) {
   return {
-    id: meterData.id,
+    meter_id: meterData.meter_id,
     name: meterData.name,
     serialNumber: meterData.serial_number,
     serial_number: meterData.serial_number,

@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
 
     // Get all registers
     const registers = await db.query(
-      `SELECT id, number, name, unit, field_name
+      `SELECT register_id, number, name, unit, field_name
        FROM register
        ORDER BY number ASC`,
     );

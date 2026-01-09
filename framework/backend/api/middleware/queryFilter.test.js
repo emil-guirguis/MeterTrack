@@ -198,19 +198,19 @@ describe('Query Filter Middleware', () => {
     });
 
     test('should detect UPDATE queries', () => {
-      expect(detectQueryType('UPDATE users SET name = ? WHERE id = ?')).toBe('UPDATE');
-      expect(detectQueryType('update users set name = ? where id = ?')).toBe('UPDATE');
-      expect(detectQueryType('  UPDATE users SET name = ? WHERE id = ?')).toBe('UPDATE');
+      expect(detectQueryType('UPDATE users SET name = ? WHERE users_id = ?')).toBe('UPDATE');
+      expect(detectQueryType('update users set name = ? where users_id = ?')).toBe('UPDATE');
+      expect(detectQueryType('  UPDATE users SET name = ? WHERE users_id = ?')).toBe('UPDATE');
     });
 
     test('should detect DELETE queries', () => {
-      expect(detectQueryType('DELETE FROM users WHERE id = ?')).toBe('DELETE');
-      expect(detectQueryType('delete from users where id = ?')).toBe('DELETE');
-      expect(detectQueryType('  DELETE FROM users WHERE id = ?')).toBe('DELETE');
+      expect(detectQueryType('DELETE FROM users WHERE users_id = ?')).toBe('DELETE');
+      expect(detectQueryType('delete from users where users_id = ?')).toBe('DELETE');
+      expect(detectQueryType('  DELETE FROM users WHERE users_id = ?')).toBe('DELETE');
     });
 
     test('should return UNKNOWN for unsupported queries', () => {
-      expect(detectQueryType('CREATE TABLE users (id INT)')).toBe('UNKNOWN');
+      expect(detectQueryType('CREATE TABLE users (users_id INT)')).toBe('UNKNOWN');
       expect(detectQueryType('DROP TABLE users')).toBe('UNKNOWN');
       expect(detectQueryType('')).toBe('UNKNOWN');
       expect(detectQueryType(null)).toBe('UNKNOWN');
@@ -318,7 +318,7 @@ describe('Query Filter Middleware', () => {
     });
 
     test('should append AND when WHERE clause exists', () => {
-      const query = 'UPDATE users SET name = ? WHERE id = ?';
+      const query = 'UPDATE users SET name = ? WHERE users_id = ?';
       const result = filterUpdateQuery(query, 'tenant-123');
 
       expect(result.query).toContain('AND tenant_id = ?');
@@ -354,7 +354,7 @@ describe('Query Filter Middleware', () => {
     });
 
     test('should append AND when WHERE clause exists', () => {
-      const query = 'DELETE FROM users WHERE id = ?';
+      const query = 'DELETE FROM users WHERE users_id = ?';
       const result = filterDeleteQuery(query, 'tenant-123');
 
       expect(result.query).toContain('AND tenant_id = ?');
@@ -398,7 +398,7 @@ describe('Query Filter Middleware', () => {
     });
 
     test('should apply UPDATE filter', () => {
-      const query = 'UPDATE users SET name = ? WHERE id = ?';
+      const query = 'UPDATE users SET name = ? WHERE users_id = ?';
       const result = applyTenantFilter(query, 'tenant-123');
 
       expect(result.query).toContain('AND tenant_id = ?');
@@ -406,7 +406,7 @@ describe('Query Filter Middleware', () => {
     });
 
     test('should apply DELETE filter', () => {
-      const query = 'DELETE FROM users WHERE id = ?';
+      const query = 'DELETE FROM users WHERE users_id = ?';
       const result = applyTenantFilter(query, 'tenant-123');
 
       expect(result.query).toContain('AND tenant_id = ?');
@@ -443,7 +443,7 @@ describe('Query Filter Middleware', () => {
     test('should filter all SELECT queries with tenant_id', () => {
       const selectQueries = [
         'SELECT * FROM users',
-        'SELECT id, name FROM users WHERE active = ?',
+        'SELECT users_id, name FROM users WHERE active = ?',
         'SELECT * FROM users ORDER BY name',
         'SELECT COUNT(*) FROM users GROUP BY role',
         'SELECT * FROM users LIMIT 10'
@@ -459,7 +459,7 @@ describe('Query Filter Middleware', () => {
     test('should filter all UPDATE queries with tenant_id', () => {
       const updateQueries = [
         'UPDATE users SET name = ?',
-        'UPDATE users SET active = ? WHERE id = ?',
+        'UPDATE users SET active = ? WHERE v = ?',
         'UPDATE users SET role = ? WHERE department = ?'
       ];
 
@@ -473,7 +473,7 @@ describe('Query Filter Middleware', () => {
     test('should filter all DELETE queries with tenant_id', () => {
       const deleteQueries = [
         'DELETE FROM users',
-        'DELETE FROM users WHERE id = ?',
+        'DELETE FROM users WHERE users_id = ?',
         'DELETE FROM users WHERE role = ?'
       ];
 
@@ -527,7 +527,7 @@ describe('Query Filter Middleware', () => {
     test('should filter UPDATE queries to only affect tenant records', () => {
       const updateQueries = [
         'UPDATE users SET name = ?',
-        'UPDATE users SET active = ? WHERE id = ?',
+        'UPDATE users SET active = ? WHERE v = ?',
         'UPDATE devices SET status = ? WHERE location = ?'
       ];
 
@@ -541,7 +541,7 @@ describe('Query Filter Middleware', () => {
     test('should filter DELETE queries to only affect tenant records', () => {
       const deleteQueries = [
         'DELETE FROM users',
-        'DELETE FROM users WHERE id = ?',
+        'DELETE FROM users WHERE users_id = ?',
         'DELETE FROM devices WHERE location = ?'
       ];
 

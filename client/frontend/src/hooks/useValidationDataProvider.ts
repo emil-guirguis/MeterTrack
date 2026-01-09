@@ -33,8 +33,8 @@ export const useValidationDataProvider = () => {
       // Map locations to options using labelField from fieldDef
       const labelField = fieldDef.validationFields?.[0] || 'name';
       const options = locations.map((location: any) => ({
-        id: location.id,
-        label: location[labelField] || `${entityName} ${location.id}`,
+        id: location.location_id,
+        label: location[labelField] || `${entityName} ${location.location_id}`,
       }));
 
       console.log(`[ValidationDataProvider] Mapped ${options.length} location options`);
@@ -86,9 +86,9 @@ export const useValidationDataProvider = () => {
               return device[field] || device[camelCaseField];
             })
             .filter((val: any) => val);
-          const label = labelParts.length > 0 ? labelParts.join(' - ') : `Device ${device.id}`;
+          const label = labelParts.length > 0 ? labelParts.join(' - ') : `Device ${device.device_id}`;
 
-          console.log(`[ValidationDataProvider] Device ${device.id}:`, {
+          console.log(`[ValidationDataProvider] Device ${device.device_id}:`, {
             validationFields,
             labelParts,
             label,
@@ -96,7 +96,7 @@ export const useValidationDataProvider = () => {
           });
 
           return {
-            id: device.id,
+            id: device.device_id,
             label,
           };
         });

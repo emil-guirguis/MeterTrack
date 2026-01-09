@@ -9,7 +9,7 @@ async function checkAllUsers() {
     
     await db.connect();
     
-    const result = await db.query('SELECT id, email, name, role, tenant_id, active FROM users ORDER BY id');
+    const result = await db.query('SELECT users_id, email, name, role, tenant_id, active FROM users ORDER BY users_id');
     
     console.log('📊 Users in database:');
     console.log('='.repeat(100));

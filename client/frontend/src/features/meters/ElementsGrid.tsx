@@ -14,7 +14,7 @@ import apiClient from '../../services/apiClient';
 import './ElementsGrid.css';
 
 export interface MeterElement {
-  id: number;
+  meter_element_id: number;
   meter_id: number;
   name: string;
   element: string;
@@ -92,13 +92,13 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       // Extract form fields from schema
       const formFields: Record<string, SchemaField> = {};
       if (schemaData.formFields) {
-        Object.entries(schemaData.formFields).forEach(([key, field]: [string, any]) => {
+        Object.entries(schemaData.formFields).forEach(([key, fieldData]: [string, any]) => {
           formFields[key] = {
-            type: field.type,
-            label: field.label,
-            readOnly: field.readOnly,
-            required: field.required,
-            enumValues: field.enumValues,
+            type: fieldData.type,
+            label: fieldData.label,
+            readOnly: fieldData.readOnly,
+            required: fieldData.required,
+            enumValues: fieldData.enumValues,
           };
         });
       }
@@ -189,12 +189,13 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
     } catch (err) {
       // Handle validation errors from backend
       let errorMessage = 'Failed to add element';
-      const errorResponse = (err as any).response?.data;
+      // @ts-ignore - err is unknown type
+      const errorResponse = err?.response?.data;
       
       if (errorResponse?.errors) {
         // Extract error messages from validation errors
         errorMessage = Object.entries(errorResponse.errors)
-          .map(([field, message]) => `${message}`)
+          .map(([, message]) => `${message}`)
           .join(', ');
       } else if (errorResponse?.message) {
         // Use the message field if available
@@ -230,7 +231,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
 
       // UI is already updated optimistically in handleCellChange, just save to backend
       try {
-        await apiClient.put(`/meters/${meterId}/elements/${element.id}`, {
+        await apiClient.put(`/meters/${meterId}/elements/${element.meter_element_id}`, {
           [column]: value,
         });
         setError(null); // Clear error on success
@@ -252,7 +253,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         if (errorResponse?.errors) {
           // Extract error messages from validation errors
           errorMessage = Object.entries(errorResponse.errors)
-            .map(([field, message]) => `${message}`)
+            .map(([, message]) => `${message}`)
             .join(', ');
         } else if (errorResponse?.message) {
           // Use the message field if available
@@ -330,8 +331,8 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
 
     setDeleting(true);
     try {
-      await apiClient.delete(`/meters/${meterId}/elements/${element.id}`);
-      setElements(elements.filter((e) => e.id !== element.id));
+      await apiClient.delete(`/meters/${meterId}/elements/${element.meter_element_id}`);
+      setElements(elements.filter((e) => e.meter_element_id !== element.meter_element_id));
       setDeleteConfirm(null);
       setError(null); // Clear error on success
       setToastMessage('Element deleted successfully');
@@ -340,11 +341,12 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       onSuccess?.('Element deleted successfully');
     } catch (err) {
       let errorMessage = 'Failed to delete element';
-      const errorResponse = (err as any).response?.data;
+      // @ts-ignore - err is unknown type
+      const errorResponse = err?.response?.data;
       
       if (errorResponse?.errors) {
         errorMessage = Object.entries(errorResponse.errors)
-          .map(([field, message]) => `${message}`)
+          .map(([, message]) => `${message}`)
           .join(', ');
       } else if (errorResponse?.message) {
         errorMessage = errorResponse.message;
@@ -377,7 +379,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
     
     elements.forEach((element) => {
       data.push({
-        id: element.id,
+        meter_element_id: element.meter_element_id,
         name: element.name,
         element: element.element,
       });
@@ -410,7 +412,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         onCellValidate={(rowId, column, value) => {
           // Validate element uniqueness
           if (column === 'element' && value) {
-            console.log('🔍 Validating element:', { rowId, value, unsavedRow, elementsCount: elements.length, allElements: elements.map(e => ({ id: e.id, element: e.element })) });
+            console.log('🔍 Validating element:', { rowId, value, unsavedRow, elementsCount: elements.length, allElements: elements.map(e => ({ id: e.meter_element_id, element: e.element })) });
             
             // Check if this is the unsaved row (only if unsavedRow exists and rowId is 0)
             if (unsavedRow && rowId === 0) {
@@ -431,7 +433,7 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
               console.log('✅ Saved row check:', { actualRowId, element, value, allElements: elements.map(e => e.element) });
               if (element) {
                 // Check against other saved elements (excluding current element)
-                const isDuplicate = elements.some((el) => el.id !== element.id && el.element === value);
+                const isDuplicate = elements.some((el) => el.meter_element_id !== element.meter_element_id && el.element === value);
                 console.log('❌ Duplicate check result:', isDuplicate);
                 if (isDuplicate) {
                   const errorMsg = `Element "${value}" is already assigned to this meter`;

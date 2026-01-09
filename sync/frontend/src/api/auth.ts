@@ -12,13 +12,13 @@ export interface AuthResponse {
   token?: string;
   refreshToken?: string;
   user?: {
-    id: number;
+    users_id: number;
     email: string;
     name: string;
     status: string;
   };
   tenant?: {
-    id: number;
+    tenant_id: number;
     name: string;
     url?: string;
     street?: string;
@@ -77,7 +77,7 @@ export const authApi = {
       }
 
       // Check if user has a tenant
-      if (!response.data.tenant?.id) {
+      if (!response.data.tenant?.tenant_id) {
         console.error('❌ [Auth] User has no associated tenant');
         return {
           success: false,

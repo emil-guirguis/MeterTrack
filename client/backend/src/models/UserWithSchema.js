@@ -29,7 +29,7 @@ class User extends BaseModel {
      * @returns {string}
      */
     static get primaryKey() {
-        return 'id';
+        return 'users_id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
@@ -109,17 +109,6 @@ class User extends BaseModel {
                                     dbField: 'active',
                                     showOn: ['list', 'form'],
                                 }),
-                                field({
-                                    name: 'last_sign_in_at',
-                                    order: 2,
-                                    type: FieldTypes.DATE,
-                                    default: null,
-                                    required: false,
-                                    label: 'Last Login',
-                                    dbField: 'last_sign_in_at',
-                                    readOnly: true,
-                                    showOn: ['list', 'form'],
-                                }),
                             ],
                         }),
                     ],
@@ -194,12 +183,12 @@ class User extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'id',
+                    name: 'users_id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'ID',
-                    dbField: 'id',
+                    dbField: 'users_id',
                 }),
                 tenant_id: field({
                     name: 'tenant_id',
@@ -218,6 +207,54 @@ class User extends BaseModel {
                     dbField: 'passwordhash',
                     maxLength: 200,
                     readOnly: true,
+                }),
+                createdAt: field({
+                    name: 'createdAt',
+                    type: FieldTypes.DATE,
+                    default: null,
+                    readOnly: true,
+                    label: 'Created At',
+                    dbField: 'created_at',
+                }),
+                updatedAt: field({
+                    name: 'updatedAt',
+                    type: FieldTypes.DATE,
+                    default: null,
+                    readOnly: true,
+                    label: 'Updated At',
+                    dbField: 'updated_at',
+                }),
+                lastLogin: field({
+                    name: 'lastLogin',
+                    type: FieldTypes.DATE,
+                    default: null,
+                    readOnly: true,
+                    label: 'Last Login',
+                    dbField: 'last_login_at',
+                }),
+                passwordChangedAt: field({
+                    name: 'passwordChangedAt',
+                    type: FieldTypes.DATE,
+                    default: null,
+                    readOnly: true,
+                    label: 'Password Changed At',
+                    dbField: 'password_changed_at',
+                }),
+                failedLoginAttempts: field({
+                    name: 'failedLoginAttempts',
+                    type: FieldTypes.NUMBER,
+                    default: 0,
+                    readOnly: false,
+                    label: 'Failed Login Attempts',
+                    dbField: 'failed_login_attempts',
+                }),
+                lockedUntil: field({
+                    name: 'lockedUntil',
+                    type: FieldTypes.DATE,
+                    default: null,
+                    readOnly: false,
+                    label: 'Locked Until',
+                    dbField: 'locked_until',
                 }),
             },
 
@@ -251,7 +288,7 @@ class User extends BaseModel {
             console.log('[USER MODEL] ✓ User found by email');
             console.log('[USER MODEL] User object keys:', Object.keys(result));
             console.log('[USER MODEL] User data:', {
-                id: result.id,
+                users_id: result.users_id,
                 email: result.email,
                 name: result.name,
                 role: result.role,
@@ -280,9 +317,14 @@ class User extends BaseModel {
 
         // Validate passwordHash property is non-empty string
         // @ts-ignore - passwordHash is dynamically set by schema initialization
-        if (!this.passwordHash || typeof this.passwordHash !== 'string' || this.passwordHash.trim() === '') {
+        if (!this.passwordHash || typeof this.passwordHash !== 'string' || 
+            // @ts-ignore - passwordHash is dynamically set by schema initialization
+            this.passwordHash.trim() === '') {
             // @ts-ignore - email and id are dynamically set by schema initialization
-            console.warn(`comparePassword: User ${this.email || this.id || 'unknown'} has missing or invalid passwordHash`);
+            console.error(`comparePassword: User ${this.email || this.id || 'unknown'} has missing or invalid passwordHash`);
+            // @ts-ignore - passwordHash is dynamically set by schema initialization
+            console.error(`comparePassword: this.passwordHash = ${this.passwordHash}`);
+            console.error(`comparePassword: this keys = ${Object.keys(this)}`);
             return false;
         }
 

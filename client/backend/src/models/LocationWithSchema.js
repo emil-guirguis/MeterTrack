@@ -275,14 +275,15 @@ class Location extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'id',
+                    name: 'location_id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
                     label: 'Id',
-                    dbField: 'id',
+                    dbField: 'location_id',
                 }),
                 tenant_id: field({
+                    name: 'tenant_id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: false,

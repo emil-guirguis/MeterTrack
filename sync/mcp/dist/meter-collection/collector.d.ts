@@ -2,7 +2,7 @@ import winston from 'winston';
 import { BACnetConfig } from './bacnet-client.js';
 import { SyncDatabase } from '../data-sync/data-sync.js';
 export interface MeterConfig {
-    id: string;
+    meter_id: string;
     name: string;
     bacnet_device_id: number;
     bacnet_ip: string;

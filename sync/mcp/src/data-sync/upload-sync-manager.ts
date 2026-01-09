@@ -9,10 +9,10 @@
 
 import { Pool, PoolClient } from 'pg';
 import winston from 'winston';
-import { ErrorHandler } from './error-handler';
+import { ErrorHandler } from '../helpers/error-handler';
 
 export interface MeterReading {
-  id: string; // UUID in actual schema
+  meter_reading_id: string; // UUID in actual schema
   meter_id: number; // bigint foreign key
   createdat: Date;
   [key: string]: any; // Allow any meter reading fields
@@ -239,7 +239,7 @@ export class UploadSyncManager {
       // Delete readings by IDs
       const result = await client.query(
         `DELETE FROM meter_reading
-         WHERE id = ANY($1::uuid[])`,
+         WHERE meter_reading_id = ANY($1::uuid[])`,
         [readingIds]
       );
 

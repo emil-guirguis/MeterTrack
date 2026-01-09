@@ -11,7 +11,7 @@ class SettingsService {
         throw new Error('Tenant ID is required');
       }
 
-      const result = await db.query('SELECT * FROM tenant WHERE id = $1', [tenantId]);
+      const result = await db.query('SELECT * FROM tenant WHERE tenant_id = $1', [tenantId]);
 
       if (result.rows.length === 0) {
         throw new Error('Tenant record not found. Please contact support.');
@@ -35,14 +35,14 @@ class SettingsService {
         throw new Error('Tenant ID is required');
       }
 
-      const existingResult = await db.query('SELECT id FROM tenant WHERE id = $1', [tenantId]);
+      const existingResult = await db.query('SELECT tenant_id FROM tenant WHERE tenant_id = $1', [tenantId]);
 
       if (existingResult.rows.length === 0) {
         throw new Error('Tenant record not found. Please contact support.');
       }
 
-      // @ts-ignore - rows is an array of objects with id property
-      const settingsId = existingResult.rows[0].id;
+      // @ts-ignore - rows is an array of objects with tenant_id property
+      const settingsId = existingResult.rows[0].tenant_id;
       return await this.updateSettings(settingsId, updateData);
     } catch (err) {
       console.error('Error updating company settings:', err);
@@ -62,7 +62,7 @@ class SettingsService {
       const query = `
         UPDATE tenant 
         SET ${setClause}
-        WHERE id = $1
+        WHERE tenant_id = $1
         RETURNING *
       `;
 
@@ -81,7 +81,7 @@ class SettingsService {
     if (!dbRow) return null;
 
     return {
-      id: dbRow.id,
+      id: dbRow.tenant_id,
       name: dbRow.name,
       url: dbRow.url,
       address: {

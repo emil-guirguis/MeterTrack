@@ -144,6 +144,50 @@ export const tenantApi = {
   },
 
   /**
+   * Sync tenant data from remote to local database via MCP service
+   */
+  syncTenantFromRemote: async (tenantId: number): Promise<TenantInfo | null> => {
+    try {
+      console.log(`🔄 [Tenant] Triggering tenant sync from remote to local database for tenant ${tenantId}...`);
+      const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        sync_result: {
+          inserted: number;
+          updated: number;
+          deleted: number;
+          timestamp: Date;
+        };
+        tenant_data: TenantInfo | null;
+      }>('/api/local/tenant-sync', { tenant_id: tenantId });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Tenant sync failed');
+      }
+
+      console.log('✅ [Tenant] Tenant sync completed:', response.data.sync_result);
+      console.log('✅ [Tenant] Synced tenant data:', response.data.tenant_data);
+      return response.data.tenant_data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ [Tenant] Failed to sync tenant from remote:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          message: error.message,
+          code: error.code,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          timestamp: new Date().toISOString(),
+          responseData: error.response?.data,
+        });
+      } else {
+        console.error('❌ [Tenant] Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  /**
    * Fetch tenant data from client API using the user's token
    */
   fetchTenantFromClientApi: async (token: string): Promise<TenantInfo | null> => {
@@ -174,7 +218,7 @@ export const tenantApi = {
       }
 
       const tenantData: TenantInfo = {
-        id: response.data.tenant.id,
+        tenant_id: response.data.tenant.tenant_id,
         name: response.data.tenant.name,
         url: response.data.tenant.url,
         street: response.data.tenant.street,
@@ -207,7 +251,7 @@ export const tenantApi = {
   },
 
   /**
-   * Sync tenant data to local database
+   * Sync tenant data to local database (DEPRECATED - use syncTenantFromRemote instead)
    */
   syncTenantToLocal: async (tenantData: TenantInfo): Promise<TenantInfo> => {
     try {
@@ -218,7 +262,7 @@ export const tenantApi = {
       // Call the local API to upsert tenant data
       const payload = {
         name: tenantData.name,
-        id: tenantData.id,
+        tenant_id: tenantData.tenant_id,
         street: tenantData.street,
         street2: tenantData.street2,
         city: tenantData.city,

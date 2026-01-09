@@ -37,6 +37,9 @@ router.get('/company', requirePermission('settings:read'), async (req, res) => {
 router.put('/company', requirePermission('settings:update'), async (req, res) => {
   try {
     const tenantId = req.user.tenant_id || req.user.tenantId;
+    console.log('[SETTINGS] Tenant ID from user:', tenantId);
+    console.log('[SETTINGS] User object:', { tenant_id: req.user.tenant_id, tenantId: req.user.tenantId });
+    
     if (!tenantId) {
       return res.status(400).json({
         success: false,
@@ -44,9 +47,12 @@ router.put('/company', requirePermission('settings:update'), async (req, res) =>
       });
     }
     
-    console.log('Updating company settings with data:', req.body);
+    console.log('[SETTINGS] Updating company settings with data:', req.body);
     const dbData = SettingsService.formatForDatabase(req.body);
+    console.log('[SETTINGS] Formatted DB data:', dbData);
+    
     const settings = await SettingsService.updateCompanySettings(tenantId, dbData);
+    console.log('[SETTINGS] Update successful:', settings);
     
     res.json({ 
       success: true, 
@@ -55,7 +61,9 @@ router.put('/company', requirePermission('settings:update'), async (req, res) =>
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Error updating company settings:', err);
+    const errorStack = err instanceof Error ? err.stack : '';
+    console.error('[SETTINGS] Error updating company settings:', err);
+    console.error('[SETTINGS] Error stack:', errorStack);
     
     res.status(500).json({ 
       success: false, 

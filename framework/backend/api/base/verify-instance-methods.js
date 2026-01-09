@@ -94,10 +94,10 @@ async function runTests() {
     // Test 1: update() method
     console.log('\n--- Test 1: update() method ---');
     const instance1 = new TestModel({ id: 5, name: 'Original Name', email: 'original@example.com' });
-    console.log('Before update:', { id: instance1.id, name: instance1.name, email: instance1.email });
+    console.log('Before update:', { name: instance1.name, email: instance1.email });
     
     await instance1.update({ name: 'Updated Name' });
-    console.log('After update:', { id: instance1.id, name: instance1.name, email: instance1.email });
+    console.log('After update:', {  name: instance1.name, email: instance1.email });
     console.log('✓ update() method works correctly');
     
     // Test 2: update() without primary key should fail
@@ -130,29 +130,29 @@ async function runTests() {
     // Test 5: save() for new record (create)
     console.log('\n--- Test 5: save() for new record ---');
     const instance5 = new TestModel({ name: 'New Record', email: 'new@example.com' });
-    console.log('Before save:', { id: instance5.id, name: instance5.name });
+    console.log('Before save:', { name: instance5.name });
     
     await instance5.save();
-    console.log('After save:', { id: instance5.id, name: instance5.name });
+    console.log('After save:', {  name: instance5.name });
     console.log('✓ save() creates new record correctly');
     
     // Test 6: save() for existing record (update)
     console.log('\n--- Test 6: save() for existing record ---');
     const instance6 = new TestModel({ id: 15, name: 'Existing Record', email: 'existing@example.com' });
     instance6.name = 'Modified Name';
-    console.log('Before save:', { id: instance6.id, name: instance6.name });
+    console.log('Before save:', {  name: instance6.name });
     
     await instance6.save();
-    console.log('After save:', { id: instance6.id, name: instance6.name });
+    console.log('After save:', { name: instance6.name });
     console.log('✓ save() updates existing record correctly');
     
     // Test 7: reload() method
     console.log('\n--- Test 7: reload() method ---');
     const instance7 = new TestModel({ id: 20, name: 'Old Data', email: 'old@example.com' });
-    console.log('Before reload:', { id: instance7.id, name: instance7.name, email: instance7.email });
+    console.log('Before reload:', {  name: instance7.name, email: instance7.email });
     
     await instance7.reload();
-    console.log('After reload:', { id: instance7.id, name: instance7.name, email: instance7.email });
+    console.log('After reload:', { name: instance7.name, email: instance7.email });
     console.log('✓ reload() method works correctly');
     
     // Test 8: reload() without primary key should fail

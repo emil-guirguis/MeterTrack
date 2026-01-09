@@ -67,15 +67,6 @@ export interface MeterReading {
   createdAt: string;
 }
 
-export interface MeterConnectionTest {
-  connected: boolean;
-  ip: string;
-  port: number;
-  slaveId?: number;
-  error?: string;
-  timestamp: string;
-}
-
 export interface CreateMeterRequest {
   meterId: string;
   device: string;
@@ -92,11 +83,4 @@ export interface CreateMeterRequest {
 
 export interface UpdateMeterRequest extends Partial<CreateMeterRequest> {
   status?: 'active' | 'inactive' | 'maintenance';
-}
-
-export interface MeterApiResponse {
-  success: boolean;
-  data: Meter | Meter[] | { items: Meter[]; pagination: any };
-  message?: string;
-  error?: string;
 }

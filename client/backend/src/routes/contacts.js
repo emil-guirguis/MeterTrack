@@ -127,7 +127,7 @@ router.post('/', requirePermission('contact:create'), asyncHandler(async (req, r
   console.log('█'.repeat(120));
   console.log('Contact instance properties:', Object.keys(contact).filter(k => !k.startsWith('_')));
   console.log('Contact instance data:', {
-    id: contact.id,
+    contact_id: contact.contact_id,
     name: contact.name,
     email: contact.email,
     phone: contact.phone,

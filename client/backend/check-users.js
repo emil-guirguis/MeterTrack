@@ -16,7 +16,7 @@ async function checkUsers() {
     console.log('');
     
     // Then query users with active status
-    const result = await db.query('SELECT id, email, active, passwordhash IS NOT NULL as has_password FROM users LIMIT 5');
+    const result = await db.query('SELECT users_id, email, active, passwordhash IS NOT NULL as has_password FROM users LIMIT 5');
     console.log('Users in database:');
     console.table(result.rows);
     process.exit(0);

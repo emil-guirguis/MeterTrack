@@ -23,14 +23,14 @@ export class MeterCache {
       // Process each meter
       for (const row of syncMeters) {
         const cachedMeter: CachedMeter = {
-          id: row.id,
+          meter_id: row.meter_id,
           name: row.name,
           ip: row.ip,
           port: row.port,
           protocol: row.protocol,
         };
 
-        this.meters.set(row.id, cachedMeter);
+        this.meters.set(row.meter_id, cachedMeter);
       }
 
       // Mark cache as valid if we loaded at least one meter

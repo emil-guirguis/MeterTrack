@@ -14,33 +14,40 @@ const tenantStorage = new AsyncLocalStorage();
  * Must be used after authenticateToken middleware
  */
 const setTenantContext = (req, res, next) => {
-  // Extract tenant_id from authenticated user
-  const tenantId = req.user?.tenant_id || req.user?.tenantId;
-  
-  console.log('\n' + '█'.repeat(120));
-  console.log('█ [TENANT CONTEXT] Setting tenant context');
-  console.log('█'.repeat(120));
-  console.log('User ID:', req.user?.id);
-  console.log('User Email:', req.user?.email);
-  console.log('Tenant ID from req.user.tenant_id:', req.user?.tenant_id);
-  console.log('Tenant ID from req.user.tenantId:', req.user?.tenantId);
-  console.log('Final Tenant ID:', tenantId);
-  console.log('█'.repeat(120) + '\n');
-  
-  if (!tenantId) {
-    console.error('[TENANT CONTEXT] ✗ No tenant_id found in authenticated user');
-    return res.status(401).json({
+  try {
+    // Extract tenant_id from authenticated user
+    // The user object should have tenant_id set by authenticateToken middleware
+    const tenantId = req.user?.tenant_id;
+    
+    if (!tenantId) {
+      console.error('[TENANT CONTEXT] ✗ No tenant_id found in authenticated user');
+      console.error('[TENANT CONTEXT] User object:', {
+        id: req.user?.id,
+        email: req.user?.email,
+        tenant_id: req.user?.tenant_id,
+        keys: Object.keys(req.user || {})
+      });
+      return res.status(401).json({
+        success: false,
+        message: 'Tenant context required - user has no tenant_id'
+      });
+    }
+    
+    // Store tenant context in request object for this request
+    req.tenantId = tenantId;
+    
+    // Also set global context (already done in authenticateToken, but ensure it's set)
+    global.currentTenantId = tenantId;
+    
+    next();
+  } catch (error) {
+    console.error('[TENANT CONTEXT] Error setting tenant context:', error);
+    res.status(500).json({
       success: false,
-      message: 'Tenant context required'
+      message: 'Tenant context error',
+      detail: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-  
-  // Store tenant context for this request
-  const context = { tenantId };
-  
-  tenantStorage.run(context, () => {
-    next();
-  });
 };
 
 /**

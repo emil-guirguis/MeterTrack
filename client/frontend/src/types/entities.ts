@@ -18,7 +18,7 @@ export interface ContactInfo {
 
 // Location Management
 export interface Location {
-  id: string;
+  location_id: string;
   name: string;
   tenant_id: string | number;
   address: Address;
@@ -32,8 +32,6 @@ export interface Location {
   description?: string;
   meterCount: number;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface LocationCreateRequest {
@@ -51,16 +49,7 @@ export interface LocationCreateRequest {
 }
 
 export interface LocationUpdateRequest extends Partial<LocationCreateRequest> {
-  id: string;
-}
-
-
-export interface BusinessInfo {
-  taxId?: string;
-  industry?: string;
-  website?: string;
-  preferredPaymentTerms?: string;
-  creditLimit?: number;
+  location_id: string;
 }
 
 // Meter Management
@@ -308,11 +297,6 @@ export interface MeterCreateRequest {
   notes?: string;
 }
 
-export interface MeterUpdateRequest extends Partial<MeterCreateRequest> {
-  id: string;
-  status?: 'active' | 'inactive' | 'maintenance';
-}
-
 // Email Template Management
 export interface TemplateVariable {
   name: string;
@@ -431,14 +415,6 @@ export interface EntityState<T> {
   sortOrder?: 'asc' | 'desc';
 }
 
-export interface CrudOperations<T, CreateRequest, UpdateRequest> {
-  create: (data: CreateRequest) => Promise<T>;
-  read: (id: string) => Promise<T>;
-  update: (data: UpdateRequest) => Promise<T>;
-  delete: (id: string) => Promise<void>;
-  list: (params?: ListParams) => Promise<ListResponse<T>>;
-}
-
 export interface ListParams {
   page?: number;
   pageSize?: number;
@@ -462,13 +438,6 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   errors?: string[];
-}
-
-export interface ApiError {
-  success: false;
-  message: string;
-  errors?: string[];
-  statusCode?: number;
 }
 
 // Validation and Form Types
@@ -507,9 +476,3 @@ export const ReadingQuality = {
 
 export type ReadingQuality = typeof ReadingQuality[keyof typeof ReadingQuality];
 
-export const ReadingSource = {
-  AUTOMATIC: 'automatic',
-  MANUAL: 'manual'
-} as const;
-
-export type ReadingSource = typeof ReadingSource[keyof typeof ReadingSource];

@@ -8,7 +8,6 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  Chip,
   Table,
   TableBody,
   TableCell,
@@ -17,11 +16,7 @@ import {
   TableRow,
   Paper,
 } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import { useAppStore } from '../stores/useAppStore';
 import { syncApi, tenantApi, meterSyncApi } from '../api/services';
 import CompanyInfoCard from '../components/CompanyInfoCard';
@@ -156,33 +151,6 @@ export default function SyncStatus() {
 
         {/* Only show other cards if tenant is connected */}
         {tenantInfo && <>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2} mb={2}>
-                {syncStatus?.is_connected ? (
-                  <CloudDoneIcon color="success" fontSize="large" />
-                ) : (
-                  <CloudOffIcon color="error" fontSize="large" />
-                )}
-                <Box>
-                  <Typography variant="h6">Client System Connection</Typography>
-                  <Chip
-                    icon={syncStatus?.is_connected ? <CheckCircleIcon /> : <ErrorIcon />}
-                    label={syncStatus?.is_connected ? 'Connected' : 'Disconnected'}
-                    color={syncStatus?.is_connected ? 'success' : 'error'}
-                    size="small"
-                  />
-                </Box>
-              </Box>
-              {!syncStatus?.is_connected && (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  Unable to reach Client System. Readings are being queued locally.
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
 
         <Grid item xs={12} md={6}>
           <Card>

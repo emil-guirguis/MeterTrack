@@ -4,7 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { Plugin } from 'vite';
+import type { Plugin } from 'vite';
 
 export function versionPlugin(): Plugin {
   return {

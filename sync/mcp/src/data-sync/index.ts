@@ -22,10 +22,3 @@ export {
   SyncCycleResult,
   SyncStatus
 } from './sync-scheduler.js';
-export {
-  ErrorHandler,
-  ErrorType,
-  RetryConfig,
-  ErrorContext,
-  withExceptionHandling
-} from './error-handler.js';

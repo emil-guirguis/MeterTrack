@@ -81,7 +81,7 @@ function isValidTenantInfo(data: unknown): data is TenantInfo {
 }
 
 /**
- * Handle login and sync tenant data to local database
+ * Handle login and sync tenant data from remote to local database
  */
 async function handleLogin(
   loginData: { email: string; password: string },
@@ -100,32 +100,65 @@ async function handleLogin(
       return false;
     }
 
-    // Save tenant info to store and sync to local database
-    if (response.tenant && response.token) {
-      const tenantInfo: TenantInfo = {
-        id: response.tenant.id,
-        name: response.tenant.name,
-        url: response.tenant.url,
-        street: response.tenant.street,
-        street2: response.tenant.street2,
-        city: response.tenant.city,
-        state: response.tenant.state,
-        zip: response.tenant.zip,
-        country: response.tenant.country,
-        active: response.tenant.active,
-      };
-
-      console.log('✅ [CompanyInfoCard] Login successful, saving tenant:', tenantInfo);
-      setTenantInfo(tenantInfo);
-
-      // Sync tenant data to local database
+    // After successful login, trigger tenant sync from remote to local database
+    if (response.token && response.tenant) {
       try {
-        console.log('💾 [CompanyInfoCard] Syncing tenant to local database...');
-        await tenantApi.syncTenantToLocal(tenantInfo);
-        console.log('✅ [CompanyInfoCard] Tenant synced to local database');
+        console.log('🔄 [CompanyInfoCard] Triggering tenant sync from remote to local database...');
+        const syncedTenantInfo = await tenantApi.syncTenantFromRemote(response.tenant.tenant_id);
+        
+        if (syncedTenantInfo) {
+          console.log('✅ [CompanyInfoCard] Tenant synced successfully:', syncedTenantInfo);
+          setTenantInfo(syncedTenantInfo);
+          
+          // Close modal and clear login data
+          setShowLoginModal(false);
+          setLoginData({ email: '', password: '' });
+          
+          // Refresh page to load all company info automatically
+          console.log('🔄 [CompanyInfoCard] Refreshing page to load company info...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+          
+          return true;
+        } else {
+          console.warn('⚠️ [CompanyInfoCard] No tenant data returned from sync');
+          // Fall back to response tenant if sync didn't return data
+          if (response.tenant) {
+            const tenantInfo: TenantInfo = {
+              tenant_id: response.tenant.tenant_id,
+              name: response.tenant.name,
+              url: response.tenant.url,
+              street: response.tenant.street,
+              street2: response.tenant.street2,
+              city: response.tenant.city,
+              state: response.tenant.state,
+              zip: response.tenant.zip,
+              country: response.tenant.country,
+              active: response.tenant.active,
+            };
+            setTenantInfo(tenantInfo);
+          }
+        }
       } catch (syncErr) {
-        console.error('⚠️ [CompanyInfoCard] Failed to sync tenant to local database:', syncErr);
+        console.error('⚠️ [CompanyInfoCard] Failed to sync tenant from remote:', syncErr);
         // Don't fail the login if sync fails, just log the error
+        // Fall back to response tenant
+        if (response.tenant) {
+          const tenantInfo: TenantInfo = {
+            tenant_id: response.tenant.tenant_id,
+            name: response.tenant.name,
+            url: response.tenant.url,
+            street: response.tenant.street,
+            street2: response.tenant.street2,
+            city: response.tenant.city,
+            state: response.tenant.state,
+            zip: response.tenant.zip,
+            country: response.tenant.country,
+            active: response.tenant.active,
+          };
+          setTenantInfo(tenantInfo);
+        }
       }
 
       setShowLoginModal(false);
@@ -151,6 +184,7 @@ export default function CompanyInfoCard() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [syncConnected, setSyncConnected] = useState<boolean | null>(null);
   const [remoteConnected, setRemoteConnected] = useState<boolean | null>(null);
+  const [remoteApiConnected, setRemoteApiConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchTenantInfo = async () => {
@@ -231,6 +265,27 @@ export default function CompanyInfoCard() {
       } catch (err) {
         setRemoteConnected(false);
         console.error('[CompanyInfoCard] Remote DB connection error:', err);
+      }
+
+      try {
+        // Check remote Client System API connection with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        try {
+          const apiResponse = await fetch('/api/local/sync-status', { 
+            method: 'GET',
+            signal: controller.signal 
+          });
+          const apiStatus = apiResponse.ok;
+          setRemoteApiConnected(apiStatus);
+          console.log('[CompanyInfoCard] Remote API connection:', apiStatus);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } catch (err) {
+        setRemoteApiConnected(false);
+        console.error('[CompanyInfoCard] Remote API connection error:', err);
       }
     };
 
@@ -419,25 +474,30 @@ export default function CompanyInfoCard() {
     );
   }
 
+  // Determine overall connectivity status
+  const remoteSystemConnected = remoteConnected === true && remoteApiConnected === true;
+  const overallStatus = syncConnected && remoteSystemConnected ? 'success' : 'error';
+  const statusLabel = syncConnected && remoteSystemConnected ? 'All Systems Connected' : 'Connection Issues';
+
   return (
     <Card>
       <CardContent>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
+        <Box display="flex" alignItems="center" gap={2} mb={3}>
           <BusinessIcon color="primary" fontSize="large" />
           <Box flex={1}>
-            <Typography variant="h6">Company Info</Typography>
+            <Typography variant="h6">Company Info & System Status</Typography>
             <Chip
-              icon={<CheckCircleIcon />}
-              label="Connected"
-              color="success"
+              icon={overallStatus === 'success' ? <CheckCircleIcon /> : <ErrorIcon />}
+              label={statusLabel}
+              color={overallStatus}
               size="small"
             />
           </Box>
         </Box>
 
         {/* Connection Status Bubbles */}
-        <Box mt={3} mb={3} display="flex" gap={2} justifyContent="center">
-          {/* Sync Server Connection Bubble */}
+        <Box mt={3} mb={3} display="flex" gap={2} justifyContent="center" flexWrap="wrap">
+          {/* Local Sync Database Connection Bubble */}
           <Box
             sx={{
               width: 120,
@@ -450,20 +510,21 @@ export default function CompanyInfoCard() {
               transition: 'all 0.3s ease',
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}
+            title={syncConnected === null ? 'Checking...' : syncConnected ? 'Local sync database is connected' : 'Local sync database is disconnected'}
           >
             <Typography
               sx={{
                 color: 'white',
                 fontWeight: 'bold',
-                fontSize: '14px',
+                fontSize: '12px',
                 textAlign: 'center',
               }}
             >
-              {syncConnected === null ? 'Checking...' : syncConnected ? 'Sync\nConnected' : 'Sync\nError'}
+              {syncConnected === null ? 'Checking...' : syncConnected ? 'Local Sync\nConnected' : 'Local Sync\nError'}
             </Typography>
           </Box>
 
-          {/* Remote Server Connection Bubble */}
+          {/* Remote Client Database Connection Bubble */}
           <Box
             sx={{
               width: 120,
@@ -476,19 +537,54 @@ export default function CompanyInfoCard() {
               transition: 'all 0.3s ease',
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}
+            title={remoteConnected === null ? 'Checking...' : remoteConnected ? 'Remote client database is connected' : 'Remote client database is disconnected'}
           >
             <Typography
               sx={{
                 color: 'white',
                 fontWeight: 'bold',
-                fontSize: '14px',
+                fontSize: '12px',
                 textAlign: 'center',
               }}
             >
-              {remoteConnected === null ? 'Checking...' : remoteConnected ? 'Remote\nConnected' : 'Remote\nError'}
+              {remoteConnected === null ? 'Checking...' : remoteConnected ? 'Remote DB\nConnected' : 'Remote DB\nError'}
+            </Typography>
+          </Box>
+
+          {/* Remote Client API Connection Bubble */}
+          <Box
+            sx={{
+              width: 120,
+              height: 60,
+              borderRadius: '30px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: remoteApiConnected === null ? '#cccccc' : remoteApiConnected ? '#4caf50' : '#f44336',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+            title={remoteApiConnected === null ? 'Checking...' : remoteApiConnected ? 'Remote Client API is connected' : 'Remote Client API is disconnected'}
+          >
+            <Typography
+              sx={{
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '12px',
+                textAlign: 'center',
+              }}
+            >
+              {remoteApiConnected === null ? 'Checking...' : remoteApiConnected ? 'Remote API\nConnected' : 'Remote API\nError'}
             </Typography>
           </Box>
         </Box>
+
+        {/* Warning Alert for Remote System Issues */}
+        {!remoteSystemConnected && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            Unable to reach Client System. Readings are being queued locally.
+          </Alert>
+        )}
 
         <Box mt={2}>
           <Typography variant="body2" color="text.secondary" gutterBottom>

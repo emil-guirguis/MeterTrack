@@ -41,7 +41,7 @@ function tenantContext(req, res, next) {
       // Check if tenant_id is completely missing vs invalid format
       if (tenantId === undefined || tenantId === null) {
         logger.warn('Missing tenant_id for user:', {
-          userId: req.auth.user.id,
+          userId: req.auth.user.users_id,
           email: req.auth.user.email,
           timestamp: new Date().toISOString()
         });
@@ -49,7 +49,7 @@ function tenantContext(req, res, next) {
         // Log tenant isolation violation
         logTenantIsolationViolation({
           violationType: 'MISSING_TENANT_CONTEXT',
-          userId: req.auth.user.id,
+          userId: req.auth.user.users_id,
           userTenantId: 'unknown',
           message: 'Missing tenant_id in user record',
           path: req.path,
@@ -129,7 +129,7 @@ function optionalTenantContext(req, res, next) {
       };
 
       logger.debug('Optional tenant context established:', {
-        userId: req.auth.user.id,
+        userId: req.auth.user.users_id,
         tenantId,
         timestamp: new Date().toISOString()
       });

@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
 
     // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      'SELECT meter_id FROM meter WHERE meter_id = $1 AND tenant_id = $2',
       [meterId, tenantId]
     );
 
@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
 
     // Get all meter elements for this meter
     const elements = await db.query(
-      `SELECT id, meter_id, name, element
+      `SELECT meter_element_id, meter_id, name, element
        FROM meter_element
        WHERE meter_id = $1
        ORDER BY name ASC`,
@@ -123,7 +123,7 @@ router.post('/', async (req, res) => {
 
     // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      'SELECT meter_id FROM meter WHERE meter_id = $1 AND tenant_id = $2',
       [meterId, tenantId]
     );
 
@@ -136,7 +136,7 @@ router.post('/', async (req, res) => {
 
     // Check for duplicate element
     const duplicateCheck = await db.query(
-      `SELECT id FROM meter_element 
+      `SELECT meter_element_id FROM meter_element 
        WHERE meter_id = $1 AND element = $2`,
       [meterId, element]
     );
@@ -184,7 +184,7 @@ router.post('/', async (req, res) => {
 // PUT /api/meters/:meterId/elements/:elementId - Update a meter element
 router.put('/:elementId', async (req, res) => {
   try {
-    const { meterId, elementId } = req.params;
+    const { meterId, meterElementId } = req.params;
     const { name,  element } = req.body;
     const tenantId = req.user?.tenantId || req.user?.tenant_id;
 
@@ -197,7 +197,7 @@ router.put('/:elementId', async (req, res) => {
 
     // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      'SELECT meter_id FROM meter WHERE meter_id = $1 AND tenant_id = $2',
       [meterId, tenantId]
     );
 
@@ -210,7 +210,7 @@ router.put('/:elementId', async (req, res) => {
 
     // Verify element exists, belongs to meter, and tenant
     const elementResult = await db.query(
-      'SELECT id, name, element FROM meter_element WHERE id = $1 AND meter_id = $2 AND tenant_id = $3',
+      'SELECT meter_element_id, name, element FROM meter_element WHERE meter_element_id = $1 AND meter_id = $2 AND tenant_id = $3',
       [elementId, meterId, tenantId]
     );
 
@@ -242,7 +242,7 @@ router.put('/:elementId', async (req, res) => {
     // Check for duplicate element (if element is being changed)
     if (element !== undefined && element !== currentElement.element) {
       const duplicateCheck = await db.query(
-        `SELECT id FROM meter_element 
+        `SELECT meter_element_id FROM meter_element 
          WHERE meter_id = $1 AND element = $2 AND id != $3`,
         [meterId, element, elementId]
       );
@@ -285,8 +285,8 @@ router.put('/:elementId', async (req, res) => {
     const query = `
       UPDATE meter_element
       SET ${updates.join(', ')}
-      WHERE id = $${paramCount++} AND meter_id = $${paramCount++}
-      RETURNING id, meter_id, name, element
+      WHERE meter_element_id = $${paramCount++} AND meter_id = $${paramCount++}
+      RETURNING meter_element_id, meter_id, name, element
     `;
 
     const result = await db.query(query, values);
@@ -328,7 +328,7 @@ router.delete('/:elementId', async (req, res) => {
 
     // Verify meter exists and belongs to tenant
     const meterResult = await db.query(
-      'SELECT id FROM meter WHERE id = $1 AND tenant_id = $2',
+      'SELECT meter_id FROM meter WHERE meter_id = $1 AND tenant_id = $2',
       [meterId, tenantId]
     );
 
@@ -341,7 +341,7 @@ router.delete('/:elementId', async (req, res) => {
 
     // Verify element exists, belongs to meter, and tenant
     const elementResult = await db.query(
-      'SELECT id FROM meter_element WHERE id = $1 AND meter_id = $2 AND tenant_id = $3',
+      'SELECT meter_element_id FROM meter_element WHERE meter_element_id_ = $1 AND meter_id = $2 AND tenant_id = $3',
       [elementId, meterId, tenantId]
     );
 
@@ -354,7 +354,7 @@ router.delete('/:elementId', async (req, res) => {
 
     // Delete the meter_element record
     await db.query(
-      'DELETE FROM meter_element WHERE id = $1 AND meter_id = $2',
+      'DELETE FROM meter_element WHERE meter_element_id = $1 AND meter_id = $2',
       [elementId, meterId]
     );
 

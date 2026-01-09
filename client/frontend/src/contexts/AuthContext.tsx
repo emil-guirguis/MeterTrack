@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { AuthContextType, AuthState, LoginCredentials, User, Permission, UserRole } from '../types/auth';
+import type { AuthContextType, AuthState, LoginCredentials, User, UserRole } from '../types/auth';
 import { authService } from '../services/authService';
 
 // Initial state
@@ -113,18 +113,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize authentication state on app load
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('🔄 Initializing authentication...');
-      console.log('📍 Current URL:', window.location.href);
-      console.log('🗄️ LocalStorage explicit_logout:', localStorage.getItem('explicit_logout'));
-      console.log('🗄️ LocalStorage auth_token:', localStorage.getItem('auth_token'));
-      console.log('🗄️ SessionStorage auth_token:', sessionStorage.getItem('auth_token'));
+      const logs: string[] = [];
+      const addLog = (msg: string) => {
+        console.log(msg);
+        logs.push(msg);
+        localStorage.setItem('auth_debug_logs', JSON.stringify(logs));
+      };
+
+      addLog('🔄 Initializing authentication...');
+      addLog('📍 Current URL: ' + window.location.href);
+      addLog('🗄️ LocalStorage explicit_logout: ' + localStorage.getItem('explicit_logout'));
+      addLog('🗄️ LocalStorage auth_token: ' + (localStorage.getItem('auth_token') ? 'EXISTS' : 'MISSING'));
+      addLog('🗄️ SessionStorage auth_token: ' + (sessionStorage.getItem('auth_token') ? 'EXISTS' : 'MISSING'));
       
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         
         // Check if user explicitly logged out - FIRST priority
         if (authService.hasLogoutFlag()) {
-          console.log('🚪 User explicitly logged out, clearing any remaining tokens and skipping auto-login');
+          addLog('🚪 User explicitly logged out, clearing any remaining tokens and skipping auto-login');
           // Ensure tokens are cleared even if logout didn't complete properly
           authService.clearStoredToken();
           dispatch({ type: 'SET_LOADING', payload: false });
@@ -133,47 +140,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Check if user has a stored token
         const token = authService.getStoredToken();
-        console.log('🔑 Stored token exists:', !!token);
+        addLog('🔑 Stored token exists: ' + !!token);
+        addLog('🔑 Token value: ' + (token ? token.substring(0, 50) + '...' : 'null'));
         
         if (token) {
-          // Add timeout to prevent hanging on network issues
-          const timeoutPromise = new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error('Token verification timeout')), 5000)
-          );
-          
+          addLog('✅ Token found in storage, verifying with backend...');
           try {
-            console.log('⏳ Verifying token...');
-            // Race between token verification and timeout
-            const user = await Promise.race([
-              authService.verifyToken(),
-              timeoutPromise
-            ]);
-            
+            // Verify token with backend to get user data
+            const user = await authService.verifyToken();
+            addLog('✅ Verify endpoint response: ' + JSON.stringify(user));
             if (user) {
-              console.log('✅ Token verified, user authenticated:', user.email);
-              
-              // Fetch locations for the user's tenant
-              const locations = await authService.fetchLocations(user.client);
-              
-              dispatch({ type: 'LOGIN_SUCCESS', payload: { user, locations } });
+              addLog('✅ Token verified, user authenticated: ' + user.email);
+              dispatch({ 
+                type: 'LOGIN_SUCCESS', 
+                payload: {
+                  user,
+                  locations: []
+                }
+              });
             } else {
-              console.log('❌ Token invalid, clearing...');
-              // Token is invalid, clear it
+              addLog('❌ Token verification returned null user');
               authService.clearStoredToken();
               dispatch({ type: 'SET_LOADING', payload: false });
             }
           } catch (verifyError) {
-            console.warn('⚠️ Token verification failed or timed out:', verifyError);
-            // Clear invalid/unverifiable token
+            addLog('❌ Token verification error: ' + (verifyError instanceof Error ? verifyError.message : String(verifyError)));
+            addLog('❌ Error details: ' + JSON.stringify({
+              message: verifyError instanceof Error ? verifyError.message : String(verifyError),
+              stack: verifyError instanceof Error ? verifyError.stack : 'no stack'
+            }));
             authService.clearStoredToken();
             dispatch({ type: 'SET_LOADING', payload: false });
           }
         } else {
-          console.log('ℹ️ No stored token, user not authenticated');
+          addLog('ℹ️ No stored token, user not authenticated');
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
-        console.error('❌ Auth initialization error:', error);
+        addLog('❌ Auth initialization error: ' + (error instanceof Error ? error.message : String(error)));
         authService.clearStoredToken();
         dispatch({ type: 'SET_LOADING', payload: false });
       }
@@ -184,7 +188,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Set up automatic token refresh
   useEffect(() => {
-    let refreshInterval: number;
+    let refreshInterval: NodeJS.Timeout | undefined;
 
     if (state.isAuthenticated) {
       // Refresh token every 14 minutes (assuming 15-minute token expiry)
@@ -209,18 +213,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login function
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
-      console.log('🚀 Starting login process...');
+      console.log('🚀 Starting login process in AuthContext...');
       dispatch({ type: 'LOGIN_START' });
       
       const authResponse = await authService.login(credentials);
-      console.log('📦 Auth response received:', authResponse);
+      console.log('📦 Auth response received in AuthContext:', authResponse);
       
       // Tokens are already stored in authService.login()
-      // Just update rememberMe flag if needed
-      if (credentials.rememberMe) {
-        console.log('💾 RememberMe flag set');
-      }
-      console.log('🔑 Token in storage:', authService.getStoredToken());
+      console.log('🔑 Token in storage after login:', authService.getStoredToken() ? 'EXISTS' : 'MISSING');
       
       console.log('📋 [AUTH] User permissions from backend:', authResponse.user.permissions);
       console.log('📋 [AUTH] User role from backend:', authResponse.user.role);
@@ -232,7 +232,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           locations: authResponse.locations || []
         }
       });
-      console.log('✅ Login completed successfully');
+      console.log('✅ Login completed successfully in AuthContext');
     } catch (error) {
       console.error('❌ Login failed in context:', error);
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
@@ -396,7 +396,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     console.log(`[AUTH] getLocationsByTenant(${tenantId}): Checking ${state.locations.length} locations`);
     console.log('[AUTH] Location objects:', state.locations.map((loc: any) => ({
-      id: loc.id,
+      location_id: loc.location_id,
       name: loc.name,
       tenant_id: loc.tenant_id,
       keys: Object.keys(loc)

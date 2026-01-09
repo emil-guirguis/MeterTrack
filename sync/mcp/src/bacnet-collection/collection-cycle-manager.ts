@@ -106,15 +106,15 @@ export class CollectionCycleManager {
               const insertedCount = await batcher.flushBatch(database);
               readingsCollected += insertedCount;
               this.logger.info(
-                `Meter ${meter.id}: inserted ${insertedCount} readings`
+                `Meter ${meter.meter_id}: inserted ${insertedCount} readings`
               );
             } catch (writeError) {
               const errorMsg = writeError instanceof Error ? writeError.message : String(writeError);
               this.logger.error(
-                `Failed to write readings for meter ${meter.id}: ${errorMsg}`
+                `Failed to write readings for meter ${meter.meter_id}: ${errorMsg}`
               );
               errors.push({
-                meterId: meter.id,
+                meterId: meter.meter_id,
                 operation: 'write',
                 error: errorMsg,
                 timestamp: new Date(),
@@ -126,9 +126,9 @@ export class CollectionCycleManager {
           metersProcessed++;
         } catch (meterError) {
           const errorMsg = meterError instanceof Error ? meterError.message : String(meterError);
-          this.logger.error(`Error processing meter ${meter.id}: ${errorMsg}`);
+          this.logger.error(`Error processing meter ${meter.meter_id}: ${errorMsg}`);
           errors.push({
-            meterId: meter.id,
+            meterId: meter.meter_id,
             operation: 'connect',
             error: errorMsg,
             timestamp: new Date(),
@@ -195,7 +195,7 @@ export class CollectionCycleManager {
 
       for (const dataPoint of defaultDataPoints) {
         try {
-          this.logger.debug(`Reading ${dataPoint.name} from meter ${meter.id}`);
+          this.logger.debug(`Reading ${dataPoint.name} from meter ${meter.meter_id}`);
 
           const result = await bacnetClient.readProperty(
             meter.ip,
@@ -208,18 +208,18 @@ export class CollectionCycleManager {
 
           if (result.success && result.value !== undefined) {
             readings.push({
-              meter_id: meter.id,
+              meter_id: meter.meter_id,
               timestamp: new Date(),
               data_point: dataPoint.name,
               value: Number(result.value),
               unit: 'unknown',
             });
-            this.logger.debug(`Successfully read ${dataPoint.name} from meter ${meter.id}: ${result.value}`);
+            this.logger.debug(`Successfully read ${dataPoint.name} from meter ${meter.meter_id}: ${result.value}`);
           } else {
             const errorMsg = result.error || 'Unknown error';
-            this.logger.warn(`Failed to read ${dataPoint.name} from meter ${meter.id}: ${errorMsg}`);
+            this.logger.warn(`Failed to read ${dataPoint.name} from meter ${meter.meter_id}: ${errorMsg}`);
             errors.push({
-              meterId: String(meter.id),
+              meterId: String(meter.meter_id),
               dataPoint: dataPoint.name,
               operation: 'read',
               error: errorMsg,
@@ -228,9 +228,9 @@ export class CollectionCycleManager {
           }
         } catch (dpError) {
           const errorMsg = dpError instanceof Error ? dpError.message : String(dpError);
-          this.logger.error(`Error reading data point ${dataPoint.name} from meter ${meter.id}: ${errorMsg}`);
+          this.logger.error(`Error reading data point ${dataPoint.name} from meter ${meter.meter_id}: ${errorMsg}`);
           errors.push({
-            meterId: String(meter.id),
+            meterId: String(meter.meter_id),
             dataPoint: dataPoint.name,
             operation: 'read',
             error: errorMsg,
@@ -240,9 +240,9 @@ export class CollectionCycleManager {
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error reading meter data points for meter ${meter.id}: ${errorMsg}`);
+      this.logger.error(`Error reading meter data points for meter ${meter.meter_id}: ${errorMsg}`);
       errors.push({
-        meterId: String(meter.id),
+        meterId: String(meter.meter_id),
         operation: 'read',
         error: errorMsg,
         timestamp: new Date(),

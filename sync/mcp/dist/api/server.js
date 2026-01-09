@@ -7,20 +7,24 @@
 import express from 'express';
 import cors from 'cors';
 import { syncPool } from '../data-sync/data-sync.js';
+import { syncTenant } from '../remote_to_local-sync/sync-tenant.js';
+import { execQuery } from '../helpers/sql-functions.js';
 export class LocalApiServer {
     app;
     port;
     database;
     syncManager;
-    meterSyncAgent;
+    remoteToLocalSyncAgent;
     bacnetMeterReadingAgent;
+    remotePool;
     server;
     constructor(config) {
         this.port = config.port;
         this.database = config.database;
         this.syncManager = config.syncManager;
-        this.meterSyncAgent = config.meterSyncAgent;
+        this.remoteToLocalSyncAgent = config.remoteToLocalSyncAgent;
         this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
+        this.remotePool = config.remotePool;
         this.app = express();
         this.setupMiddleware();
         this.setupRoutes();
@@ -95,6 +99,104 @@ export class LocalApiServer {
                 });
             }
         });
+        // Get tenant information from memory
+        this.app.get('/api/local/tenant', async (_req, res, next) => {
+            try {
+                console.log('📥 [API] GET /api/local/tenant - Request received');
+                if (!this.syncManager) {
+                    console.warn('⚠️  [API] Sync Manager not available');
+                    return res.status(503).json({
+                        error: 'Sync Manager not available'
+                    });
+                }
+                const tenantData = this.syncManager.getTenantData();
+                if (!tenantData) {
+                    console.log('📤 [API] GET /api/local/tenant - No tenant data available');
+                    return res.json(null);
+                }
+                console.log(`📤 [API] GET /api/local/tenant - Returning tenant: ${tenantData.name}`);
+                res.json(tenantData);
+                console.log('✅ [API] GET /api/local/tenant - Response sent successfully');
+            }
+            catch (error) {
+                console.error('❌ [API] GET /api/local/tenant - Error:', error);
+                next(error);
+            }
+        });
+        // Trigger tenant sync from remote to local database
+        this.app.post('/api/local/tenant-sync', async (req, res, next) => {
+            try {
+                console.log('📥 [API] POST /api/local/tenant-sync - Request received');
+                const { tenant_id } = req.body;
+                if (!tenant_id) {
+                    console.error('❌ [API] Missing tenant_id in request body');
+                    return res.status(400).json({
+                        success: false,
+                        error: 'tenant_id is required'
+                    });
+                }
+                console.log(`🔍 [API] Syncing tenant: ${tenant_id}`);
+                if (!this.remotePool) {
+                    console.error('❌ [API] Remote database pool not available');
+                    return res.status(503).json({
+                        success: false,
+                        error: 'Remote database pool not available'
+                    });
+                }
+                // Execute tenant sync for specific tenant
+                let syncResult;
+                if (tenant_id > 0) {
+                    console.log('🔄 [API] Executing tenant sync...');
+                    syncResult = await syncTenant(this.remotePool, syncPool, tenant_id);
+                    if (!syncResult.success) {
+                        console.error('❌ [API] Tenant sync failed:', syncResult.error);
+                        return res.status(500).json({
+                            success: false,
+                            error: syncResult.error || 'Tenant sync failed',
+                            timestamp: syncResult.timestamp,
+                        });
+                    }
+                }
+                // Fetch the synced tenant data to return to frontend
+                let tenantData = null;
+                try {
+                    const tenantQuery = `
+            SELECT tenant_id, name, url, street, street2, city, state, zip, country, active
+            FROM tenant
+            WHERE tenant_id = $1
+          `;
+                    const tenantResult = await syncPool.query(tenantQuery, [tenant_id]);
+                    if (tenantResult.rows.length > 0) {
+                        tenantData = tenantResult.rows[0];
+                    }
+                }
+                catch (err) {
+                    console.warn('⚠️  [API] Failed to fetch synced tenant data:', err);
+                }
+                const response = {
+                    success: true,
+                    message: 'Tenant sync completed successfully',
+                    sync_result: syncResult ? {
+                        inserted: syncResult.inserted,
+                        updated: syncResult.updated,
+                        timestamp: syncResult.timestamp,
+                    } : null,
+                    tenant_data: tenantData,
+                };
+                console.log(`📤 [API] POST /api/local/tenant-sync - Returning:`, JSON.stringify(response, null, 2));
+                res.json(response);
+                console.log('✅ [API] POST /api/local/tenant-sync - Response sent successfully');
+            }
+            catch (error) {
+                console.error('❌ [API] POST /api/local/tenant-sync - Error:', error);
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                res.status(500).json({
+                    success: false,
+                    error: errorMsg,
+                    timestamp: new Date().toISOString(),
+                });
+            }
+        });
         // Get all meters
         this.app.get('/api/local/meters', async (_req, res, next) => {
             try {
@@ -117,7 +219,7 @@ export class LocalApiServer {
                 // Query the local sync database for recent readings
                 const query = `
           SELECT 
-            id,
+            meter_reading_id,
             meter_id,
             timestamp,
             data_point,
@@ -130,7 +232,7 @@ export class LocalApiServer {
           ORDER BY timestamp DESC
           LIMIT 1000
         `;
-                const result = await syncPool.query(query);
+                const result = await execQuery(syncPool, query, [], 'server.ts>setupRoutes');
                 const readings = result.rows;
                 console.log(`📤 [API] GET /api/local/readings - Returning ${readings.length} reading(s)`);
                 res.json(readings);
@@ -138,110 +240,6 @@ export class LocalApiServer {
             }
             catch (error) {
                 console.error('❌ [API] GET /api/local/readings - Error:', error);
-                next(error);
-            }
-        });
-        // Get tenant information GET api/local/tenant
-        this.app.get('/api/local/tenant', async (_req, res, next) => {
-            try {
-                console.log('📥 [API] GET /api/local/tenant - Request received');
-                // First, check if the tenant table exists and has data
-                console.log('🔍 [API] Checking tenant table...');
-                try {
-                    const countQuery = `SELECT COUNT(*) as count FROM tenant`;
-                    console.log('   Executing count query...');
-                    const countResult = await syncPool.query(countQuery);
-                    const tenantCount = parseInt(countResult.rows[0].count, 10);
-                    console.log(`📊 [API] Tenant table has ${tenantCount} record(s)`);
-                    if (tenantCount === 0) {
-                        console.warn('⚠️  [API] No tenant records found in database');
-                        res.json(null);
-                        console.log('✅ [API] GET /api/local/tenant - Response sent (null)');
-                        return;
-                    }
-                    if (tenantCount > 1) {
-                        console.warn(`⚠️  [API] Multiple tenant records found (${tenantCount}), returning first one`);
-                    }
-                }
-                catch (countErr) {
-                    console.error('❌ [API] Error checking tenant count:', countErr);
-                    console.error('   Error details:', {
-                        message: countErr instanceof Error ? countErr.message : String(countErr),
-                        code: countErr?.code,
-                        detail: countErr?.detail,
-                    });
-                    throw countErr;
-                }
-                // Query only the columns that exist in the sync database
-                const query = `
-          SELECT id, name, url, street, street2, city, state, zip, country, active
-          FROM tenant
-          LIMIT 1
-        `;
-                console.log('🔍 [API] Executing tenant query...');
-                const result = await syncPool.query(query);
-                const tenant = result.rows[0] || null;
-                console.log('📤 [API] GET /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
-                res.json(tenant);
-                console.log('✅ [API] GET /api/local/tenant - Response sent successfully');
-            }
-            catch (error) {
-                console.error('❌ [API] GET /api/local/tenant - Error:', error);
-                console.error('   Error details:', {
-                    message: error instanceof Error ? error.message : String(error),
-                    code: error?.code,
-                    detail: error?.detail,
-                    hint: error?.hint,
-                    stack: error instanceof Error ? error.stack : undefined,
-                });
-                next(error);
-            }
-        });
-        // Create or update tenant information POST api/local/tenant
-        this.app.post('/api/local/tenant', async (req, res, next) => {
-            try {
-                console.log('📥 [API] POST /api/local/tenant - Request received');
-                console.log('   Payload:', JSON.stringify(req.body, null, 2));
-                const { id, name, url, street, street2, city, state, zip, country, active } = req.body;
-                if (!name) {
-                    console.error('❌ [API] POST /api/local/tenant - Missing required field: name');
-                    return res.status(400).json({ error: 'Missing required field: name' });
-                }
-                // Upsert tenant into local sync database
-                const query = `
-          INSERT INTO tenant (id, name, url, street, street2, city, state, zip, country, active)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          ON CONFLICT (id) DO UPDATE SET
-            name = $2,
-            url = $3,
-            street = $4,
-            street2 = $5,
-            city = $6,
-            state = $7,
-            zip = $8,
-            country = $9,
-            active = $10
-          RETURNING id, name, url, street, street2, city, state, zip, country, active
-        `;
-                const result = await syncPool.query(query, [
-                    id || 1,
-                    name,
-                    url || null,
-                    street || null,
-                    street2 || null,
-                    city || null,
-                    state || null,
-                    zip || null,
-                    country || null,
-                    active !== undefined ? active : true,
-                ]);
-                const tenant = result.rows[0];
-                console.log('📤 [API] POST /api/local/tenant - Returning:', JSON.stringify(tenant, null, 2));
-                res.json(tenant);
-                console.log('✅ [API] POST /api/local/tenant - Response sent successfully');
-            }
-            catch (error) {
-                console.error('❌ [API] POST /api/local/tenant - Error:', error);
                 next(error);
             }
         });
@@ -254,7 +252,7 @@ export class LocalApiServer {
                 try {
                     // Query recent sync logs from local sync database
                     const logsQuery = `
-            SELECT id, batch_size, success, error_message, synced_at
+            SELECT sync_log_id, batch_size, success, error_message, synced_at
             FROM sync_log
             ORDER BY synced_at DESC
             LIMIT 10
@@ -275,7 +273,7 @@ export class LocalApiServer {
                     .filter((log) => !log.success)
                     .slice(0, 10)
                     .map((log) => ({
-                    id: log.id,
+                    sync_log_id: log.sync_log_id,
                     batch_size: log.batch_size,
                     error_message: log.error_message || 'Unknown error',
                     synced_at: log.synced_at,
@@ -284,7 +282,12 @@ export class LocalApiServer {
                 let isConnected = false;
                 if (this.syncManager) {
                     const syncStatus = this.syncManager.getStatus();
+                    console.log('🔍 [API] Sync Manager Status:', JSON.stringify(syncStatus, null, 2));
                     isConnected = syncStatus.isClientConnected;
+                    console.log(`🔗 [API] isClientConnected from SyncManager: ${isConnected}`);
+                }
+                else {
+                    console.warn('⚠️  [API] Sync Manager not available');
                 }
                 const response = {
                     is_connected: isConnected,
@@ -345,13 +348,13 @@ export class LocalApiServer {
         this.app.get('/api/local/meter-sync-status', async (_req, res, next) => {
             try {
                 console.log('📥 [API] GET /api/local/meter-sync-status - Request received');
-                if (!this.meterSyncAgent) {
-                    console.error('❌ [API] Meter sync agent not available');
+                if (!this.remoteToLocalSyncAgent) {
+                    console.error('❌ [API] Remote to Local Sync Agent not available');
                     return res.status(503).json({
-                        error: 'Meter sync agent not available'
+                        error: 'Remote to Local Sync Agent not available'
                     });
                 }
-                const syncStatus = this.meterSyncAgent.getStatus();
+                const syncStatus = this.remoteToLocalSyncAgent.getStatus();
                 // Get meter count from database
                 let meterCount = 0;
                 try {
@@ -384,14 +387,14 @@ export class LocalApiServer {
         this.app.post('/api/local/meter-sync-trigger', async (_req, res, next) => {
             try {
                 console.log('📥 [API] POST /api/local/meter-sync-trigger - Request received');
-                if (!this.meterSyncAgent) {
-                    console.error('❌ [API] Meter sync agent not available');
+                if (!this.remoteToLocalSyncAgent) {
+                    console.error('❌ [API] Remote to Local Sync Agent not available');
                     return res.status(503).json({
                         success: false,
-                        message: 'Meter sync agent not available',
+                        message: 'Remote to Local Sync Agent not available',
                     });
                 }
-                const syncStatus = this.meterSyncAgent.getStatus();
+                const syncStatus = this.remoteToLocalSyncAgent.getStatus();
                 if (syncStatus.isSyncing) {
                     console.warn('⚠️  [API] Meter sync is already in progress');
                     return res.status(409).json({
@@ -401,7 +404,7 @@ export class LocalApiServer {
                 }
                 // Trigger sync
                 console.log('🔄 [API] Triggering meter sync...');
-                const result = await this.meterSyncAgent.triggerSync();
+                const result = await this.remoteToLocalSyncAgent.triggerSync();
                 const response = {
                     success: result.success,
                     message: result.success
@@ -469,7 +472,6 @@ export class LocalApiServer {
         });
         // Trigger manual BACnet meter reading collection
         this.app.post('/api/meter-reading/trigger', async (_req, res, next) => {
-            debugger; // Add this line
             try {
                 console.log('📥 [API] POST /api/meter-reading/trigger - Request received');
                 if (!this.bacnetMeterReadingAgent) {
@@ -551,7 +553,6 @@ export class LocalApiServer {
                 this.server = this.app.listen(this.port, () => {
                     console.log(`✅ [API Server] Local API server listening on port ${this.port}`);
                     console.log(`   Health check: http://localhost:${this.port}/health`);
-                    console.log(`   Tenant endpoint: http://localhost:${this.port}/api/local/tenant`);
                     console.log(`   Meters endpoint: http://localhost:${this.port}/api/local/meters`);
                     console.log(`   Readings endpoint: http://localhost:${this.port}/api/local/readings`);
                     console.log(`   Sync status endpoint: http://localhost:${this.port}/api/local/sync-status`);
@@ -603,14 +604,15 @@ export class LocalApiServer {
 /**
  * Create and start local API server from environment variables
  */
-export async function createAndStartLocalApiServer(database, syncManager, meterSyncAgent, bacnetMeterReadingAgent) {
+export async function createAndStartLocalApiServer(database, syncManager, remoteToLocalSyncAgent, bacnetMeterReadingAgent, remotePool) {
     const port = parseInt(process.env.LOCAL_API_PORT || '3002', 10);
     const server = new LocalApiServer({
         port,
         database,
         syncManager,
-        meterSyncAgent,
+        remoteToLocalSyncAgent,
         bacnetMeterReadingAgent,
+        remotePool,
     });
     await server.start();
     return server;

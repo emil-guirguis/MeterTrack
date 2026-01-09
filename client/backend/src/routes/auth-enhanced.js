@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/UserWithSchema');
 const { authenticateToken } = require('../middleware/auth');
@@ -12,8 +13,543 @@ const TokenService = require('../services/TokenService');
 const TwoFactorService = require('../services/TwoFactorService');
 const AuthLoggingService = require('../services/AuthLoggingService');
 const EmailService = require('../services/EmailService');
+const db = require('../config/database');
+const PermissionsService = require('../services/PermissionsService');
 
 const router = express.Router();
+
+// ===== TOKEN GENERATION UTILITIES =====
+
+/**
+ * Generate JWT token
+ * @param {number} userId - User ID
+ * @param {number} tenant_id - Tenant ID
+ * @returns {string} JWT token
+ */
+const generateToken = (userId, tenant_id) => {
+  return jwt.sign({ userId, tenant_id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h'
+  });
+};
+
+/**
+ * Generate temporary 2FA session token
+ * @param {number} userId - User ID
+ * @param {number} tenant_id - Tenant ID
+ * @returns {string} Temporary session token
+ */
+const generate2FASessionToken = (userId, tenant_id) => {
+  return jwt.sign({ userId, tenant_id, is2FASession: true }, process.env.JWT_SECRET, {
+    expiresIn: '10m' // 10 minute expiration for 2FA verification
+  });
+};
+
+// ===== RATE LIMITING UTILITIES =====
+
+/**
+ * Check if a user has exceeded failed login attempts
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} { isLocked, lockedUntil }
+ */
+async function checkLoginLockout(userId) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { isLocked: false, lockedUntil: null };
+    }
+
+    // @ts-ignore - locked_until is dynamically set by schema initialization
+    const lockedUntil = user.locked_until;
+    // Check if account is locked
+    if (lockedUntil && new Date() < new Date(lockedUntil)) {
+      return { isLocked: true, lockedUntil };
+    }
+
+    // Reset failed attempts if lockout has expired
+    if (lockedUntil && new Date() >= new Date(lockedUntil)) {
+      await user.update({
+        failed_login_attempts: 0,
+        locked_until: null
+      });
+    }
+
+    return { isLocked: false, lockedUntil: null };
+  } catch (error) {
+    console.error('Error checking login lockout:', error);
+    return { isLocked: false, lockedUntil: null };
+  }
+}
+
+/**
+ * Increment failed login attempts and lock account if needed
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} { attempts, isLocked, lockedUntil }
+ */
+async function incrementFailedLoginAttempts(userId) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { attempts: 0, isLocked: false, lockedUntil: null };
+    }
+
+    // @ts-ignore - failed_login_attempts is dynamically set by schema initialization
+    const newAttempts = (user.failed_login_attempts || 0) + 1;
+    let lockedUntil = null;
+
+    // Lock account after 5 failed attempts for 15 minutes
+    if (newAttempts >= 5) {
+      lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    }
+
+    await user.update({
+      failed_login_attempts: newAttempts,
+      locked_until: lockedUntil
+    });
+
+    return { attempts: newAttempts, isLocked: !!lockedUntil, lockedUntil };
+  } catch (error) {
+    console.error('Error incrementing failed login attempts:', error);
+    return { attempts: 0, isLocked: false, lockedUntil: null };
+  }
+}
+
+/**
+ * Reset failed login attempts
+ * @param {number} userId - User ID
+ * @returns {Promise<void>}
+ */
+async function resetFailedLoginAttempts(userId) {
+  try {
+    const user = await User.findById(userId);
+    if (user) {
+      await user.update({
+        failed_login_attempts: 0,
+        locked_until: null,
+        last_login_at: new Date()
+      });
+    }
+  } catch (error) {
+    console.error('Error resetting failed login attempts:', error);
+  }
+}
+
+/**
+ * Check if a user has 2FA enabled
+ * @param {number} userId - User ID
+ * @returns {Promise<Array>} Array of enabled 2FA methods
+ */
+async function get2FAMethods(userId) {
+  try {
+    const result = await db.query(
+      `SELECT method_type FROM user_2fa_methods 
+       WHERE user_id = $1 AND is_enabled = true`,
+      [userId]
+    );
+
+    return result.rows ? result.rows.map(row => /** @type {any} */ (row).method_type) : [];
+  } catch (error) {
+    console.error('Error getting 2FA methods:', error);
+    return [];
+  }
+}
+
+/**
+ * Check if an email has exceeded the rate limit for password reset requests
+ * @param {string} email - Email address
+ * @param {number} maxRequests - Maximum requests allowed
+ * @param {number} windowMs - Time window in milliseconds (default 1 hour)
+ * @returns {Promise<boolean>} True if under limit, false if exceeded
+ */
+async function checkPasswordResetRateLimit(email, maxRequests = 3, windowMs = 60 * 60 * 1000) {
+  try {
+    const oneHourAgo = new Date(Date.now() - windowMs);
+    
+    const result = await db.query(
+      `SELECT COUNT(*) as count FROM auth_logs 
+       WHERE event_type = 'password_reset_requested' 
+       AND (details->>'email') = $1 
+       AND created_at > $2`,
+      [email, oneHourAgo]
+    );
+
+    const count = parseInt(/** @type {any} */ (result.rows[0]).count, 10);
+    return count < maxRequests;
+  } catch (error) {
+    console.error('Error checking rate limit:', error);
+    // On error, allow the request to proceed
+    return true;
+  }
+}
+
+// ===== PASSWORD MANAGEMENT =====
+
+/**
+ * POST /api/auth/login
+ * Login with email and password, supporting 2FA
+ * Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 10.6
+ */
+router.post('/login', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password').notEmpty().withMessage('Password is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { email, password } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    // Find user by email (Requirement 9.1)
+    const user = await User.findByEmail(email);
+
+    if (!user) {
+      // Log failed login attempt
+      await AuthLoggingService.logEvent({
+        eventType: 'login',
+        status: 'failed',
+        ipAddress,
+        userAgent,
+        details: { reason: 'user_not_found', email }
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // @ts-ignore - users_id is dynamically set by schema initialization
+    const userId = user.users_id;
+
+    // Check if account is locked (Requirement 9.5)
+    const lockoutStatus = await checkLoginLockout(userId);
+    if (lockoutStatus.isLocked) {
+      await AuthLoggingService.logEvent({
+        userId,
+        eventType: 'login',
+        status: 'failed',
+        ipAddress,
+        userAgent,
+        details: { reason: 'account_locked', locked_until: lockoutStatus.lockedUntil }
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Account is locked. Please try again later.'
+      });
+    }
+
+    // Verify password (Requirement 9.1)
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      // Increment failed login attempts
+      const failureStatus = await incrementFailedLoginAttempts(userId);
+
+      // Log failed login attempt (Requirement 10.6)
+      await AuthLoggingService.logEvent({
+        userId,
+        eventType: 'login',
+        status: 'failed',
+        ipAddress,
+        userAgent,
+        details: { 
+          reason: 'invalid_password',
+          attempts: failureStatus.attempts,
+          is_locked: failureStatus.isLocked
+        }
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Check if user is active
+    // @ts-ignore - active is dynamically set by schema initialization
+    if (!user.active) {
+      await AuthLoggingService.logEvent({
+        userId,
+        eventType: 'login',
+        status: 'failed',
+        ipAddress,
+        userAgent,
+        details: { reason: 'user_inactive' }
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Account is inactive'
+      });
+    }
+
+    // Check if 2FA is enabled (Requirement 9.2, 9.3)
+    const twoFAMethods = await get2FAMethods(userId);
+
+    if (twoFAMethods && twoFAMethods.length > 0) {
+      // 2FA is enabled - generate temporary session and return 2FA challenge (Requirement 9.4)
+      // @ts-ignore - tenant_id is dynamically set by schema initialization
+      const tempSessionToken = generate2FASessionToken(userId, user.tenant_id);
+
+      // Log login attempt (before 2FA verification)
+      await AuthLoggingService.logEvent({
+        userId,
+        eventType: 'login',
+        status: 'pending_2fa',
+        ipAddress,
+        userAgent,
+        details: { 
+          reason: '2fa_required',
+          methods: twoFAMethods
+        }
+      });
+
+      return res.json({
+        success: true,
+        requires_2fa: true,
+        session_token: tempSessionToken,
+        available_methods: twoFAMethods,
+        message: '2FA verification required'
+      });
+    }
+
+    // 2FA is not enabled - create full session (Requirement 9.5)
+    // @ts-ignore - tenant_id is dynamically set by schema initialization
+    const token = generateToken(userId, user.tenant_id);
+
+    // Reset failed login attempts on successful login
+    await resetFailedLoginAttempts(userId);
+
+    // Log successful login (Requirement 10.6)
+    await AuthLoggingService.logEvent({
+      userId,
+      eventType: 'login',
+      status: 'success',
+      ipAddress,
+      userAgent,
+      details: { method: 'password' }
+    });
+
+    // Derive permissions from role
+    // @ts-ignore - role is dynamically set by schema initialization
+    const userRole = (user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = permissionsObj;
+
+    // @ts-ignore - permissions is dynamically set by schema initialization
+    if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
+      // @ts-ignore - permissions is dynamically set by schema initialization
+      permissions = user.permissions;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          // @ts-ignore - properties are dynamically set by schema initialization
+          users_id: user.users_id,
+          // @ts-ignore
+          email: user.email,
+          // @ts-ignore
+          name: user.name,
+          // @ts-ignore
+          role: user.role,
+          permissions: permissions,
+          // @ts-ignore
+          status: user.active ? 'active' : 'inactive',
+          // @ts-ignore
+          client: user.tenant_id
+        },
+        token,
+        expiresIn: 60 * 60 // 1 hour
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({
+      success: false,
+      message: 'Login failed',
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    });
+  }
+});
+
+/**
+ * POST /api/auth/verify-2fa
+ * Verify 2FA code and create full session
+ * Requirements: 9.6, 9.7, 9.8, 9.9
+ */
+router.post('/verify-2fa', [
+  body('session_token').notEmpty().withMessage('Session token is required'),
+  body('code').notEmpty().withMessage('2FA code is required'),
+  body('method').isIn(['totp', 'email_otp', 'sms_otp', 'backup_code']).withMessage('Invalid 2FA method')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { session_token, code, method } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    // Verify session token
+    let decoded;
+    try {
+      decoded = jwt.verify(session_token, process.env.JWT_SECRET);
+      if (!decoded.is2FASession) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid session token'
+        });
+      }
+    } catch (tokenError) {
+      return res.status(401).json({
+        success: false,
+        message: 'Session token expired or invalid'
+      });
+    }
+
+    const userId = decoded.userId;
+    const tenantId = decoded.tenant_id;
+
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    let isValid = false;
+    let details = { method };
+
+    // Verify 2FA code based on method (Requirement 9.7, 9.8)
+    if (method === 'totp') {
+      // Get TOTP secret from database
+      const result = await db.query(
+        `SELECT secret_key FROM user_2fa_methods 
+         WHERE user_id = $1 AND method_type = 'totp' AND is_enabled = true`,
+        [userId]
+      );
+
+      if (result.rows && result.rows.length > 0) {
+        const secret = /** @type {any} */ (result.rows[0]).secret_key;
+        isValid = TwoFactorService.verifyTOTPCode(secret, code);
+      }
+    } else if (method === 'email_otp') {
+      // Verify email OTP
+      const otpResult = await TwoFactorService.verifyEmailOTP(userId, code);
+      isValid = otpResult.isValid;
+      details.attempts_remaining = otpResult.attemptsRemaining;
+      details.is_locked = otpResult.isLocked;
+    } else if (method === 'sms_otp') {
+      // Verify SMS OTP
+      const otpResult = await TwoFactorService.verifySMSOTP(userId, code);
+      isValid = otpResult.isValid;
+      details.attempts_remaining = otpResult.attemptsRemaining;
+      details.is_locked = otpResult.isLocked;
+    } else if (method === 'backup_code') {
+      // Verify backup code
+      isValid = await TwoFactorService.verifyBackupCode(userId, code);
+    }
+
+    if (!isValid) {
+      // Log failed 2FA verification
+      await AuthLoggingService.logEvent({
+        userId,
+        eventType: 'login',
+        status: 'failed',
+        ipAddress,
+        userAgent,
+        details: { reason: 'invalid_2fa_code', ...details }
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid 2FA code',
+        details: {
+          attempts_remaining: details.attempts_remaining,
+          is_locked: details.is_locked
+        }
+      });
+    }
+
+    // Create full session (Requirement 9.6)
+    const token = generateToken(userId, tenantId);
+
+    // Reset failed login attempts on successful 2FA verification
+    await resetFailedLoginAttempts(userId);
+
+    // Log successful login
+    await AuthLoggingService.logEvent({
+      userId,
+      eventType: 'login',
+      status: 'success',
+      ipAddress,
+      userAgent,
+      details: { method: '2fa', verification_method: method }
+    });
+
+    // Derive permissions from role
+    // @ts-ignore - role is dynamically set by schema initialization
+    const userRole = (user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = permissionsObj;
+
+    // @ts-ignore - permissions is dynamically set by schema initialization
+    if (user.permissions && typeof user.permissions === 'object' && !Array.isArray(user.permissions)) {
+      // @ts-ignore - permissions is dynamically set by schema initialization
+      permissions = user.permissions;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          // @ts-ignore - properties are dynamically set by schema initialization
+          users_id: user.users_id,
+          // @ts-ignore
+          email: user.email,
+          // @ts-ignore
+          name: user.name,
+          // @ts-ignore
+          role: user.role,
+          permissions: permissions,
+          // @ts-ignore
+          status: user.active ? 'active' : 'inactive',
+          // @ts-ignore
+          client: user.tenant_id
+        },
+        token,
+        expiresIn: 60 * 60 // 1 hour
+      }
+    });
+  } catch (error) {
+    console.error('2FA verification error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({
+      success: false,
+      message: '2FA verification failed',
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    });
+  }
+});
 
 // ===== PASSWORD MANAGEMENT =====
 
@@ -37,7 +573,7 @@ router.post('/change-password', authenticateToken, [
     }
 
     const { currentPassword, newPassword, confirmPassword } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.users_id;
 
     // Verify passwords match
     if (newPassword !== confirmPassword) {
@@ -118,10 +654,12 @@ router.post('/change-password', authenticateToken, [
     });
   } catch (error) {
     console.error('Change password error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to change password',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
@@ -131,9 +669,10 @@ router.post('/change-password', authenticateToken, [
 /**
  * POST /api/auth/forgot-password
  * Request password reset link (self-service)
+ * Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 10.8
  */
 router.post('/forgot-password', [
-  body('email').isEmail().normalizeEmail()
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -147,56 +686,76 @@ router.post('/forgot-password', [
 
     const { email } = req.body;
 
-    // Check rate limit
-    const isUnderLimit = await TokenService.checkResetRateLimit(email, 3);
+    // Check rate limit (3 per hour per email)
+    const isUnderLimit = await checkPasswordResetRateLimit(email, 3, 60 * 60 * 1000);
     if (!isUnderLimit) {
-      // Don't reveal rate limit to user for security
+      // Don't reveal rate limit to user for security (Requirement 4.5)
       return res.json({
         success: true,
         message: 'If an account exists with this email, you will receive a password reset link'
       });
     }
 
-    // Find user by email
+    // Find user by email (Requirement 4.4)
     const user = await User.findByEmail(email);
 
     if (user) {
-      // Generate reset token
-      const { token, token_hash, expires_at } = await TokenService.generateResetToken();
+      // Generate reset token with 24-hour expiration (Requirement 4.6)
+      const { token, token_hash, expires_at } = TokenService.generateResetToken();
 
-      // Store token in database
-      await TokenService.storeResetToken(user.id, token_hash, expires_at);
+      // Store token in database (Requirement 4.6)
+      // @ts-ignore - id is dynamically set by schema initialization
+      await TokenService.storeResetToken(user.users_id, token_hash, expires_at);
 
-      // Send email with reset link
-      const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+      // Send email with reset link (Requirement 4.7, 4.8)
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
       try {
-        await EmailService.sendPasswordResetEmail(user.email, user.name, resetLink, expires_at);
+        // @ts-ignore - email is dynamically set by schema initialization
+        const userEmail = user.email;
+        await EmailService.sendEmail({
+          to: userEmail,
+          subject: 'Password Reset Request',
+          html: `
+            <h2>Password Reset Request</h2>
+            <p>You requested a password reset for your account.</p>
+            <p><a href="${resetLink}">Click here to reset your password</a></p>
+            <p>This link will expire in 24 hours.</p>
+            <p>If you did not request this, please ignore this email.</p>
+          `
+        });
         console.log('[AUTH] Password reset email sent to:', email);
       } catch (emailError) {
         console.error('[AUTH] Failed to send password reset email:', emailError);
-        // Don't fail the request, just log the error
+        // Don't fail the request, just log the error (Requirement 4.7)
       }
 
-      // Log the request
-      await AuthLoggingService.logEvent({
-        userId: user.id,
-        eventType: 'password_reset_requested',
-        status: 'success',
-        details: { email }
-      });
+      // Log the request (Requirement 10.6)
+      try {
+        await AuthLoggingService.logEvent({
+          // @ts-ignore - id is dynamically set by schema initialization
+          userId: user.users_id,
+          eventType: 'password_reset_requested',
+          status: 'success',
+          details: { email }
+        });
+      } catch (logError) {
+        console.error('[AUTH] Failed to log password reset request:', logError);
+      }
     }
 
-    // Always return generic message for security
+    // Always return generic message for security (Requirement 4.5)
     res.json({
       success: true,
       message: 'If an account exists with this email, you will receive a password reset link'
     });
   } catch (error) {
     console.error('Forgot password error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to process password reset request',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
@@ -204,6 +763,7 @@ router.post('/forgot-password', [
 /**
  * POST /api/auth/reset-password
  * Reset password using reset token
+ * Requirements: 4.10, 4.11, 4.12, 4.13, 4.14, 4.15
  */
 router.post('/reset-password', [
   body('token').notEmpty().withMessage('Reset token is required'),
@@ -222,7 +782,7 @@ router.post('/reset-password', [
 
     const { token, newPassword, confirmPassword } = req.body;
 
-    // Verify passwords match
+    // Verify passwords match (Requirement 4.12)
     if (newPassword !== confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -230,8 +790,7 @@ router.post('/reset-password', [
       });
     }
 
-    // Find token in database to get user ID
-    const db = require('../config/database');
+    // Find token in database to get user ID (Requirement 4.11)
     const tokenResult = await db.query(
       `SELECT user_id, token_hash, expires_at, is_used 
        FROM password_reset_tokens 
@@ -248,10 +807,12 @@ router.post('/reset-password', [
       });
     }
 
+    // @ts-ignore - rows is array of any
     const tokenRecord = tokenResult.rows[0];
+    // @ts-ignore - user_id is dynamically set from database
     const userId = tokenRecord.user_id;
 
-    // Verify token
+    // Verify token (Requirement 4.11)
     const isTokenValid = await TokenService.validateResetToken(token, userId);
     if (!isTokenValid) {
       await AuthLoggingService.logPasswordReset(userId, false, {
@@ -273,7 +834,8 @@ router.post('/reset-password', [
       });
     }
 
-    // Validate new password
+    // Validate new password (Requirement 4.13)
+    // @ts-ignore - email is dynamically set by schema initialization
     const validation = PasswordValidator.validate(newPassword, user.email);
     if (!validation.isValid) {
       await AuthLoggingService.logPasswordReset(userId, false, {
@@ -287,19 +849,19 @@ router.post('/reset-password', [
       });
     }
 
-    // Hash new password
+    // Hash new password (Requirement 4.14)
     const newPasswordHash = await User.hashPassword(newPassword);
 
-    // Update password
+    // Update password (Requirement 4.14)
     await user.update({
       passwordHash: newPasswordHash,
       password_changed_at: new Date()
     });
 
-    // Invalidate token
-    await TokenService.invalidateResetToken(token, userId);
+    // Invalidate token (Requirement 4.15)
+    await TokenService.invalidateResetToken(userId);
 
-    // Log successful password reset
+    // Log successful password reset (Requirement 4.15)
     await AuthLoggingService.logPasswordReset(userId, true);
 
     res.json({
@@ -308,23 +870,26 @@ router.post('/reset-password', [
     });
   } catch (error) {
     console.error('Reset password error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to reset password',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
 
-// ===== 2FA SETUP =====
+// ===== 2FA MANAGEMENT =====
 
 /**
  * POST /api/auth/2fa/setup
- * Setup 2FA method
+ * Setup 2FA method - Generate setup data (TOTP secret + QR code, or phone verification)
+ * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 6.1, 6.2, 6.3, 7.1, 7.2, 7.3
  */
 router.post('/2fa/setup', authenticateToken, [
   body('method').isIn(['totp', 'email_otp', 'sms_otp']).withMessage('Invalid 2FA method'),
-  body('phoneNumber').optional().isMobilePhone().withMessage('Invalid phone number')
+  body('phoneNumber').optional().isMobilePhone('any').withMessage('Invalid phone number')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -337,26 +902,42 @@ router.post('/2fa/setup', authenticateToken, [
     }
 
     const { method, phoneNumber } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.users_id;
+
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
 
     let setupData = {};
 
     if (method === 'totp') {
-      // Generate TOTP secret
-      const user = await User.findById(userId);
+      // Generate TOTP secret and QR code (Requirements 5.4, 5.5, 5.6)
+      // @ts-ignore - email is dynamically set by schema initialization
       setupData = await TwoFactorService.generateTOTPSecret(user.email);
     } else if (method === 'email_otp') {
-      // Email OTP doesn't need setup data
-      setupData = { message: 'Email OTP will be sent during login' };
+      // Email OTP doesn't need setup data (Requirements 6.1, 6.2, 6.3)
+      setupData = { 
+        message: 'Email OTP will be sent to your email during login',
+        method: 'email_otp'
+      };
     } else if (method === 'sms_otp') {
-      // Validate phone number
+      // Validate phone number (Requirements 7.1, 7.2, 7.3)
       if (!phoneNumber) {
         return res.status(400).json({
           success: false,
           message: 'Phone number is required for SMS OTP'
         });
       }
-      setupData = { phone_number: phoneNumber, message: 'SMS OTP will be sent during login' };
+      setupData = { 
+        phone_number: phoneNumber, 
+        message: 'SMS OTP will be sent to your phone during login',
+        method: 'sms_otp'
+      };
     }
 
     res.json({
@@ -365,10 +946,12 @@ router.post('/2fa/setup', authenticateToken, [
     });
   } catch (error) {
     console.error('2FA setup error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to setup 2FA',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
@@ -376,10 +959,12 @@ router.post('/2fa/setup', authenticateToken, [
 /**
  * POST /api/auth/2fa/verify-setup
  * Verify 2FA setup and enable method
+ * Requirements: 5.8, 5.9, 5.10, 5.11, 5.12, 5.13
  */
 router.post('/2fa/verify-setup', authenticateToken, [
   body('method').isIn(['totp', 'email_otp', 'sms_otp']).withMessage('Invalid 2FA method'),
   body('code').notEmpty().withMessage('Verification code is required'),
+  body('secret').optional(),
   body('phoneNumber').optional()
 ], async (req, res) => {
   try {
@@ -392,11 +977,12 @@ router.post('/2fa/verify-setup', authenticateToken, [
       });
     }
 
-    const { method, code, phoneNumber, secret } = req.body;
-    const userId = req.user.id;
+    const { method, code, secret, phoneNumber } = req.body;
+    const userId = req.user.users_id;
 
     let isValid = false;
 
+    // Validate code based on method (Requirements 5.8, 5.9, 5.10)
     if (method === 'totp') {
       // Verify TOTP code
       if (!secret) {
@@ -408,10 +994,12 @@ router.post('/2fa/verify-setup', authenticateToken, [
       isValid = TwoFactorService.verifyTOTPCode(secret, code);
     } else if (method === 'email_otp') {
       // Verify email OTP
-      isValid = await TwoFactorService.verifyEmailOTP(userId, code);
+      const otpResult = await TwoFactorService.verifyEmailOTP(userId, code);
+      isValid = otpResult.isValid;
     } else if (method === 'sms_otp') {
       // Verify SMS OTP
-      isValid = await TwoFactorService.verifySMSOTP(userId, code);
+      const otpResult = await TwoFactorService.verifySMSOTP(userId, code);
+      isValid = otpResult.isValid;
     }
 
     if (!isValid) {
@@ -425,39 +1013,60 @@ router.post('/2fa/verify-setup', authenticateToken, [
       });
     }
 
-    // Store 2FA method
-    const methodData = {};
-    if (method === 'totp') {
-      methodData.secret_key = secret;
-    } else if (method === 'sms_otp') {
-      methodData.phone_number = phoneNumber;
+    // Store 2FA method in database (Requirements 5.11)
+    try {
+      await db.query(
+        `INSERT INTO user_2fa_methods (user_id, method_type, secret_key, phone_number, is_enabled, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+         ON CONFLICT (user_id, method_type) DO UPDATE SET
+         secret_key = EXCLUDED.secret_key,
+         phone_number = EXCLUDED.phone_number,
+         is_enabled = true,
+         updated_at = NOW()`,
+        [userId, method, method === 'totp' ? secret : null, method === 'sms_otp' ? phoneNumber : null]
+      );
+    } catch (dbError) {
+      console.error('Error storing 2FA method:', dbError);
+      await AuthLoggingService.log2FAEnable(userId, method, false, {
+        details: { reason: 'database_error' }
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to store 2FA method'
+      });
     }
 
-    await TwoFactorService.store2FAMethod(userId, method, methodData);
-
-    // Generate backup codes for TOTP
+    // Generate backup codes for TOTP (Requirements 5.12, 5.13)
     let backupCodes = [];
     if (method === 'totp') {
       backupCodes = TwoFactorService.generateBackupCodes(10);
-      await TwoFactorService.storeBackupCodes(userId, backupCodes);
+      try {
+        await TwoFactorService.storeBackupCodes(userId, backupCodes);
+      } catch (backupError) {
+        console.error('Error storing backup codes:', backupError);
+        // Don't fail the request, just log the error
+      }
     }
 
-    // Log 2FA enable
+    // Log 2FA enable (Requirements 5.11)
     await AuthLoggingService.log2FAEnable(userId, method, true);
 
     res.json({
       success: true,
       message: '2FA method enabled successfully',
       data: {
-        backup_codes: method === 'totp' ? backupCodes : undefined
+        backup_codes: method === 'totp' ? backupCodes.map(bc => bc.code) : undefined
       }
     });
   } catch (error) {
     console.error('2FA verify setup error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to verify 2FA setup',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
@@ -465,11 +1074,25 @@ router.post('/2fa/verify-setup', authenticateToken, [
 /**
  * GET /api/auth/2fa/methods
  * Get user's 2FA methods
+ * Requirements: 8.1
  */
 router.get('/2fa/methods', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const methods = await TwoFactorService.get2FAMethods(userId);
+    const userId = req.user.users_id;
+
+    // Get all enabled 2FA methods for user (Requirement 8.1)
+    const result = await db.query(
+      `SELECT method_type, is_enabled, created_at FROM user_2fa_methods
+       WHERE user_id = $1 AND is_enabled = true
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    const methods = result.rows ? result.rows.map(row => ({
+      type: /** @type {any} */ (row).method_type,
+      enabled: /** @type {any} */ (row).is_enabled,
+      created_at: /** @type {any} */ (row).created_at
+    })) : [];
 
     res.json({
       success: true,
@@ -479,10 +1102,12 @@ router.get('/2fa/methods', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get 2FA methods error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to get 2FA methods',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
@@ -490,6 +1115,7 @@ router.get('/2fa/methods', authenticateToken, async (req, res) => {
 /**
  * POST /api/auth/2fa/disable
  * Disable 2FA method
+ * Requirements: 8.2, 8.3, 8.4
  */
 router.post('/2fa/disable', authenticateToken, [
   body('method').isIn(['totp', 'email_otp', 'sms_otp']).withMessage('Invalid 2FA method'),
@@ -506,7 +1132,7 @@ router.post('/2fa/disable', authenticateToken, [
     }
 
     const { method, password } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.users_id;
 
     // Get user
     const user = await User.findById(userId);
@@ -517,7 +1143,7 @@ router.post('/2fa/disable', authenticateToken, [
       });
     }
 
-    // Verify password
+    // Verify password (Requirement 8.3)
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       await AuthLoggingService.log2FADisable(userId, method, false, {
@@ -530,16 +1156,30 @@ router.post('/2fa/disable', authenticateToken, [
       });
     }
 
-    // Disable 2FA method
-    const success = await TwoFactorService.disable2FAMethod(userId, method);
-    if (!success) {
+    // Disable 2FA method (Requirement 8.2)
+    const result = await db.query(
+      `UPDATE user_2fa_methods SET is_enabled = false, updated_at = NOW()
+       WHERE user_id = $1 AND method_type = $2
+       RETURNING method_type`,
+      [userId, method]
+    );
+
+    if (!result.rows || result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: '2FA method not found'
       });
     }
 
-    // Log 2FA disable
+    // If disabling TOTP, also delete backup codes
+    if (method === 'totp') {
+      await db.query(
+        'DELETE FROM user_2fa_backup_codes WHERE user_id = $1',
+        [userId]
+      );
+    }
+
+    // Log 2FA disable (Requirement 8.4)
     await AuthLoggingService.log2FADisable(userId, method, true);
 
     res.json({
@@ -548,10 +1188,12 @@ router.post('/2fa/disable', authenticateToken, [
     });
   } catch (error) {
     console.error('Disable 2FA error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to disable 2FA',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });
@@ -559,6 +1201,7 @@ router.post('/2fa/disable', authenticateToken, [
 /**
  * POST /api/auth/2fa/regenerate-backup-codes
  * Regenerate backup codes for TOTP
+ * Requirements: 8.9
  */
 router.post('/2fa/regenerate-backup-codes', authenticateToken, [
   body('password').notEmpty().withMessage('Password is required')
@@ -574,7 +1217,7 @@ router.post('/2fa/regenerate-backup-codes', authenticateToken, [
     }
 
     const { password } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.users_id;
 
     // Get user
     const user = await User.findById(userId);
@@ -585,7 +1228,7 @@ router.post('/2fa/regenerate-backup-codes', authenticateToken, [
       });
     }
 
-    // Verify password
+    // Verify password (Requirement 8.9)
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -594,23 +1237,49 @@ router.post('/2fa/regenerate-backup-codes', authenticateToken, [
       });
     }
 
-    // Generate new backup codes
+    // Check if user has TOTP enabled
+    const totpResult = await db.query(
+      `SELECT id FROM user_2fa_methods 
+       WHERE user_id = $1 AND method_type = 'totp' AND is_enabled = true`,
+      [userId]
+    );
+
+    if (!totpResult.rows || totpResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'TOTP 2FA is not enabled for this account'
+      });
+    }
+
+    // Generate new backup codes (Requirement 8.9)
     const backupCodes = TwoFactorService.generateBackupCodes(10);
-    await TwoFactorService.storeBackupCodes(userId, backupCodes);
+
+    // Invalidate old codes and store new ones (Requirement 8.9)
+    try {
+      await TwoFactorService.storeBackupCodes(userId, backupCodes);
+    } catch (backupError) {
+      console.error('Error storing backup codes:', backupError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to regenerate backup codes'
+      });
+    }
 
     res.json({
       success: true,
       message: 'Backup codes regenerated successfully',
       data: {
-        backup_codes: backupCodes
+        backup_codes: backupCodes.map(bc => bc.code)
       }
     });
   } catch (error) {
     console.error('Regenerate backup codes error:', error);
+    // @ts-ignore - error is unknown type
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to regenerate backup codes',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });

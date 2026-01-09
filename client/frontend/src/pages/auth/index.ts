@@ -1,2 +1,4 @@
 // Export all authentication pages from this file
-// Auth pages will be exported here as they are created
+export { default as ForgotPasswordPage } from './ForgotPasswordPage';
+export { default as PasswordResetPage } from './PasswordResetPage';
+export { default as TwoFactorManagementPage } from './TwoFactorManagementPage';

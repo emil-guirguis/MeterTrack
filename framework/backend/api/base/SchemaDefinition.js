@@ -500,18 +500,6 @@ function defineSchema(definition) {
       }
     });
 
-    console.log('\n--- FINAL INSTANCE STATE ---');
-    console.log('Instance keys:', Object.keys(instance));
-    console.log('Instance data:', {
-      id: instance.id,
-      email: instance.email,
-      name: instance.name,
-      role: instance.role,
-      tenant_id: instance.tenant_id,
-      active: instance.active
-    });
-    console.log('█'.repeat(120) + '\n');
-
     return instance;
   }
 

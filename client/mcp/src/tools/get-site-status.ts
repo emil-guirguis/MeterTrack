@@ -39,18 +39,18 @@ export async function getSiteStatus(args: GetSiteStatusArgs) {
 
     const query = `
       SELECT 
-        s.id,
+        s.tenant_id,
         s.name,
         s.last_heartbeat,
         s.is_active,
         s.created_at,
         COUNT(DISTINCT m.id) as meter_count,
         MAX(mr.timestamp) as last_reading_timestamp
-      FROM sites s
-      LEFT JOIN meters m ON s.id = m.site_id
-      LEFT JOIN meter_reading mr ON m.id = mr.meter_id
+      FROM tenant s
+      LEFT JOIN meters m ON s.tenant_id = m.tenant_id
+      LEFT JOIN meter_reading mr ON m.meter_id = mr.meter_id
       ${whereClause}
-      GROUP BY s.id, s.name, s.last_heartbeat, s.is_active, s.created_at
+      GROUP BY s.tenant_id, s.name, s.last_heartbeat, s.is_active, s.created_at
       ORDER BY s.name
     `;
 
