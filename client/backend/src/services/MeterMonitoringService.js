@@ -184,7 +184,7 @@
 //             const isOffline = timeSinceLastReading > this.config.thresholds.offlineTimeout;
 
 //             // Check if we should alert (avoid spam)
-//             const shouldAlert = isOffline && await this.shouldSendAlert(meter.id, 'offline');
+//             const shouldAlert = isOffline && await this.shouldSendAlert(meter.meter_id, 'offline');
 
 //             return {
 //                 isOffline,
@@ -228,7 +228,7 @@
 //             }
 
 //             const hasSignificantGaps = gaps.length > 0;
-//             const shouldAlert = hasSignificantGaps && await this.shouldSendAlert(meter.id, 'communication_gaps');
+//             const shouldAlert = hasSignificantGaps && await this.shouldSendAlert(meter.meter_id, 'communication_gaps');
 
 //             return {
 //                 hasGaps: hasSignificantGaps,
@@ -297,7 +297,7 @@
 //             }
 
 //             const hasAnomalies = anomalies.length > 0;
-//             const shouldAlert = hasAnomalies && await this.shouldSendAlert(meter.id, 'pattern_anomaly');
+//             const shouldAlert = hasAnomalies && await this.shouldSendAlert(meter.meter_id, 'pattern_anomaly');
 
 //             return {
 //                 hasAnomalies,
@@ -319,7 +319,7 @@
 //         try {
 //             // Update meter status if needed
 //             if (meter.status !== 'offline') {
-//                 await this.updateMeterStatus(meter.id, 'offline', status.reason);
+//                 await this.updateMeterStatus(meter.meter_id, 'offline', status.reason);
 //             }
 
 //             // Trigger notification through integration service
@@ -331,7 +331,7 @@
 //             });
 
 //             // Log the alert
-//             await this.logAlert(meter.id, 'offline', {
+//             await this.logAlert(meter.meter_id, 'offline', {
 //                 reason: status.reason,
 //                 duration: status.duration,
 //                 lastReading: status.lastReading
@@ -350,7 +350,7 @@
 //     async triggerCommunicationGapAlert(meter, gapStatus) {
 //         try {
 //             // Log the alert
-//             await this.logAlert(meter.id, 'communication_gaps', {
+//             await this.logAlert(meter.meter_id, 'communication_gaps', {
 //                 gapCount: gapStatus.gaps.length,
 //                 gaps: gapStatus.gaps.map(gap => ({
 //                     start: gap.start,
@@ -372,7 +372,7 @@
 //     async triggerPatternAlert(meter, patternStatus) {
 //         try {
 //             // Log the alert
-//             await this.logAlert(meter.id, 'pattern_anomaly', {
+//             await this.logAlert(meter.meter_id, 'pattern_anomaly', {
 //                 anomalyCount: patternStatus.anomalies.length,
 //                 anomalies: patternStatus.anomalies,
 //                 statistics: patternStatus.statistics

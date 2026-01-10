@@ -9,7 +9,6 @@ import type { Contact } from './types';
 import { Permission } from '../../types/auth';
 import {
   contactStats,
-  createContactBulkActions,
   contactExportConfig,
 } from './config';
 import { showConfirmation } from '@framework/utils/confirmationHelper';
@@ -51,7 +50,7 @@ export const ContactList: React.FC<ContactListProps> = ({
       message: `Delete contact "${contact.name}"? This cannot be undone.`,
       confirmText: 'Delete',
       onConfirm: async () => {
-        await contacts.deleteItem(contact.id);
+        await contacts.deleteItem(String(contact.contact_id));
         await contacts.fetchItems();
       }
     });

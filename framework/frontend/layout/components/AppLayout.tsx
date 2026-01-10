@@ -37,7 +37,6 @@ export interface AppLayoutProps extends LayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   title,
-  loading = false,
   config,
 }) => {
   const location = useLocation();

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import { render } from '@testing-library/react';
 import fc from 'fast-check';
 import { FormField } from './FormField';
@@ -18,7 +18,7 @@ describe('FormField Error Message Property-Based Tests', () => {
           error: fc.string({ minLength: 1, maxLength: 100 }),
         }),
         (props) => {
-          const { container, queryByText } = render(
+          const { queryByText } = render(
             <FormField
               name={props.name}
               label={props.label}

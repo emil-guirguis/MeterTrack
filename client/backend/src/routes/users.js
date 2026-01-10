@@ -158,6 +158,57 @@ router.put('/:id', requirePermission('user:update'), asyncHandler(async (req, re
   delete updateData.tenant_id;
   delete updateData.tenantId;
   
+  // Handle permissions serialization if provided
+  if (updateData.permissions !== undefined && updateData.permissions !== null) {
+    // Skip empty permissions (don't update if empty)
+    if (typeof updateData.permissions === 'object' && !Array.isArray(updateData.permissions)) {
+      // If permissions is a nested object, validate and store as JSON string
+      if (Object.keys(updateData.permissions).length === 0) {
+        // Empty object - skip updating permissions
+        delete updateData.permissions;
+      } else if (!PermissionsService.validatePermissionsObject(updateData.permissions)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid permissions object structure'
+        });
+      } else {
+        updateData.permissions = JSON.stringify(updateData.permissions);
+      }
+    } else if (Array.isArray(updateData.permissions)) {
+      // If permissions is a flat array
+      if (updateData.permissions.length === 0) {
+        // Empty array - skip updating permissions
+        delete updateData.permissions;
+      } else {
+        const nestedObj = PermissionsService.toNestedObject(updateData.permissions);
+        if (!PermissionsService.validatePermissionsObject(nestedObj)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid permissions array format'
+          });
+        }
+        updateData.permissions = JSON.stringify(nestedObj);
+      }
+    } else if (typeof updateData.permissions === 'string') {
+      // If permissions is already a JSON string, validate it
+      try {
+        const parsed = JSON.parse(updateData.permissions);
+        if (!PermissionsService.validatePermissionsObject(parsed)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid permissions JSON format'
+          });
+        }
+        // Keep as JSON string
+      } catch (e) {
+        return res.status(400).json({
+          success: false,
+          message: 'Permissions must be valid JSON'
+        });
+      }
+    }
+  }
+  
   // Update the user using instance method
   await user.update(updateData);
   
@@ -177,7 +228,7 @@ router.put('/:id/password', requirePermission('user:update'), async (req, res) =
     }
 
     // If user is changing their own password, verify current password
-    if (req.user.users_id === userId && currentPassword) {
+    if (req.user.id === userId && currentPassword) {
       const isCurrentPasswordValid = await user.comparePassword(currentPassword);
       if (!isCurrentPasswordValid) {
         return res.status(400).json({
@@ -203,7 +254,7 @@ router.put('/:id/password', requirePermission('user:update'), async (req, res) =
 router.post('/:id/reset-password', requirePermission('user:update'), async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
-    const adminId = req.user?.users_id;
+    const adminId = req.user?.id;
 
     // Validate user ID
     if (!userId || isNaN(userId)) {

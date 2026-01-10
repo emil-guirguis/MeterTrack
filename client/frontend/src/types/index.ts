@@ -20,8 +20,6 @@ export type {
 
 export type {
   Location,
-  Contact,
-  Meter,
   EmailTemplate,
   CompanySettings,
   EntityState,

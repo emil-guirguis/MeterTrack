@@ -218,6 +218,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const authResponse = await authService.login(credentials);
       console.log('📦 Auth response received in AuthContext:', authResponse);
+      console.log('📦 Auth response locations:', authResponse.locations);
       
       // Tokens are already stored in authService.login()
       console.log('🔑 Token in storage after login:', authService.getStoredToken() ? 'EXISTS' : 'MISSING');
@@ -225,11 +226,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('📋 [AUTH] User permissions from backend:', authResponse.user.permissions);
       console.log('📋 [AUTH] User role from backend:', authResponse.user.role);
       
+      // Ensure locations are included in the response
+      const locations = authResponse.locations || [];
+      console.log('📍 [AUTH] Locations to store:', locations.length, 'locations');
+      
       dispatch({ 
         type: 'LOGIN_SUCCESS', 
         payload: {
           user: authResponse.user,
-          locations: authResponse.locations || []
+          locations: locations
         }
       });
       console.log('✅ Login completed successfully in AuthContext');

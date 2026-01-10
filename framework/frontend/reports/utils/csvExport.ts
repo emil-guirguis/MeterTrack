@@ -198,7 +198,7 @@ export function escapeCSVValue(value: any): string {
  */
 export function dataToCSV(
   data: any[],
-  columns?: Array<{ key: string; label: string; format?: (value: any) => string }>
+  columns?: Array<{ key: string; label: string; format?: (value: any, row?: any) => string }>
 ): string {
   if (!data || data.length === 0) {
     return '';
@@ -207,7 +207,7 @@ export function dataToCSV(
   const lines: string[] = [];
 
   // Determine columns
-  const cols = columns || Object.keys(data[0]).map((key) => ({ key, label: key }));
+  const cols = columns || Object.keys(data[0]).map((key) => ({ key, label: key, format: undefined }));
 
   // Add headers
   const headers = cols.map((col) => escapeCSVValue(col.label));

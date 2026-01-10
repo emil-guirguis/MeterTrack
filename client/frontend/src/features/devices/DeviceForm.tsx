@@ -47,7 +47,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
   ) => {
     console.log('renderCustomField called for:', fieldName, { 
       fieldDef, 
-      deviceId: device.device_id,
+      deviceId: device.id,
       hasDevice: !!device,
       deviceObject: device,
       deviceKeys: device ? Object.keys(device) : []
@@ -59,7 +59,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
         return <div>No device selected</div>;
       }
       
-      // Get device ID - device.id represents the device_id for the API
+      // Get device ID - use 'id' field from device object
       const deviceId = device.id;
       if (!deviceId && deviceId !== 0) {
         console.log('Device has no id:', device);

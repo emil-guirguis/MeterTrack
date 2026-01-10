@@ -1,6 +1,4 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { EntityManagementPage, FormModal } from '@framework/components/modal';
 
 import { ConfirmationModal } from '@framework/components/modal/';
 

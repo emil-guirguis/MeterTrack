@@ -202,9 +202,12 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((row, rowIndex) => (
+              data.map((row, rowIndex) => {
+                // Generate stable key from row data
+                const rowKey = row.id ? String(row.id) : `row-${rowIndex}-${JSON.stringify(row).substring(0, 20)}`;
+                return (
                 <TableRow
-                  key={rowIndex}
+                  key={rowKey}
                   className={`editable-data-grid__row ${row._isUnsaved ? '_unsaved' : ''}`}
                 >
                   {columns.map((column) => (
@@ -306,7 +309,8 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>

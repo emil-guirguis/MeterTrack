@@ -356,7 +356,7 @@ export const UserForm: React.FC<UserFormProps> = ({
         onSubmit={onSubmit}
         className="user-form"
         loading={loading}
-        excludeFields={user?.users_id ? ['passwordHash', 'lastLogin', 'password'] : ['passwordHash', 'lastLogin']}
+        excludeFields={user?.users_id ? ['passwordHash', 'lastLogin', 'password', 'permissions'] : ['passwordHash', 'lastLogin', 'permissions']}
         renderCustomField={renderCustomField}
         showTabs={true}
       />

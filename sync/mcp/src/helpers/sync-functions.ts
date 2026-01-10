@@ -34,6 +34,8 @@ export async function getRemoteEntities(
   tenantId: number,
   logMessage: string,
 ): Promise<any[]> {
+    console.log(`\n🔍 [Remote Query] Querying remote database for ${entityType} entities with tenant ID: ${tenantId}`);
+
   try {
     // Get entity metadata
     const metadata = ENTITY_METADATA[entityType];
@@ -41,10 +43,8 @@ export async function getRemoteEntities(
       throw new Error(`Unknown entity type: ${entityType}`);
     }
 
-    console.log(`\n🔍 [Remote Query] Querying remote database for ${entityType} entities`);
-
     // Build query
-    let query: string;
+    let query: string = '';
     let params: any[] = [];
 
     if (metadata.remoteQuery) {
@@ -56,6 +56,7 @@ export async function getRemoteEntities(
     } else {
       // Build standard query
       const columns = metadata.columns.join(', ');
+      query = `SELECT ${columns} FROM ${metadata.tableName}`;
 
       // Add tenant filter if applicable
       if (metadata.tenantFiltered) {
@@ -73,7 +74,7 @@ export async function getRemoteEntities(
     }
 
     // Execute query
-  const result = await execQuery(remotePool, query, params, logMessage);
+    const result = await execQuery(remotePool, query, params, logMessage);
 
     if (result.rows.length > 0) {
       console.log(`📊 [Remote Query] Sample data:`, JSON.stringify(result.rows[0], null, 2));

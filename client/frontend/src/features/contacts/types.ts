@@ -6,7 +6,7 @@
  */
 
 export type Contact = {
-  id: string;
+  contact_id: number;
   name: string;
   company?: string;
   role?: string;

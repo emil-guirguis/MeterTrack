@@ -112,6 +112,7 @@ class BaseModel {
         // Convert schema field definition to BaseModel field format
         const dbField = fieldDef.dbField || name;
         fieldMap.set(name, {
+          ...fieldDef,
           name,
           dbField: dbField,  // CRITICAL: Use dbField not column for deserializeRow compatibility
           column: dbField,   // Keep column for backward compatibility
@@ -119,7 +120,6 @@ class BaseModel {
           required: fieldDef.required || false,
           readOnly: fieldDef.readOnly || false,
           default: fieldDef.default,
-          ...fieldDef
         });
       });
       
@@ -1035,6 +1035,9 @@ class BaseModel {
       // Get the constructor (class) of this instance
       const ModelClass = /** @type {typeof BaseModel} */ (this.constructor);
       
+      // Get fields and validate configuration
+      const fields = ModelClass._getFields();
+      
       // Get primary key value from current instance
       const primaryKey = ModelClass.primaryKey;
       const primaryKeyValue = this[primaryKey];
@@ -1050,7 +1053,7 @@ class BaseModel {
       const where = { [primaryKey]: primaryKeyValue };
       
       // Build DELETE query
-      const queryResult = buildDeleteSQL(ModelClass.tableName, where);
+      const queryResult = buildDeleteSQL(ModelClass.tableName, where, fields, true);
       sql = queryResult.sql;
       values = queryResult.values;
       
@@ -1090,7 +1093,7 @@ class BaseModel {
    * // Create new record
    * const meter = new Meter({ meterid: 'M001', name: 'Main Meter' });
    * await meter.save();
-   * console.log(meter.id); // 5 (assigned by database)
+   * console.log(meter.meter_id); // 5 (assigned by database)
    * 
    * // Update existing record
    * meter.name = 'Updated Name';
@@ -1568,7 +1571,7 @@ class BaseModel {
    * const meters = await Meter.findAll({ where: { status: 'active' } });
    * const devicesMap = await Meter.batchLoadRelationship(meters, 'device');
    * meters.forEach(meter => {
-   *   meter.device = devicesMap.get(meter.id);
+   *   meter.device = devicesMap.get(meter.meter_id);
    * });
    */
   static async batchLoadRelationship(instances, relationshipName, options = {}) {

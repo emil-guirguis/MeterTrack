@@ -85,6 +85,8 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
 
   console.log(`[ValidationFieldSelect] ${fieldName}:`, { 
     value, 
+    valueType: typeof value,
+    valueAsString: String(value),
     optionsCount: options.length, 
     loading,
     isDisabled,
@@ -101,10 +103,26 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
 
   // Convert options to FormField format
   // MUI Select requires string values, so we convert IDs to strings
-  const formFieldOptions = options.map((option) => ({
-    value: String(option.id),
-    label: option.label,
-  }));
+  const formFieldOptions = options.map((option) => {
+    const stringValue = String(option.id);
+    console.log(`[ValidationFieldSelect] ${fieldName} option:`, { id: option.id, stringValue, label: option.label });
+    return {
+      value: stringValue,
+      label: option.label,
+    };
+  });
+
+  // Ensure value is a string for MUI Select comparison
+  // Handle null, undefined, 0, and other falsy values properly
+  const selectValue = value !== null && value !== undefined ? String(value) : '';
+
+  // Debug: Check if current value matches any option
+  const matchingOption = formFieldOptions.find(opt => opt.value === selectValue);
+  console.log(`[ValidationFieldSelect] ${fieldName} value matching:`, {
+    selectValue,
+    matchingOption,
+    allOptions: formFieldOptions,
+  });
 
   return (
     <div className={`${className}__field`}>
@@ -112,7 +130,7 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
         name={fieldName}
         label={fieldDef.label}
         type="select"
-        value={value ? String(value) : ''}
+        value={selectValue}
         error={error}
         touched={!!error}
         help={fieldDef.description}
@@ -121,9 +139,25 @@ export const ValidationFieldSelect: React.FC<ValidationFieldSelectProps> = ({
         placeholder={placeholderText}
         options={formFieldOptions}
         onChange={(e: any) => {
-          const selectedValue = e.target.value ? parseInt(e.target.value) : null;
+          const rawValue = e.target.value;
           console.log(`[ValidationFieldSelect] ${fieldName} onChange fired:`, {
-            rawValue: e.target.value,
+            rawValue,
+            rawValueType: typeof rawValue,
+            isUndefinedString: rawValue === 'undefined',
+          });
+          
+          // Handle the case where value is the string 'undefined'
+          let selectedValue: number | null = null;
+          if (rawValue && rawValue !== 'undefined' && rawValue !== '') {
+            selectedValue = parseInt(rawValue, 10);
+            if (isNaN(selectedValue)) {
+              console.warn(`[ValidationFieldSelect] ${fieldName} Failed to parse value:`, rawValue);
+              selectedValue = null;
+            }
+          }
+          
+          console.log(`[ValidationFieldSelect] ${fieldName} onChange result:`, {
+            rawValue,
             parsedValue: selectedValue,
             currentValue: value,
           });

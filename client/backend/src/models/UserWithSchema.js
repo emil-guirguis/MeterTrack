@@ -29,7 +29,7 @@ class User extends BaseModel {
      * @returns {string}
      */
     static get primaryKey() {
-        return 'users_id';
+        return 'id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
@@ -138,8 +138,8 @@ class User extends BaseModel {
                                 field({
                                     name: 'permissions',
                                     order: 2,
-                                    type: FieldTypes.ARRAY,
-                                    default: [],
+                                    type: FieldTypes.JSON,
+                                    default: {},
                                     required: false,
                                     label: 'Permissions',
                                     dbField: 'permissions',
@@ -183,7 +183,7 @@ class User extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'users_id',
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,
@@ -288,7 +288,7 @@ class User extends BaseModel {
             console.log('[USER MODEL] ✓ User found by email');
             console.log('[USER MODEL] User object keys:', Object.keys(result));
             console.log('[USER MODEL] User data:', {
-                users_id: result.users_id,
+                id: result.id,
                 email: result.email,
                 name: result.name,
                 role: result.role,

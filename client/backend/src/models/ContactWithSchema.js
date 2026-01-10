@@ -18,6 +18,21 @@ class Contact extends BaseModel {
     }
 
     /**
+     * Getter to provide contact_id as an alias for id
+     * This ensures the update method can find the primary key value
+     */
+    get contact_id() {
+        return this.id;
+    }
+
+    /**
+     * Setter to allow setting contact_id
+     */
+    set contact_id(value) {
+        this.id = value;
+    }
+
+    /**
      * @override
      */
     static get tableName() {
@@ -292,7 +307,7 @@ class Contact extends BaseModel {
             // Entity fields - read-only, system-managed
             entityFields: {
                 id: field({
-                    name: 'contact_id',
+                    name: 'id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,

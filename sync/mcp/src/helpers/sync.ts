@@ -55,17 +55,13 @@ export interface SyncOperationConfig {
  */
 export async function orchestrateSync(config: SyncOperationConfig): Promise<SyncOperationResult> {
   const startTime = Date.now();
-  
+
   try {
     console.log(`\n🔄 [Sync] Starting ${config.entityType} synchronization...`);
 
     // Get remote entities
     console.log(`🔍 [Sync] Querying remote database for ${config.entityType} entities...`);
-    const remoteEntities = await getRemoteEntities(
-      config.remotePool,
-      config.entityType,
-      config.tenantId
-    );
+    const remoteEntities = await getRemoteEntities(config.remotePool, config.entityType, config.tenantId ?? 0, 'orchestrateSync>getRemoteEntities');
     console.log(`📋 [Sync] Found ${remoteEntities.length} remote ${config.entityType} record(s)`);
 
     // Get local entities
@@ -92,7 +88,7 @@ export async function orchestrateSync(config: SyncOperationConfig): Promise<Sync
           const deleteKey = config.useCompositeKey && config.keyColumns
             ? config.keyColumns.map((col) => localEntity[col])
             : localEntity.id;
-          
+
           await deleteEntity(config.syncPool, config.entityType, deleteKey);
           deletedCount++;
           console.log(`   ✅ Deleted ${config.entityType}: ${key}`);
@@ -118,7 +114,7 @@ export async function orchestrateSync(config: SyncOperationConfig): Promise<Sync
             }
           }
 
-          await upsertEntity(config.syncPool, config.entityType, remoteEntity);
+          await upsertEntity(config.syncPool, config.entityType, remoteEntity, 'orchestrateSync>upsertEntity');
           insertedCount++;
           console.log(`   ✅ Inserted ${config.entityType}: ${key}`);
         } catch (error) {
@@ -132,7 +128,7 @@ export async function orchestrateSync(config: SyncOperationConfig): Promise<Sync
     for (const remoteEntity of remoteEntities) {
       const key = getEntityKey(remoteEntity, config.useCompositeKey, config.keyColumns);
       const localEntity = localMap.get(key);
-      
+
       if (localEntity) {
         // Check if entity has changed
         const hasChanges = config.changeDetector
@@ -151,7 +147,7 @@ export async function orchestrateSync(config: SyncOperationConfig): Promise<Sync
               }
             }
 
-            await upsertEntity(config.syncPool, config.entityType, remoteEntity);
+            await upsertEntity(config.syncPool, config.entityType, remoteEntity, 'orchestrateSync>upsertEntity2');
             updatedCount++;
             console.log(`   ✅ Updated ${config.entityType}: ${key}`);
           } catch (error) {
@@ -202,12 +198,12 @@ function createEntityMap(
   keyColumns?: string[]
 ): Map<string, any> {
   const map = new Map<string, any>();
-  
+
   for (const entity of entities) {
     const key = getEntityKey(entity, useCompositeKey, keyColumns);
     map.set(key, entity);
   }
-  
+
   return map;
 }
 
@@ -230,7 +226,7 @@ function getEntityKey(
  */
 function defaultChangeDetector(remote: any, local: any): boolean {
   const excludeFields = ['created_at', 'updated_at', 'id'];
-  
+
   for (const key in remote) {
     if (!excludeFields.includes(key)) {
       if (remote[key] !== local[key]) {
@@ -238,7 +234,7 @@ function defaultChangeDetector(remote: any, local: any): boolean {
       }
     }
   }
-  
+
   return false;
 }
 
@@ -274,7 +270,7 @@ export function createReferentialIntegrityValidator(
           `SELECT 1 FROM ${ref.table} WHERE ${ref.table}id = $1 LIMIT 1`,
           [entityId]
         );
-        
+
         if (result.rows.length === 0) {
           console.warn(`   ⚠️  Referenced ${ref.table} (ID: ${entityId}) does not exist`);
           return false;
@@ -284,7 +280,7 @@ export function createReferentialIntegrityValidator(
         return false;
       }
     }
-    
+
     return true;
   };
 }

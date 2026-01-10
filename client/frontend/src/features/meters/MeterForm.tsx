@@ -45,26 +45,40 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   return (
     <FormContainer>
       <div className="form-container__content">
-        {activeTab === 'Elements' && meter?.id ? (
-          <ElementsGrid
-            meterId={Number(meter.id)}
-            onError={(error) => console.error('ElementsGrid error:', error)}
-            onSuccess={(message) => console.log('ElementsGrid success:', message)}
-          />
-        ) : (
         <BaseForm
-            schemaName="meter"
-            entity={meter}
-            store={meters}
-            onCancel={onCancel}
-            onSubmit={onSubmit}
-            className="meter-form"
-            loading={loading}
-            validationDataProvider={validationDataProvider}
-            showTabs={true}
-            onTabChange={setActiveTab}
-          />
-        )}
+          schemaName="meter"
+          entity={meter}
+          store={meters}
+          onCancel={onCancel}
+          onSubmit={onSubmit}
+          className="meter-form"
+          loading={loading}
+          validationDataProvider={validationDataProvider}
+          showTabs={true}
+          onTabChange={setActiveTab}
+          renderCustomField={(fieldName, fieldDef, value, error, isDisabled, onChange) => {
+            console.log(`[MeterForm] renderCustomField called for: ${fieldName}`, {
+              fieldName,
+              hasMeterId: !!meter?.meter_id,
+              meterId: meter?.meter_id,
+              fieldDefType: fieldDef?.type,
+            });
+            
+            // When rendering the "elements" field, show the ElementsGrid instead
+            if (fieldName === 'elements' && meter?.meter_id) {
+              console.log(`[MeterForm] Rendering ElementsGrid for meter ${meter.meter_id}`);
+              return (
+                <ElementsGrid
+                  meterId={Number(meter.meter_id)}
+                  onError={(error) => console.error('ElementsGrid error:', error)}
+                  onSuccess={(message) => console.log('ElementsGrid success:', message)}
+                />
+              );
+            }
+            // Return null to let BaseForm render the default field
+            return null;
+          }}
+        />
       </div>
     </FormContainer>
   );

@@ -49,7 +49,7 @@ const devicesMap = await Meter.batchLoadRelationship(meters, 'device');
 
 // Assign devices to meters
 meters.forEach(meter => {
-  meter.device = devicesMap.get(meter.id);
+  meter.device = devicesMap.get(meter.meter_id);
 });
 ```
 

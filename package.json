@@ -18,7 +18,8 @@
     "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./stop-dev.ps1"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "vitest": "^4.0.16"
   },
   "keywords": [
     "meteritpro",

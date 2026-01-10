@@ -71,7 +71,7 @@ router.post('/login', [
     console.log('[AUTH LOGIN] User object keys:', Object.keys(user));
     console.log('[AUTH LOGIN] User object:', {
       // @ts-ignore - properties are dynamically set by schema initialization
-      users_id: user.users_id,
+      id: user.id,
       // @ts-ignore
       email: user.email,
       // @ts-ignore
@@ -96,7 +96,7 @@ router.post('/login', [
       // @ts-ignore - passwordHash is dynamically set by schema initialization
       if (!user.passwordHash) {
         // @ts-ignore - id is dynamically set by schema initialization
-        console.error(`[AUTH LOGIN] ✗ Authentication failed: User ${email} (ID: ${user.users_id}) has no password hash`);
+        console.error(`[AUTH LOGIN] ✗ Authentication failed: User ${email} (ID: ${user.id}) has no password hash`);
       }
       return res.status(401).json({
         success: false,
@@ -134,7 +134,7 @@ router.post('/login', [
 
     // Generate tokens
     // @ts-ignore - properties are dynamically set by schema initialization
-    const logMsg = `[AUTH LOGIN] Step 5: userId=${user.users_id}, tenant_id=${user.tenant_id}`;
+    const logMsg = `[AUTH LOGIN] Step 5: userId=${user.id}, tenant_id=${user.tenant_id}`;
     console.log(logMsg);
     
     // @ts-ignore - id and tenant_id are dynamically set by schema initialization
@@ -153,7 +153,7 @@ router.post('/login', [
     let tenant = null;
     try {
       // @ts-ignore - id is dynamically set by schema initialization
-      const userId = user.users_id;
+      const userId = user.id;
       const tenantResult = await require('../config/database').query(
         'SELECT * FROM tenant WHERE tenant_id = (SELECT tenant_id FROM users WHERE users_id = $1)',
         [userId]
@@ -198,7 +198,7 @@ router.post('/login', [
       data: {
         user: {
           // @ts-ignore - properties are dynamically set by schema initialization
-          users_id: user.users_id,
+          users_id: user.id,
           // @ts-ignore
           email: user.email,
           // @ts-ignore
@@ -329,7 +329,7 @@ router.post('/refresh', [
       success: true,
       data: {
         user: {
-          users_id: user.users_id,
+          users_id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
@@ -373,7 +373,7 @@ router.get('/verify', authenticateToken, async (req, res) => {
     // Ensure users_id is set from id field (schema maps users_id to id)
     const userResponse = {
       ...req.user,
-      users_id: req.user.users_id,
+      users_id: req.user.id,
       permissions: permissions,
       // @ts-ignore - tenant_id is dynamically set by schema initialization
       client: req.user.tenant_id
@@ -498,7 +498,7 @@ router.post('/bootstrap', [
       message: 'Admin user created successfully',
       data: {
         user: {
-          users_id: user.users_id,
+          users_id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,

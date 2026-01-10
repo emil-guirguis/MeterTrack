@@ -399,6 +399,9 @@ function isValidType(value, expectedType) {
       return actualType === 'object' && value !== null;
     case 'array':
       return Array.isArray(value);
+    case 'json':
+      // JSON can be a string (JSON-encoded), object, or array
+      return actualType === 'string' || (actualType === 'object' && value !== null);
     case 'date':
       return value instanceof Date || (actualType === 'string' && !isNaN(Date.parse(value)));
     default:

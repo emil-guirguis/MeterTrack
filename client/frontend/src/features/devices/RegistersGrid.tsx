@@ -69,6 +69,7 @@ export const RegistersGrid: React.FC<RegistersGridProps> = ({
   }, [deviceId, loadRegisters]);
 
   const gridData = registers.map((dr) => ({
+    id: dr.register_id, // Use register_id as the unique identifier
     device_id: dr.device_id,
     register: dr.register?.register || '',
     name: dr.register?.name || '',

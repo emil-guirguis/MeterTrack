@@ -23,17 +23,17 @@ export const MeterList: React.FC<MeterListProps> = ({
 }) => {
   const { checkPermission } = useAuth();
   const { schema } = useSchema('meter');
-  const [testingConnection, setTestingConnection] = useState<string | null>(null);
+  const [testingConnection, setTestingConnection] = useState<number | null>(null);
   const canRead = checkPermission(Permission.METER_READ);
 
   const handleTestConnection = useCallback(async (meter: Meter) => {
     if (!canRead) return;
-    setTestingConnection(meter.id);
+    setTestingConnection(meter.meter_id);
     try {
       const authToken = tokenStorage.getToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const response = await fetch(`/api/meters/${meter.id}/test-connection`, {
+      const response = await fetch(`/api/meters/${meter.meter_id}/test-connection`, {
         method: 'POST',
         headers
       });
@@ -68,11 +68,11 @@ export const MeterList: React.FC<MeterListProps> = ({
                   {canRead && (
                     <button
                       type="button"
-                      className={`btn btn--xs btn--outline-primary table-cell__connection-test ${testingConnection === meter.id ? 'btn--loading' : ''}`}
+                      className={`btn btn--xs btn--outline-primary table-cell__connection-test ${testingConnection === meter.meter_id ? 'btn--loading' : ''}`}
                       onClick={() => handleTestConnection(meter)}
-                      disabled={testingConnection === meter.id}
+                      disabled={testingConnection === meter.meter_id}
                     >
-                      {testingConnection === meter.id ? 'Testing...' : 'Test'}
+                      {testingConnection === meter.meter_id ? 'Testing...' : 'Test'}
                     </button>
                   )}
                 </div>

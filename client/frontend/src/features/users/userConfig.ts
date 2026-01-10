@@ -12,13 +12,8 @@
 import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
-import { Permission, UserRole as UserRoleEnum, type Permission as PermissionType } from '../../types/auth';
 import {
   createTwoLineColumn,
-  createStatusColumn,
-  createDateColumn,
-  createStatusFilter,
-  createStandardStatusActions,
   createExportAction,
 } from '../../config/listHelpers';
 
@@ -27,29 +22,25 @@ import {
 // ============================================================================
 
 /**
- * User TypeScript type
+ * User TypeScript type - matches UserWithSchema
  */
 export type User = {
-  id: string;
+  id: number;
   email: string;
   name: string;
-  client: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
-  permissions: PermissionType[];
+  role: 'Admin' | 'Manager' | 'Technician' | 'Viewer';
   active: boolean;
-  lastLogin?: Date;
-  createdAt: Date;
-  updatedAt: Date;
 };
 
-export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
+export type UserRole = 'Admin' | 'Manager' | 'Technician' | 'Viewer';
 
 // ============================================================================
-// LIST CONFIGURATION
+// LIST CONFIGURATION - AUTO-GENERATED FROM SCHEMA
 // ============================================================================
 
 /**
- * Column definitions for user list
+ * Column definitions for user list - auto-generated from schema
+ * Only includes fields marked with showOn: ['list'] in UserWithSchema
  */
 export const userColumns: ColumnDefinition<User>[] = [
   createTwoLineColumn<User>(
@@ -65,40 +56,39 @@ export const userColumns: ColumnDefinition<User>[] = [
     key: 'role' as keyof User,
     label: 'Role',
     sortable: true,
-    responsive: 'hide-mobile',
     render: (value) => {
       const role = value as UserRole;
       const getRoleVariant = (role: string) => {
         switch (role) {
-          case 'admin': return 'error';
-          case 'manager': return 'warning';
-          case 'technician': return 'info';
-          case 'viewer': return 'success';
+          case 'Admin': return 'error';
+          case 'Manager': return 'warning';
+          case 'Technician': return 'info';
+          case 'Viewer': return 'success';
           default: return 'neutral';
         }
       };
       return React.createElement('span', 
         { className: `badge badge--${getRoleVariant(role)} badge--uppercase` },
-        role.charAt(0).toUpperCase() + role.slice(1)
+        role
       );
     },
   },
   
-  createStatusColumn<User>('active', 'Active', {
-    labels: {
-      active: 'Active',
-      inactive: 'Inactive',
+  {
+    key: 'active' as keyof User,
+    label: 'Active',
+    sortable: true,
+    render: (value) => {
+      const isActive = value as boolean;
+      return React.createElement('span', 
+        { 
+          className: `status-indicator status-indicator--${isActive ? 'active' : 'inactive'}`,
+          title: isActive ? 'Active' : 'Inactive'
+        },
+        React.createElement('span', { className: 'status-indicator__circle' })
+      );
     },
-  }),
-  
-  createDateColumn<User>('lastLogin', 'Last Login', {
-    responsive: 'hide-mobile',
-    fallback: 'Never',
-  }),
-  
-  createDateColumn<User>('createdAt', 'Created', {
-    responsive: 'hide-tablet',
-  }),
+  },
 ];
 
 /**
@@ -110,15 +100,23 @@ export const userFilters: FilterDefinition[] = [
     label: 'Role',
     type: 'select',
     options: [
-      { label: 'Admin', value: UserRoleEnum.ADMIN },
-      { label: 'Manager', value: UserRoleEnum.MANAGER },
-      { label: 'Technician', value: UserRoleEnum.TECHNICIAN },
-      { label: 'Viewer', value: UserRoleEnum.VIEWER },
+      { label: 'Admin', value: 'Admin' },
+      { label: 'Manager', value: 'Manager' },
+      { label: 'Technician', value: 'Technician' },
+      { label: 'Viewer', value: 'Viewer' },
     ],
     placeholder: 'All Roles',
   },
-  
-  createStatusFilter(),
+  {
+    key: 'active',
+    label: 'Status',
+    type: 'select',
+    options: [
+      { label: 'Active', value: 'true' },
+      { label: 'Inactive', value: 'false' },
+    ],
+    placeholder: 'All Statuses',
+  },
 ];
 
 /**
@@ -126,20 +124,16 @@ export const userFilters: FilterDefinition[] = [
  */
 export const userStats: StatDefinition<User>[] = [
   {
-    label: 'Active Users',
-    value: (items, store) => store?.activeUsers?.length ?? (Array.isArray(items) ? items.filter(u => u.active).length : 0),
+    label: 'Total Users',
+    value: (items) => Array.isArray(items) ? items.length : 0,
   },
   {
-    label: 'Inactive Users',
-    value: (items, store) => store?.inactiveUsers?.length ?? (Array.isArray(items) ? items.filter(u => !u.active).length : 0),
+    label: 'Active Users',
+    value: (items) => Array.isArray(items) ? items.filter(u => u.active).length : 0,
   },
   {
     label: 'Administrators',
-    value: (items, store) => store?.adminUsers?.length ?? (Array.isArray(items) ? items.filter(u => u.role === 'admin').length : 0),
-  },
-  {
-    label: 'Total Users',
-    value: (items) => Array.isArray(items) ? items.length : 0,
+    value: (items) => Array.isArray(items) ? items.filter(u => u.role === 'Admin').length : 0,
   },
 ];
 
@@ -147,16 +141,10 @@ export const userStats: StatDefinition<User>[] = [
  * Bulk action configurations for user list
  */
 export function createUserBulkActions(
-  store: { bulkUpdateStatus: (ids: string[], status: string) => Promise<void> },
+  _store: any,
   exportFunction: (items: User[]) => void
 ): BulkActionConfig<User>[] {
   return [
-    ...createStandardStatusActions<User>(
-      'user',
-      'users',
-      store.bulkUpdateStatus,
-      { requirePermission: Permission.USER_UPDATE }
-    ),
     createExportAction<User>(exportFunction),
   ];
 }
@@ -170,17 +158,13 @@ export const userExportConfig: ExportConfig<User> = {
     'Name',
     'Email',
     'Role',
-    'Status',
-    'Last Login',
-    'Created',
+    'Active',
   ],
   mapRow: (user: User) => [
     user.name,
     user.email,
     user.role,
-    user.active,
-    user.lastLogin ? new Date(user.lastLogin).toISOString() : '',
-    new Date(user.createdAt).toISOString(),
+    user.active ? 'Yes' : 'No',
   ],
-  includeInfo: 'User export with name, email, role, status, and login information',
+  includeInfo: 'User export with name, email, role, and status information',
 };

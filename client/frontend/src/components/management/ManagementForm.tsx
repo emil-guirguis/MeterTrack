@@ -153,7 +153,7 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
       >
         {showLocationForm && (
           <LocationForm
-            key={editingLocation?.id ? `edit-${editingLocation.id}` : 'new'}
+            key={editingLocation?.location_id ? `edit-${editingLocation.location_id}` : 'new'}
             location={editingLocation || undefined}
             onCancel={handleLocationFormClose}
             onSubmit={async () => {
@@ -206,7 +206,7 @@ const ManagementForm: React.FC<ManagementFormProps> = ({
       >
         {showDeviceForm && (
           <DeviceForm
-            key={editingDevice?.id ? `edit-${editingDevice.id}` : 'new'}
+            key={editingDevice?.id ? `edit-${editingDevice.device_id}` : 'new'}
             device={editingDevice || undefined}
             onCancel={handleDeviceFormClose}
           />

@@ -36,7 +36,7 @@ export const DeviceManagementPage: React.FC = () => {
         >
           {showForm && selectedDevice && (
             <DeviceForm
-              key={`view-${selectedDevice.id}`}
+              key={`view-${selectedDevice.device_id}`}
               device={selectedDevice}
               onCancel={handleFormClose}
             />

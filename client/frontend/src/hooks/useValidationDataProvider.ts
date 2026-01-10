@@ -14,6 +14,7 @@ export const useValidationDataProvider = () => {
       isAuthenticated: auth.isAuthenticated,
       userTenant: auth.user?.client,
       locationsCount: auth.locations?.length || 0,
+      locationsArray: auth.locations,
     });
 
     // Handle location entity
@@ -21,21 +22,41 @@ export const useValidationDataProvider = () => {
       console.log(`[ValidationDataProvider] Getting locations from auth context`);
 
       // Get locations directly from auth context (backend already filters by tenant)
-      const locations = auth.locations || [];
+      let locations = auth.locations || [];
 
       if (!locations || locations.length === 0) {
-        console.warn(`[ValidationDataProvider] No locations found in auth context`);
-        return [];
+        console.warn(`[ValidationDataProvider] No locations found in auth context, attempting to fetch from API`);
+        console.warn(`[ValidationDataProvider] Full auth state:`, auth);
+        
+        // Fallback: fetch locations from API if not in auth context
+        try {
+          const response = await (authService as any).apiClient.get('/location');
+          console.log(`[ValidationDataProvider] Location API response:`, response.data);
+          
+          if (response.data.success && response.data.data?.items) {
+            locations = response.data.data.items;
+            console.log(`[ValidationDataProvider] Fetched ${locations.length} locations from API`);
+          } else {
+            console.warn(`[ValidationDataProvider] Location API response missing items`);
+            return [];
+          }
+        } catch (error) {
+          console.error(`[ValidationDataProvider] Failed to fetch locations from API:`, error);
+          return [];
+        }
       }
 
-      console.log(`[ValidationDataProvider] Found ${locations.length} locations in auth context`);
+      console.log(`[ValidationDataProvider] Found ${locations.length} locations`);
 
       // Map locations to options using labelField from fieldDef
       const labelField = fieldDef.validationFields?.[0] || 'name';
-      const options = locations.map((location: any) => ({
-        id: location.location_id,
-        label: location[labelField] || `${entityName} ${location.location_id}`,
-      }));
+      const options = locations.map((location: any) => {
+        console.log(`[ValidationDataProvider] Location object:`, location);
+        return {
+          id: location.location_id || location.id,
+          label: location[labelField] || `${entityName} ${location.location_id || location.id}`,
+        };
+      });
 
       console.log(`[ValidationDataProvider] Mapped ${options.length} location options`);
       options.forEach((opt: any, idx: number) => {
@@ -76,27 +97,20 @@ export const useValidationDataProvider = () => {
 
         // Map devices to options using multiple validation fields
         const validationFields = fieldDef.validationFields || ['manufacturer', 'model_number'];
+        
         const options = devices.map((device: any) => {
+          console.log(`[ValidationDataProvider] Device object:`, device);
+          
           // Combine multiple fields for the label
-          // Handle both camelCase and snake_case field names
           const labelParts = validationFields
-            .map((field: string) => {
-              // Try camelCase first, then snake_case
-              const camelCaseField = field.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-              return device[field] || device[camelCaseField];
-            })
-            .filter((val: any) => val);
-          const label = labelParts.length > 0 ? labelParts.join(' - ') : `Device ${device.device_id}`;
-
-          console.log(`[ValidationDataProvider] Device ${device.device_id}:`, {
-            validationFields,
-            labelParts,
-            label,
-            deviceKeys: Object.keys(device),
-          });
+            .map((field: string) => device[field])
+            .filter((val: any) => val && String(val).trim() !== '');
+          
+          // Use combined label or fallback to device_id
+          const label = labelParts.length > 0 ? labelParts.join(' - ') : `Device ${device.device_id || device.id}`;
 
           return {
-            id: device.device_id,
+            id: device.device_id || device.id,
             label,
           };
         });

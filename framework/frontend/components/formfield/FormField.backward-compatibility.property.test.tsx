@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import fc from 'fast-check';
 
 describe('FormField Backward Compatibility Property-Based Tests', () => {
@@ -83,7 +83,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           label: fc.string({ minLength: 1, maxLength: 50 }),
           type: fc.constantFrom('text', 'email', 'password', 'number', 'textarea', 'select', 'checkbox', 'radio', 'date', 'time', 'url', 'tel', 'search'),
         }),
-        (props) => {
+        (props: { name: string; label: string; type: string }) => {
           // Verify that all input types are supported by FormField
           const supportedTypes = ['text', 'email', 'password', 'number', 'textarea', 'select', 'checkbox', 'radio', 'date', 'time', 'url', 'tel', 'search'];
           
@@ -110,7 +110,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           error: fc.string({ minLength: 1, maxLength: 100 }),
           touched: fc.boolean(),
         }),
-        (props) => {
+        (props: { name: string; label: string; error: string; touched: boolean }) => {
           // Verify that error state props are valid
           // FormField should accept:
           // - error?: string
@@ -142,7 +142,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           label: fc.string({ minLength: 1, maxLength: 50 }),
           disabled: fc.boolean(),
         }),
-        (props) => {
+        (props: { name: string; label: string; disabled: boolean }) => {
           // Verify that disabled state prop is valid
           // FormField should accept:
           // - disabled?: boolean
@@ -172,7 +172,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           label: fc.string({ minLength: 1, maxLength: 50 }),
           required: fc.boolean(),
         }),
-        (props) => {
+        (props: { name: string; label: string; required: boolean }) => {
           // Verify that required prop is valid
           // FormField should accept:
           // - required?: boolean
@@ -202,7 +202,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           label: fc.string({ minLength: 1, maxLength: 50 }),
           placeholder: fc.string({ minLength: 1, maxLength: 50 }),
         }),
-        (props) => {
+        (props: { name: string; label: string; placeholder: string }) => {
           // Verify that label and placeholder props are valid
           // FormField should accept:
           // - label?: string
@@ -233,7 +233,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           name: fc.string({ minLength: 1, maxLength: 50 }),
           label: fc.string({ minLength: 1, maxLength: 50 }),
         }),
-        (props) => {
+        () => {
           // Verify that FormField requires onChange and onBlur handlers
           // These are required props that must be provided
           
@@ -287,7 +287,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           disabled: fc.option(fc.boolean()),
           className: fc.option(fc.string({ maxLength: 50 })),
         }),
-        (props) => {
+        (props: { name: string; label: string | null; type: string | null; value: string | number | boolean; error: string | null; touched: boolean | null; placeholder: string | null; required: boolean | null; disabled: boolean | null; className: string | null }) => {
           // Verify that all FormField API props are valid
           const apiPropsAreValid = 
             typeof props.name === 'string' &&
@@ -323,7 +323,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           label: fc.string({ minLength: 1, maxLength: 50 }),
           optionCount: fc.integer({ min: 1, max: 10 }),
         }),
-        (props) => {
+        (props: { name: string; label: string; optionCount: number }) => {
           // Verify that select fields with options are supported
           // FormField should accept:
           // - options?: FormFieldOption[]
@@ -353,7 +353,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           type: fc.constantFrom('checkbox', 'radio'),
           value: fc.boolean(),
         }),
-        (props) => {
+        (props: { name: string; label: string; type: string; value: boolean }) => {
           // Verify that checkbox and radio fields are supported
           const checkboxRadioAreSupported = 
             props.type === 'checkbox' || props.type === 'radio';
@@ -381,7 +381,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           value: fc.string({ maxLength: 500 }),
           rows: fc.integer({ min: 1, max: 10 }),
         }),
-        (props) => {
+        (props: { name: string; label: string; value: string; rows: number }) => {
           // Verify that textarea fields are supported
           // FormField should accept:
           // - rows?: number
@@ -411,7 +411,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           type: fc.constantFrom('date', 'time'),
           value: fc.string({ maxLength: 50 }),
         }),
-        (props) => {
+        (props: { name: string; label: string; type: string; value: string }) => {
           // Verify that date and time fields are supported
           const dateTimeAreSupported = 
             props.type === 'date' || props.type === 'time';
@@ -439,7 +439,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           type: fc.constantFrom('email', 'url'),
           value: fc.string({ maxLength: 100 }),
         }),
-        (props) => {
+        (props: { name: string; label: string; type: string; value: string }) => {
           // Verify that email and URL fields are supported
           const emailUrlAreSupported = 
             props.type === 'email' || props.type === 'url';
@@ -469,7 +469,7 @@ describe('FormField Backward Compatibility Property-Based Tests', () => {
           max: fc.option(fc.integer({ min: 100, max: 1000 })),
           step: fc.option(fc.integer({ min: 1, max: 10 })),
         }),
-        (props) => {
+        (props: { name: string; label: string; value: number; min: number | null; max: number | null; step: number | null }) => {
           // Verify that number fields with constraints are supported
           // FormField should accept:
           // - min?: number | string

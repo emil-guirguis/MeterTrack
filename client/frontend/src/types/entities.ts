@@ -18,20 +18,23 @@ export interface ContactInfo {
 
 // Location Management
 export interface Location {
-  location_id: string;
+  id?: number;
+  location_id?: number;
   name: string;
-  tenant_id: string | number;
-  address: Address;
-  contactInfo: ContactInfo;
-  status: 'active' | 'inactive' | 'maintenance';
-  type: 'office' | 'warehouse' | 'retail' | 'residential' | 'industrial';
-  totalFloors?: number;
-  totalUnits?: number;
-  yearBuilt?: number;
-  squareFootage?: number;
-  description?: string;
-  meterCount: number;
+  tenant_id?: string | number;
+  type: 'Warehouse' | 'Apartment' | 'Ofice' | 'Retail' | 'Hotel' | 'Building' | 'Other';
+  active: boolean;
+  street?: string;
+  street2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
   notes?: string;
+  created_at?: Date;
+  updated_at?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface LocationCreateRequest {
@@ -50,6 +53,15 @@ export interface LocationCreateRequest {
 
 export interface LocationUpdateRequest extends Partial<LocationCreateRequest> {
   location_id: string;
+}
+
+
+export interface BusinessInfo {
+  taxId?: string;
+  industry?: string;
+  website?: string;
+  preferredPaymentTerms?: string;
+  creditLimit?: number;
 }
 
 // Meter Management
@@ -272,22 +284,21 @@ export interface Meter {
 }
 
 export interface Device {
-  id: string;
+  device_id: number;
   type: string;
   manufacturer: string;
   model_number: string;
   description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 } 
 export interface MeterCreateRequest {
-  meterId: string;
+  meter_id: number;
   serial_number: string;
   device: string;
   model: string;
   ip: string;
-  portNumber: number;
-  slaveId?: number;
+  port: number;
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
   locationId?: string;
   configuration: MeterConfig;
@@ -295,6 +306,11 @@ export interface MeterCreateRequest {
   location?: string;
   description?: string;
   notes?: string;
+}
+
+export interface MeterUpdateRequest extends Partial<MeterCreateRequest> {
+  id: string;
+  status?: 'active' | 'inactive' | 'maintenance';
 }
 
 // Email Template Management
@@ -415,6 +431,14 @@ export interface EntityState<T> {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface CrudOperations<T, CreateRequest, UpdateRequest> {
+  create: (data: CreateRequest) => Promise<T>;
+  read: (id: string) => Promise<T>;
+  update: (data: UpdateRequest) => Promise<T>;
+  delete: (id: string) => Promise<void>;
+  list: (params?: ListParams) => Promise<ListResponse<T>>;
+}
+
 export interface ListParams {
   page?: number;
   pageSize?: number;
@@ -438,6 +462,13 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   errors?: string[];
+}
+
+export interface ApiError {
+  success: false;
+  message: string;
+  errors?: string[];
+  statusCode?: number;
 }
 
 // Validation and Form Types
@@ -476,3 +507,9 @@ export const ReadingQuality = {
 
 export type ReadingQuality = typeof ReadingQuality[keyof typeof ReadingQuality];
 
+export const ReadingSource = {
+  AUTOMATIC: 'automatic',
+  MANUAL: 'manual'
+} as const;
+
+export type ReadingSource = typeof ReadingSource[keyof typeof ReadingSource];

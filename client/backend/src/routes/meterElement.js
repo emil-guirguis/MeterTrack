@@ -184,7 +184,7 @@ router.post('/', async (req, res) => {
 // PUT /api/meters/:meterId/elements/:elementId - Update a meter element
 router.put('/:elementId', async (req, res) => {
   try {
-    const { meterId, meterElementId } = req.params;
+    const { meterId, elementId } = req.params;
     const { name,  element } = req.body;
     const tenantId = req.user?.tenantId || req.user?.tenant_id;
 
@@ -208,10 +208,10 @@ router.put('/:elementId', async (req, res) => {
       });
     }
 
-    // Verify element exists, belongs to meter, and tenant
+    // Verify element exists and belongs to meter
     const elementResult = await db.query(
-      'SELECT meter_element_id, name, element FROM meter_element WHERE meter_element_id = $1 AND meter_id = $2 AND tenant_id = $3',
-      [elementId, meterId, tenantId]
+      'SELECT meter_element_id, name, element FROM meter_element WHERE meter_element_id = $1 AND meter_id = $2',
+      [elementId, meterId]
     );
 
     if (elementResult.rows.length === 0) {
@@ -339,10 +339,10 @@ router.delete('/:elementId', async (req, res) => {
       });
     }
 
-    // Verify element exists, belongs to meter, and tenant
+    // Verify element exists and belongs to meter
     const elementResult = await db.query(
-      'SELECT meter_element_id FROM meter_element WHERE meter_element_id_ = $1 AND meter_id = $2 AND tenant_id = $3',
-      [elementId, meterId, tenantId]
+      'SELECT meter_element_id FROM meter_element WHERE meter_element_id = $1 AND meter_id = $2',
+      [elementId, meterId]
     );
 
     if (elementResult.rows.length === 0) {

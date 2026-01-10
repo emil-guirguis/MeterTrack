@@ -929,7 +929,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
                     // Check formFields first, then entityFields
                     const fieldDef = schema?.formFields?.[fieldName] || schema?.entityFields?.[fieldName];
                     console.log('[BaseForm] Rendering field:', { fieldName, hasFieldDef: !!fieldDef });
-                    return fieldDef ? renderField(fieldName, fieldDef) : null;
+                    return fieldDef ? <div key={fieldName}>{renderField(fieldName, fieldDef)}</div> : null;
                   })}
                 </div>
               );
@@ -944,7 +944,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
           
           return allFields.map(fieldName => {
             const fieldDef = schema?.formFields?.[fieldName];
-            return fieldDef ? renderField(fieldName, fieldDef) : null;
+            return fieldDef ? <div key={fieldName}>{renderField(fieldName, fieldDef)}</div> : null;
           });
         }
       })()}
@@ -965,7 +965,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
               return null;
             }
             
-            return renderField(fieldName, fieldDef);
+            return <div key={fieldName}>{renderField(fieldName, fieldDef)}</div>;
           })}
         </div>
       )}

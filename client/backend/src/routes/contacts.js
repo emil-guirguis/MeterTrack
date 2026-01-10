@@ -148,7 +148,7 @@ router.post('/', requirePermission('contact:create'), asyncHandler(async (req, r
   
   await contact.save();
   
-  console.log('[API] Contact created successfully:', contact.id);
+  console.log('[API] Contact created successfully:', contact.contact_id);
   res.status(201).json({ success: true, data: contact });
 }));
 
@@ -163,6 +163,16 @@ router.put('/:id', requirePermission('contact:update'), asyncHandler(async (req,
   
   // Find the contact first
   const contact = await Contact.findById(req.params.id);
+  
+  console.log('\n' + '='.repeat(80));
+  console.log('[API] Contact found from database');
+  console.log('='.repeat(80));
+  console.log('Contact instance keys:', Object.keys(contact));
+  console.log('Contact.id:', contact.id);
+  console.log('Contact.contact_id:', contact.contact_id);
+  console.log('Contact[Contact.primaryKey]:', contact[Contact.primaryKey]);
+  console.log('='.repeat(80) + '\n');
+  
   if (!contact) {
     return res.status(404).json({ success: false, message: 'Contact not found' });
   }

@@ -225,8 +225,8 @@ router.post('/login', [
       });
     }
 
-    // @ts-ignore - users_id is dynamically set by schema initialization
-    const userId = user.users_id;
+    // @ts-ignore - id is dynamically set by schema initialization
+    const userId = user.id;
 
     // Check if account is locked (Requirement 9.5)
     const lockoutStatus = await checkLoginLockout(userId);
@@ -355,7 +355,7 @@ router.post('/login', [
       data: {
         user: {
           // @ts-ignore - properties are dynamically set by schema initialization
-          users_id: user.users_id,
+          users_id: user.id,
           // @ts-ignore
           email: user.email,
           // @ts-ignore
@@ -523,7 +523,7 @@ router.post('/verify-2fa', [
       data: {
         user: {
           // @ts-ignore - properties are dynamically set by schema initialization
-          users_id: user.users_id,
+          users_id: user.id,
           // @ts-ignore
           email: user.email,
           // @ts-ignore
@@ -573,7 +573,7 @@ router.post('/change-password', authenticateToken, [
     }
 
     const { currentPassword, newPassword, confirmPassword } = req.body;
-    const userId = req.user.users_id;
+    const userId = req.user.id;
 
     // Verify passwords match
     if (newPassword !== confirmPassword) {
@@ -705,7 +705,7 @@ router.post('/forgot-password', [
 
       // Store token in database (Requirement 4.6)
       // @ts-ignore - id is dynamically set by schema initialization
-      await TokenService.storeResetToken(user.users_id, token_hash, expires_at);
+      await TokenService.storeResetToken(user.id, token_hash, expires_at);
 
       // Send email with reset link (Requirement 4.7, 4.8)
       const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
@@ -733,7 +733,7 @@ router.post('/forgot-password', [
       try {
         await AuthLoggingService.logEvent({
           // @ts-ignore - id is dynamically set by schema initialization
-          userId: user.users_id,
+          userId: user.id,
           eventType: 'password_reset_requested',
           status: 'success',
           details: { email }
@@ -902,7 +902,7 @@ router.post('/2fa/setup', authenticateToken, [
     }
 
     const { method, phoneNumber } = req.body;
-    const userId = req.user.users_id;
+    const userId = req.user.id;
 
     // Get user
     const user = await User.findById(userId);
@@ -978,7 +978,7 @@ router.post('/2fa/verify-setup', authenticateToken, [
     }
 
     const { method, code, secret, phoneNumber } = req.body;
-    const userId = req.user.users_id;
+    const userId = req.user.id;
 
     let isValid = false;
 
@@ -1078,7 +1078,7 @@ router.post('/2fa/verify-setup', authenticateToken, [
  */
 router.get('/2fa/methods', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.users_id;
+    const userId = req.user.id;
 
     // Get all enabled 2FA methods for user (Requirement 8.1)
     const result = await db.query(
@@ -1132,7 +1132,7 @@ router.post('/2fa/disable', authenticateToken, [
     }
 
     const { method, password } = req.body;
-    const userId = req.user.users_id;
+    const userId = req.user.id;
 
     // Get user
     const user = await User.findById(userId);
@@ -1217,7 +1217,7 @@ router.post('/2fa/regenerate-backup-codes', authenticateToken, [
     }
 
     const { password } = req.body;
-    const userId = req.user.users_id;
+    const userId = req.user.id;
 
     // Get user
     const user = await User.findById(userId);

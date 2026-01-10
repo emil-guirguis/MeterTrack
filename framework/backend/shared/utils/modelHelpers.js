@@ -238,7 +238,7 @@ function buildSelectSQL(tableName, fields, options = {}) {
   let whereClause = '';
   let values = [];
   if (where && Object.keys(where).length > 0) {
-    const whereResult = buildWhereClause(where, tableName);
+    const whereResult = buildWhereClause(where, tableName, 1, fields);
     whereClause = ` WHERE ${whereResult.clause}`;
     values = whereResult.values;
   }
@@ -336,7 +336,7 @@ function buildUpdateSQL(tableName, fields, data, where) {
   }
   
   // Build WHERE clause
-  const whereResult = buildWhereClause(where, tableName, paramIndex);
+  const whereResult = buildWhereClause(where, tableName, paramIndex, fields);
   values.push(...whereResult.values);
   
   const sql = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE ${whereResult.clause} RETURNING *`;
@@ -359,12 +359,15 @@ function buildUpdateSQL(tableName, fields, data, where) {
  * 
  * @param {string} tableName - The table name
  * @param {Object} where - WHERE conditions
+ * @param {Array<Object>} fields - Optional field metadata for dbField lookup
  * @returns {Object} { sql, values } - SQL query and parameter values
  */
-function buildDeleteSQL(tableName, where) {
-  const whereResult = buildWhereClause(where, tableName);
+function buildDeleteSQL(tableName, where, fields, doDeactivate) {
+  const whereResult = buildWhereClause(where, tableName, 1, fields);
   
-  const sql = `DELETE FROM ${tableName} WHERE ${whereResult.clause} RETURNING *`;
+  let sql = ``;
+  if (doDeactivate) { sql = `UPDATE ${tableName} set active = false WHERE ${whereResult.clause} RETURNING *`;}
+  else { sql = `DELETE FROM ${tableName} WHERE ${whereResult.clause} RETURNING *`;};
   
   return { sql, values: whereResult.values };
 }
@@ -376,48 +379,70 @@ function buildDeleteSQL(tableName, where) {
  * @param {Object} conditions - WHERE conditions
  * @param {string} tableName - Table name for prefixing columns
  * @param {number} paramOffset - Starting parameter index
+ * @param {Array<Object>|null} fields - Optional field metadata for dbField lookup
  * @returns {Object} { clause, values } - WHERE clause and parameter values
  */
-function buildWhereClause(conditions, tableName = '', paramOffset = 1) {
+function buildWhereClause(conditions, tableName = '', paramOffset = 1, fields = null) {
   const clauses = [];
   const values = [];
   let paramIndex = paramOffset;
   
   const prefix = tableName ? `${tableName}.` : '';
   
+  // Create a map of field names to field metadata for quick lookup
+  const fieldMap = new Map();
+  // Also create a reverse map of dbField to field metadata
+  const dbFieldMap = new Map();
+  if (fields && Array.isArray(fields)) {
+    fields.forEach(field => {
+      fieldMap.set(field.name, field);
+      // If the field has a dbField property, also map by dbField
+      if (field.dbField) {
+        dbFieldMap.set(field.dbField, field);
+      }
+    });
+  }
+  
   for (const [field, condition] of Object.entries(conditions)) {
+    // Look up the field definition to get the dbField property
+    // First try direct field name lookup, then try dbField lookup
+    let fieldDef = fieldMap.get(field);
+    if (!fieldDef && dbFieldMap.has(field)) {
+      fieldDef = dbFieldMap.get(field);
+    }
+    const columnName = fieldDef && fieldDef.dbField ? fieldDef.dbField : field;
     if (condition === null) {
-      clauses.push(`${prefix}${field} IS NULL`);
+      clauses.push(`${prefix}${columnName} IS NULL`);
     } else if (typeof condition === 'object' && !Array.isArray(condition) && !(condition instanceof Date)) {
       // Handle operator objects (but not Date objects)
       for (const [operator, value] of Object.entries(condition)) {
         switch (operator) {
           case 'eq':
-            clauses.push(`${prefix}${field} = $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} = $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'ne':
-            clauses.push(`${prefix}${field} != $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} != $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'gt':
-            clauses.push(`${prefix}${field} > $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} > $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'gte':
-            clauses.push(`${prefix}${field} >= $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} >= $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'lt':
-            clauses.push(`${prefix}${field} < $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} < $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'lte':
-            clauses.push(`${prefix}${field} <= $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} <= $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'like':
-            clauses.push(`${prefix}${field} LIKE $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} LIKE $${paramIndex++}`);
             values.push(serializeValue(value));
             break;
           case 'in':
@@ -425,14 +450,14 @@ function buildWhereClause(conditions, tableName = '', paramOffset = 1) {
               throw new Error(`'in' operator requires non-empty array for field ${field}`);
             }
             const inPlaceholders = value.map(() => `$${paramIndex++}`).join(', ');
-            clauses.push(`${prefix}${field} IN (${inPlaceholders})`);
+            clauses.push(`${prefix}${columnName} IN (${inPlaceholders})`);
             values.push(...value.map(v => serializeValue(v)));
             break;
           case 'between':
             if (!Array.isArray(value) || value.length !== 2) {
               throw new Error(`'between' operator requires array of 2 values for field ${field}`);
             }
-            clauses.push(`${prefix}${field} BETWEEN $${paramIndex++} AND $${paramIndex++}`);
+            clauses.push(`${prefix}${columnName} BETWEEN $${paramIndex++} AND $${paramIndex++}`);
             values.push(serializeValue(value[0]), serializeValue(value[1]));
             break;
           default:
@@ -441,7 +466,7 @@ function buildWhereClause(conditions, tableName = '', paramOffset = 1) {
       }
     } else {
       // Simple equality
-      clauses.push(`${prefix}${field} = $${paramIndex++}`);
+      clauses.push(`${prefix}${columnName} = $${paramIndex++}`);
       values.push(serializeValue(condition));
     }
   }
@@ -507,7 +532,7 @@ function buildJoinClause(tableName, includes, relationships, parentAlias = null)
     switch (type) {
       case 'belongsTo':
         // Foreign key is in the current table
-        // Example: meter.device_id -> device.id
+        // Example: meter.device_id -> device.device_id
         joinClauses.push(
           ` LEFT JOIN ${relatedTable} AS ${alias} ON ${sourceTable}.${foreignKey} = ${alias}.${targetKey}`
         );

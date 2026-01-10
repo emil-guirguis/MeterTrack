@@ -1,9 +1,3 @@
-/**
- * StatCard Component
- * 
- * Displays a statistic with icon, title, value, and optional subtitle
- */
-
 import React from 'react';
 import type { StatCardProps } from '../types/widget';
 import './StatCard.css';
@@ -91,7 +85,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       style={cardStyle}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      role={onClick ? 'button' : undefined}
+      {...(onClick ? { role: 'button' } : {})}
       tabIndex={onClick ? 0 : undefined}
       aria-label={onClick ? `${title}: ${formattedValue}` : undefined}
     >

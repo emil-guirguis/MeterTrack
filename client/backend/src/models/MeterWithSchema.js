@@ -267,6 +267,15 @@ class Meter extends BaseModel {
 
       // Form fields - user can edit these (kept for backward compatibility and list display)
       formFields: {
+        elements: field({
+          type: FieldTypes.OBJECT,
+          default: null,
+          required: false,
+          label: 'Elements',
+          dbField: null,
+          showOn: ['form'],
+        }),
+
         device: field({
           type: FieldTypes.STRING,
           default: '',

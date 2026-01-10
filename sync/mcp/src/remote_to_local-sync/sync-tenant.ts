@@ -54,7 +54,7 @@ export async function syncTenant(
     const remoteQuery = tenantId
       ? `SELECT * FROM tenant WHERE tenant_id = $1`
       : `SELECT * FROM tenant`;
-    const remoteTenants = await getRemoteEntities(remotePool, 'tenant', tenantId, ' sync-tenant.ts > syncTenant1 ');
+    const remoteTenants = await getRemoteEntities(remotePool, 'tenant', tenantId, ' sync-tenant.ts > syncTenant1');
     console.log(`📋 [Tenant Sync] Found ${remoteTenants.length} remote tenant(s)`);
 
     // Get local tenants

@@ -30,7 +30,6 @@ export type Meter = {
     port?: number;
     slaveId?: number;
   };
-  locationId?: string;
   [key: string]: any;
 };
 

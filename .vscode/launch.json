@@ -43,6 +43,23 @@
       ]
     },
     {
+      "name": "Client Frontend Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}/client/frontend",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
       "name": "Client Frontend (Chrome)",
       "type": "chrome",
       "request": "launch",
@@ -98,6 +115,7 @@
       "name": "Debug Client Full (Backend + Frontend)",
       "configurations": [
         "Client Backend (Node.js)",
+        "Client Frontend Server",
         "Client Frontend (Chrome)"
       ]
     },

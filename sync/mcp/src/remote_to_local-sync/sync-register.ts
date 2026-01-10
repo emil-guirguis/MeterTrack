@@ -51,7 +51,7 @@ export async function syncRegisters(
 
     // Get remote registers filtered by tenant_id
     console.log(`\n🔍 [Register Sync] Querying remote database for registers...`);
-    const remoteRegisters = await getRemoteEntities(remotePool, 'register', tenantId);
+    const remoteRegisters = await getRemoteEntities(remotePool, 'register', tenantId, 'syncRegisters>getRemoteEntities');
     console.log(`📋 [Register Sync] Found ${remoteRegisters.length} remote register(s)`);
 
     // Get local registers
@@ -87,7 +87,7 @@ export async function syncRegisters(
     for (const remoteRegister of remoteRegisters) {
       if (!localMap.has(remoteRegister.register_id)) {
         try {
-          await upsertEntity(syncPool, 'register', remoteRegister);
+          await upsertEntity(syncPool, 'register', remoteRegister, 'syncRegisters>upsertEntity1');
           insertedCount++;
           console.log(`   ✅ Inserted register: ${remoteRegister.name} (ID: ${remoteRegister.register_id})`);
         } catch (error) {
@@ -110,7 +110,7 @@ export async function syncRegisters(
 
         if (hasChanges) {
           try {
-            await upsertEntity(syncPool, 'register', remoteRegister);
+            await upsertEntity(syncPool, 'register', remoteRegister, 'syncRegisters>upsertEntity2');
             updatedCount++;
             console.log(`   ✅ Updated register: ${remoteRegister.name} (ID: ${remoteRegister.register_id})`);
           } catch (error) {

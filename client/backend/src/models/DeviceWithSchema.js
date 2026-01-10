@@ -28,7 +28,7 @@ class Device extends BaseModel {
      * @override
      */
     static get primaryKey() {
-        return 'id';
+        return 'device_id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====

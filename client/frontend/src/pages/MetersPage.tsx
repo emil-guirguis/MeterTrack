@@ -33,7 +33,7 @@ const MetersPage: React.FC = () => {
       if (viewMode === 'create') {
         await meters.createMeter(data);
       } else if (viewMode === 'edit' && selectedMeter) {
-        await meters.updateMeter(selectedMeter.id, data);
+        await meters.updateMeter(selectedMeter.meter_id, data);
       }
       setViewMode('list');
       setSelectedMeter(null);
