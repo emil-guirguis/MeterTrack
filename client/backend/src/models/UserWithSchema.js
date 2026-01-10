@@ -125,13 +125,13 @@ class User extends BaseModel {
                                     name: 'role',
                                     order: 1,
                                     type: FieldTypes.STRING,
-                                    default: 'Viewer',
+                                    default: 'viewer',
                                     required: false,
                                     label: 'Role',
                                     dbField: 'role',
                                     maxLength: 20,
-                                    enumValues: ['Admin', 'Manager', 'Technician', 'Viewer'],
-                                    placeholder: 'Viewer',
+                                    enumValues: ['admin', 'manager', 'technician', 'viewer'],
+                                    placeholder: 'viewer',
                                     filertable: ['true'],
                                     showOn: ['list', 'form'],
                                 }),
@@ -162,6 +162,7 @@ class User extends BaseModel {
                                     maxLength: 200,
                                     readOnly: true,
                                     showOn: ['form'],
+                                    placeholder: 'No active reset token',
                                 }),
                                 field({
                                     name: 'password_reset_expires_at',
@@ -169,10 +170,11 @@ class User extends BaseModel {
                                     type: FieldTypes.DATE,
                                     default: null,
                                     required: false,
-                                    label: 'Password Reset Expires At',
+                                    label: 'Reset Token Expires',
                                     dbField: 'password_reset_expires_at',
                                     readOnly: true,
                                     showOn: ['form'],
+                                    placeholder: 'No expiration date',
                                 }),
                             ],
                         }),
@@ -382,6 +384,13 @@ class User extends BaseModel {
         if (typeof storedPermissions === 'string') {
             try {
                 const parsed = JSON.parse(storedPermissions);
+                
+                // If it's a flat array, convert to nested object
+                if (Array.isArray(parsed)) {
+                    return PermissionsService.toNestedObject(parsed);
+                }
+                
+                // If it's a nested object, validate and return
                 if (PermissionsService.validatePermissionsObject(parsed)) {
                     return parsed;
                 }

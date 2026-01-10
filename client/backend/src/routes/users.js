@@ -158,6 +158,17 @@ router.put('/:id', requirePermission('user:update'), asyncHandler(async (req, re
   delete updateData.tenant_id;
   delete updateData.tenantId;
   
+  // Remove read-only fields that shouldn't be updated
+  delete updateData.password_reset_token;
+  delete updateData.password_reset_expires_at;
+  delete updateData.passwordHash;
+  delete updateData.createdAt;
+  delete updateData.updatedAt;
+  delete updateData.lastLogin;
+  delete updateData.passwordChangedAt;
+  delete updateData.failedLoginAttempts;
+  delete updateData.lockedUntil;
+  
   // Handle permissions serialization if provided
   if (updateData.permissions !== undefined && updateData.permissions !== null) {
     // Skip empty permissions (don't update if empty)
@@ -193,13 +204,24 @@ router.put('/:id', requirePermission('user:update'), asyncHandler(async (req, re
       // If permissions is already a JSON string, validate it
       try {
         const parsed = JSON.parse(updateData.permissions);
-        if (!PermissionsService.validatePermissionsObject(parsed)) {
+        
+        // If it's a flat array, convert to nested object first
+        if (Array.isArray(parsed)) {
+          const nestedObj = PermissionsService.toNestedObject(parsed);
+          if (!PermissionsService.validatePermissionsObject(nestedObj)) {
+            return res.status(400).json({
+              success: false,
+              message: 'Invalid permissions array format'
+            });
+          }
+          updateData.permissions = JSON.stringify(nestedObj);
+        } else if (!PermissionsService.validatePermissionsObject(parsed)) {
           return res.status(400).json({
             success: false,
             message: 'Invalid permissions JSON format'
           });
         }
-        // Keep as JSON string
+        // Keep as JSON string (already converted if needed)
       } catch (e) {
         return res.status(400).json({
           success: false,
@@ -210,7 +232,19 @@ router.put('/:id', requirePermission('user:update'), asyncHandler(async (req, re
   }
   
   // Update the user using instance method
-  await user.update(updateData);
+  try {
+    await user.update(updateData);
+  } catch (error) {
+    console.error('[USER UPDATE] Validation error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        details: error.details || error.invalidFields
+      });
+    }
+    throw error;
+  }
   
   res.json({ success: true, data: user });
 }));

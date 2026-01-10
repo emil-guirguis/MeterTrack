@@ -12,7 +12,7 @@ const testUser = {
   name: 'Test User',
   email: 'test-permissions@example.com',
   password: 'TestPassword123!',
-  role: 'Manager',
+  role: 'manager',
   active: true
 };
 

@@ -28,11 +28,11 @@ export type User = {
   id: number;
   email: string;
   name: string;
-  role: 'Admin' | 'Manager' | 'Technician' | 'Viewer';
+  role: 'admin' | 'manager' | 'technician' | 'viewer';
   active: boolean;
 };
 
-export type UserRole = 'Admin' | 'Manager' | 'Technician' | 'Viewer';
+export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
 
 // ============================================================================
 // LIST CONFIGURATION - AUTO-GENERATED FROM SCHEMA
@@ -59,17 +59,18 @@ export const userColumns: ColumnDefinition<User>[] = [
     render: (value) => {
       const role = value as UserRole;
       const getRoleVariant = (role: string) => {
-        switch (role) {
-          case 'Admin': return 'error';
-          case 'Manager': return 'warning';
-          case 'Technician': return 'info';
-          case 'Viewer': return 'success';
+        switch (role.toLowerCase()) {
+          case 'admin': return 'error';
+          case 'manager': return 'warning';
+          case 'technician': return 'info';
+          case 'viewer': return 'success';
           default: return 'neutral';
         }
       };
+      const displayRole = role.charAt(0).toUpperCase() + role.slice(1);
       return React.createElement('span', 
         { className: `badge badge--${getRoleVariant(role)} badge--uppercase` },
-        role
+        displayRole
       );
     },
   },
@@ -100,10 +101,10 @@ export const userFilters: FilterDefinition[] = [
     label: 'Role',
     type: 'select',
     options: [
-      { label: 'Admin', value: 'Admin' },
-      { label: 'Manager', value: 'Manager' },
-      { label: 'Technician', value: 'Technician' },
-      { label: 'Viewer', value: 'Viewer' },
+      { label: 'Admin', value: 'admin' },
+      { label: 'Manager', value: 'manager' },
+      { label: 'Technician', value: 'technician' },
+      { label: 'Viewer', value: 'viewer' },
     ],
     placeholder: 'All Roles',
   },
@@ -133,7 +134,7 @@ export const userStats: StatDefinition<User>[] = [
   },
   {
     label: 'Administrators',
-    value: (items) => Array.isArray(items) ? items.filter(u => u.role === 'Admin').length : 0,
+    value: (items) => Array.isArray(items) ? items.filter(u => u.role === 'admin').length : 0,
   },
 ];
 
