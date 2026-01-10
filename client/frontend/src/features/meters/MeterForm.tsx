@@ -57,23 +57,36 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           showTabs={true}
           onTabChange={setActiveTab}
           renderCustomField={(fieldName, fieldDef, value, error, isDisabled, onChange) => {
-            console.log(`[MeterForm] renderCustomField called for: ${fieldName}`, {
-              fieldName,
+            console.log(`[MeterForm] renderCustomField - fieldName: ${fieldName}`, {
+              meter_id: meter?.meter_id,
+              id: meter?.id,
+              meter: meter,
               hasMeterId: !!meter?.meter_id,
-              meterId: meter?.meter_id,
-              fieldDefType: fieldDef?.type,
             });
             
             // When rendering the "elements" field, show the ElementsGrid instead
-            if (fieldName === 'elements' && meter?.meter_id) {
-              console.log(`[MeterForm] Rendering ElementsGrid for meter ${meter.meter_id}`);
-              return (
-                <ElementsGrid
-                  meterId={Number(meter.meter_id)}
-                  onError={(error) => console.error('ElementsGrid error:', error)}
-                  onSuccess={(message) => console.log('ElementsGrid success:', message)}
-                />
-              );
+            if (fieldName === 'elements') {
+              const meterId = meter?.meter_id || meter?.id;
+              console.log(`[MeterForm] Rendering elements field`, {
+                meter_id: meterId,
+                shouldRenderGrid: !!meterId,
+              });
+              
+              if (meterId) {
+                console.log(`[MeterForm] ✅ Rendering ElementsGrid for meter ${meterId}`);
+                return (
+                  <div style={{ width: '100%', minHeight: '400px' }}>
+                    <ElementsGrid
+                      meterId={Number(meterId)}
+                      onError={(error) => console.error('ElementsGrid error:', error)}
+                      onSuccess={(message) => console.log('ElementsGrid success:', message)}
+                    />
+                  </div>
+                );
+              } else {
+                console.log(`[MeterForm] ❌ No meter_id, returning placeholder`);
+                return <div>Save the meter first to manage elements</div>;
+              }
             }
             // Return null to let BaseForm render the default field
             return null;

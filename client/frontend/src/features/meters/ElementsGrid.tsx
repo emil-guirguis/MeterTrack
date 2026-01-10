@@ -297,6 +297,21 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         return;
       }
 
+      // Validate element uniqueness BEFORE updating
+      if (column === 'element' && value) {
+        const trimmedValue = value.trim();
+        const isDuplicate = elements.some((el) => el.meter_element_id !== element.meter_element_id && el.element.trim() === trimmedValue);
+        if (isDuplicate) {
+          const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
+          console.log('❌ [ElementsGrid] Duplicate element detected:', errorMsg);
+          setToastMessage(errorMsg);
+          setToastSeverity('error');
+          setToastOpen(true);
+          // Don't update the value, keep the original
+          return;
+        }
+      }
+
       setError(null);
 
       // Immediately update UI (optimistic update)
@@ -408,51 +423,83 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         onRetry={loadElements}
         onRowAdd={handleAddElement}
         onRowDelete={handleRowDelete}
+        onRowSave={(rowId) => {
+          // Save the unsaved row
+          if (rowId === 0 && unsavedRow) {
+            handleSaveUnsavedRow();
+          }
+        }}
         onCellChange={handleCellChange}
         onCellValidate={(rowId, column, value) => {
-          // Validate element uniqueness
-          if (column === 'element' && value) {
-            console.log('🔍 Validating element:', { rowId, value, unsavedRow, elementsCount: elements.length, allElements: elements.map(e => ({ id: e.meter_element_id, element: e.element })) });
+          console.log('🔍 [ElementsGrid] onCellValidate called:', { rowId, column, value });
+          
+          // Only validate element column
+          if (column !== 'element' || !value) {
+            console.log('✅ [ElementsGrid] Skipping validation - not element column or no value');
+            return true;
+          }
+
+          console.log('🔍 [ElementsGrid] Validating element:', { rowId, column, value, elementCount: elements.length, hasUnsavedRow: !!unsavedRow });
+
+          // Check if this is the unsaved row
+          if (unsavedRow && rowId === 0) {
+            const trimmedValue = value.trim();
+            console.log('🔍 [ElementsGrid] Checking unsaved row against elements:', { 
+              value: trimmedValue, 
+              valueType: typeof trimmedValue,
+              elements: elements.map(el => ({ 
+                element: el.element.trim(), 
+                elementType: typeof el.element,
+                meter_element_id: el.meter_element_id 
+              }))
+            });
+            const isDuplicate = elements.some((el) => {
+              const match = el.element.trim() === trimmedValue;
+              console.log(`  Comparing "${el.element.trim()}" === "${trimmedValue}": ${match}`);
+              return match;
+            });
+            console.log('🔍 [ElementsGrid] isDuplicate result:', isDuplicate);
+            if (isDuplicate) {
+              const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
+              console.log('❌ [ElementsGrid] Duplicate found in unsaved row:', errorMsg);
+              setToastMessage(errorMsg);
+              setToastSeverity('error');
+              setToastOpen(true);
+              return false;
+            }
+          } else {
+            // For saved rows
+            const actualRowId = unsavedRow ? rowId - 1 : rowId;
+            const element = elements[actualRowId];
+            const trimmedValue = value.trim();
             
-            // Check if this is the unsaved row (only if unsavedRow exists and rowId is 0)
-            if (unsavedRow && rowId === 0) {
-              // For unsaved row, check against all saved elements
-              const isDuplicate = elements.some((el) => el.element === value);
-              console.log('✅ Unsaved row check:', { isDuplicate, value });
+            console.log('🔍 [ElementsGrid] Checking saved row:', { actualRowId, element: element?.element.trim(), value: trimmedValue });
+            
+            if (element) {
+              // Check against other saved elements
+              const isDuplicate = elements.some((el) => el.meter_element_id !== element.meter_element_id && el.element.trim() === trimmedValue);
               if (isDuplicate) {
-                const errorMsg = `Element "${value}" is already assigned to this meter`;
+                const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
+                console.log('❌ [ElementsGrid] Duplicate found in saved row:', errorMsg);
                 setToastMessage(errorMsg);
                 setToastSeverity('error');
                 setToastOpen(true);
                 return false;
               }
-            } else {
-              // For saved rows, adjust rowId based on whether unsavedRow exists
-              const actualRowId = unsavedRow ? rowId - 1 : rowId;
-              const element = elements[actualRowId];
-              console.log('✅ Saved row check:', { actualRowId, element, value, allElements: elements.map(e => e.element) });
-              if (element) {
-                // Check against other saved elements (excluding current element)
-                const isDuplicate = elements.some((el) => el.meter_element_id !== element.meter_element_id && el.element === value);
-                console.log('❌ Duplicate check result:', isDuplicate);
-                if (isDuplicate) {
-                  const errorMsg = `Element "${value}" is already assigned to this meter`;
-                  setToastMessage(errorMsg);
-                  setToastSeverity('error');
-                  setToastOpen(true);
-                  return false;
-                }
-                // Check against unsaved row if it exists
-                if (unsavedRow && unsavedRow.element === value) {
-                  const errorMsg = `Element "${value}" is already assigned to this meter`;
-                  setToastMessage(errorMsg);
-                  setToastSeverity('error');
-                  setToastOpen(true);
-                  return false;
-                }
+              
+              // Check against unsaved row
+              if (unsavedRow && unsavedRow.element.trim() === trimmedValue) {
+                const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
+                console.log('❌ [ElementsGrid] Duplicate found in unsaved row:', errorMsg);
+                setToastMessage(errorMsg);
+                setToastSeverity('error');
+                setToastOpen(true);
+                return false;
               }
             }
           }
+
+          console.log('✅ [ElementsGrid] Validation passed for element:', value);
           return true;
         }}
         onCellBlur={(rowId, column, value) => {

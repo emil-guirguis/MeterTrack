@@ -151,6 +151,15 @@
   background-color: rgba(211, 47, 47, 0.1);
 }
 
+.editable-data-grid__save-button {
+  color: #4caf50;
+  transition: background-color 0.2s ease;
+}
+
+.editable-data-grid__save-button:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
 .editable-data-grid__empty {
   padding: 32px 16px;
   color: #999;

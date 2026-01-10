@@ -14,7 +14,7 @@ import {
   Box,
   Paper,
 } from '@mui/material';
-import { Delete as DeleteIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 import './EditableDataGrid.css';
 
 export interface GridColumn {
@@ -31,6 +31,7 @@ export interface EditableDataGridProps {
   columns: GridColumn[];
   onRowAdd?: () => void;
   onRowDelete?: (rowId: number) => void;
+  onRowSave?: (rowId: number) => void;
   onCellChange?: (rowId: number, column: string, value: any) => void;
   onCellBlur?: (rowId: number, column: string, value: any) => void;
   onCellValidate?: (rowId: number, column: string, value: any) => boolean; // Returns true if valid
@@ -51,6 +52,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
   columns,
   onRowAdd,
   onRowDelete,
+  onRowSave,
   onCellChange,
   onCellBlur,
   onCellValidate,
@@ -116,12 +118,22 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
       if (e.key === 'Enter') {
-        handleCellSave();
+        // Check if this is the last column
+        if (editingCell) {
+          const lastColumnKey = columns[columns.length - 1]?.key;
+          if (editingCell.column === lastColumnKey && data[editingCell.rowId]?._isUnsaved) {
+            // For unsaved rows on the last column, trigger save
+            onRowSave?.(editingCell.rowId);
+          } else {
+            // For other columns, just save the cell
+            handleCellSave();
+          }
+        }
       } else if (e.key === 'Escape') {
         handleCellCancel();
       }
     },
-    [handleCellSave, handleCellCancel]
+    [handleCellSave, handleCellCancel, editingCell, columns, data, onRowSave]
   );
 
   const isEditing = (rowId: number, column: string) =>
@@ -216,6 +228,8 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                       ref={isEditing(rowIndex, column.key) ? cellRef : null}
                       onClick={() => handleCellClick(rowIndex, column)}
                       data-select-cell={column.type === 'select' ? 'true' : 'false'}
+                      data-row-id={rowIndex}
+                      data-column={column.key}
                       className={`editable-data-grid__cell ${
                         column.editable !== false
                           ? 'editable-data-grid__cell--editable'
@@ -229,63 +243,22 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                       {isEditing(rowIndex, column.key) ? (
                         <>
                           {column.type === 'select' && column.options ? (
-                          <div style={{ visibility: 'hidden', height: '0' }}>
-                            <select
-                              ref={selectRef}
+                            <div style={{ visibility: 'hidden', height: '0' }}>
+                              {/* Hidden select - floating select is rendered below */}
+                            </div>
+                          ) : (
+                            <TextField
                               autoFocus
-                              size={Math.min(10, (column.options?.length || 0) + 1)}
                               value={editValue}
-                              title="Select element"
-                              onChange={(e) => {
-                                const newValue = e.target.value;
-                                
-                                // Validate before saving
-                                if (editingCell && onCellValidate) {
-                                  const isValid = onCellValidate(editingCell.rowId, editingCell.column, newValue);
-                                  if (!isValid) {
-                                    // Validation failed - keep select open, reset to previous value
-                                    setEditValue(editValue);
-                                    return;
-                                  }
-                                }
-                                
-                                // Save immediately after selection
-                                if (editingCell && onCellChange) {
-                                  onCellChange(editingCell.rowId, editingCell.column, newValue);
-                                  onCellBlur?.(editingCell.rowId, editingCell.column, newValue);
-                                }
-                                
-                                // Clear editing state
-                                setEditingCell(null);
-                                setEditValue('');
-                              }}
-                              onBlur={() => {
-                                setEditingCell(null);
-                                setEditValue('');
-                              }}
-                              className="editable-data-grid__select"
-                            >
-                              <option value="">Select...</option>
-                              {column.options.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        ) : (
-                          <TextField
-                            autoFocus
-                            value={editValue}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCellChange(e.target.value)}
-                            onBlur={() => handleCellSave()}
-                            onKeyDown={handleKeyDown}
-                            size="small"
-                            variant="outlined"
-                            fullWidth
-                            className="editable-data-grid__input"
-                          />
-                        )}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCellChange(e.target.value)}
+                              onBlur={() => handleCellSave()}
+                              onKeyDown={handleKeyDown}
+                              size="small"
+                              variant="outlined"
+                              fullWidth
+                              className="editable-data-grid__input"
+                            />
+                          )}
                         </>
                       ) : (
                         <div className="editable-data-grid__cell-content">
@@ -299,14 +272,27 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                     align="center"
                     className="editable-data-grid__actions-cell"
                   >
-                    <IconButton
-                      size="small"
-                      onClick={() => onRowDelete?.(rowIndex)}
-                      className="editable-data-grid__delete-button"
-                      title="Delete row"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    {row._isUnsaved ? (
+                      <IconButton
+                        size="small"
+                        onClick={() => onRowSave?.(rowIndex)}
+                        className="editable-data-grid__save-button"
+                        title="Save row"
+                        color="success"
+                      >
+                        <SaveIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        size="small"
+                        onClick={() => onRowDelete?.(rowIndex)}
+                        className="editable-data-grid__delete-button"
+                        title="Delete row"
+                        color="error"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
                 );
@@ -325,6 +311,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
           aria-label="Select element"
           onChange={(e) => {
             const newValue = e.target.value;
+            console.log('📝 [EditableDataGrid] Floating select onChange:', { newValue, editingCell });
             
             // Validate before saving
             if (editingCell && onCellValidate) {
@@ -332,11 +319,12 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
               if (!isValid) {
                 // Validation failed - keep select open, reset to previous value
                 // The toast is already shown by onCellValidate
+                console.log('❌ [EditableDataGrid] Validation failed, keeping select open');
                 setEditValue(editValue);
                 // Re-focus the select to keep it open
                 setTimeout(() => {
                   selectRef.current?.focus();
-                }, 0);
+                }, 50);
                 return;
               }
             }
@@ -345,6 +333,24 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
             if (editingCell && onCellChange) {
               onCellChange(editingCell.rowId, editingCell.column, newValue);
               onCellBlur?.(editingCell.rowId, editingCell.column, newValue);
+            }
+            
+            // Auto-focus next column after successful validation
+            if (editingCell) {
+              const currentColumnIndex = columns.findIndex(col => col.key === editingCell.column);
+              const nextColumn = columns[currentColumnIndex + 1];
+              
+              if (nextColumn && nextColumn.editable !== false) {
+                // Focus the next column
+                setTimeout(() => {
+                  const nextCell = document.querySelector(
+                    `[data-row-id="${editingCell.rowId}"][data-column="${nextColumn.key}"]`
+                  ) as HTMLElement;
+                  if (nextCell) {
+                    nextCell.click();
+                  }
+                }, 50);
+              }
             }
             
             // Clear editing state

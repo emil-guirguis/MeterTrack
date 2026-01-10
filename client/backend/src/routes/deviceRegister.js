@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 
     // Get all device registers with joined register data
     const registers = await db.query(
-      `SELECT dr.device_register_id as id, dr.device_id, dr.register_id,
+      `SELECT dr.device_register_id, dr.device_id, dr.register_id,
               r.register, r.name, r.unit, r.field_name
        FROM device_register dr
           JOIN register r ON dr.register_id = r.register_id
@@ -42,8 +42,8 @@ router.get('/', async (req, res) => {
       register_id: row.register_id,
       device_id: row.device_id,
       register: {
-        id: row.r_register_id,
-        register: row.number,
+        id: row.device_register_id,
+        register: row.register,
         name: row.name,
         unit: row.unit,
         field_name: row.field_name,

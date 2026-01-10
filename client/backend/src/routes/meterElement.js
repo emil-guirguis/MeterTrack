@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
       `SELECT meter_element_id, meter_id, name, element
        FROM meter_element
        WHERE meter_id = $1
-       ORDER BY name ASC`,
+       ORDER BY element ASC`,
       [meterId]
     );
 
@@ -153,10 +153,10 @@ router.post('/', async (req, res) => {
 
     // Create meter_element record
     const result = await db.query(
-      `INSERT INTO meter_element (meter_id, name, element)
-       VALUES ($1, $2, $3)
-       RETURNING id, meter_id, name, element`,
-      [meterId, name, element]
+      `INSERT INTO meter_element (meter_id, tenant_id, name, element)
+       VALUES ($1, $2, $3, $4)
+       RETURNING meter_element_id, meter_id, name, element`,
+      [meterId, tenantId, name, element]
     );
 
     if (result.rows.length === 0) {
@@ -243,7 +243,7 @@ router.put('/:elementId', async (req, res) => {
     if (element !== undefined && element !== currentElement.element) {
       const duplicateCheck = await db.query(
         `SELECT meter_element_id FROM meter_element 
-         WHERE meter_id = $1 AND element = $2 AND id != $3`,
+         WHERE meter_id = $1 AND element = $2 AND meter_element_id != $3`,
         [meterId, element, elementId]
       );
 
