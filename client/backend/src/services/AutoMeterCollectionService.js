@@ -61,7 +61,7 @@ class AutoMeterCollectionService {
     //         },
     //         meters: {
     //             // Default meter configuration - can be overridden per meter
-    //             defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.11',
+    //             defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.22',
     //             defaultPort: parseInt(process.env.DEFAULT_METER_PORT) || 502,
     //             defaultSlaveId: parseInt(process.env.DEFAULT_METER_SLAVE_ID) || 1,
     //             // Register mapping for energy meters

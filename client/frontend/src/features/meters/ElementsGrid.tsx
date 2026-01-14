@@ -1,14 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  CircularProgress,
-  Snackbar,
-  Alert,
-} from '@mui/material';
 import { EditableDataGrid, type GridColumn } from '@framework/components/datagrid/';
 import apiClient from '../../services/apiClient';
 import './ElementsGrid.css';
@@ -41,6 +31,29 @@ interface ElementsGridProps {
   onSuccess?: (message: string) => void;
 }
 
+/**
+ * Utility to extract error message from API response
+ */
+const extractErrorMessage = (err: any, defaultMessage: string): string => {
+  const errorResponse = err?.response?.data;
+  
+  if (errorResponse?.errors) {
+    return Object.entries(errorResponse.errors)
+      .map(([, message]) => `${message}`)
+      .join(', ');
+  }
+  
+  if (errorResponse?.message) {
+    return errorResponse.message;
+  }
+  
+  if (err instanceof Error) {
+    return err.message;
+  }
+  
+  return defaultMessage;
+};
+
 export const ElementsGrid: React.FC<ElementsGridProps> = ({
   meterId,
   onError,
@@ -51,8 +64,6 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [schema, setSchema] = useState<Record<string, SchemaField> | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'saved' | 'unsaved'; index?: number } | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Record<string, { rowId: number; column: string; value: string }>>({});
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string>('');
@@ -181,29 +192,13 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
 
       setElements([response.data.data, ...elements]);
       setUnsavedRow(null);
-      setError(null); // Clear error on success
+      setError(null);
       setToastMessage('Element added successfully');
       setToastSeverity('success');
       setToastOpen(true);
       onSuccess?.('Element added successfully');
     } catch (err) {
-      // Handle validation errors from backend
-      let errorMessage = 'Failed to add element';
-      // @ts-ignore - err is unknown type
-      const errorResponse = err?.response?.data;
-      
-      if (errorResponse?.errors) {
-        // Extract error messages from validation errors
-        errorMessage = Object.entries(errorResponse.errors)
-          .map(([, message]) => `${message}`)
-          .join(', ');
-      } else if (errorResponse?.message) {
-        // Use the message field if available
-        errorMessage = errorResponse.message;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
+      const errorMessage = extractErrorMessage(err, 'Failed to add element');
       setError(errorMessage);
       setToastMessage(errorMessage);
       setToastSeverity('error');
@@ -229,39 +224,23 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
       
       if (!element) return;
 
-      // UI is already updated optimistically in handleCellChange, just save to backend
       try {
         await apiClient.put(`/meters/${meterId}/elements/${element.meter_element_id}`, {
           [column]: value,
         });
-        setError(null); // Clear error on success
+        setError(null);
         setToastMessage('Element updated successfully');
         setToastSeverity('success');
         setToastOpen(true);
         onSuccess?.('Element updated successfully');
       } catch (err) {
-        // Revert on error - find the original value and restore it
+        // Revert on error
         const originalValue = (element as any)[column];
         const revertedElements = [...elements];
         (revertedElements[actualRowId] as any)[column] = originalValue;
         setElements(revertedElements);
         
-        // Handle validation errors from backend
-        let errorMessage = 'Failed to update element';
-        const errorResponse = (err as any).response?.data;
-        
-        if (errorResponse?.errors) {
-          // Extract error messages from validation errors
-          errorMessage = Object.entries(errorResponse.errors)
-            .map(([, message]) => `${message}`)
-            .join(', ');
-        } else if (errorResponse?.message) {
-          // Use the message field if available
-          errorMessage = errorResponse.message;
-        } else if (err instanceof Error) {
-          errorMessage = err.message;
-        }
-        
+        const errorMessage = extractErrorMessage(err, 'Failed to update element');
         setError(errorMessage);
         setToastMessage(errorMessage);
         setToastSeverity('error');
@@ -332,52 +311,29 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
   );
 
   // Handle delete
-  const handleDeleteElement = useCallback(async () => {
-    if (!deleteConfirm) return;
-
-    if (deleteConfirm.type === 'unsaved') {
-      setUnsavedRow(null);
-      setDeleteConfirm(null);
-      return;
-    }
-
-    const element = elements[deleteConfirm.index || 0];
+  const handleDeleteElement = useCallback(async (rowId: number) => {
+    const actualRowId = unsavedRow ? rowId - 1 : rowId;
+    const element = elements[actualRowId];
+    
     if (!element) return;
 
-    setDeleting(true);
     try {
       await apiClient.delete(`/meters/${meterId}/elements/${element.meter_element_id}`);
       setElements(elements.filter((e) => e.meter_element_id !== element.meter_element_id));
-      setDeleteConfirm(null);
-      setError(null); // Clear error on success
+      setError(null);
       setToastMessage('Element deleted successfully');
       setToastSeverity('success');
       setToastOpen(true);
       onSuccess?.('Element deleted successfully');
     } catch (err) {
-      let errorMessage = 'Failed to delete element';
-      // @ts-ignore - err is unknown type
-      const errorResponse = err?.response?.data;
-      
-      if (errorResponse?.errors) {
-        errorMessage = Object.entries(errorResponse.errors)
-          .map(([, message]) => `${message}`)
-          .join(', ');
-      } else if (errorResponse?.message) {
-        errorMessage = errorResponse.message;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
+      const errorMessage = extractErrorMessage(err, 'Failed to delete element');
       setError(errorMessage);
       setToastMessage(errorMessage);
       setToastSeverity('error');
       setToastOpen(true);
       onError?.(new Error(errorMessage));
-    } finally {
-      setDeleting(false);
     }
-  }, [meterId, deleteConfirm, elements, onError, onSuccess]);
+  }, [meterId, elements, unsavedRow, onError, onSuccess]);
 
   // Build grid data with unsaved row at top
   const gridData = useMemo(() => {
@@ -406,11 +362,9 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
   // Handle row delete from grid
   const handleRowDelete = useCallback((rowId: number) => {
     if (unsavedRow && rowId === 0) {
-      setDeleteConfirm({ type: 'unsaved' });
-    } else {
-      const actualRowId = unsavedRow ? rowId - 1 : rowId;
-      setDeleteConfirm({ type: 'saved', index: actualRowId });
+      setUnsavedRow(null);
     }
+    // Delete confirmation is now handled by the framework
   }, [unsavedRow]);
 
   return (
@@ -424,73 +378,43 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         onRowAdd={handleAddElement}
         onRowDelete={handleRowDelete}
         onRowSave={(rowId) => {
-          // Save the unsaved row
           if (rowId === 0 && unsavedRow) {
             handleSaveUnsavedRow();
           }
         }}
         onCellChange={handleCellChange}
         onCellValidate={(rowId, column, value) => {
-          console.log('🔍 [ElementsGrid] onCellValidate called:', { rowId, column, value });
-          
-          // Only validate element column
           if (column !== 'element' || !value) {
-            console.log('✅ [ElementsGrid] Skipping validation - not element column or no value');
             return true;
           }
 
-          console.log('🔍 [ElementsGrid] Validating element:', { rowId, column, value, elementCount: elements.length, hasUnsavedRow: !!unsavedRow });
-
-          // Check if this is the unsaved row
           if (unsavedRow && rowId === 0) {
             const trimmedValue = value.trim();
-            console.log('🔍 [ElementsGrid] Checking unsaved row against elements:', { 
-              value: trimmedValue, 
-              valueType: typeof trimmedValue,
-              elements: elements.map(el => ({ 
-                element: el.element.trim(), 
-                elementType: typeof el.element,
-                meter_element_id: el.meter_element_id 
-              }))
-            });
-            const isDuplicate = elements.some((el) => {
-              const match = el.element.trim() === trimmedValue;
-              console.log(`  Comparing "${el.element.trim()}" === "${trimmedValue}": ${match}`);
-              return match;
-            });
-            console.log('🔍 [ElementsGrid] isDuplicate result:', isDuplicate);
+            const isDuplicate = elements.some((el) => el.element.trim() === trimmedValue);
             if (isDuplicate) {
               const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
-              console.log('❌ [ElementsGrid] Duplicate found in unsaved row:', errorMsg);
               setToastMessage(errorMsg);
               setToastSeverity('error');
               setToastOpen(true);
               return false;
             }
           } else {
-            // For saved rows
             const actualRowId = unsavedRow ? rowId - 1 : rowId;
             const element = elements[actualRowId];
             const trimmedValue = value.trim();
             
-            console.log('🔍 [ElementsGrid] Checking saved row:', { actualRowId, element: element?.element.trim(), value: trimmedValue });
-            
             if (element) {
-              // Check against other saved elements
               const isDuplicate = elements.some((el) => el.meter_element_id !== element.meter_element_id && el.element.trim() === trimmedValue);
               if (isDuplicate) {
                 const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
-                console.log('❌ [ElementsGrid] Duplicate found in saved row:', errorMsg);
                 setToastMessage(errorMsg);
                 setToastSeverity('error');
                 setToastOpen(true);
                 return false;
               }
               
-              // Check against unsaved row
               if (unsavedRow && unsavedRow.element.trim() === trimmedValue) {
                 const errorMsg = `Element "${trimmedValue}" is already assigned to this meter`;
-                console.log('❌ [ElementsGrid] Duplicate found in unsaved row:', errorMsg);
                 setToastMessage(errorMsg);
                 setToastSeverity('error');
                 setToastOpen(true);
@@ -499,20 +423,15 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
             }
           }
 
-          console.log('✅ [ElementsGrid] Validation passed for element:', value);
           return true;
         }}
         onCellBlur={(rowId, column, value) => {
-          // Auto-save unsaved row when user leaves a cell
           if (unsavedRow && rowId === 0 && unsavedRow.name && unsavedRow.element) {
             handleSaveUnsavedRow();
-          }
-          // Auto-save saved row when user leaves a cell
-          else if (!unsavedRow || rowId > 0) {
+          } else if (!unsavedRow || rowId > 0) {
             const changeKey = `${rowId}-${column}`;
             if (pendingChanges[changeKey]) {
               handleSavePendingChange(rowId, column, value);
-              // Remove from pending changes after saving
               setPendingChanges((prev) => {
                 const updated = { ...prev };
                 delete updated[changeKey];
@@ -523,45 +442,15 @@ export const ElementsGrid: React.FC<ElementsGridProps> = ({
         }}
         emptyMessage="No elements associated with this meter"
         addButtonLabel="Add"
+        showDeleteConfirmation={true}
+        onConfirmDelete={(rowId) => handleDeleteElement(rowId)}
+        deleteConfirmTitle="Delete Element"
+        deleteConfirmMessage="Are you sure you want to delete this element?"
+        showToast={toastOpen}
+        toastMessage={toastMessage}
+        toastSeverity={toastSeverity}
+        onToastClose={() => setToastOpen(false)}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-      >
-        <DialogTitle>Delete Element</DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete this element?
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-          <Button
-            onClick={handleDeleteElement}
-            variant="contained"
-            color="error"
-            disabled={deleting}
-          >
-            {deleting ? <CircularProgress size={24} /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Toast Notification */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={4000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setToastOpen(false)}
-          severity={toastSeverity}
-          sx={{ width: '100%' }}
-        >
-          {toastMessage}
-        </Alert>
-      </Snackbar>
     </div>
   );
 };

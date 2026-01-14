@@ -323,6 +323,13 @@ export const BaseForm: React.FC<BaseFormProps> = ({
             delete cleanData[field];
           });
           
+          // Filter out fields with dbField: null (custom-rendered fields like "elements")
+          Object.entries(allFormFields).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (fieldDef.dbField === null) {
+              delete cleanData[fieldName];
+            }
+          });
+          
           // Return all data - let the store handle dirty field filtering if needed
           return cleanData;
         },

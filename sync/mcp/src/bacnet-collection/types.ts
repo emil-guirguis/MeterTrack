@@ -21,15 +21,7 @@ export interface BACnetReadResult {
   error?: string;
 }
 
-// ==================== CACHED METER ====================
 
-export interface CachedMeter {
-  meter_id: string;
-  name: string;
-  ip: string;
-  port: string;
-  protocol: string;
-}
 
 // ==================== COLLECTION ERRORS ====================
 
@@ -84,4 +76,6 @@ export interface BACnetMeterReadingAgentConfig {
   bacnetPort?: number;                  // Default: 47808
   connectionTimeoutMs?: number;         // Default: 5000
   readTimeoutMs?: number;               // Default: 3000
+  meterCache?: any;                     // Optional: shared MeterCache instance
+  deviceRegisterCache?: any;            // Optional: shared DeviceRegisterCache instance
 }

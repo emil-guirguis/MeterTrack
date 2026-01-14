@@ -12,5 +12,4 @@ export * from '../helpers/sync-functions.js';
 export * from '../helpers/entity-validation.js';
 export * from '../helpers/sync.js';
 export * from './sync-meter.js';
-export * from './sync-register.js';
 export * from './sync-tenant.js';

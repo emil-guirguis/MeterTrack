@@ -48,7 +48,7 @@ export const ENTITY_METADATA: Record<string, EntityMetadata> = {
   device_register: {
     tableName: 'device_register',
     primaryKey: ['device_id', 'register_id'],
-    columns: ['device_id', 'register_id'],
+    columns: ['device_register_id','device_id', 'register_id'],
     compositeKey: ['device_id', 'register_id'],
     tenantFiltered: false,
   },
@@ -74,6 +74,8 @@ export interface BaseSyncStatus {
   lastSyncTime?: Date;
   lastSyncSuccess?: boolean;
   lastSyncError?: string;
+  lastSyncSkipped?: boolean;
+  lastSyncSkipReason?: string;
   lastInsertedCount: number;
   lastUpdatedCount: number;
   lastDeletedCount: number;
@@ -181,11 +183,6 @@ export interface ComprehensiveSyncResult {
     deleted: number;
   };
   meters: {
-    inserted: number;
-    updated: number;
-    deleted: number;
-  };
-  registers: {
     inserted: number;
     updated: number;
     deleted: number;

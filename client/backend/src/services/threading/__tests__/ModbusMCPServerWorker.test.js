@@ -39,7 +39,7 @@ describe('ModbusMCPServerWorker', () => {
     
     mockConfig = {
       modbus: {
-        ip: '10.10.10.11',
+        ip: '10.10.10.22',
         port: 502,
         slaveId: 1,
         timeout: 5000
@@ -62,7 +62,7 @@ describe('ModbusMCPServerWorker', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'ModbusMCPServerWorker initialized',
         expect.objectContaining({
-          modbusIp: '10.10.10.11',
+          modbusIp: '10.10.10.22',
           collectionInterval: 900000
         })
       );
@@ -176,7 +176,7 @@ describe('ModbusMCPServerWorker', () => {
       expect(status).toHaveProperty('memoryUsage');
       expect(status).toHaveProperty('uptime');
       expect(status.config).toHaveProperty('modbus');
-      expect(status.config.modbus).toHaveProperty('ip', '10.10.10.11');
+      expect(status.config.modbus).toHaveProperty('ip', '10.10.10.22');
     });
 
     test('should return status when not running', async () => {

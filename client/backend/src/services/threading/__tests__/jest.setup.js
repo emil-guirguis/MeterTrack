@@ -6,7 +6,7 @@
 beforeAll(() => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
-  process.env.MODBUS_IP = '10.10.10.11';
+  process.env.MODBUS_IP = '10.10.10.22';
   process.env.MODBUS_PORT = '502';
   process.env.DATABASE_URL = 'postgresql://localhost:5432/test';
   process.env.LOG_LEVEL = 'error'; // Reduce log noise during tests
@@ -32,7 +32,7 @@ global.testUtils = {
   // Helper to create mock configurations
   createMockConfig: (overrides = {}) => ({
     modbus: {
-      ip: '10.10.10.11',
+      ip: '10.10.10.22',
       port: 502,
       slaveId: 1,
       timeout: 5000

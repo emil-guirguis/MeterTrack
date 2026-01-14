@@ -1,8 +1,9 @@
 /**
  * BACnet client wrapper for communication with BACnet devices
+ * Uses bacnet-node library with support for batch property reads
  */
 
-import BACnetStack from 'bacstack';
+import bacnet from 'bacnet-node';
 import { BACnetReadResult } from './types.js';
 
 /**
@@ -33,14 +34,34 @@ const PROPERTY_ID_MAP: Record<string, number> = {
   deviceType: 30,
 };
 
+export interface BatchReadRequest {
+  objectType: string;
+  objectInstance: number;
+  propertyId: string;
+  fieldName?: string;
+}
+
+export interface BatchReadResult {
+  success: boolean;
+  objectType: string;
+  objectInstance: number;
+  propertyId: string;
+  fieldName?: string;
+  value?: any;
+  error?: string;
+}
+
 export class BACnetClient {
   private client: any = null;
   private readonly bacnetInterface: string;
   private readonly bacnetPort: number;
+  private readonly apduTimeout: number;
 
-  constructor(bacnetInterface: string = '0.0.0.0', bacnetPort: number = 47808) {
+  constructor(bacnetInterface: string = '0.0.0.0', bacnetPort: number = 47808, apduTimeout: number = 6000) {
     this.bacnetInterface = bacnetInterface;
     this.bacnetPort = bacnetPort;
+    this.apduTimeout = apduTimeout;
+    this.initializeClient();
   }
 
   /**
@@ -48,7 +69,8 @@ export class BACnetClient {
    */
   private initializeClient(): void {
     if (!this.client) {
-      this.client = new BACnetStack({
+      this.client = new bacnet({
+        apduTimeout: this.apduTimeout,
         interface: this.bacnetInterface,
         port: this.bacnetPort,
       });
@@ -56,6 +78,22 @@ export class BACnetClient {
       // Setup error handler
       this.client.on('error', (error: Error) => {
         console.error('BACnet client error:', error);
+      });
+
+      // Setup device discovery listener
+      this.client.on('iAm', (device: any) => {
+        console.log('BACnet device discovered:', {
+          address: device.address,
+          deviceId: device.deviceId,
+          maxApdu: device.maxApdu,
+          vendorId: device.vendorId,
+        });
+      });
+
+      console.log('BACnet client initialized', {
+        interface: this.bacnetInterface,
+        port: this.bacnetPort,
+        apduTimeout: this.apduTimeout,
       });
     }
   }
@@ -94,28 +132,24 @@ export class BACnetClient {
     timeoutMs: number
   ): Promise<BACnetReadResult> {
     try {
-      this.initializeClient();
-
-      // Convert string identifiers to numeric IDs
       const objectTypeId = this.getObjectTypeId(objectType);
       const propertyIdNum = this.getPropertyId(propertyId);
-
-      // Format the address as "ip:port"
       const address = `${ip}:${port}`;
 
       return new Promise((resolve) => {
-        // Set up timeout
+        const effectiveTimeout = Math.max(timeoutMs, this.apduTimeout);
         const timeoutHandle = setTimeout(() => {
-          console.error(`BACnet read timeout for ${address}, object ${objectType}:${objectInstance}, property ${propertyId}`);
+          console.error(
+            `BACnet read timeout for ${address}, object ${objectType}:${objectInstance}, property ${propertyId} after ${effectiveTimeout}ms`
+          );
           resolve({
             success: false,
-            error: `Read timeout after ${timeoutMs}ms`,
+            error: `Read timeout after ${effectiveTimeout}ms`,
           });
-        }, timeoutMs);
+        }, effectiveTimeout);
 
         try {
-          // Perform the read
-          this.client!.readProperty(
+          this.client.readProperty(
             address,
             { type: objectTypeId, instance: objectInstance },
             propertyIdNum,
@@ -131,13 +165,13 @@ export class BACnetClient {
                 return;
               }
 
-              // Extract the value from the response
-              if (value && value.values && value.values.length > 0) {
-                const readValue = value.values[0].value;
-                console.log(`BACnet read successful: ${address} ${objectType}:${objectInstance} ${propertyId} = ${readValue}`);
+              if (value !== undefined && value !== null) {
+                console.log(
+                  `BACnet read successful: ${address} ${objectType}:${objectInstance} ${propertyId} = ${value}`
+                );
                 resolve({
                   success: true,
-                  value: readValue,
+                  value: value,
                 });
               } else {
                 console.error(`BACnet read returned empty value for ${address}`);
@@ -165,6 +199,161 @@ export class BACnetClient {
         success: false,
         error: errorMsg,
       };
+    }
+  }
+
+  /**
+   * Read multiple properties from a device in a single batch request
+   * This is much more efficient than reading properties one at a time
+   */
+  async readPropertyMultiple(
+    ip: string,
+    port: number,
+    requests: BatchReadRequest[],
+    timeoutMs: number
+  ): Promise<BatchReadResult[]> {
+    try {
+      const address = `${ip}:${port}`;
+
+      // Convert requests to node-bacnet format
+      const bacnetRequests = requests.map((req) => ({
+        objectId: {
+          type: this.getObjectTypeId(req.objectType),
+          instance: req.objectInstance,
+        },
+        properties: [
+          {
+            id: this.getPropertyId(req.propertyId),
+          },
+        ],
+      }));
+
+      return new Promise((resolve) => {
+        const effectiveTimeout = Math.max(timeoutMs, this.apduTimeout);
+        const timeoutHandle = setTimeout(() => {
+          console.error(
+            `BACnet batch read timeout for ${address} (${requests.length} properties) after ${effectiveTimeout}ms`
+          );
+          resolve(
+            requests.map((req) => ({
+              success: false,
+              objectType: req.objectType,
+              objectInstance: req.objectInstance,
+              propertyId: req.propertyId,
+              fieldName: req.fieldName,
+              error: `Batch read timeout after ${effectiveTimeout}ms`,
+            }))
+          );
+        }, effectiveTimeout);
+
+        try {
+          this.client.readPropertyMultiple(address, bacnetRequests, (error: Error | null, data: any) => {
+            clearTimeout(timeoutHandle);
+
+            if (error) {
+              console.error(`BACnet batch read error for ${address}:`, error.message);
+              resolve(
+                requests.map((req) => ({
+                  success: false,
+                  objectType: req.objectType,
+                  objectInstance: req.objectInstance,
+                  propertyId: req.propertyId,
+                  fieldName: req.fieldName,
+                  error: error.message,
+                }))
+              );
+              return;
+            }
+
+            // Parse the response and map back to original requests
+            const results: BatchReadResult[] = [];
+
+            if (data && data.values && Array.isArray(data.values)) {
+              data.values.forEach((item: any, index: number) => {
+                const originalRequest = requests[index];
+
+                if (item.values && item.values.length > 0) {
+                  const readValue = item.values[0].value;
+                  console.log(
+                    `BACnet batch read successful: ${address} ${originalRequest.objectType}:${originalRequest.objectInstance} = ${readValue}`
+                  );
+                  results.push({
+                    success: true,
+                    objectType: originalRequest.objectType,
+                    objectInstance: originalRequest.objectInstance,
+                    propertyId: originalRequest.propertyId,
+                    fieldName: originalRequest.fieldName,
+                    value: readValue,
+                  });
+                } else {
+                  console.warn(
+                    `BACnet batch read returned empty value for ${originalRequest.objectType}:${originalRequest.objectInstance}`
+                  );
+                  results.push({
+                    success: false,
+                    objectType: originalRequest.objectType,
+                    objectInstance: originalRequest.objectInstance,
+                    propertyId: originalRequest.propertyId,
+                    fieldName: originalRequest.fieldName,
+                    error: 'Empty response from device',
+                  });
+                }
+              });
+            } else {
+              console.error(`BACnet batch read returned invalid data structure for ${address}`);
+              results.push(
+                ...requests.map((req) => ({
+                  success: false,
+                  objectType: req.objectType,
+                  objectInstance: req.objectInstance,
+                  propertyId: req.propertyId,
+                  fieldName: req.fieldName,
+                  error: 'Invalid response structure',
+                }))
+              );
+            }
+
+            resolve(results);
+          });
+        } catch (err) {
+          clearTimeout(timeoutHandle);
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          console.error(`BACnet batch read exception for ${address}:`, errorMsg);
+          resolve(
+            requests.map((req) => ({
+              success: false,
+              objectType: req.objectType,
+              objectInstance: req.objectInstance,
+              propertyId: req.propertyId,
+              fieldName: req.fieldName,
+              error: errorMsg,
+            }))
+          );
+        }
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`BACnet batch read error:`, errorMsg);
+      return requests.map((req) => ({
+        success: false,
+        objectType: req.objectType,
+        objectInstance: req.objectInstance,
+        propertyId: req.propertyId,
+        fieldName: req.fieldName,
+        error: errorMsg,
+      }));
+    }
+  }
+
+  /**
+   * Send WhoIs broadcast to discover BACnet devices
+   */
+  whoIs(): void {
+    try {
+      this.client.whoIs();
+      console.log('BACnet WhoIs broadcast sent');
+    } catch (error) {
+      console.error('Error sending WhoIs:', error);
     }
   }
 

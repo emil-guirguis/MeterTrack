@@ -17,8 +17,6 @@ import authService from '../../services/authService';
 import {
   Box,
   Typography,
-  Paper,
-  Grid,
   Button,
   Alert,
   CircularProgress
@@ -68,7 +66,7 @@ export const UserForm: React.FC<UserFormProps> = ({
     }
   };
 
-  // Custom field renderer for permissions
+  // Custom field renderer for permissions and password reset actions
   const renderCustomField = (
     fieldName: string,
     fieldDef: any,
@@ -77,29 +75,26 @@ export const UserForm: React.FC<UserFormProps> = ({
     isDisabled: boolean,
     onChange: (value: any) => void
   ) => {
-    if (fieldName !== 'permissions') {
-      return null;
+    // Render permissions field
+    if (fieldName === 'permissions') {
+      return (
+        <JSONBPermissionsRenderer
+          name={fieldName}
+          label={fieldDef.label}
+          value={value}
+          error={error}
+          disabled={isDisabled}
+          required={fieldDef.required}
+          description={fieldDef.description}
+          onChange={onChange}
+        />
+      );
     }
 
-    return (
-      <JSONBPermissionsRenderer
-        name={fieldName}
-        label={fieldDef.label}
-        value={value}
-        error={error}
-        disabled={isDisabled}
-        required={fieldDef.required}
-        description={fieldDef.description}
-        onChange={onChange}
-      />
-    );
-  };
-
-  return (
-    <Box>
-      {/* Password Action Buttons - Only show when editing an existing user */}
-      {user?.users_id && (
-        <Box sx={{ mb: 3 }}>
+    // Render password reset action buttons
+    if (fieldName === 'password_reset_actions' && user?.users_id) {
+      return (
+        <Box>
           {/* Error Alert */}
           {resetPasswordError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -114,82 +109,61 @@ export const UserForm: React.FC<UserFormProps> = ({
             </Alert>
           )}
 
-          {/* Password Action Buttons */}
-          <Paper
-            elevation={0}
+          {/* Password Action Buttons - Vertical Layout */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {/* Change Password Button */}
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<Lock />}
+              onClick={() => setShowChangePasswordModal(true)}
+              disabled={loading}
+              sx={{ justifyContent: 'flex-start' }}
+            >
+              Change Password
+            </Button>
+
+            {/* Reset Password Button (Admin Only) */}
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<VpnKey />}
+              onClick={handleAdminResetPassword}
+              disabled={loading || resetPasswordLoading}
+              sx={{ justifyContent: 'flex-start' }}
+            >
+              {resetPasswordLoading ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  Sending...
+                </>
+              ) : (
+                'Reset Password'
+              )}
+            </Button>
+          </Box>
+
+          <Typography
+            variant="caption"
             sx={{
-              p: 2,
-              backgroundColor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1
+              display: 'block',
+              color: 'text.secondary',
+              mt: 2
             }}
           >
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 600,
-                mb: 2,
-                pb: 1.5,
-                borderBottom: '2px solid',
-                borderColor: 'primary.main',
-                color: 'text.primary'
-              }}
-            >
-              Password Management
-            </Typography>
-
-            <Grid container spacing={2}>
-              {/* Change Password Button */}
-              <Grid item xs={12} sm={6}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<Lock />}
-                  onClick={() => setShowChangePasswordModal(true)}
-                  disabled={loading}
-                >
-                  Change Password
-                </Button>
-              </Grid>
-
-              {/* Reset Password Button (Admin Only) */}
-              <Grid item xs={12} sm={6}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<VpnKey />}
-                  onClick={handleAdminResetPassword}
-                  disabled={loading || resetPasswordLoading}
-                >
-                  {resetPasswordLoading ? (
-                    <>
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                      Sending...
-                    </>
-                  ) : (
-                    'Reset Password'
-                  )}
-                </Button>
-              </Grid>
-            </Grid>
-
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                color: 'text.secondary',
-                mt: 2
-              }}
-            >
-              • <strong>Change Password:</strong> Update your own password
-              <br />
-              • <strong>Reset Password:</strong> Send a password reset link to the user
-            </Typography>
-          </Paper>
+            • <strong>Change Password:</strong> Update your own password
+            <br />
+            • <strong>Reset Password:</strong> Send a password reset link to the user
+          </Typography>
         </Box>
-      )}
+      );
+    }
 
+    return null;
+  };
+
+  return (
+    <Box>
       {/* Change Password Modal */}
       <ChangePasswordModal
         open={showChangePasswordModal}

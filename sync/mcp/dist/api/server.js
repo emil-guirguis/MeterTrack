@@ -474,6 +474,7 @@ export class LocalApiServer {
         this.app.post('/api/meter-reading/trigger', async (_req, res, next) => {
             try {
                 console.log('📥 [API] POST /api/meter-reading/trigger - Request received');
+                debugger; // Breakpoint for debugging
                 if (!this.bacnetMeterReadingAgent) {
                     console.error('❌ [API] BACnet meter reading agent not available');
                     return res.status(503).json({
@@ -482,13 +483,8 @@ export class LocalApiServer {
                     });
                 }
                 const agentStatus = this.bacnetMeterReadingAgent.getStatus();
-                if (!agentStatus.isRunning) {
-                    console.error('❌ [API] BACnet meter reading agent is not running');
-                    return res.status(503).json({
-                        success: false,
-                        error: 'BACnet meter reading agent is not running',
-                    });
-                }
+                // Allow trigger even if agent is not running (for debugging)
+                console.log(`🔄 [API] Agent status: isRunning=${agentStatus.isRunning}`);
                 // Trigger collection cycle
                 console.log('🔄 [API] Triggering BACnet meter reading collection...');
                 const result = await this.bacnetMeterReadingAgent.triggerCollection();

@@ -14,10 +14,14 @@ export class MeterCollector {
     errorCount = 0;
     maxErrors = 5;
     meterErrorCounts = new Map();
-    constructor(config, database, logger) {
+    meterCache;
+    deviceRegisterCache;
+    constructor(config, database, logger, meterCache, deviceRegisterCache) {
         this.config = config;
         this.database = database;
         this.logger = logger;
+        this.meterCache = meterCache;
+        this.deviceRegisterCache = deviceRegisterCache;
         this.bacnetClient = new BACnetClient(config.bacnet, logger);
         this.setupEventHandlers();
     }
@@ -78,13 +82,27 @@ export class MeterCollector {
     }
     /**
      * Store a meter reading in the Sync Database
+     *
+     * Uses fieldName from register mapping when available, otherwise falls back to dataPoint name.
+     * This ensures readings are stored in the correct column based on the register configuration.
      */
     async storeReading(reading) {
         try {
+            // Use fieldName from register mapping if available, otherwise use dataPoint name
+            const dataPointToStore = reading.fieldName || reading.dataPoint;
+            if (reading.fieldName) {
+                this.logger.debug('Storing reading with field_name mapping', {
+                    meterId: reading.meterId,
+                    registerNumber: reading.registerNumber,
+                    fieldName: reading.fieldName,
+                    dataPoint: reading.dataPoint,
+                    value: reading.value
+                });
+            }
             await this.database.insertReading({
                 meter_external_id: reading.meterId,
                 timestamp: reading.timestamp,
-                data_point: reading.dataPoint,
+                data_point: dataPointToStore,
                 value: reading.value,
                 unit: reading.unit
             });
@@ -215,25 +233,69 @@ export class MeterCollector {
     }
     /**
      * Collect data from a single meter
+     *
+     * This method:
+     * 1. Gets the device_id from the cached meter
+     * 2. Queries device_register table for all registers configured for that device
+     * 3. Joins with register table to get register details
+     * 4. Calculates element-specific register numbers based on meter element
+     * 5. Builds BACnetDataPoint list with calculated register numbers
+     * 6. Reads all data points from the meter
+     * 7. Stores each reading with the field_name from the register
      */
     async collectMeterData(meter) {
         this.logger.debug(`Collecting data from meter ${meter.name} (${meter.meter_id})`);
-        // Convert config data points to BACnet data points
-        const dataPoints = meter.data_points.map(dp => ({
-            objectType: dp.object_type,
-            instance: dp.instance,
-            property: dp.property,
-            name: dp.name
-        }));
-        // Read all data points from the meter
-        const readings = await this.bacnetClient.readMultipleProperties(meter.bacnet_device_id, meter.bacnet_ip, dataPoints);
-        // Store each reading
-        for (const reading of readings) {
-            // Update meterId to use the configured meter ID
-            reading.meterId = meter.meter_id;
-            await this.storeReading(reading);
+        try {
+            // Get cached meter to access device_id and element
+            const cachedMeter = this.meterCache.getMeter(meter.meter_id);
+            if (!cachedMeter) {
+                this.logger.warn(`Meter ${meter.meter_id} not found in cache, using config data points`);
+                // Fallback to config-based data points if meter not in cache
+                const dataPoints = meter.data_points.map(dp => ({
+                    objectType: dp.object_type,
+                    instance: dp.instance,
+                    property: dp.property,
+                    name: dp.name
+                }));
+                const readings = await this.bacnetClient.readMultipleProperties(meter.bacnet_device_id, meter.bacnet_ip, dataPoints);
+                for (const reading of readings) {
+                    reading.meterId = meter.meter_id;
+                    await this.storeReading(reading);
+                }
+                return;
+            }
+            // Get device_id from cached meter
+            const deviceId = cachedMeter.device_id;
+            if (!deviceId) {
+                this.logger.warn(`Meter ${meter.meter_id} has no device_id in cache`);
+                return;
+            }
+            // Get device_register mappings from cache (not from database)
+            const registersForDevice = this.deviceRegisterCache.getDeviceRegisters(deviceId);
+            if (registersForDevice.length === 0) {
+                this.logger.warn(`No registers configured for device ${deviceId} (meter 1), skipping meter`);
+                return;
+            }
+            this.logger.debug(`Found ${registersForDevice.length} registers configured for device ${deviceId}`);
+            // Build BACnetDataPoint list with calculated register numbers
+            const dataPoints = [];
+            if (dataPoints.length === 0) {
+                this.logger.debug(`No valid data points to read for meter ${meter.meter_id}`);
+                return;
+            }
+            // Read all data points from the meter
+            const readings = await this.bacnetClient.readMultipleProperties(meter.bacnet_device_id, meter.bacnet_ip, dataPoints);
+            // Store each reading with field_name from register
+            for (const reading of readings) {
+                reading.meterId = meter.meter_id;
+                await this.storeReading(reading);
+            }
+            this.logger.debug(`Collected ${readings.length} readings from meter ${meter.name}`);
         }
-        this.logger.debug(`Collected ${readings.length} readings from meter ${meter.name}`);
+        catch (error) {
+            this.logger.error(`Error collecting data from meter ${meter.meter_id}:`, error);
+            throw error;
+        }
     }
     /**
      * Perform health check on all meters

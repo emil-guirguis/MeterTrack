@@ -207,11 +207,22 @@ export async function upsertEntity(
       .map(col => `${col} = EXCLUDED.${col}`)
       .join(', ');
 
-    let query = `INSERT INTO ${metadata.tableName} (${columns.join(', ')})
+    // Build query - handle case where there are no non-key columns to update
+    let query: string;
+    if (updateColumns.length === 0) {
+      // No non-key columns to update, use DO NOTHING
+      query = `INSERT INTO ${metadata.tableName} (${columns.join(', ')})
+      VALUES (${values})
+      ON CONFLICT (${conflictColumns}) DO NOTHING
+      RETURNING *`;
+    } else {
+      // Update non-key columns
+      query = `INSERT INTO ${metadata.tableName} (${columns.join(', ')})
       VALUES (${values})
       ON CONFLICT (${conflictColumns}) DO UPDATE SET
       ${updateColumns}
       RETURNING *`;
+    }
 
     console.log(`📋 [Upsert] Query: ${query}`);
     console.log(`📋 [Upsert] Parameters:`, JSON.stringify(params, null, 2));

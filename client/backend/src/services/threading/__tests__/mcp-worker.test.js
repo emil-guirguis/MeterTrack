@@ -21,7 +21,7 @@ jest.mock('worker_threads', () => ({
   parentPort: mockParentPort,
   workerData: {
     config: {
-      modbus: { ip: '10.10.10.11', port: 502 },
+      modbus: { ip: '10.10.10.22', port: 502 },
       database: { url: 'postgresql://localhost:5432/test' }
     }
   },

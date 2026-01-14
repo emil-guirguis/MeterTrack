@@ -4,13 +4,14 @@
 
 import * as cron from 'node-cron';
 import { BACnetMeterReadingAgentConfig, CollectionCycleResult, AgentStatus } from './types.js';
-import { MeterCache } from './meter-cache.js';
+import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
 import { BACnetClient } from './bacnet-client.js';
 import { CollectionCycleManager } from './collection-cycle-manager.js';
 
 export class BACnetMeterReadingAgent {
   private config: BACnetMeterReadingAgentConfig;
   private meterCache: MeterCache;
+  private deviceRegisterCache: DeviceRegisterCache;
   private bacnetClient: BACnetClient;
   private cycleManager: CollectionCycleManager;
   private isRunning: boolean = false;
@@ -34,12 +35,15 @@ export class BACnetMeterReadingAgent {
     };
 
     this.logger = logger || console;
-    this.meterCache = new MeterCache();
+    // Use shared cache instances if provided, otherwise create new ones
+    this.meterCache = config.meterCache || new MeterCache();
+    this.deviceRegisterCache = config.deviceRegisterCache || new DeviceRegisterCache();
     this.bacnetClient = new BACnetClient(
       this.config.bacnetInterface,
-      this.config.bacnetPort
+      this.config.bacnetPort,
+      this.config.connectionTimeoutMs
     );
-    this.cycleManager = new CollectionCycleManager(this.logger);
+    this.cycleManager = new CollectionCycleManager(this.deviceRegisterCache, this.logger);
   }
 
   /**
@@ -54,9 +58,21 @@ export class BACnetMeterReadingAgent {
     try {
       this.logger.info('Starting BACnet Meter Reading Agent');
 
-      // Load meter cache on startup
-      await this.meterCache.reload(this.config.syncDatabase);
-      this.logger.info(`Loaded ${this.meterCache.getMeters().length} meters into cache`);
+      // Load meter cache on startup only if not already loaded
+      if (!this.meterCache.isValid()) {
+        await this.meterCache.reload(this.config.syncDatabase);
+        this.logger.info(`Loaded ${this.meterCache.getMeters().length} meters into cache`);
+      } else {
+        this.logger.info(`Using existing meter cache with ${this.meterCache.getMeters().length} meters`);
+      }
+
+      // Load device register cache on startup only if not already loaded
+      if (!this.deviceRegisterCache.isValid()) {
+        await this.deviceRegisterCache.initialize(this.config.syncDatabase);
+        this.logger.info('DeviceRegisterCache initialized');
+      } else {
+        this.logger.info('Using existing DeviceRegisterCache');
+      }
 
       // Set up cron job to execute every N seconds
       const cronExpression = `*/${this.config.collectionIntervalSeconds} * * * * *`;
@@ -142,8 +158,9 @@ export class BACnetMeterReadingAgent {
 this.isCycleExecuting = true;
 
     try {
-      // Reload meter cache to pick up any updates
-      await this.meterCache.reload(this.config.syncDatabase);
+      // Note: Do NOT reload meter cache on every cycle
+      // The cache is loaded at startup and reloaded by the sync agent when data changes
+      // Reloading on every cycle would cause unnecessary database queries
 
       // Execute the collection cycle
       const result = await this.cycleManager.executeCycle(

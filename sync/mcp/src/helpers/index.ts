@@ -8,3 +8,4 @@ export * from './error-handler.js';
 export * from './sync-functions.js';
 export * from './entity-validation.js';
 export * from './sync.js';
+export * from './register-number-calculator.js';

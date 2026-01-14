@@ -337,7 +337,7 @@ async function initializeAutoMeterCollection() {
         retryAttempts: 2
       },
       meters: {
-        defaultIP: process.env.DEFAULT_METER_IP || '10.10.10.11',
+        defaultIP: process.env.DEFAULT_METER_IP,
         defaultPort: parseInt(process.env.DEFAULT_METER_PORT) || 502,
         registers: {
           voltage: { address: 5, count: 1, scale: 200, unit: 'V' },

@@ -1,6 +1,7 @@
 import winston from 'winston';
 import { BACnetConfig } from './bacnet-client.js';
 import { SyncDatabase } from '../data-sync/data-sync.js';
+import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
 export interface MeterConfig {
     meter_id: string;
     name: string;
@@ -35,7 +36,9 @@ export declare class MeterCollector {
     private errorCount;
     private maxErrors;
     private meterErrorCounts;
-    constructor(config: CollectorConfig, database: SyncDatabase, logger: winston.Logger);
+    private meterCache;
+    private deviceRegisterCache;
+    constructor(config: CollectorConfig, database: SyncDatabase, logger: winston.Logger, meterCache: MeterCache, deviceRegisterCache: DeviceRegisterCache);
     private setupEventHandlers;
     /**
      * Load meter configuration from JSON file
@@ -43,6 +46,9 @@ export declare class MeterCollector {
     private loadMeterConfiguration;
     /**
      * Store a meter reading in the Sync Database
+     *
+     * Uses fieldName from register mapping when available, otherwise falls back to dataPoint name.
+     * This ensures readings are stored in the correct column based on the register configuration.
      */
     private storeReading;
     /**
@@ -67,6 +73,15 @@ export declare class MeterCollector {
     collectAllMeters(): Promise<void>;
     /**
      * Collect data from a single meter
+     *
+     * This method:
+     * 1. Gets the device_id from the cached meter
+     * 2. Queries device_register table for all registers configured for that device
+     * 3. Joins with register table to get register details
+     * 4. Calculates element-specific register numbers based on meter element
+     * 5. Builds BACnetDataPoint list with calculated register numbers
+     * 6. Reads all data points from the meter
+     * 7. Stores each reading with the field_name from the register
      */
     private collectMeterData;
     /**

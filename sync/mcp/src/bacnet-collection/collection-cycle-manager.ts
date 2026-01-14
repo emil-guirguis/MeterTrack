@@ -3,14 +3,16 @@
  */
 
 import { CollectionCycleResult, CollectionError, PendingReading } from './types.js';
-import { MeterCache } from './meter-cache.js';
-import { BACnetClient } from './bacnet-client.js';
+import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
+import { BACnetClient, BatchReadRequest } from './bacnet-client.js';
 import { ReadingBatcher } from './reading-batcher.js';
 
 export class CollectionCycleManager {
   private logger: any;
+  private deviceRegisterCache: DeviceRegisterCache;
 
-  constructor(logger?: any) {
+  constructor(deviceRegisterCache: DeviceRegisterCache, logger?: any) {
+    this.deviceRegisterCache = deviceRegisterCache;
     this.logger = logger || console;
   }
 
@@ -84,6 +86,9 @@ export class CollectionCycleManager {
       // Process each meter
       for (const meter of meters) {
         try {
+          // Log meter info including device_id
+          this.logger.info(`🔍 Processing Meter: ID=${meter.meter_id}, Name=${meter.name}, Device ID=${meter.device_id}, IP=${meter.ip}:${meter.port}`);
+
           // Create a batcher for this meter's readings
           const batcher = new ReadingBatcher(this.logger);
 
@@ -177,6 +182,9 @@ export class CollectionCycleManager {
 
   /**
    * Read all data points from a meter
+   * 
+   * Gets all configured registers for the device from the register cache,
+   * then reads all registers in a single batch request via BACnet
    */
   private async readMeterDataPoints(
     meter: any,
@@ -187,57 +195,76 @@ export class CollectionCycleManager {
     const readings: PendingReading[] = [];
 
     try {
-      // For now, we'll read a default set of data points
-      // In a full implementation, this would come from meter configuration
-      const defaultDataPoints = [
-        { name: 'presentValue', objectType: 'analogInput', objectInstance: 0, property: 'presentValue' },
-      ];
+      // Get all configured registers for this device from cache
+      const deviceRegisters = this.deviceRegisterCache.getDeviceRegisters(meter.device_id);
+      
+      if (deviceRegisters.length === 0) {
+        this.logger.warn(`No registers configured for device ${meter.device_id} (meter ${meter.meter_id}), skipping meter`);
+        errors.push({
+          meterId: String(meter.meter_id),
+          operation: 'read',
+          error: `No registers configured for device ${meter.device_id}`,
+          timestamp: new Date(),
+        });
+        return readings;
+      }
 
-      for (const dataPoint of defaultDataPoints) {
-        try {
-          this.logger.debug(`Reading ${dataPoint.name} from meter ${meter.meter_id}`);
+      this.logger.info(`Found ${deviceRegisters.length} configured registers for device ${meter.device_id}`);
+      
+      // Log all register details for debugging
+      this.logger.info(`📋 Device ${meter.device_id} Registers:`);
+      deviceRegisters.forEach((reg: any, index: number) => {
+        this.logger.info(`  [${index + 1}] Register ID: ${reg.register_id}, Register #: ${reg.register}, Field: ${reg.field_name}, Unit: ${reg.unit}`);
+      });
+      this.logger.info(`📊 Total Register Numbers: [${deviceRegisters.map((r: any) => r.register).join(', ')}]`);
 
-          const result = await bacnetClient.readProperty(
-            meter.ip,
-            meter.port || 47808,
-            dataPoint.objectType,
-            dataPoint.objectInstance,
-            dataPoint.property,
-            readTimeoutMs
+      // Build batch read requests for all registers
+      const batchRequests: BatchReadRequest[] = deviceRegisters.map((register: any) => ({
+        objectType: 'analogInput',
+        objectInstance: register.register,
+        propertyId: 'presentValue',
+        fieldName: register.field_name,
+      }));
+
+      this.logger.info(`Performing batch read of ${batchRequests.length} registers from meter ${meter.meter_id}`);
+
+      // Read all registers in a single batch request
+      const batchResults = await bacnetClient.readPropertyMultiple(
+        meter.ip,
+        meter.port || 47808,
+        batchRequests,
+        readTimeoutMs
+      );
+
+      // Process batch results
+      batchResults.forEach((result: any, index: number) => {
+        const register = deviceRegisters[index];
+
+        if (result.success && result.value !== undefined) {
+          readings.push({
+            meter_id: meter.meter_id,
+            timestamp: new Date(),
+            data_point: register.field_name,
+            value: Number(result.value),
+            unit: register.unit || 'unknown',
+          });
+          this.logger.info(
+            `Successfully read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: ${result.value}`
           );
-
-          if (result.success && result.value !== undefined) {
-            readings.push({
-              meter_id: meter.meter_id,
-              timestamp: new Date(),
-              data_point: dataPoint.name,
-              value: Number(result.value),
-              unit: 'unknown',
-            });
-            this.logger.debug(`Successfully read ${dataPoint.name} from meter ${meter.meter_id}: ${result.value}`);
-          } else {
-            const errorMsg = result.error || 'Unknown error';
-            this.logger.warn(`Failed to read ${dataPoint.name} from meter ${meter.meter_id}: ${errorMsg}`);
-            errors.push({
-              meterId: String(meter.meter_id),
-              dataPoint: dataPoint.name,
-              operation: 'read',
-              error: errorMsg,
-              timestamp: new Date(),
-            });
-          }
-        } catch (dpError) {
-          const errorMsg = dpError instanceof Error ? dpError.message : String(dpError);
-          this.logger.error(`Error reading data point ${dataPoint.name} from meter ${meter.meter_id}: ${errorMsg}`);
+        } else {
+          const errorMsg = result.error || 'Unknown error';
+          this.logger.warn(
+            `Failed to read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: ${errorMsg}`
+          );
           errors.push({
             meterId: String(meter.meter_id),
-            dataPoint: dataPoint.name,
+            dataPoint: register.field_name,
             operation: 'read',
             error: errorMsg,
             timestamp: new Date(),
           });
         }
-      }
+      });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error reading meter data points for meter ${meter.meter_id}: ${errorMsg}`);
@@ -251,4 +278,5 @@ export class CollectionCycleManager {
 
     return readings;
   }
+
 }

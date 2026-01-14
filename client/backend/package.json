@@ -44,7 +44,7 @@
     "modbus:metrics": "curl http://localhost:3001/api/monitoring/metrics",
     "modbus:dashboard": "curl http://localhost:3001/api/monitoring/dashboard",
     "meter:realtime": "node scripts/simple-meter-reader.js",
-    "meter:test": "node scripts/simple-meter-reader.js -- --ip=10.10.10.11 --interval=1000"
+    "meter:test": "node scripts/simple-meter-reader.js -- --ip=10.10.10.22 --interval=1000"
   },
   "dependencies": {
     "@types/nodemailer": "^7.0.2",

@@ -117,21 +117,26 @@ export class SyncDatabase {
   private pool: Pool;
 
   constructor(config: DatabaseConfig) {
-    this.pool = new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      password: config.password,
-      max: config.max || 10,
-      idleTimeoutMillis: config.idleTimeoutMillis || 30000,
-      connectionTimeoutMillis: config.connectionTimeoutMillis || 2000,
-    } as any);
+    // Use the global syncPool if available, otherwise create a new one
+    if (syncPool) {
+      this.pool = syncPool;
+    } else {
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: config.max || 10,
+        idleTimeoutMillis: config.idleTimeoutMillis || 30000,
+        connectionTimeoutMillis: config.connectionTimeoutMillis || 2000,
+      } as any);
 
-    // Handle pool errors
-    this.pool.on('error', (err) => {
-      console.error('Unexpected error on idle client', err);
-    });
+      // Handle pool errors
+      this.pool.on('error', (err) => {
+        console.error('Unexpected error on idle client', err);
+      });
+    }
   }
 
   /**
@@ -667,8 +672,8 @@ export class SyncDatabase {
    */
   async getMeters(activeOnly: boolean = true): Promise<MeterEntity[]> {
     const query = activeOnly
-      ? 'SELECT meter_id, name, active, ip, port, meter_element_id, element FROM meter WHERE active = true ORDER BY name'
-      : 'SELECT meter_id, name, active, ip, port, meter_element_id, element FROM meter ORDER BY name';
+      ? 'SELECT meter_id, name, active, ip, port, meter_element_id, TRIM(element) as element, device_id FROM meter WHERE active = true ORDER BY name'
+      : 'SELECT meter_id, name, active, ip, port, meter_element_id, TRIM(element) as element, device_id FROM meter ORDER BY name';
       const result = await execQuery(this.pool, query);
       return result.rows;
   }
@@ -952,11 +957,14 @@ export class SyncDatabase {
    */
   async getDeviceRegisters(): Promise<any[]> {
     try {
-      const query = `SELECT device_register_id, device_id, register_id, created_at, updated_at FROM device_register ORDER BY device_id, register_id`;
-      const result = await execQuery(this.pool, query);
+      const query = `SELECT dr.device_id, dr.register_id, r.register, r.field_name, r.unit
+                     FROM device_register dr
+                        JOIN register r ON r.register_id = dr.register_id 
+                     ORDER BY dr.device_id, dr.register_id`;
+      const result = await execQuery(remotePool, query);
       return result.rows;
     } catch (error) {
-      console.error('❌ [SQL] Failed to get device_register associations:', error);
+      console.error('❌ [SQL] Failed to get device_register associations from remote database:', error);
       throw error;
     }
   }

@@ -9,7 +9,7 @@ router.use(authenticateToken);
 // GET /api/meterreadings/direct - fetch live data from Modbus meter
 router.get('/direct', requirePermission('meter:read'), async (req, res) => {
   try {
-    const deviceIP = req.query.deviceIP || '10.10.10.11';
+    const deviceIP = req.query.deviceIP;
     const port = req.query.port ? parseInt(req.query.port) : 502;
     const slaveId = req.query.slaveId ? parseInt(req.query.slaveId) : 1;
     console.log(`[Modbus API] /direct called with deviceIP=${deviceIP}, port=${port}, slaveId=${slaveId}`);

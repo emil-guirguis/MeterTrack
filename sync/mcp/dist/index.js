@@ -16,6 +16,8 @@ import { createSyncManagerFromEnv } from './remote_to_local-sync/sync-manager.js
 import { ClientSystemApiClient } from './api/client-system-api.js';
 import { createAndStartLocalApiServer } from './api/server.js';
 import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
+import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
+import { DeviceRegisterCache, MeterCache, TenantCache } from './cache/index.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
 // Load environment variables from root .env file first, then local .env
 // Use __dirname equivalent for ES modules
@@ -48,6 +50,9 @@ const logger = winston.createLogger({
 class SyncMcpServer {
     server;
     syncDatabase;
+    deviceRegisterCache;
+    meterCache;
+    tenantCache;
     meterCollector;
     syncManager;
     remoteToLocalSyncAgent;
@@ -92,20 +97,18 @@ class SyncMcpServer {
                 password: process.env.POSTGRES_SYNC_PASSWORD || '',
             });
             console.log('✅ [Services] SyncDatabase service created');
-            // this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
-            //   syncDatabase: this.syncDatabase,
-            //   collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '60', 10),
-            //   enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
-            //   bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
-            //   bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
-            //   connectionTimeoutMs: parseInt(process.env.BACNET_CONNECTION_TIMEOUT_MS || '5000', 10),
-            //   readTimeoutMs: parseInt(process.env.BACNET_READ_TIMEOUT_MS || '3000', 10),
-            // }, logger);
-            // console.log('✅ [Services] BACnet Meter Reading Agent initialized');
-            // Start BACnet Meter Reading Agent
-            console.log('▶️  [Services] Starting BACnet Meter Reading Agent...');
-            // DISABLED: await this.bacnetMeterReadingAgent.start();
-            console.log('⏸️  [Services] BACnet Meter Reading Agent disabled (not started)');
+            this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
+                syncDatabase: this.syncDatabase,
+                collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '60', 10),
+                enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
+                bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
+                bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
+                connectionTimeoutMs: parseInt(process.env.BACNET_CONNECTION_TIMEOUT_MS || '5000', 10),
+                readTimeoutMs: parseInt(process.env.BACNET_READ_TIMEOUT_MS || '3000', 10),
+                meterCache: this.meterCache,
+                deviceRegisterCache: this.deviceRegisterCache,
+            }, logger);
+            console.log('✅ [Services] BACnet Meter Reading Agent initialized');
             // Load API key from environment variable
             const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
             if (apiKeyFromEnv) {
@@ -114,35 +117,58 @@ class SyncMcpServer {
             else {
                 console.warn('⚠️  [Services] No API key in environment variable CLIENT_API_KEY');
             }
-            // Initialize Meter Sync Agent
+            // Initialize Meter Sync Agent FIRST (before caches)
+            // This ensures device_register data is synced to local DB before cache loads
             console.log('🔄 [Services] Initializing Remote to Local Sync Agent...');
             remotePool = this.createRemoteDatabasePool();
             this.remotePool = remotePool;
+            // Create empty caches for now - they'll be populated after sync
+            this.deviceRegisterCache = new DeviceRegisterCache();
+            this.meterCache = new MeterCache();
+            this.tenantCache = new TenantCache();
             if (this.syncDatabase) {
                 this.remoteToLocalSyncAgent = new RemoteToLocalSyncAgent({
                     syncDatabase: this.syncDatabase,
                     remotePool: remotePool,
                     syncIntervalMinutes: parseInt(process.env.METER_SYNC_INTERVAL_MINUTES || '60', 10),
                     enableAutoSync: process.env.METER_SYNC_AUTO_START !== 'false',
+                    bacnetMeterReadingAgent: this.bacnetMeterReadingAgent,
+                    deviceRegisterCache: this.deviceRegisterCache,
+                    meterCache: this.meterCache,
                 });
                 console.log('✅ [Services] Remote to Local Sync Agent initialized');
                 // Start Meter Sync Agent (which includes tenant sync as Phase 0)
                 console.log('▶️  [Services] Starting Remote to Local Sync Agent...');
                 await this.remoteToLocalSyncAgent.start();
                 console.log('✅ [Services] Remote to Local Sync Agent started');
-                // Store API key in local sync database tenant table
-                console.log('🔑 [Services] Storing API key in local sync database...');
-                try {
-                    const tenant = await this.syncDatabase.getTenant();
-                    if (tenant && apiKeyFromEnv) {
-                        // Update tenant with API key from environment
-                        await this.syncDatabase.updateTenantApiKey(apiKeyFromEnv);
-                        console.log(`✅ [Services] API key stored in database: ${apiKeyFromEnv.substring(0, 8)}...`);
-                    }
+                // NOW initialize caches AFTER sync
+                console.log('📚 [Services] Initializing TenantCache (after sync)...');
+                await this.tenantCache.initialize(this.syncDatabase);
+                console.log('✅ [Services] TenantCache initialized');
+                console.log('📚 [Services] Initializing DeviceRegisterCache (after sync)...');
+                await this.deviceRegisterCache.initialize(this.syncDatabase);
+                console.log('✅ [Services] DeviceRegisterCache initialized');
+                // Initialize MeterCache AFTER sync
+                console.log('🔄 [Services] Initializing MeterCache (after sync)...');
+                await this.meterCache.reload(this.syncDatabase);
+                console.log('✅ [Services] MeterCache initialized');
+            }
+            // Start BACnet Meter Reading Agent
+            console.log('▶️  [Services] Starting BACnet Meter Reading Agent...');
+            await this.bacnetMeterReadingAgent.start();
+            console.log('✅ [Services] BACnet Meter Reading Agent started');
+            // Store API key in local sync database tenant table
+            console.log('🔑 [Services] Storing API key in local sync database...');
+            try {
+                const tenant = await this.syncDatabase.getTenant();
+                if (tenant && apiKeyFromEnv) {
+                    // Update tenant with API key from environment
+                    await this.syncDatabase.updateTenantApiKey(apiKeyFromEnv);
+                    console.log(`✅ [Services] API key stored in database: ${apiKeyFromEnv.substring(0, 8)}...`);
                 }
-                catch (err) {
-                    console.warn('⚠️  [Services] Failed to store API key in database:', err);
-                }
+            }
+            catch (err) {
+                console.warn('⚠️  [Services] Failed to store API key in database:', err);
             }
             // Initialize Sync Manager
             console.log('🔄 [Services] Initializing Sync Manager...');

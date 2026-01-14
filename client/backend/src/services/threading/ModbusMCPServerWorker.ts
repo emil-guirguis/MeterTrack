@@ -577,7 +577,7 @@ export class ModbusMCPServerWorker {
   private initializeConfig(config?: Partial<DataCollectorConfig>): DataCollectorConfig {
     const defaultConfig: DataCollectorConfig = {
       modbus: {
-        ip: process.env.MODBUS_IP || '10.10.10.11',
+        ip: process.env.MODBUS_IP,
         port: parseInt(process.env.MODBUS_PORT || '502'),
         slaveId: parseInt(process.env.MODBUS_SLAVE_ID || '1'),
         timeout: parseInt(process.env.MODBUS_TIMEOUT || '5000')

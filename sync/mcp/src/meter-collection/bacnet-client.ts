@@ -22,18 +22,47 @@ export interface BACnetDataPoint {
   instance: number;
   property: number;
   name: string;
+  registerNumber?: number;  // NEW: The calculated element-specific register number
+  fieldName?: string;       // NEW: The field_name from register table
 }
 
+/**
+ * Represents a meter reading obtained from a BACnet device
+ * Includes element-specific register information for proper data mapping
+ */
 export interface MeterReading {
+  /** Timestamp when the reading was taken */
   timestamp: Date;
+  
+  /** Meter ID as a string */
   meterId: string;
+  
+  /** BACnet device ID */
   deviceId: number;
+  
+  /** Device IP address */
   deviceIP: string;
+  
+  /** Data point name or identifier */
   dataPoint: string;
+  
+  /** Measured value */
   value: number;
+  
+  /** Unit of measurement (optional) */
   unit?: string;
+  
+  /** Quality indicator for the reading */
   quality: 'good' | 'estimated' | 'questionable';
+  
+  /** Source of the reading (e.g., 'bacnet') */
   source: string;
+  
+  /** The calculated element-specific BACnet register number that was read */
+  registerNumber?: number;
+  
+  /** The field_name from the register table, used as column name in meter_reading table */
+  fieldName?: string;
 }
 
 /**
@@ -214,8 +243,8 @@ export class BACnetClient extends EventEmitter {
    * Read multiple properties from a BACnet device
    * @param deviceId BACnet device ID
    * @param address Device IP address
-   * @param dataPoints Array of data points to read
-   * @returns Array of readings
+   * @param dataPoints Array of data points to read (may include calculated register numbers)
+   * @returns Array of readings with register number and field name information
    */
   public async readMultipleProperties(
     deviceId: number,
@@ -227,11 +256,14 @@ export class BACnetClient extends EventEmitter {
 
     for (const dataPoint of dataPoints) {
       try {
+        // Use the calculated register number if provided, otherwise use instance
+        const instanceToRead = dataPoint.registerNumber ?? dataPoint.instance;
+
         const value = await this.readProperty(
           deviceId,
           address,
           dataPoint.objectType,
-          dataPoint.instance,
+          instanceToRead,
           dataPoint.property
         );
 
@@ -244,17 +276,30 @@ export class BACnetClient extends EventEmitter {
             dataPoint: dataPoint.name,
             value: Number(value),
             quality: 'good',
-            source: 'bacnet'
+            source: 'bacnet',
+            registerNumber: dataPoint.registerNumber,  // Include calculated register number
+            fieldName: dataPoint.fieldName              // Include field name from register
           };
 
           readings.push(reading);
           this.emit('data', reading);
+
+          this.logger.debug('BACnet read successful with register mapping', {
+            deviceId,
+            address,
+            dataPoint: dataPoint.name,
+            registerNumber: dataPoint.registerNumber,
+            fieldName: dataPoint.fieldName,
+            value
+          });
         }
       } catch (error) {
         this.logger.error(`Failed to read data point ${dataPoint.name}`, {
           deviceId,
           address,
           dataPoint: dataPoint.name,
+          registerNumber: dataPoint.registerNumber,
+          fieldName: dataPoint.fieldName,
           error: error instanceof Error ? error.message : String(error)
         });
         

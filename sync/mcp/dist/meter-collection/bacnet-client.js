@@ -146,15 +146,17 @@ export class BACnetClient extends EventEmitter {
      * Read multiple properties from a BACnet device
      * @param deviceId BACnet device ID
      * @param address Device IP address
-     * @param dataPoints Array of data points to read
-     * @returns Array of readings
+     * @param dataPoints Array of data points to read (may include calculated register numbers)
+     * @returns Array of readings with register number and field name information
      */
     async readMultipleProperties(deviceId, address, dataPoints) {
         const readings = [];
         const timestamp = new Date();
         for (const dataPoint of dataPoints) {
             try {
-                const value = await this.readProperty(deviceId, address, dataPoint.objectType, dataPoint.instance, dataPoint.property);
+                // Use the calculated register number if provided, otherwise use instance
+                const instanceToRead = dataPoint.registerNumber ?? dataPoint.instance;
+                const value = await this.readProperty(deviceId, address, dataPoint.objectType, instanceToRead, dataPoint.property);
                 if (value !== undefined && value !== null) {
                     const reading = {
                         timestamp,
@@ -164,10 +166,20 @@ export class BACnetClient extends EventEmitter {
                         dataPoint: dataPoint.name,
                         value: Number(value),
                         quality: 'good',
-                        source: 'bacnet'
+                        source: 'bacnet',
+                        registerNumber: dataPoint.registerNumber, // Include calculated register number
+                        fieldName: dataPoint.fieldName // Include field name from register
                     };
                     readings.push(reading);
                     this.emit('data', reading);
+                    this.logger.debug('BACnet read successful with register mapping', {
+                        deviceId,
+                        address,
+                        dataPoint: dataPoint.name,
+                        registerNumber: dataPoint.registerNumber,
+                        fieldName: dataPoint.fieldName,
+                        value
+                    });
                 }
             }
             catch (error) {
@@ -175,6 +187,8 @@ export class BACnetClient extends EventEmitter {
                     deviceId,
                     address,
                     dataPoint: dataPoint.name,
+                    registerNumber: dataPoint.registerNumber,
+                    fieldName: dataPoint.fieldName,
                     error: error instanceof Error ? error.message : String(error)
                 });
                 // Continue with other data points even if one fails

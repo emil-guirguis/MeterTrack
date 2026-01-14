@@ -75,7 +75,7 @@ router.post('/read-meter', requirePermission('meter:read'), async (req, res) => 
     // Define register configurations for different meter types
     const meterConfigs = {
       generic: {
-        // REAL METER MAPPING - Based on actual device at 10.10.10.11:502
+        // REAL METER MAPPING - Based on actual device at 10.10.10.22:502
         voltage: { address: 5, count: 1, scale: 200 },    // Register 5, scale by 200
         current: { address: 6, count: 1, scale: 100 },    // Register 6, scale by 100
         power: { address: 7, count: 1, scale: 1 },        // Register 7, direct watts

@@ -18,17 +18,36 @@ export interface BACnetDataPoint {
     instance: number;
     property: number;
     name: string;
+    registerNumber?: number;
+    fieldName?: string;
 }
+/**
+ * Represents a meter reading obtained from a BACnet device
+ * Includes element-specific register information for proper data mapping
+ */
 export interface MeterReading {
+    /** Timestamp when the reading was taken */
     timestamp: Date;
+    /** Meter ID as a string */
     meterId: string;
+    /** BACnet device ID */
     deviceId: number;
+    /** Device IP address */
     deviceIP: string;
+    /** Data point name or identifier */
     dataPoint: string;
+    /** Measured value */
     value: number;
+    /** Unit of measurement (optional) */
     unit?: string;
+    /** Quality indicator for the reading */
     quality: 'good' | 'estimated' | 'questionable';
+    /** Source of the reading (e.g., 'bacnet') */
     source: string;
+    /** The calculated element-specific BACnet register number that was read */
+    registerNumber?: number;
+    /** The field_name from the register table, used as column name in meter_reading table */
+    fieldName?: string;
 }
 /**
  * BACnetClient - Client for reading data from BACnet devices
@@ -65,8 +84,8 @@ export declare class BACnetClient extends EventEmitter {
      * Read multiple properties from a BACnet device
      * @param deviceId BACnet device ID
      * @param address Device IP address
-     * @param dataPoints Array of data points to read
-     * @returns Array of readings
+     * @param dataPoints Array of data points to read (may include calculated register numbers)
+     * @returns Array of readings with register number and field name information
      */
     readMultipleProperties(deviceId: number, address: string, dataPoints: BACnetDataPoint[]): Promise<MeterReading[]>;
     /**

@@ -13,6 +13,11 @@ import {
   CircularProgress,
   Box,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
 } from '@mui/material';
 import { Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 import './EditableDataGrid.css';
@@ -40,6 +45,18 @@ export interface EditableDataGridProps {
   onRetry?: () => void;
   emptyMessage?: string;
   addButtonLabel?: string;
+  
+  // Delete confirmation support
+  showDeleteConfirmation?: boolean;
+  onConfirmDelete?: (rowId: number) => Promise<void>;
+  deleteConfirmTitle?: string;
+  deleteConfirmMessage?: string;
+  
+  // Toast notification support
+  showToast?: boolean;
+  toastMessage?: string;
+  toastSeverity?: 'success' | 'error';
+  onToastClose?: () => void;
 }
 
 interface EditingCell {
@@ -61,12 +78,22 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
   onRetry,
   emptyMessage = 'No data available',
   addButtonLabel = 'Add',
+  showDeleteConfirmation = false,
+  onConfirmDelete,
+  deleteConfirmTitle = 'Delete Row',
+  deleteConfirmMessage = 'Are you sure you want to delete this row?',
+  showToast = false,
+  toastMessage = '',
+  toastSeverity = 'success',
+  onToastClose,
 }) => {
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const selectRef = useRef<HTMLSelectElement>(null);
   const cellRef = useRef<HTMLTableCellElement>(null);
   const [selectPosition, setSelectPosition] = useState<{ top: number; left: number } | null>(null);
+  const [deleteConfirmRowId, setDeleteConfirmRowId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCellClick = useCallback(
     (rowId: number, column: GridColumn) => {
@@ -102,7 +129,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
 
   const handleCellSave = useCallback((valueOverride?: string) => {
     if (editingCell && onCellChange) {
-      const finalValue = valueOverride !== undefined ? valueOverride : editValue;
+      const finalValue = (valueOverride !== undefined ? valueOverride : editValue).trim();
       onCellChange(editingCell.rowId, editingCell.column, finalValue);
       onCellBlur?.(editingCell.rowId, editingCell.column, finalValue);
       setEditingCell(null);
@@ -114,6 +141,26 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
     setEditingCell(null);
     setEditValue('');
   }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (deleteConfirmRowId !== null && onConfirmDelete) {
+      setIsDeleting(true);
+      try {
+        await onConfirmDelete(deleteConfirmRowId);
+      } finally {
+        setIsDeleting(false);
+        setDeleteConfirmRowId(null);
+      }
+    }
+  }, [deleteConfirmRowId, onConfirmDelete]);
+
+  const handleDeleteClick = useCallback((rowId: number) => {
+    if (showDeleteConfirmation) {
+      setDeleteConfirmRowId(rowId);
+    } else {
+      onRowDelete?.(rowId);
+    }
+  }, [showDeleteConfirmation, onRowDelete]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -285,7 +332,7 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                     ) : (
                       <IconButton
                         size="small"
-                        onClick={() => onRowDelete?.(rowIndex)}
+                        onClick={() => handleDeleteClick(rowIndex)}
                         className="editable-data-grid__delete-button"
                         title="Delete row"
                         color="error"
@@ -386,6 +433,46 @@ export const EditableDataGrid: React.FC<EditableDataGridProps> = ({
             </option>
           ))}
         </select>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirmation && (
+        <Dialog
+          open={deleteConfirmRowId !== null}
+          onClose={() => setDeleteConfirmRowId(null)}
+        >
+          <DialogTitle>{deleteConfirmTitle}</DialogTitle>
+          <DialogContent>{deleteConfirmMessage}</DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteConfirmRowId(null)}>Cancel</Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              variant="contained"
+              color="error"
+              disabled={isDeleting}
+            >
+              {isDeleting ? <CircularProgress size={24} /> : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* Toast Notification */}
+      {showToast && (
+        <Snackbar
+          open={showToast}
+          autoHideDuration={4000}
+          onClose={onToastClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert
+            onClose={onToastClose}
+            severity={toastSeverity}
+            sx={{ width: '100%' }}
+          >
+            {toastMessage}
+          </Alert>
+        </Snackbar>
       )}
     </Box>
   );
