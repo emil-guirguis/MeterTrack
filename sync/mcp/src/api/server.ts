@@ -138,8 +138,11 @@ export class LocalApiServer {
         const tenantData = this.syncManager.getTenantData();
 
         if (!tenantData) {
-          console.log('📤 [API] GET /api/local/tenant - No tenant data available');
-          return res.json(null);
+          console.log('📤 [API] GET /api/local/tenant - No tenant data available (still initializing)');
+          return res.status(503).json({
+            error: 'Tenant data not yet loaded - system is initializing',
+            status: 'initializing'
+          });
         }
 
         console.log(`📤 [API] GET /api/local/tenant - Returning tenant: ${tenantData.name}`);

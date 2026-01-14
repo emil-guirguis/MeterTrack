@@ -2,18 +2,22 @@
  * Orchestrates a single collection cycle
  */
 
-import { CollectionCycleResult, CollectionError, PendingReading } from './types.js';
+import { CollectionCycleResult, CollectionError, PendingReading, TimeoutEvent, TimeoutMetrics } from './types.js';
 import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
 import { BACnetClient, BatchReadRequest } from './bacnet-client.js';
 import { ReadingBatcher } from './reading-batcher.js';
+import { BatchSizeManager, BatchSizeConfig } from './batch-size-manager.js';
 
 export class CollectionCycleManager {
   private logger: any;
   private deviceRegisterCache: DeviceRegisterCache;
+  private batchSizeManager: BatchSizeManager;
+  private timeoutEvents: TimeoutEvent[] = [];
 
-  constructor(deviceRegisterCache: DeviceRegisterCache, logger?: any) {
+  constructor(deviceRegisterCache: DeviceRegisterCache, logger?: any, batchSizeConfig?: BatchSizeConfig) {
     this.deviceRegisterCache = deviceRegisterCache;
     this.logger = logger || console;
+    this.batchSizeManager = new BatchSizeManager(batchSizeConfig, logger);
   }
 
   /**
@@ -21,6 +25,68 @@ export class CollectionCycleManager {
    */
   private generateCycleId(): string {
     return `cycle-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Record a timeout event for metrics tracking
+   */
+  private recordTimeoutEvent(
+    meterId: string,
+    registerCount: number,
+    batchSize: number,
+    timeoutMs: number,
+    recoveryMethod: 'sequential' | 'reduced_batch' | 'offline',
+    success: boolean
+  ): void {
+    const event: TimeoutEvent = {
+      meterId,
+      timestamp: new Date(),
+      registerCount,
+      batchSize,
+      timeoutMs,
+      recoveryMethod,
+      success,
+    };
+
+    this.timeoutEvents.push(event);
+    this.logger.warn(
+      `⏱️  Timeout event recorded for meter ${meterId}: ${registerCount} registers, batch size ${batchSize}, recovery method: ${recoveryMethod}, success: ${success}`
+    );
+  }
+
+  /**
+   * Calculate timeout metrics from collected events
+   */
+  private calculateTimeoutMetrics(): TimeoutMetrics {
+    const timeoutsByMeter: Record<string, number> = {};
+    let totalRecoveryTime = 0;
+
+    // Count timeouts per meter and calculate average recovery time
+    for (const event of this.timeoutEvents) {
+      if (!timeoutsByMeter[event.meterId]) {
+        timeoutsByMeter[event.meterId] = 0;
+      }
+      timeoutsByMeter[event.meterId]++;
+      totalRecoveryTime += event.timeoutMs;
+    }
+
+    const averageTimeoutRecoveryMs =
+      this.timeoutEvents.length > 0 ? totalRecoveryTime / this.timeoutEvents.length : 0;
+
+    return {
+      totalTimeouts: this.timeoutEvents.length,
+      timeoutsByMeter,
+      averageTimeoutRecoveryMs,
+      lastTimeoutTime: this.timeoutEvents.length > 0 ? this.timeoutEvents[this.timeoutEvents.length - 1].timestamp : undefined,
+      timeoutEvents: [...this.timeoutEvents],
+    };
+  }
+
+  /**
+   * Clear timeout events for the next cycle
+   */
+  private clearTimeoutEvents(): void {
+    this.timeoutEvents = [];
   }
 
   /**
@@ -44,6 +110,9 @@ export class CollectionCycleManager {
     let metersProcessed = 0;
     let readingsCollected = 0;
     let success = true;
+
+    // Clear timeout events from previous cycle
+    this.clearTimeoutEvents();
 
     this.logger.info(`Starting collection cycle ${cycleId}`);
 
@@ -80,6 +149,7 @@ export class CollectionCycleManager {
           readingsCollected: 0,
           errors,
           success: success && errors.length === 0,
+          timeoutMetrics: this.calculateTimeoutMetrics(),
         };
       }
 
@@ -152,11 +222,13 @@ export class CollectionCycleManager {
         readingsCollected,
         errors,
         success: success && errors.length === 0,
+        timeoutMetrics: this.calculateTimeoutMetrics(),
       };
 
       this.logger.info(
         `Collection cycle ${cycleId} completed: ` +
-        `${metersProcessed} meters, ${readingsCollected} readings, ${errors.length} errors`
+        `${metersProcessed} meters, ${readingsCollected} readings, ${errors.length} errors, ` +
+        `${result.timeoutMetrics?.totalTimeouts || 0} timeouts`
       );
 
       return result;
@@ -172,6 +244,7 @@ export class CollectionCycleManager {
         readingsCollected,
         errors,
         success: false,
+        timeoutMetrics: this.calculateTimeoutMetrics(),
       };
     } finally {
       // Clear cache after cycle completes to ensure fresh data on next cycle
@@ -181,10 +254,16 @@ export class CollectionCycleManager {
   }
 
   /**
-   * Read all data points from a meter
+   * Read all data points from a meter with adaptive batch sizing
    * 
-   * Gets all configured registers for the device from the register cache,
-   * then reads all registers in a single batch request via BACnet
+   * First checks if the meter is online via connectivity check.
+   * If offline, skips the meter and records offline status.
+   * If online, gets all configured registers for the device from the register cache,
+   * then reads registers using adaptive batch sizing:
+   * - Starts with batch size from BatchSizeManager
+   * - On timeout, reduces batch size and retries
+   * - On complete failure, attempts sequential fallback
+   * - Records metrics for monitoring
    */
   private async readMeterDataPoints(
     meter: any,
@@ -195,6 +274,35 @@ export class CollectionCycleManager {
     const readings: PendingReading[] = [];
 
     try {
+      // Check if meter is online before attempting to read
+      this.logger.info(`Checking connectivity for meter ${meter.meter_id} at ${meter.ip}:${meter.port || 47808}`);
+      const isOnline = await bacnetClient.checkConnectivity(meter.ip, meter.port || 47808);
+
+      if (!isOnline) {
+        // Meter is offline, skip it and record offline status with timestamp
+        this.logger.warn(`Meter ${meter.meter_id} is offline or unreachable, skipping meter`);
+        errors.push({
+          meterId: String(meter.meter_id),
+          operation: 'connectivity',
+          error: `Meter offline or unreachable at ${meter.ip}:${meter.port || 47808}`,
+          timestamp: new Date(),
+        });
+
+        // Record offline timeout event for metrics
+        this.recordTimeoutEvent(
+          String(meter.meter_id),
+          0,
+          0,
+          readTimeoutMs,
+          'offline',
+          false
+        );
+
+        return readings;
+      }
+
+      this.logger.info(`Meter ${meter.meter_id} is online, proceeding with batch read`);
+
       // Get all configured registers for this device from cache
       const deviceRegisters = this.deviceRegisterCache.getDeviceRegisters(meter.device_id);
       
@@ -226,35 +334,51 @@ export class CollectionCycleManager {
         fieldName: register.field_name,
       }));
 
-      this.logger.info(`Performing batch read of ${batchRequests.length} registers from meter ${meter.meter_id}`);
-
-      // Read all registers in a single batch request
-      const batchResults = await bacnetClient.readPropertyMultiple(
-        meter.ip,
-        meter.port || 47808,
+      // Perform batch read with adaptive sizing and timeout handling
+      const batchResults = await this.performBatchReadWithAdaptiveSizing(
+        meter,
+        bacnetClient,
         batchRequests,
-        readTimeoutMs
+        deviceRegisters,
+        readTimeoutMs,
+        errors
       );
 
       // Process batch results
       batchResults.forEach((result: any, index: number) => {
         const register = deviceRegisters[index];
 
-        if (result.success && result.value !== undefined) {
+        if (result && result.success && result.value !== undefined) {
+          let readValue = result.value;
+          
+          // If value is still an object, try to extract the numeric value
+          if (typeof readValue === 'object' && readValue !== null) {
+            // Try common property names for BACnet wrapped values
+            if ('value' in readValue) {
+              readValue = readValue.value;
+            } else if ('_value' in readValue) {
+              readValue = readValue._value;
+            } else {
+              // Last resort: convert to string and log the structure
+              this.logger.warn(`⚠️ Unexpected value structure for register ${register.register}: ${JSON.stringify(readValue)}`);
+              readValue = Object.values(readValue)[0] || readValue;
+            }
+          }
+          
           readings.push({
             meter_id: meter.meter_id,
             timestamp: new Date(),
             data_point: register.field_name,
-            value: Number(result.value),
+            value: Number(readValue),
             unit: register.unit || 'unknown',
           });
           this.logger.info(
-            `Successfully read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: ${result.value}`
+            `✅ Successfully read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: value=${readValue}`
           );
         } else {
-          const errorMsg = result.error || 'Unknown error';
+          const errorMsg = (result && result.error) || 'Unknown error';
           this.logger.warn(
-            `Failed to read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: ${errorMsg}`
+            `⚠️ Failed to read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: ${errorMsg}`
           );
           errors.push({
             meterId: String(meter.meter_id),
@@ -277,6 +401,149 @@ export class CollectionCycleManager {
     }
 
     return readings;
+  }
+
+  /**
+   * Perform batch read with adaptive sizing and timeout handling
+   * 
+   * Implements the following strategy:
+   * 1. Get current batch size from BatchSizeManager
+   * 2. Split registers into batches of that size
+   * 3. Read each batch with timeout handling
+   * 4. On timeout, reduce batch size and retry
+   * 5. On complete failure, attempt sequential fallback
+   * 6. Record success/timeout for metrics
+   */
+  private async performBatchReadWithAdaptiveSizing(
+    meter: any,
+    bacnetClient: BACnetClient,
+    allRequests: BatchReadRequest[],
+    deviceRegisters: any[],
+    readTimeoutMs: number,
+    errors: CollectionError[]
+  ): Promise<any[]> {
+    const allResults: any[] = new Array(allRequests.length).fill(null);
+    const port = meter.port || 47808;
+
+    // Get initial batch size from manager
+    let currentBatchSize = this.batchSizeManager.getBatchSize(meter.meter_id, allRequests.length);
+    const isReadingAllAtOnce = currentBatchSize === allRequests.length;
+    this.logger.info(
+      `📦 Starting batch read for meter ${meter.meter_id}: ${isReadingAllAtOnce ? '✅ Reading ALL' : '⚠️ Reading in chunks'} ${allRequests.length} registers in batch size ${currentBatchSize}`
+    );
+
+    // Process all registers in batches
+    let batchIndex = 0;
+
+    for (let i = 0; i < allRequests.length; i += currentBatchSize) {
+      const batchEnd = Math.min(i + currentBatchSize, allRequests.length);
+      const batchRequests = allRequests.slice(i, batchEnd);
+      const batchNumber = batchIndex + 1;
+
+      this.logger.info(
+        `📋 Batch ${batchNumber}: Reading registers ${i + 1}-${batchEnd} (batch size: ${batchRequests.length})`
+      );
+
+      try {
+        // Attempt batch read with timeout
+        const batchResults = await bacnetClient.readPropertyMultiple(
+          meter.ip,
+          port,
+          batchRequests,
+          readTimeoutMs
+        );
+
+        // Check if any results indicate timeout
+        const hasTimeoutError = batchResults.some((r: any) => 
+          r.error && r.error.includes('timeout')
+        );
+
+        if (hasTimeoutError) {
+          // Batch read timed out - reduce batch size and retry
+          this.logger.warn(
+            `⏱️  Batch ${batchNumber} timed out for meter ${meter.meter_id}, reducing batch size`
+          );
+
+          // Record timeout event with reduced_batch recovery method
+          this.recordTimeoutEvent(
+            String(meter.meter_id),
+            batchRequests.length,
+            currentBatchSize,
+            readTimeoutMs,
+            'reduced_batch',
+            false
+          );
+
+          this.batchSizeManager.recordTimeout(meter.meter_id);
+
+          // Get new batch size and retry this batch
+          const previousBatchSize = currentBatchSize;
+          currentBatchSize = this.batchSizeManager.getBatchSize(meter.meter_id, allRequests.length);
+          this.logger.info(
+            `📉 Batch size reduced from ${previousBatchSize} to ${currentBatchSize}, retrying batch ${batchNumber}`
+          );
+
+          // Retry this batch with smaller size
+          i -= currentBatchSize; // Back up to retry this batch
+          batchIndex++;
+          continue;
+        }
+
+        // Store successful results
+        batchResults.forEach((result: any, index: number) => {
+          allResults[i + index] = result;
+        });
+
+        // Record success for metrics
+        this.batchSizeManager.recordSuccess(meter.meter_id);
+        this.logger.info(`✅ Batch ${batchNumber} completed successfully for meter ${meter.meter_id}`);
+
+      } catch (batchError) {
+        // Batch read failed completely - attempt sequential fallback
+        const errorMsg = batchError instanceof Error ? batchError.message : String(batchError);
+        this.logger.error(
+          `🔴 Batch ${batchNumber} failed for meter ${meter.meter_id}: ${errorMsg}, attempting sequential fallback`
+        );
+
+        // Attempt sequential fallback for this batch
+        const sequentialResults = await bacnetClient.readPropertySequential(
+          meter.ip,
+          port,
+          batchRequests,
+          readTimeoutMs
+        );
+
+        // Store sequential results
+        sequentialResults.forEach((result: any, index: number) => {
+          allResults[i + index] = result;
+        });
+
+        // Record timeout event with sequential recovery method
+        const successCount = sequentialResults.filter((r: any) => r.success).length;
+        this.recordTimeoutEvent(
+          String(meter.meter_id),
+          batchRequests.length,
+          currentBatchSize,
+          readTimeoutMs,
+          'sequential',
+          successCount > 0
+        );
+
+        // Record timeout for metrics since we had to fall back
+        this.batchSizeManager.recordTimeout(meter.meter_id);
+      }
+
+      batchIndex++;
+    }
+
+    // Log final status
+    const successCount = allResults.filter((r: any) => r && r.success).length;
+    const failureCount = allResults.filter((r: any) => r && !r.success).length;
+    this.logger.info(
+      `📊 Batch read completed for meter ${meter.meter_id}: ${successCount} succeeded, ${failureCount} failed`
+    );
+
+    return allResults;
   }
 
 }

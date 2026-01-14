@@ -3,7 +3,7 @@
  */
 
 import * as cron from 'node-cron';
-import { BACnetMeterReadingAgentConfig, CollectionCycleResult, AgentStatus } from './types.js';
+import { BACnetMeterReadingAgentConfig, CollectionCycleResult, AgentStatus, TimeoutMetrics, OfflineMeterStatus } from './types.js';
 import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
 import { BACnetClient } from './bacnet-client.js';
 import { CollectionCycleManager } from './collection-cycle-manager.js';
@@ -21,6 +21,13 @@ export class BACnetMeterReadingAgent {
   private totalReadingsCollected: number = 0;
   private totalErrorsEncountered: number = 0;
   private lastCycleResult?: CollectionCycleResult;
+  private cumulativeTimeoutMetrics: TimeoutMetrics = {
+    totalTimeouts: 0,
+    timeoutsByMeter: {},
+    averageTimeoutRecoveryMs: 0,
+    timeoutEvents: [],
+  };
+  private offlineMetersMap: Map<string, OfflineMeterStatus> = new Map();
   private logger: any;
 
   constructor(config: BACnetMeterReadingAgentConfig, logger?: any) {
@@ -31,6 +38,12 @@ export class BACnetMeterReadingAgent {
       bacnetPort: 47808,
       connectionTimeoutMs: 5000,
       readTimeoutMs: 3000,
+      batchReadTimeoutMs: 5000,
+      sequentialReadTimeoutMs: 3000,
+      connectivityCheckTimeoutMs: 2000,
+      enableConnectivityCheck: true,
+      enableSequentialFallback: true,
+      adaptiveBatchSizing: true,
       ...config,
     };
 
@@ -38,11 +51,14 @@ export class BACnetMeterReadingAgent {
     // Use shared cache instances if provided, otherwise create new ones
     this.meterCache = config.meterCache || new MeterCache();
     this.deviceRegisterCache = config.deviceRegisterCache || new DeviceRegisterCache();
-    this.bacnetClient = new BACnetClient(
-      this.config.bacnetInterface,
-      this.config.bacnetPort,
-      this.config.connectionTimeoutMs
-    );
+    this.bacnetClient = new BACnetClient({
+      bacnetInterface: this.config.bacnetInterface,
+      bacnetPort: this.config.bacnetPort,
+      apduTimeout: this.config.connectionTimeoutMs,
+      batchReadTimeout: this.config.batchReadTimeoutMs,
+      sequentialReadTimeout: this.config.sequentialReadTimeoutMs,
+      connectivityCheckTimeout: this.config.connectivityCheckTimeoutMs,
+    }, this.logger);
     this.cycleManager = new CollectionCycleManager(this.deviceRegisterCache, this.logger);
   }
 
@@ -155,7 +171,7 @@ export class BACnetMeterReadingAgent {
    */
   private async executeCycleInternal(): Promise<CollectionCycleResult> {
     // Set lock to prevent overlapping execution
-this.isCycleExecuting = true;
+    this.isCycleExecuting = true;
 
     try {
       // Note: Do NOT reload meter cache on every cycle
@@ -176,6 +192,14 @@ this.isCycleExecuting = true;
       this.totalErrorsEncountered += result.errors.length;
       this.lastCycleResult = result;
 
+      // Accumulate timeout metrics from this cycle
+      if (result.timeoutMetrics) {
+        this.accumulateTimeoutMetrics(result.timeoutMetrics);
+      }
+
+      // Update offline meters tracking from cycle result
+      this.updateOfflineMetersFromCycle(result);
+
       return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -193,6 +217,127 @@ this.isCycleExecuting = true;
   }
 
   /**
+   * Accumulate timeout metrics from a cycle into cumulative metrics
+   */
+  private accumulateTimeoutMetrics(cycleMetrics: TimeoutMetrics): void {
+    // Add to total timeouts
+    this.cumulativeTimeoutMetrics.totalTimeouts += cycleMetrics.totalTimeouts;
+
+    // Merge timeout counts by meter
+    for (const [meterId, count] of Object.entries(cycleMetrics.timeoutsByMeter)) {
+      if (!this.cumulativeTimeoutMetrics.timeoutsByMeter[meterId]) {
+        this.cumulativeTimeoutMetrics.timeoutsByMeter[meterId] = 0;
+      }
+      this.cumulativeTimeoutMetrics.timeoutsByMeter[meterId] += count;
+    }
+
+    // Update last timeout time
+    if (cycleMetrics.lastTimeoutTime) {
+      this.cumulativeTimeoutMetrics.lastTimeoutTime = cycleMetrics.lastTimeoutTime;
+    }
+
+    // Accumulate timeout events
+    if (cycleMetrics.timeoutEvents) {
+      this.cumulativeTimeoutMetrics.timeoutEvents.push(...cycleMetrics.timeoutEvents);
+    }
+
+    // Recalculate average timeout recovery time
+    if (this.cumulativeTimeoutMetrics.totalTimeouts > 0) {
+      const totalRecoveryTime = this.cumulativeTimeoutMetrics.timeoutEvents.reduce(
+        (sum, event) => sum + event.timeoutMs,
+        0
+      );
+      this.cumulativeTimeoutMetrics.averageTimeoutRecoveryMs =
+        totalRecoveryTime / this.cumulativeTimeoutMetrics.totalTimeouts;
+    }
+
+    this.logger.debug(
+      `Accumulated timeout metrics: total=${this.cumulativeTimeoutMetrics.totalTimeouts}, ` +
+      `average recovery=${this.cumulativeTimeoutMetrics.averageTimeoutRecoveryMs.toFixed(2)}ms`
+    );
+  }
+
+  /**
+   * Track offline meter status
+   */
+  private trackOfflineMeter(meterId: string): void {
+    const meterIdStr = String(meterId);
+    const now = new Date();
+
+    if (this.offlineMetersMap.has(meterIdStr)) {
+      // Meter already offline, increment consecutive failures
+      const status = this.offlineMetersMap.get(meterIdStr)!;
+      status.consecutiveFailures++;
+      status.lastCheckedAt = now;
+    } else {
+      // New offline meter
+      const status: OfflineMeterStatus = {
+        meterId: meterIdStr,
+        lastCheckedAt: now,
+        consecutiveFailures: 1,
+        offlineSince: now,
+      };
+      this.offlineMetersMap.set(meterIdStr, status);
+      this.logger.warn(`🔴 Meter ${meterIdStr} marked as offline`);
+    }
+  }
+
+  /**
+   * Clear offline status for a meter when it comes back online
+   */
+  private clearOfflineMeter(meterId: string): void {
+    const meterIdStr = String(meterId);
+    if (this.offlineMetersMap.has(meterIdStr)) {
+      this.offlineMetersMap.delete(meterIdStr);
+      this.logger.info(`✅ Meter ${meterIdStr} is back online`);
+    }
+  }
+
+  /**
+   * Check for consistently slow meters and log warnings
+   */
+  private checkForSlowMeters(): void {
+    const slowMeterThreshold = 3; // Number of timeouts to consider a meter slow
+    const slowMeters: string[] = [];
+
+    for (const [meterId, count] of Object.entries(this.cumulativeTimeoutMetrics.timeoutsByMeter)) {
+      if (count >= slowMeterThreshold) {
+        slowMeters.push(`${meterId} (${count} timeouts)`);
+      }
+    }
+
+    if (slowMeters.length > 0) {
+      this.logger.warn(
+        `⚠️  Consistently slow meters detected: ${slowMeters.join(', ')}. Consider increasing timeout values or reducing batch sizes.`
+      );
+    }
+  }
+
+  /**
+   * Update offline meters from cycle result
+   */
+  private updateOfflineMetersFromCycle(result: CollectionCycleResult): void {
+    // Track meters that had connectivity errors
+    for (const error of result.errors) {
+      if (error.operation === 'connectivity') {
+        this.trackOfflineMeter(error.meterId);
+      }
+    }
+
+    // Track meters that had offline timeout events
+    if (result.timeoutMetrics?.timeoutEvents) {
+      for (const event of result.timeoutMetrics.timeoutEvents) {
+        if (event.recoveryMethod === 'offline') {
+          this.trackOfflineMeter(event.meterId);
+        }
+      }
+    }
+
+    // Check for consistently slow meters
+    this.checkForSlowMeters();
+  }
+
+  /**
    * Get current agent status
    */
   getStatus(): AgentStatus {
@@ -203,6 +348,8 @@ this.isCycleExecuting = true;
       totalReadingsCollected: this.totalReadingsCollected,
       totalErrorsEncountered: this.totalErrorsEncountered,
       activeErrors: this.lastCycleResult?.errors || [],
+      timeoutMetrics: this.cumulativeTimeoutMetrics,
+      offlineMeters: Array.from(this.offlineMetersMap.values()),
     };
   }
 }
