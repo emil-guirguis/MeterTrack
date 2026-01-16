@@ -55,7 +55,7 @@ export function initializePools(): void {
     password: syncConfig.password,
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000,
   } as any);
 
   syncPool.on('error', (err) => {
@@ -85,7 +85,7 @@ export function initializePools(): void {
     password: remoteConfig.password,
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000,
   } as any);
 
   remotePool.on('error', (err) => {
@@ -147,7 +147,8 @@ export class SyncDatabase {
       console.log('\n🔧 [SQL] Initializing database schema...');
 
       // Create tenant table
-      let sql = `CREATE TABLE IF NOT EXISTS tenant (
+      await execQuery(this.pool,
+        `CREATE TABLE IF NOT EXISTS tenant (
           id SERIAL PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           url VARCHAR(255),
@@ -160,13 +161,11 @@ export class SyncDatabase {
           active BOOLEAN DEFAULT true,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`;
-      await this.pool.query(sql);
-      console.log(`\n🔧 [SQL] ${sql}`);
+        )`);
 
       // Create meter table
-      sql = `
-        CREATE TABLE IF NOT EXISTS meter (
+      await execQuery(this.pool,
+        `CREATE TABLE IF NOT EXISTS meter (
           id VARCHAR(255) PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           type VARCHAR(100),
@@ -182,12 +181,11 @@ export class SyncDatabase {
           active BOOLEAN DEFAULT true,
           created_at VARCHAR(50),
           updated_at VARCHAR(50)
-        )`;
-      console.log(`\n🔧 [SQL] ${sql}`);
-      await this.pool.query(sql);
+        )`);
 
       // Create meter_reading table
-      sql = `
+      await execQuery(this.pool,
+        `
         CREATE TABLE IF NOT EXISTS meter_reading (
           id SERIAL PRIMARY KEY,
           meter_id VARCHAR(255) NOT NULL REFERENCES meter(id),
@@ -198,12 +196,11 @@ export class SyncDatabase {
           is_synchronized BOOLEAN DEFAULT false,
           retry_count INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`;
-      console.log(`\n🔧 [SQL] ${sql}`);
-      await this.pool.query(sql);        
+        )`);
 
       // Create sync_log table
-      sql = `
+      await execQuery(this.pool,
+        `
         CREATE TABLE IF NOT EXISTS sync_log (
           id SERIAL PRIMARY KEY,
           batch_size INTEGER,
@@ -211,13 +208,26 @@ export class SyncDatabase {
           error_message TEXT,
           synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-      `;
-      console.log(`\n🔧 [SQL] ${sql}`);
-      await this.pool.query(sql);
-      // Create indexes
-      await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_meter_id ON meter_reading(meter_id)`);
-      await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_meter_reading_is_synchronized ON meter_reading(is_synchronized)`);
-      await this.pool.query(`CREATE INDEX IF NOT EXISTS idx_sync_log_synced_at ON sync_log(synced_at)`);
+      `);
+
+
+      // Create device_register table
+      await execQuery(this.pool,
+        `
+        CREATE TABLE IF NOT EXISTS device_register (
+          device_register_id SERIAL PRIMARY KEY,
+          device_id INTEGER NOT NULL,
+          register_id INTEGER NOT NULL REFERENCES register(register_id),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(device_id, register_id)
+        )
+      `);
+      await execQuery(this.pool, `CREATE INDEX IF NOT EXISTS idx_meter_reading_meter_id ON meter_reading(meter_id)`);
+      await execQuery(this.pool, `CREATE INDEX IF NOT EXISTS idx_meter_reading_is_synchronized ON meter_reading(is_synchronized)`);
+      await execQuery(this.pool, `CREATE INDEX IF NOT EXISTS idx_sync_log_synced_at ON sync_log(synced_at)`);
+      await execQuery(this.pool, `CREATE INDEX IF NOT EXISTS idx_device_register_device_id ON device_register(device_id)`);
+      await execQuery(this.pool, `CREATE INDEX IF NOT EXISTS idx_device_register_register_id ON device_register(register_id)`);
 
       console.log('✅ [SQL] Database schema initialized successfully');
     } catch (error) {
@@ -231,8 +241,7 @@ export class SyncDatabase {
    */
   async testConnectionLocal(): Promise<boolean> {
     try {
-      const query = 'SELECT NOW()';
-      const result = await execQuery(this.pool, query);
+      const result = await execQuery(this.pool, 'SELECT NOW()');
       return result.rows.length > 0;
     } catch (error) {
       console.error('❌ [SQL] Local database connection test failed:', error);
@@ -245,8 +254,7 @@ export class SyncDatabase {
    */
   async testConnectionRemote(remotePool: Pool): Promise<boolean> {
     try {
-      const query = 'SELECT NOW()';
-      const result = await execQuery(remotePool, query);
+      const result = await execQuery(remotePool, 'SELECT NOW()');
       console.log('✅ [SQL] Remote database connection test successful, result:', result.rows[0]);
       return result.rows.length > 0;
     } catch (error) {
@@ -254,17 +262,7 @@ export class SyncDatabase {
       return false;
     }
   }
-  /**
-   * Delete a meter from the database
-   */
-  async deleteSyncMeter(meterId: number, meterElementId?: number): Promise<void> {
-    if (meterElementId) {
-      await this.pool.query('DELETE FROM meter WHERE meter_id = $1 AND meter_element_id = $2', [meterId, meterElementId]);
-    } else {
-      await this.pool.query('DELETE FROM meter WHERE meter_id = $1', [meterId]);
-    }
-    
-  } 
+
   /**
    * Validate that the tenant table exists and contains valid data
    * 
@@ -276,23 +274,22 @@ export class SyncDatabase {
    */
   async validateTenantTable(): Promise<TenantEntity | null> {
     try {
-      const query = 'SELECT * FROM tenant';
+      const query = 'SELECT TOP 2 * FROM tenant';
       const result = await execQuery(this.pool, query);
       const rowCount = result.rows.length;
 
       if (rowCount === 0) {
         console.warn('⚠️  [SQL] Tenant table exists but has no records - sync database not set up yet');
         return null;
-      }
-
-      if (rowCount === 1) {
+      } else if (rowCount === 1) {
         console.log('✅ [SQL] Tenant table validation successful - found valid tenant record');
         return result.rows[0];
+      } else {
+        throw new Error(`Database integrity error: Tenant table contains ${rowCount} records instead of 1. Please contact support.`);
+        console.error(`❌ [SQL] Tenant table contains ${rowCount} records - database may be corrupted`);
       }
-
+      
       // More than one record - database may be corrupted
-      console.error(`❌ [SQL] Tenant table contains ${rowCount} records - database may be corrupted`);
-      throw new Error(`Database integrity error: Tenant table contains ${rowCount} records instead of 1. Please contact support.`);
     } catch (error: any) {
       // Check if error is due to table not existing
       if (error.message.includes('does not exist') || error.code === '42P01') {
@@ -316,29 +313,6 @@ export class SyncDatabase {
    */
   async close(): Promise<void> {
     await this.pool.end();
-  }
-
-  // ==================== METER METHODS ====================
-
-
-
-  /**
-  * Get meter by ID
-  */
-  async getMeterById(id: number): Promise<MeterEntity | null> {
-    const result = await this.pool.query('SELECT * FROM meter WHERE meter_id = $1', [id] );
-    return result.rows[0] || null;
-  }
-
-
-  /**
-   * Update meter last reading timestamp
-   */
-  async updateMeterLastReading(externalId: string, timestamp: Date): Promise<void> {
-    await this.pool.query(
-      'UPDATE meter SET last_reading_at = $1, updated_at = CURRENT_TIMESTAMP WHERE meter_id = $2',
-      [timestamp, externalId]
-    );
   }
 
   // ==================== METER READING METHODS ====================
@@ -609,7 +583,7 @@ export class SyncDatabase {
   async updateTenantApiKey(apiKey: string): Promise<void> {
     try {
       console.log(`\n🔑 [SYNC] Updating tenant API key...`);
-      
+
       const tenant = await this.getTenant();
       if (!tenant) {
         console.warn('⚠️  [SYNC] No tenant found, cannot update API key');
@@ -638,9 +612,9 @@ export class SyncDatabase {
   // ==================== SYNC LOG METHODS ====================
 
 
-    /**
-   * Delete old sync logs (cleanup)
-   */
+  /**
+ * Delete old sync logs (cleanup)
+ */
   async deleteOldSyncLogs(daysOld: number = 30): Promise<number> {
     const result = await this.pool.query(
       `DELETE FROM sync_log 
@@ -674,8 +648,8 @@ export class SyncDatabase {
     const query = activeOnly
       ? 'SELECT meter_id, name, active, ip, port, meter_element_id, TRIM(element) as element, device_id FROM meter WHERE active = true ORDER BY name'
       : 'SELECT meter_id, name, active, ip, port, meter_element_id, TRIM(element) as element, device_id FROM meter ORDER BY name';
-      const result = await execQuery(this.pool, query);
-      return result.rows;
+    const result = await execQuery(this.pool, query);
+    return result.rows;
   }
 
   /**
@@ -720,9 +694,9 @@ export class SyncDatabase {
            port = EXCLUDED.port,
            element = EXCLUDED.element
          RETURNING *`;
-         console.log(`[SYNC SQL]  ${sql}`);
-         console.log(`   Parameters:`, JSON.stringify(params, null, 2));
-      const result = await this.pool.query(sql,params );
+      console.log(`[SYNC SQL]  ${sql}`);
+      console.log(`   Parameters:`, JSON.stringify(params, null, 2));
+      const result = await this.pool.query(sql, params);
 
       if (!result || !result.rows || result.rows.length === 0) {
         throw new Error(`Upsert failed: No rows returned for meter ${meterId}`);
@@ -957,14 +931,17 @@ export class SyncDatabase {
    */
   async getDeviceRegisters(): Promise<any[]> {
     try {
+      console.log('📦 [SQL] Querying device_register associations from sync database...');
       const query = `SELECT dr.device_id, dr.register_id, r.register, r.field_name, r.unit
                      FROM device_register dr
                         JOIN register r ON r.register_id = dr.register_id 
                      ORDER BY dr.device_id, dr.register_id`;
-      const result = await execQuery(remotePool, query);
+      console.log(`📋 [SQL] Query: ${query}`);
+      const result = await execQuery(this.pool, query, [], 'data-sync.ts>getDeviceRegisters');
+      console.log(`✅ [SQL] Retrieved ${result.rows.length} device_register associations`);
       return result.rows;
     } catch (error) {
-      console.error('❌ [SQL] Failed to get device_register associations from remote database:', error);
+      console.error('❌ [SQL] Failed to get device_register associations from sync database:', error);
       throw error;
     }
   }

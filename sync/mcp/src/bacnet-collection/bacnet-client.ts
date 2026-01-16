@@ -328,13 +328,7 @@ export class BACnetClient {
 
                 if (item.values && item.values.length > 0) {
                   // Extract the actual numeric value from the BACnet response
-                  // The value might be wrapped in an object, so we need to extract the primitive
                   let readValue = item.values[0].value;
-                  
-                  // If value is an object with a 'value' property, extract it
-                  if (typeof readValue === 'object' && readValue !== null && 'value' in readValue) {
-                    readValue = readValue.value;
-                  }
                   
                   this.logger.debug(
                     `✅ BACnet batch read successful: ${address} ${originalRequest.objectType}:${originalRequest.objectInstance} = ${readValue}`

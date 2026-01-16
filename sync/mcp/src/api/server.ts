@@ -8,7 +8,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { syncPool } from '../data-sync/data-sync.js';
-import { SyncManager } from '../remote_to_local-sync/sync-manager.js';
 import { RemoteToLocalSyncAgent } from '../remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
 import { SyncDatabase } from '../types/entities.js';
@@ -20,7 +19,6 @@ import { execQuery } from '../helpers/sql-functions.js';
 export interface LocalApiServerConfig {
   port: number;
   database: SyncDatabase;
-  syncManager?: SyncManager;
   remoteToLocalSyncAgent?: RemoteToLocalSyncAgent;
   bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
   remotePool?: Pool;
@@ -30,16 +28,15 @@ export class LocalApiServer {
   private app: express.Application;
   private port: number;
   private database: SyncDatabase;
-  private syncManager?: SyncManager;
   private remoteToLocalSyncAgent?: RemoteToLocalSyncAgent;
   private bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
   private remotePool?: Pool;
   private server?: any;
+  private syncManager?: any;
 
   constructor(config: LocalApiServerConfig) {
     this.port = config.port;
     this.database = config.database;
-    this.syncManager = config.syncManager;
     this.remoteToLocalSyncAgent = config.remoteToLocalSyncAgent;
     this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
     this.remotePool = config.remotePool;
@@ -379,7 +376,7 @@ export class LocalApiServer {
         }
 
         // Trigger sync asynchronously
-        this.syncManager.triggerManualSync().catch(error => {
+        this.syncManager.triggerManualSync().catch((error: any) => {
           console.error('❌ [API] Manual sync failed:', error);
         });
 
@@ -669,7 +666,7 @@ export class LocalApiServer {
   /**
    * Set sync manager (can be set after construction)
    */
-  setSyncManager(syncManager: SyncManager): void {
+  setSyncManager(syncManager: any): void {
     this.syncManager = syncManager;
   }
 }
@@ -679,7 +676,6 @@ export class LocalApiServer {
  */
 export async function createAndStartLocalApiServer(
   database: SyncDatabase,
-  syncManager?: SyncManager,
   remoteToLocalSyncAgent?: RemoteToLocalSyncAgent,
   bacnetMeterReadingAgent?: BACnetMeterReadingAgent,
   remotePool?: Pool
@@ -689,7 +685,6 @@ export async function createAndStartLocalApiServer(
   const server = new LocalApiServer({
     port,
     database,
-    syncManager,
     remoteToLocalSyncAgent,
     bacnetMeterReadingAgent,
     remotePool,

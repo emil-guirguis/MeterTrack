@@ -94,10 +94,42 @@ export interface AgentStatus {
 
 export interface PendingReading {
   meter_id: number;
-  timestamp: Date;
-  data_point: string;
+  meter_element_id: number;
+  field_name: string;
   value: number;
-  unit?: string;
+  created_at: Date;
+  element: string;
+  register: number;
+}
+
+// ==================== VALIDATION RESULT ====================
+
+export interface ValidationResult {
+  valid: number;
+  invalid: number;
+  skipped: number;
+  errors: ValidationError[];
+}
+
+// ==================== VALIDATION ERROR ====================
+
+export interface ValidationError {
+  readingIndex: number;
+  reading: PendingReading;
+  errors: string[];
+}
+
+// ==================== BATCH INSERTION RESULT ====================
+
+export interface BatchInsertionResult {
+  success: boolean;
+  totalReadings: number;
+  insertedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  timestamp: Date;
+  errors?: string[];
+  retryAttempts: number;
 }
 
 // ==================== AGENT CONFIG ====================
@@ -105,6 +137,7 @@ export interface PendingReading {
 export interface BACnetMeterReadingAgentConfig {
   syncDatabase: any; // SyncDatabase type
   collectionIntervalSeconds?: number;  // Default: 60
+  uploadIntervalMinutes?: number;       // Default: 5 (upload every 5 minutes)
   enableAutoStart?: boolean;            // Default: true
   bacnetInterface?: string;             // Default: '0.0.0.0'
   bacnetPort?: number;                  // Default: 47808
@@ -118,4 +151,5 @@ export interface BACnetMeterReadingAgentConfig {
   adaptiveBatchSizing?: boolean;        // Default: true - Reduce batch size on timeout
   meterCache?: any;                     // Optional: shared MeterCache instance
   deviceRegisterCache?: any;            // Optional: shared DeviceRegisterCache instance
+  apiClient?: any;                      // Optional: ClientSystemApiClient for uploads
 }

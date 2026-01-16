@@ -2,10 +2,13 @@
  * Remote to Local Sync Agent
  * 
  * Synchronizes configuration from the remote Client System database to the local Sync database.
- * Handles insert, update, and delete operations for tenants, meters, registers, and device_register associations.
- * Runs automatically on a schedule and can be manually triggered.
+ * Orchestrates three separate sync operations:
+ * 1. Tenant sync - loads API keys and tenant configuration
+ * 2. Meter sync - syncs meter devices and their configuration
+ * 3. Device Register sync - syncs device-to-register associations
  * 
- * Uses generic sync functions for extensibility and code reuse.
+ * Each sync operation handles its own cache reload if data was modified.
+ * Runs automatically on a schedule and can be manually triggered.
  */
 
 import * as cron from 'node-cron';
@@ -13,11 +16,10 @@ import { Pool } from 'pg';
 import { MeterSyncResult, MeterSyncStatus, SyncDatabase, ComprehensiveSyncResult } from '../types/entities.js';
 import { syncPool } from '../data-sync/data-sync.js';
 import { syncMeters } from './sync-meter.js';
-// import { syncRegisters, RegisterSyncResult } from './sync-register.js';
-import { syncDeviceRegisters, DeviceRegisterSyncResult } from './sync-device-register.js';
-import { syncTenant, TenantSyncResult } from './sync-tenant.js';
+import { syncDeviceRegisters } from './sync-device-register.js';
+import { syncTenant } from './sync-tenant.js';
 import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
-import { DeviceRegisterCache, MeterCache } from '../cache/index.js';
+import { cacheManager } from '../cache/index.js';
 
 export interface RemoteToLocalSyncAgentConfig {
   syncDatabase: SyncDatabase;
@@ -25,8 +27,6 @@ export interface RemoteToLocalSyncAgentConfig {
   syncIntervalMinutes?: number;
   enableAutoSync?: boolean;
   bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
-  deviceRegisterCache?: DeviceRegisterCache;
-  meterCache?: MeterCache;
 }
 
 export class RemoteToLocalSyncAgent {
@@ -35,13 +35,11 @@ export class RemoteToLocalSyncAgent {
   private syncIntervalMinutes: number;
   private enableAutoSync: boolean;
   private bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
-  private deviceRegisterCache?: DeviceRegisterCache;
-  private meterCache?: MeterCache;
 
   private cronJob?: cron.ScheduledTask;
   private isSyncing: boolean = false;
   private status: MeterSyncStatus;
-  private tenant_id?: number;
+  private tenantId: number | null = null;
 
   constructor(config: RemoteToLocalSyncAgentConfig) {
     this.syncDatabase = config.syncDatabase;
@@ -49,8 +47,6 @@ export class RemoteToLocalSyncAgent {
     this.syncIntervalMinutes = config.syncIntervalMinutes || 60;
     this.enableAutoSync = config.enableAutoSync !== false;
     this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
-    this.deviceRegisterCache = config.deviceRegisterCache;
-    this.meterCache = config.meterCache;
 
     this.status = {
       isRunning: false,
@@ -65,30 +61,33 @@ export class RemoteToLocalSyncAgent {
   }
 
   /**
-   * Start the meter sync agent with scheduled sync
+   * Start the sync agent with scheduled sync
+   * 
+   * This performs the complete sync workflow:
+   * 1. Sync tenant data from remote to local DB
+   * 2. Sync meter data from remote to local DB
+   * 3. Sync device_register data from remote to local DB
+   * 4. Load all caches from local DB
+   * 5. Schedule periodic syncs
    */
   async start(): Promise<void> {
+    this.tenantId = cacheManager.getTenantCache().getTenantId();
+    if (!this.tenantId) {
+      throw new Error('Failed to get tenant ID from cache');
+    }
+    console.log(`✅ [Sync Agent] Sync agent configured for tenant: ${this.tenantId}`);
+
+    console.log('Starting sync agent...');
     if (this.cronJob) {
-      console.log('Meter sync agent already running');
+      console.log('Sync agent already running');
       return;
     }
 
-    console.log(`Starting meter sync agent with ${this.syncIntervalMinutes} minute interval`);
+    console.log(`Starting sync agent with ${this.syncIntervalMinutes} minute interval`);
 
-    // Get tenant ID from local database
-    try {
-      const tenant = await this.syncDatabase.getTenant();
-      if (tenant && tenant.tenant_id) {
-        this.tenant_id = tenant.tenant_id;
-        console.log(`Meter sync agent configured for tenant: ${this.tenant_id}`);
-      } else {
-        console.warn('No tenant found in local database, meter sync will not run');
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to get tenant from database:', error);
-      return;
-    }
+
+    // Perform initial sync (which includes cache loading)
+    await this.performSync();
 
     if (this.enableAutoSync) {
       // Schedule sync job
@@ -97,77 +96,38 @@ export class RemoteToLocalSyncAgent {
         await this.performSync();
       });
 
-      console.log(`Meter sync scheduled: every ${this.syncIntervalMinutes} hour(s)`);
-
-      // Perform initial sync
-      await this.performSync();
+      console.log(`✅ [Sync Agent] Sync scheduled: every ${this.syncIntervalMinutes} hour(s)`);
     }
 
     this.status.isRunning = true;
   }
 
   /**
-   * Stop the meter sync agent
+   * Stop the sync agent
    */
   async stop(): Promise<void> {
     if (this.cronJob) {
       this.cronJob.stop();
       this.cronJob = undefined;
-      console.log('Meter sync agent stopped');
+      console.log('Sync agent stopped');
     }
 
     this.status.isRunning = false;
   }
 
   /**
-   * Reload caches based on which tables were modified during sync
+   * Perform a single sync operation
    * 
-   * Checks the comprehensive sync result to determine which tables were modified
-   * and reloads the appropriate caches:
-   * - If register table modified: reload RegisterCache
-   * - If meter or device_register table modified: reload MeterCache
+   * Orchestrates three separate sync operations:
+   * 1. Tenant sync - loads API keys and tenant configuration
+   * 2. Meter sync - syncs meter devices and their configuration
+   * 3. Device Register sync - syncs device-to-register associations
    * 
-   * @param comprehensiveResult - The sync result containing modification counts
-   */
-  private async reloadCachesAfterSync(comprehensiveResult: ComprehensiveSyncResult): Promise<void> {
-    try {
-      console.log(`\n🔄 [Cache Reload] Checking which caches need to be reloaded...`);
-
-      // Check if meter or device_register table was modified
-      const meterTableModified = 
-        comprehensiveResult.meters.inserted > 0 || 
-        comprehensiveResult.meters.updated > 0 || 
-        comprehensiveResult.meters.deleted > 0;
-
-      const deviceRegisterTableModified = 
-        comprehensiveResult.deviceRegisters.inserted > 0 || 
-        comprehensiveResult.deviceRegisters.updated > 0 || 
-        comprehensiveResult.deviceRegisters.deleted > 0;
-
-      // Reload MeterCache if meter or device_register table was modified
-      if ((meterTableModified || deviceRegisterTableModified) && this.meterCache) {
-        try {
-          console.log(`🔄 [Cache Reload] Meter or device_register table was modified, reloading MeterCache...`);
-          await this.meterCache.reload(this.syncDatabase);
-          console.log(`✅ [Cache Reload] MeterCache reloaded successfully`);
-        } catch (error) {
-          console.error(`❌ [Cache Reload] Failed to reload MeterCache:`, error);
-          // Continue even if this fails - collection will use previous cache state
-        }
-      }
-
-    } catch (error) {
-      console.error(`❌ [Cache Reload] Unexpected error during cache reload:`, error);
-      // Don't throw - cache reload failures should not stop the sync process
-    }
-  }
-
-  /**
-   * Perform a single meter sync operation using generic sync functions
+   * Each sync operation handles its own cache reload if data was modified.
    */
   async performSync(): Promise<MeterSyncResult> {
     if (this.isSyncing) {
-      console.log('Meter sync already in progress, skipping');
+      console.log('Sync already in progress, skipping');
       return {
         success: false,
         inserted: 0,
@@ -183,10 +143,8 @@ export class RemoteToLocalSyncAgent {
       const bacnetStatus = this.bacnetMeterReadingAgent.getStatus();
       if (bacnetStatus.isRunning && bacnetStatus.lastCycleResult) {
         // Check if a cycle is currently executing by looking at the last cycle result
-        // If the cycle is recent and still within the collection interval, it's likely still executing
         const lastCycleEndTime = new Date(bacnetStatus.lastCycleResult.endTime);
         const timeSinceLastCycle = Date.now() - lastCycleEndTime.getTime();
-        const collectionIntervalMs = (this.bacnetMeterReadingAgent as any).config?.collectionIntervalSeconds * 1000 || 60000;
         
         // If the last cycle ended very recently (within 5 seconds), skip the sync
         if (timeSinceLastCycle < 5000) {
@@ -215,121 +173,28 @@ export class RemoteToLocalSyncAgent {
     this.status.lastSyncSkipReason = undefined;
 
     try {
-      // Initialize tenant_id if not already set
-      if (!this.tenant_id) {
-        console.log('🔍 [Meter Sync] Tenant ID not initialized, retrieving from database...');
-        try {
-          const tenant = await this.syncDatabase.getTenant();
-          if (!tenant) {
-            throw new Error('No tenant configured in sync database');
-          }
-          if (!tenant.tenant_id) {
-            throw new Error('Tenant ID not found in database');
-          }
-          this.tenant_id = tenant.tenant_id;
-          console.log(`✅ [Meter Sync] Tenant ID initialized: ${this.tenant_id}`);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          throw new Error(`Failed to initialize tenant: ${errorMsg}`);
-        }
-      }
-
-      console.log(`\n🔄 [Sync Agent] Starting comprehensive synchronization for tenant ${this.tenant_id}...`);
+      console.log(`\n🔄 [Sync Agent] Starting comprehensive synchronization for tenant ${this.tenantId}...`);
 
       // ==================== TENANT SYNC ====================
       console.log(`\n${'='.repeat(60)}`);
-      console.log(`PHASE 0: TENANT SYNCHRONIZATION`);
+      console.log(`PHASE 1: TENANT SYNCHRONIZATION`);
       console.log(`${'='.repeat(60)}`);
 
-      let tenantSyncResult: TenantSyncResult;
-      try {
-        tenantSyncResult = await syncTenant(this.remotePool, syncPool, this.tenant_id);
-        
-        // If API key was loaded, update the SyncManager's API client
-        if (tenantSyncResult.loadedApiKey) {
-          console.log(`✅ [Sync Agent] API key loaded from tenant sync, updating client...`);
-          // Note: The SyncManager will need to be updated separately to use this key
-          // This is handled in SyncManager.start() which loads the key from the database
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`\n❌ [Tenant Sync] Sync failed:`, error);
-
-        tenantSyncResult = {
-          success: false,
-          inserted: 0,
-          updated: 0,
-          error: errorMessage,
-          timestamp: new Date(),
-        };
-      }
+      const tenantSyncResult = await syncTenant(this.remotePool, syncPool, this.tenantId as number, this.syncDatabase);
 
       // ==================== METER SYNC ====================
       console.log(`\n${'='.repeat(60)}`);
-      console.log(`PHASE 1: METER SYNCHRONIZATION`);
+      console.log(`PHASE 2: METER SYNCHRONIZATION`);
       console.log(`${'='.repeat(60)}`);
 
-      let meterSyncResult: MeterSyncResult;
-      try {
-        meterSyncResult = await syncMeters(this.remotePool, syncPool, this.tenant_id);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`\n❌ [Meter Sync] Sync failed:`, error);
-
-        meterSyncResult = {
-          success: false,
-          inserted: 0,
-          updated: 0,
-          deleted: 0,
-          error: errorMessage,
-          timestamp: new Date(),
-        };
-      }
-
-      // // ==================== REGISTER SYNC ====================
-      // console.log(`\n${'='.repeat(60)}`);
-      // console.log(`PHASE 2: REGISTER SYNCHRONIZATION`);
-      // console.log(`${'='.repeat(60)}`);
-
-      // let registerSyncResult: RegisterSyncResult;
-      // try {
-      //   registerSyncResult = await syncRegisters(this.remotePool, syncPool, this.tenant_id);
-      // } catch (error) {
-      //   const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      //   console.error(`\n❌ [Register Sync] Sync failed:`, error);
-
-      //   registerSyncResult = {
-      //     success: false,
-      //     inserted: 0,
-      //     updated: 0,
-      //     deleted: 0,
-      //     error: errorMessage,
-      //     timestamp: new Date(),
-      //   };
-      // }
+      const meterSyncResult = await syncMeters(this.remotePool, syncPool, this.tenantId as number, this.syncDatabase);
 
       // ==================== DEVICE REGISTER SYNC ====================
       console.log(`\n${'='.repeat(60)}`);
       console.log(`PHASE 3: DEVICE REGISTER SYNCHRONIZATION`);
       console.log(`${'='.repeat(60)}`);
 
-      let deviceRegisterSyncResult: DeviceRegisterSyncResult;
-      try {
-        deviceRegisterSyncResult = await syncDeviceRegisters(this.remotePool, syncPool);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`\n❌ [Device Register Sync] Sync failed:`, error);
-
-        deviceRegisterSyncResult = {
-          success: false,
-          inserted: 0,
-          updated: 0,
-          deleted: 0,
-          skipped: 0,
-          error: errorMessage,
-          timestamp: new Date(),
-        };
-      }
+      const deviceRegisterSyncResult = await syncDeviceRegisters(this.remotePool, syncPool, this.syncDatabase);
 
       // ==================== AGGREGATE RESULTS ====================
       console.log(`\n${'='.repeat(60)}`);
@@ -337,8 +202,7 @@ export class RemoteToLocalSyncAgent {
       console.log(`${'='.repeat(60)}`);
 
       const comprehensiveResult: ComprehensiveSyncResult = {
-        // success: tenantSyncResult.success && meterSyncResult.success && registerSyncResult.success && deviceRegisterSyncResult.success,
-        success: tenantSyncResult.success && meterSyncResult.success  && deviceRegisterSyncResult.success,
+        success: tenantSyncResult.success && meterSyncResult.success && deviceRegisterSyncResult.success,
         tenants: {
           inserted: tenantSyncResult.inserted,
           updated: tenantSyncResult.updated,
@@ -363,8 +227,6 @@ export class RemoteToLocalSyncAgent {
         comprehensiveResult.error = `Tenant sync failed: ${tenantSyncResult.error}`;
       } else if (!meterSyncResult.success) {
         comprehensiveResult.error = `Meter sync failed: ${meterSyncResult.error}`;
-      // } else if (!registerSyncResult.success) {
-      //   comprehensiveResult.error = `Register sync failed: ${registerSyncResult.error}`;
       } else if (!deviceRegisterSyncResult.success) {
         comprehensiveResult.error = `Device register sync failed: ${deviceRegisterSyncResult.error}`;
       }
@@ -389,9 +251,16 @@ export class RemoteToLocalSyncAgent {
       this.status.lastUpdatedCount = meterSyncResult.updated;
       this.status.lastDeletedCount = meterSyncResult.deleted;
 
-      // Reload caches if sync was successful and tables were modified
+      // Load caches from sync database after successful sync
       if (comprehensiveResult.success) {
-        await this.reloadCachesAfterSync(comprehensiveResult);
+        try {
+          console.log(`\n📚 [Sync Agent] Loading caches from sync database...`);
+          await cacheManager.initializeAll(this.syncDatabase);
+          console.log(`✅ [Sync Agent] All caches loaded successfully\n`);
+        } catch (error) {
+          console.error(`❌ [Sync Agent] Failed to load caches:`, error);
+          // Continue even if cache loading fails - collection will use previous cache state
+        }
       }
 
       // Return meter sync result for backward compatibility
@@ -444,7 +313,7 @@ export class RemoteToLocalSyncAgent {
    * Manually trigger a sync operation
    */
   async triggerSync(): Promise<MeterSyncResult> {
-    console.log('Manual meter sync triggered');
+    console.log('Manual sync triggered');
     return this.performSync();
   }
 }

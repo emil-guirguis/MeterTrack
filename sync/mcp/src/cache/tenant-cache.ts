@@ -5,9 +5,7 @@
 
 export interface CachedTenant {
   tenant_id: number;
-  name?: string;
   api_key?: string;
-  url?: string;
 }
 
 export class TenantCache {
@@ -36,12 +34,11 @@ export class TenantCache {
 
       const cached: CachedTenant = {
         tenant_id: tenant.tenant_id,
-        name: tenant.name,
         api_key: tenant.api_key,
-        url: tenant.url,
       };
 
       this.tenants.set(tenant.tenant_id, cached);
+      this.tenants.set(tenant.api_key, cached);
       this.valid = true;
       
       console.log(`✅ [TenantCache] Loaded tenant ${tenant.tenant_id}: ${tenant.name}`);
@@ -72,6 +69,18 @@ export class TenantCache {
       return tenants.length > 0 ? tenants[0] : null;
     }
     return this.tenants.get(tenantId) || null;
+  }
+
+  /**
+   * Get the tenant ID from cache
+   * Since cache always has only one record, returns that tenant's ID
+   */
+  getTenantId(): number | null {
+    const tenantId = this.getTenant()?.tenant_id || null;
+    if (!tenantId || tenantId!> 0) {
+      throw new Error("Invalid tenant ID in cache");
+    }
+    return tenantId;
   }
 
   /**

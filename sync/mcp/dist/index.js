@@ -10,17 +10,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import dotenv from 'dotenv';
 import winston from 'winston';
-import { Pool } from 'pg';
-import { initializePools } from './data-sync/data-sync.js';
-import { createSyncManagerFromEnv } from './remote_to_local-sync/sync-manager.js';
+import { initializePools, remotePool as globalRemotePool } from './data-sync/data-sync.js';
 import { ClientSystemApiClient } from './api/client-system-api.js';
 import { createAndStartLocalApiServer } from './api/server.js';
 import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
-import { DeviceRegisterCache, MeterCache, TenantCache } from './cache/index.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
 // Load environment variables from root .env file first, then local .env
-// Use __dirname equivalent for ES modules
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
@@ -33,7 +29,7 @@ const logger = winston.createLogger({
     format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
     transports: [
         new winston.transports.Console({
-            format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+            format: winston.format.combine(winston.format.colorize(), winston.format.printf(({ level, message }) => `${level}: ${message}`)),
         }),
         new winston.transports.File({
             filename: 'logs/sync-mcp-error.log',
@@ -49,15 +45,11 @@ const logger = winston.createLogger({
  */
 class SyncMcpServer {
     server;
+    apiServer;
     syncDatabase;
-    deviceRegisterCache;
-    meterCache;
-    tenantCache;
-    syncManager;
+    remotePool;
     remoteToLocalSyncAgent;
     bacnetMeterReadingAgent;
-    apiServer;
-    remotePool;
     isInitialized = false;
     constructor() {
         this.server = new Server({
@@ -78,16 +70,14 @@ class SyncMcpServer {
             console.log('ℹ️  [Services] Already initialized, skipping...');
             return;
         }
-        let remotePool;
         try {
             console.log('\n🔧 [Services] Initializing Sync MCP services...');
-            // Initialize database pools
+            // Step 1: Initialize database pools (creates global syncPool and remotePool)
             console.log('🔗 [Services] Initializing database pools...');
             initializePools();
             console.log('✅ [Services] Database pools initialized');
-            // Initialize BACnet Meter Reading Agent
-            console.log('📊 [Services] Initializing BACnet Meter Reading Agent...');
-            // Create a real database service
+            // Step 2: Create SyncDatabase service (will use global syncPool)
+            console.log('📊 [Services] Creating SyncDatabase service...');
             this.syncDatabase = new SyncDatabase({
                 host: process.env.POSTGRES_SYNC_HOST || 'localhost',
                 port: parseInt(process.env.POSTGRES_SYNC_PORT || '5432', 10),
@@ -96,9 +86,39 @@ class SyncMcpServer {
                 password: process.env.POSTGRES_SYNC_PASSWORD || '',
             });
             console.log('✅ [Services] SyncDatabase service created');
+            // Step 3: Test sync database connection
+            console.log('🔧 [Services] Testing sync database connection...');
+            const syncConnected = await this.syncDatabase.testConnectionLocal();
+            if (!syncConnected) {
+                throw new Error('Failed to connect to sync database - connection test failed');
+            }
+            console.log('✅ [Services] Sync database connection successful');
+            // Step 4: Initialize database schema
+            console.log('🔧 [Services] Initializing database schema...');
+            await this.syncDatabase.initialize();
+            console.log('✅ [Services] Database schema initialized');
+            // Step 5: Initialize BACnet Meter Reading Agent
+            console.log('📊 [Services] Initializing BACnet Meter Reading Agent...');
+            // Load API key from environment variable
+            const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
+            if (apiKeyFromEnv) {
+                console.log(`✅ [Services] API key loaded from environment: ${apiKeyFromEnv.substring(0, 8)}...`);
+            }
+            else {
+                console.warn('⚠️  [Services] No API key in environment variable CLIENT_API_KEY');
+            }
+            // Create API client for uploads
+            const apiClient = new ClientSystemApiClient({
+                apiUrl: process.env.CLIENT_API_URL || 'http://localhost:3001/api',
+                apiKey: apiKeyFromEnv,
+                timeout: parseInt(process.env.API_TIMEOUT || '30000', 10),
+                maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
+            });
+            console.log('✅ [Services] Client System API Client created');
             this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
                 syncDatabase: this.syncDatabase,
-                collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '60', 10),
+                collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '900', 10), // 15 minutes
+                uploadIntervalMinutes: parseInt(process.env.BACNET_UPLOAD_INTERVAL_MINUTES || '5', 10),
                 enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
                 bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
                 bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
@@ -110,166 +130,51 @@ class SyncMcpServer {
                 enableConnectivityCheck: process.env.BACNET_ENABLE_CONNECTIVITY_CHECK !== 'false',
                 enableSequentialFallback: process.env.BACNET_ENABLE_SEQUENTIAL_FALLBACK !== 'false',
                 adaptiveBatchSizing: process.env.BACNET_ADAPTIVE_BATCH_SIZING !== 'false',
-                meterCache: this.meterCache,
-                deviceRegisterCache: this.deviceRegisterCache,
+                apiClient: apiClient,
             }, logger);
             console.log('✅ [Services] BACnet Meter Reading Agent initialized');
-            // Load API key from environment variable
-            const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
-            if (apiKeyFromEnv) {
-                console.log(`✅ [Services] API key loaded from environment: ${apiKeyFromEnv.substring(0, 8)}...`);
-            }
-            else {
-                console.warn('⚠️  [Services] No API key in environment variable CLIENT_API_KEY');
-            }
-            // Initialize Meter Sync Agent FIRST (before caches)
-            // This ensures device_register data is synced to local DB before cache loads
+            // Step 6: Initialize Remote to Local Sync Agent
             console.log('🔄 [Services] Initializing Remote to Local Sync Agent...');
-            remotePool = this.createRemoteDatabasePool();
-            this.remotePool = remotePool;
-            // Create empty caches for now - they'll be populated after sync
-            this.deviceRegisterCache = new DeviceRegisterCache();
-            this.meterCache = new MeterCache();
-            this.tenantCache = new TenantCache();
-            if (this.syncDatabase) {
-                this.remoteToLocalSyncAgent = new RemoteToLocalSyncAgent({
-                    syncDatabase: this.syncDatabase,
-                    remotePool: remotePool,
-                    syncIntervalMinutes: parseInt(process.env.METER_SYNC_INTERVAL_MINUTES || '60', 10),
-                    enableAutoSync: process.env.METER_SYNC_AUTO_START !== 'false',
-                    bacnetMeterReadingAgent: this.bacnetMeterReadingAgent,
-                    deviceRegisterCache: this.deviceRegisterCache,
-                    meterCache: this.meterCache,
-                });
-                console.log('✅ [Services] Remote to Local Sync Agent initialized');
-                // Start Meter Sync Agent (which includes tenant sync as Phase 0)
-                console.log('▶️  [Services] Starting Remote to Local Sync Agent...');
-                await this.remoteToLocalSyncAgent.start();
-                console.log('✅ [Services] Remote to Local Sync Agent started');
-                // NOW initialize caches AFTER sync
-                console.log('📚 [Services] Initializing TenantCache (after sync)...');
-                await this.tenantCache.initialize(this.syncDatabase);
-                console.log('✅ [Services] TenantCache initialized');
-                console.log('📚 [Services] Initializing DeviceRegisterCache (after sync)...');
-                await this.deviceRegisterCache.initialize(this.syncDatabase);
-                console.log('✅ [Services] DeviceRegisterCache initialized');
-                // Initialize MeterCache AFTER sync
-                console.log('🔄 [Services] Initializing MeterCache (after sync)...');
-                await this.meterCache.reload(this.syncDatabase);
-                console.log('✅ [Services] MeterCache initialized');
-            }
-            // Start BACnet Meter Reading Agent
+            this.remotePool = this.getRemoteDatabasePool();
+            this.remoteToLocalSyncAgent = new RemoteToLocalSyncAgent({
+                syncDatabase: this.syncDatabase,
+                remotePool: this.remotePool,
+                syncIntervalMinutes: parseInt(process.env.METER_SYNC_INTERVAL_MINUTES || '60', 10),
+                enableAutoSync: process.env.METER_SYNC_AUTO_START !== 'false',
+                bacnetMeterReadingAgent: this.bacnetMeterReadingAgent,
+            });
+            console.log('✅ [Services] Remote to Local Sync Agent initialized');
+            // Step 7: Start Sync Agent (syncs all 3 entities AND loads caches)
+            console.log('▶️  [Services] Starting Remote to Local Sync Agent...');
+            await this.remoteToLocalSyncAgent.start();
+            console.log('✅ [Services] Remote to Local Sync Agent started (all data synced and caches loaded)');
+            // Step 8: Start BACnet Meter Reading Agent AFTER sync agent completes
             console.log('▶️  [Services] Starting BACnet Meter Reading Agent...');
             await this.bacnetMeterReadingAgent.start();
             console.log('✅ [Services] BACnet Meter Reading Agent started');
-            // Store API key in local sync database tenant table
-            console.log('🔑 [Services] Storing API key in local sync database...');
-            try {
-                const tenant = await this.syncDatabase.getTenant();
-                if (tenant && apiKeyFromEnv) {
-                    // Update tenant with API key from environment
-                    await this.syncDatabase.updateTenantApiKey(apiKeyFromEnv);
-                    console.log(`✅ [Services] API key stored in database: ${apiKeyFromEnv.substring(0, 8)}...`);
-                }
-            }
-            catch (err) {
-                console.warn('⚠️  [Services] Failed to store API key in database:', err);
-            }
-            // Initialize Sync Manager
-            console.log('🔄 [Services] Initializing Sync Manager...');
-            try {
-                // Load API key from environment (already loaded above)
-                let apiKeyFromDb = apiKeyFromEnv;
-                // Try to load from database as fallback
-                if (!apiKeyFromDb) {
-                    try {
-                        if (this.syncDatabase) {
-                            const tenant = await this.syncDatabase.getTenant();
-                            if (tenant && tenant.api_key) {
-                                apiKeyFromDb = tenant.api_key;
-                                console.log(`✅ [Services] API key loaded from database: ${apiKeyFromDb.substring(0, 8)}...`);
-                            }
-                        }
-                    }
-                    catch (err) {
-                        console.warn('⚠️  [Services] Failed to load API key from database');
-                    }
-                }
-                const apiClient = new ClientSystemApiClient({
-                    apiUrl: process.env.CLIENT_API_URL || 'http://localhost:3001/api',
-                    apiKey: apiKeyFromDb,
-                    timeout: parseInt(process.env.API_TIMEOUT || '30000', 10),
-                    maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
-                });
-                console.log('✅ [Services] Client System API Client created');
-                if (this.syncDatabase) {
-                    this.syncManager = createSyncManagerFromEnv(this.syncDatabase, apiClient);
-                    console.log('✅ [Services] Sync Manager initialized');
-                    // Start Sync Manager BEFORE creating API Server
-                    // This ensures tenant data is loaded before API endpoints try to access it
-                    console.log('▶️  [Services] Starting Sync Manager...');
-                    await this.syncManager.start();
-                    console.log('✅ [Services] Sync Manager started');
-                    // Initialize Local API Server AFTER Sync Manager is started
-                    // This ensures tenant data is available when API endpoints are called
-                    console.log('🌐 [Services] Initializing Local API Server...');
-                    this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.syncManager, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, remotePool);
-                    console.log('✅ [Services] Local API Server started');
-                }
-            }
-            catch (error) {
-                console.error('❌ [Services] Failed to initialize Sync Manager:', error);
-                throw error;
-            }
+            // Step 9: Initialize Local API Server
+            console.log('🌐 [Services] Initializing Local API Server...');
+            this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, this.remotePool);
+            console.log('✅ [Services] Local API Server started');
             this.isInitialized = true;
             console.log('✅ [Services] All services initialized successfully\n');
         }
         catch (error) {
             console.error('❌ [Services] Failed to initialize services:', error);
-            if (remotePool) {
-                await this.closeRemotePool(remotePool);
+            if (this.remotePool) {
+                await this.closeRemotePool(this.remotePool);
             }
             throw error;
         }
     }
     /**
-     * Create remote database pool
+     * Get remote database pool (uses global remotePool from initializePools)
      */
-    createRemoteDatabasePool() {
-        return new Pool({
-            host: process.env.POSTGRES_CLIENT_HOST || 'localhost',
-            port: parseInt(process.env.POSTGRES_CLIENT_PORT || '5432', 10),
-            database: process.env.POSTGRES_CLIENT_DB || 'postgres',
-            user: process.env.POSTGRES_CLIENT_USER || 'postgres',
-            password: process.env.POSTGRES_CLIENT_PASSWORD || '',
-            max: 10,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
-        });
-    }
-    /**
-     * Wait for tenant sync to complete by polling the database
-     */
-    async waitForTenantSync(timeoutMs = 5000) {
-        const startTime = Date.now();
-        const pollIntervalMs = 100;
-        while (Date.now() - startTime < timeoutMs) {
-            try {
-                if (this.syncDatabase) {
-                    const tenant = await this.syncDatabase.getTenant();
-                    if (tenant && tenant.api_key) {
-                        console.log('✅ [Services] Tenant sync completed - API key is available');
-                        return;
-                    }
-                }
-            }
-            catch (error) {
-                // Ignore errors during polling
-            }
-            // Wait before next poll
-            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    getRemoteDatabasePool() {
+        if (!globalRemotePool) {
+            throw new Error('Remote database pool not initialized. Call initializePools() first.');
         }
-        console.warn('⚠️  [Services] Timeout waiting for tenant sync, proceeding anyway');
+        return globalRemotePool;
     }
     /**
      * Close remote database pool
@@ -301,10 +206,10 @@ class SyncMcpServer {
                 await this.initializeServices();
                 // Route to appropriate tool handler
                 switch (name) {
-                    case 'get_sync_status':
-                        return await this.handleGetSyncStatus();
-                    case 'trigger_sync':
-                        return await this.handleTriggerSync();
+                    case 'get_upload_status':
+                        return await this.handleGetUploadStatus();
+                    case 'trigger_upload':
+                        return await this.handleTriggerUpload();
                     case 'query_meter_reading':
                         return await this.handleQueryMeterReadings(args);
                     case 'get_meter_status':
@@ -336,16 +241,16 @@ class SyncMcpServer {
     getTools() {
         return [
             {
-                name: 'get_sync_status',
-                description: 'Get the current synchronization status including connectivity, queue size, and recent sync operations',
+                name: 'get_upload_status',
+                description: 'Get the current upload status including connectivity, queue size, and recent upload operations',
                 inputSchema: {
                     type: 'object',
                     properties: {},
                 },
             },
             {
-                name: 'trigger_sync',
-                description: 'Manually trigger a synchronization operation to upload queued readings to the Client System',
+                name: 'trigger_upload',
+                description: 'Manually trigger an upload operation to send queued readings to the Client System',
                 inputSchema: {
                     type: 'object',
                     properties: {},
@@ -404,58 +309,50 @@ class SyncMcpServer {
         ];
     }
     /**
-     * Tool Handler: get_sync_status
+     * Tool Handler: get_upload_status
      */
-    async handleGetSyncStatus() {
-        if (!this.syncManager) {
-            throw new Error('Sync Manager not initialized');
+    async handleGetUploadStatus() {
+        if (!this.bacnetMeterReadingAgent) {
+            throw new Error('BACnet Meter Reading Agent not initialized');
         }
-        const syncStatus = this.syncManager.getStatus();
-        const connectivityStatus = this.syncManager.getConnectivityStatus();
-        const syncStats = await this.syncManager.getSyncStats(24);
-        // TODO: Implement getRecentSyncLogs when database service is available
-        const recentLogs = [];
+        const status = this.bacnetMeterReadingAgent.getStatus();
         return {
             content: [
                 {
                     type: 'text',
                     text: JSON.stringify({
-                        sync_status: syncStatus,
-                        connectivity: connectivityStatus,
-                        stats_24h: syncStats,
-                        recent_logs: recentLogs,
+                        message: 'Upload status is managed by BACnet Meter Reading Agent',
+                        agent_status: {
+                            isRunning: status.isRunning,
+                            totalCyclesExecuted: status.totalCyclesExecuted,
+                            totalReadingsCollected: status.totalReadingsCollected,
+                            totalErrorsEncountered: status.totalErrorsEncountered,
+                        },
+                        last_cycle: status.lastCycleResult ? {
+                            cycleId: status.lastCycleResult.cycleId,
+                            metersProcessed: status.lastCycleResult.metersProcessed,
+                            readingsCollected: status.lastCycleResult.readingsCollected,
+                            errorCount: status.lastCycleResult.errors.length,
+                        } : null,
                     }, null, 2),
                 },
             ],
         };
     }
     /**
-     * Tool Handler: trigger_sync
+     * Tool Handler: trigger_upload
      */
-    async handleTriggerSync() {
-        if (!this.syncManager) {
-            throw new Error('Sync Manager not initialized');
+    async handleTriggerUpload() {
+        if (!this.bacnetMeterReadingAgent) {
+            throw new Error('BACnet Meter Reading Agent not initialized');
         }
-        const statusBefore = this.syncManager.getStatus();
-        if (!statusBefore.isClientConnected) {
-            throw new Error('Client System is not reachable');
-        }
-        if (statusBefore.isRunning) {
-            throw new Error('Sync is already in progress');
-        }
-        // Trigger sync
-        await this.syncManager.triggerSync();
-        const statusAfter = this.syncManager.getStatus();
         return {
             content: [
                 {
                     type: 'text',
                     text: JSON.stringify({
-                        success: true,
-                        message: 'Sync triggered successfully',
-                        queue_size_before: statusBefore.queueSize,
-                        queue_size_after: statusAfter.queueSize,
-                        last_sync_success: statusAfter.lastSyncSuccess,
+                        message: 'Upload is managed automatically by BACnet Meter Reading Agent every 5 minutes',
+                        note: 'Use trigger_meter_reading to manually trigger a collection cycle',
                     }, null, 2),
                 },
             ],
@@ -471,8 +368,6 @@ class SyncMcpServer {
         let readings = [];
         if (meterId) {
             // Query specific meter
-            const endTime = new Date();
-            const startTime = new Date(endTime.getTime() - hours * 60 * 60 * 1000);
             // TODO: Implement getReadingsByMeterAndTimeRange when database service is available
             readings = [];
             readings = readings.slice(0, limit);
@@ -568,7 +463,6 @@ class SyncMcpServer {
     }
     /**
      * Tool Handler: trigger_meter_reading
-     * Manually trigger an immediate BACnet meter reading collection cycle
      */
     async handleTriggerMeterReading() {
         if (!this.bacnetMeterReadingAgent) {
@@ -607,7 +501,6 @@ class SyncMcpServer {
     }
     /**
      * Tool Handler: get_meter_reading_status
-     * Get the current status of the BACnet meter reading agent
      */
     async handleGetMeterReadingStatus() {
         if (!this.bacnetMeterReadingAgent) {
@@ -651,14 +544,14 @@ class SyncMcpServer {
      */
     async start() {
         console.log('\n🚀 [MCP] Starting Sync MCP Server...');
-        // Initialize services immediately (including Local API Server)
+        // Initialize services immediately
         console.log('🔧 [MCP] Initializing services before connecting transport...');
         await this.initializeServices();
         const transport = new StdioServerTransport();
         console.log('🔌 [MCP] Connecting to stdio transport...');
         await this.server.connect(transport);
         console.log('✅ [MCP] Sync MCP Server started');
-        console.log('📋 [MCP] Available tools: start_collection, stop_collection, get_sync_status, trigger_sync, query_meter_reading, get_meter_status, trigger_meter_reading, get_meter_reading_status');
+        console.log('📋 [MCP] Available tools: get_upload_status, trigger_upload, query_meter_reading, get_meter_status, trigger_meter_reading, get_meter_reading_status');
     }
     /**
      * Shutdown the server
@@ -667,9 +560,6 @@ class SyncMcpServer {
         logger.info('Shutting down Sync MCP Server...');
         if (this.bacnetMeterReadingAgent) {
             await this.bacnetMeterReadingAgent.stop();
-        }
-        if (this.syncManager) {
-            await this.syncManager.stop();
         }
         if (this.remoteToLocalSyncAgent) {
             await this.remoteToLocalSyncAgent.stop();
@@ -680,10 +570,6 @@ class SyncMcpServer {
         if (this.remotePool) {
             await this.closeRemotePool(this.remotePool);
         }
-        // TODO: Implement close when database service is available
-        // if (this.syncDatabase) {
-        //   await this.syncDatabase.close();
-        // }
         logger.info('Sync MCP Server shutdown complete');
     }
 }

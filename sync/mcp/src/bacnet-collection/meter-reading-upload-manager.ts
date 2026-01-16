@@ -1,32 +1,38 @@
 /**
- * Sync Manager
+ * Meter Reading Upload Manager
  * 
- * Orchestrates the synchronization of meter readings from Sync Database to Client System.
- * Handles scheduled sync, batching, retry logic, and cleanup.
+ * Orchestrates the uploading of meter readings from Sync Database to Client System.
+ * Handles scheduled uploads, batching, retry logic, and cleanup.
+ * 
+ * This is part of the BACnet collection workflow:
+ * 1. BACnetMeterReadingAgent collects readings from BACnet devices
+ * 2. Readings are stored in Sync Database
+ * 3. MeterReadingUploadManager uploads readings to Client System API
  */
 
 import * as cron from 'node-cron';
 import { ClientSystemApiClient } from '../api/client-system-api.js';
 import { ConnectivityMonitor } from '../api/connectivity-monitor.js';
 import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
+import { cacheManager } from '../cache/cache-manager.js';
 
-export interface SyncManagerConfig {
+export interface MeterReadingUploadManagerConfig {
   database: SyncDatabase;
   apiClient: ClientSystemApiClient;
-  syncIntervalMinutes?: number;
+  uploadIntervalMinutes?: number;
   batchSize?: number;
   maxRetries?: number;
-  enableAutoSync?: boolean;
+  enableAutoUpload?: boolean;
   connectivityCheckIntervalMs?: number;
 }
 
-export interface SyncStatus {
+export interface UploadStatus {
   isRunning: boolean;
-  lastSyncTime?: Date;
-  lastSyncSuccess?: boolean;
-  lastSyncError?: string;
+  lastUploadTime?: Date;
+  lastUploadSuccess?: boolean;
+  lastUploadError?: string;
   queueSize: number;
-  totalSynced: number;
+  totalUploaded: number;
   totalFailed: number;
   isClientConnected: boolean;
 }
@@ -40,31 +46,30 @@ export interface TenantData {
   state?: string;
   zip?: string;
   country?: string;
-  api_key?: string;
 }
 
-export class SyncManager {
+export class MeterReadingUploadManager {
   private database: SyncDatabase;
   private apiClient: ClientSystemApiClient;
   private connectivityMonitor: ConnectivityMonitor;
-  private syncIntervalMinutes: number;
+  private uploadIntervalMinutes: number;
   private batchSize: number;
   private maxRetries: number;
-  private enableAutoSync: boolean;
+  private enableAutoUpload: boolean;
 
   private cronJob?: cron.ScheduledTask;
-  private isSyncing: boolean = false;
-  private status: SyncStatus;
+  private isUploading: boolean = false;
+  private status: UploadStatus;
   private apiKey: string = '';
   private tenantData: TenantData | null = null;
 
-  constructor(config: SyncManagerConfig) {
+  constructor(config: MeterReadingUploadManagerConfig) {
     this.database = config.database;
     this.apiClient = config.apiClient;
-    this.syncIntervalMinutes = config.syncIntervalMinutes || 5;
+    this.uploadIntervalMinutes = config.uploadIntervalMinutes || 5;
     this.batchSize = config.batchSize || 1000;
     this.maxRetries = config.maxRetries || 5;
-    this.enableAutoSync = config.enableAutoSync !== false;
+    this.enableAutoUpload = config.enableAutoUpload !== false;
 
     this.connectivityMonitor = new ConnectivityMonitor(
       this.apiClient,
@@ -72,9 +77,9 @@ export class SyncManager {
     );
 
     this.connectivityMonitor.on('connected', () => {
-      console.log('Connectivity restored - auto-resuming sync');
+      console.log('Connectivity restored - auto-resuming upload');
       this.status.isClientConnected = true;
-      this.performSync();
+      this.performUpload();
     });
 
     this.connectivityMonitor.on('disconnected', () => {
@@ -85,31 +90,31 @@ export class SyncManager {
     this.status = {
       isRunning: false,
       queueSize: 0,
-      totalSynced: 0,
+      totalUploaded: 0,
       totalFailed: 0,
       isClientConnected: false,
     };
   }
 
   /**
-   * Start the sync manager with scheduled sync
+   * Start the upload manager with scheduled uploads
    */
   async start(): Promise<void> {
     if (this.cronJob) {
-      console.log('Sync manager already running');
+      console.log('Upload manager already running');
       return;
     }
 
-    console.log(`Starting sync manager with ${this.syncIntervalMinutes} minute interval`);
+    console.log(`Starting upload manager with ${this.uploadIntervalMinutes} minute interval`);
 
     try {
-      const tenant = await this.database.getTenant();
+      const tenant = cacheManager.getTenantCache().getTenant();
       if (tenant && tenant.api_key) {
         this.apiKey = tenant.api_key;
-        console.log(`✅ [SyncManager] API key loaded from tenant: ${this.apiKey.substring(0, 8)}...`);
+        console.log(`✅ [UploadManager] API key loaded from tenant: ${this.apiKey.substring(0, 8)}...`);
         this.apiClient.setApiKey(this.apiKey);
       } else {
-        console.warn('⚠️  [SyncManager] No API key found in tenant, connectivity checks may fail');
+        console.warn('⚠️  [UploadManager] No API key found in tenant, connectivity checks may fail');
       }
 
       if (tenant) {
@@ -123,36 +128,36 @@ export class SyncManager {
           zip: tenant.zip,
           country: tenant.country,
         };
-        console.log(`✅ [SyncManager] Tenant data loaded into memory: ${this.tenantData.name}`);
+        console.log(`✅ [UploadManager] Tenant data loaded into memory: ${this.tenantData.name}`);
       }
     } catch (error) {
-      console.error('❌ [SyncManager] Failed to load tenant data:', error);
+      console.error('❌ [UploadManager] Failed to load tenant data:', error);
     }
 
     this.connectivityMonitor.start();
     await this.checkClientConnectivity();
 
-    if (this.enableAutoSync) {
-      const cronExpression = `*/${this.syncIntervalMinutes} * * * *`;
+    if (this.enableAutoUpload) {
+      const cronExpression = `*/${this.uploadIntervalMinutes} * * * *`;
       this.cronJob = cron.schedule(cronExpression, async () => {
-        await this.performSync();
+        await this.performUpload();
       });
 
-      console.log(`Sync scheduled: every ${this.syncIntervalMinutes} minutes`);
-      await this.performSync();
+      console.log(`Upload scheduled: every ${this.uploadIntervalMinutes} minutes`);
+      await this.performUpload();
     }
 
     this.status.isRunning = true;
   }
 
   /**
-   * Stop the sync manager
+   * Stop the upload manager
    */
   async stop(): Promise<void> {
     if (this.cronJob) {
       this.cronJob.stop();
       this.cronJob = undefined;
-      console.log('Sync manager stopped');
+      console.log('Upload manager stopped');
     }
 
     this.connectivityMonitor.stop();
@@ -171,30 +176,30 @@ export class SyncManager {
    */
   setTenantData(tenant: TenantData): void {
     this.tenantData = { ...tenant };
-    console.log(`✅ [SyncManager] Tenant data updated in memory: ${this.tenantData.name}`);
+    console.log(`✅ [UploadManager] Tenant data updated in memory: ${this.tenantData.name}`);
   }
 
   /**
-   * Perform a single sync operation
+   * Perform a single upload operation
    */
-  async performSync(): Promise<void> {
-    if (this.isSyncing) {
-      console.log('Sync already in progress, skipping');
+  async performUpload(): Promise<void> {
+    if (this.isUploading) {
+      console.log('Upload already in progress, skipping');
       return;
     }
 
-    this.isSyncing = true;
+    this.isUploading = true;
 
     try {
       await this.checkClientConnectivity();
       const readings = await this.database.getUnsynchronizedReadings(this.batchSize);
 
       if (readings.length === 0) {
-        console.log('No readings to sync');
+        console.log('No readings to upload');
         return;
       }
 
-      console.log(`Syncing ${readings.length} readings...`);
+      console.log(`Uploading ${readings.length} readings...`);
 
       const result = await this.uploadBatchWithRetry(readings);
 
@@ -202,14 +207,14 @@ export class SyncManager {
         const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is number => id !== undefined);
         const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
 
-        console.log(`Successfully synced and deleted ${deletedCount} readings`);
+        console.log(`Successfully uploaded and deleted ${deletedCount} readings`);
 
         await this.database.logSyncOperation(readings.length, true);
 
-        this.status.lastSyncTime = new Date();
-        this.status.lastSyncSuccess = true;
-        this.status.lastSyncError = undefined;
-        this.status.totalSynced += readings.length;
+        this.status.lastUploadTime = new Date();
+        this.status.lastUploadSuccess = true;
+        this.status.lastUploadError = undefined;
+        this.status.totalUploaded += readings.length;
       } else {
         await this.database.logSyncOperation(
           readings.length,
@@ -217,20 +222,20 @@ export class SyncManager {
           result.error || 'Unknown error'
         );
 
-        this.status.lastSyncTime = new Date();
-        this.status.lastSyncSuccess = false;
-        this.status.lastSyncError = result.error;
+        this.status.lastUploadTime = new Date();
+        this.status.lastUploadSuccess = false;
+        this.status.lastUploadError = result.error;
         this.status.totalFailed += readings.length;
 
-        console.error(`Sync failed: ${result.error}`);
+        console.error(`Upload failed: ${result.error}`);
       }
 
     } catch (error) {
-      console.error('Sync error:', error);
+      console.error('Upload error:', error);
 
-      this.status.lastSyncTime = new Date();
-      this.status.lastSyncSuccess = false;
-      this.status.lastSyncError = error instanceof Error ? error.message : 'Unknown error';
+      this.status.lastUploadTime = new Date();
+      this.status.lastUploadSuccess = false;
+      this.status.lastUploadError = error instanceof Error ? error.message : 'Unknown error';
 
       await this.database.logSyncOperation(
         0,
@@ -238,7 +243,7 @@ export class SyncManager {
         error instanceof Error ? error.message : 'Unknown error'
       );
     } finally {
-      this.isSyncing = false;
+      this.isUploading = false;
     }
   }
 
@@ -291,16 +296,16 @@ export class SyncManager {
    */
   private async checkClientConnectivity(): Promise<boolean> {
     const isConnected = this.connectivityMonitor.isConnected();
-    console.log(`🔗 [SyncManager] checkClientConnectivity - Monitor says: ${isConnected}`);
+    console.log(`🔗 [UploadManager] checkClientConnectivity - Monitor says: ${isConnected}`);
     this.status.isClientConnected = isConnected;
-    console.log(`🔗 [SyncManager] Updated status.isClientConnected to: ${isConnected}`);
+    console.log(`🔗 [UploadManager] Updated status.isClientConnected to: ${isConnected}`);
     return isConnected;
   }
 
   /**
-   * Get current sync status
+   * Get current upload status
    */
-  getStatus(): SyncStatus {
+  getStatus(): UploadStatus {
     return { ...this.status };
   }
 
@@ -312,26 +317,24 @@ export class SyncManager {
   }
 
   /**
-   * Manually trigger a sync operation
+   * Manually trigger an upload operation
    */
-  async triggerSync(): Promise<void> {
-    console.log('Manual sync triggered');
-    await this.performSync();
+  async triggerUpload(): Promise<void> {
+    console.log('Manual upload triggered');
+    await this.performUpload();
   }
 
   /**
-   * Manually trigger a sync operation (alias for API compatibility)
+   * Manually trigger an upload operation (alias for API compatibility)
    */
-  async triggerManualSync(): Promise<void> {
-    return this.triggerSync();
+  async triggerManualUpload(): Promise<void> {
+    return this.triggerUpload();
   }
 
-
-
   /**
-   * Get sync statistics
+   * Get upload statistics
    */
-  async getSyncStats(hours: number = 24): Promise<any> {
+  async getUploadStats(hours: number = 24): Promise<any> {
     return this.database.getSyncStats(hours);
   }
 
@@ -352,20 +355,20 @@ export class SyncManager {
 }
 
 /**
- * Create sync manager from environment variables
+ * Create upload manager from environment variables
  */
-export function createSyncManagerFromEnv(
+export function createMeterReadingUploadManagerFromEnv(
   database: SyncDatabase,
   apiClient: ClientSystemApiClient
-): SyncManager {
-  const config: SyncManagerConfig = {
+): MeterReadingUploadManager {
+  const config: MeterReadingUploadManagerConfig = {
     database,
     apiClient,
-    syncIntervalMinutes: parseInt(process.env.SYNC_INTERVAL_MINUTES || '5', 10),
+    uploadIntervalMinutes: parseInt(process.env.UPLOAD_INTERVAL_MINUTES || '5', 10),
     batchSize: parseInt(process.env.BATCH_SIZE || '1000', 10),
     maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
-    enableAutoSync: process.env.ENABLE_AUTO_SYNC !== 'false',
+    enableAutoUpload: process.env.ENABLE_AUTO_UPLOAD !== 'false',
   };
 
-  return new SyncManager(config);
+  return new MeterReadingUploadManager(config);
 }

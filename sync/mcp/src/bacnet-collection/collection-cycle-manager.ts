@@ -3,21 +3,24 @@
  */
 
 import { CollectionCycleResult, CollectionError, PendingReading, TimeoutEvent, TimeoutMetrics } from './types.js';
-import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
+import { cacheManager } from '../cache/cache-manager.js';
 import { BACnetClient, BatchReadRequest } from './bacnet-client.js';
 import { ReadingBatcher } from './reading-batcher.js';
 import { BatchSizeManager, BatchSizeConfig } from './batch-size-manager.js';
 
+
 export class CollectionCycleManager {
   private logger: any;
-  private deviceRegisterCache: DeviceRegisterCache;
   private batchSizeManager: BatchSizeManager;
   private timeoutEvents: TimeoutEvent[] = [];
+  private tenantId: number | null = null;
 
-  constructor(deviceRegisterCache: DeviceRegisterCache, logger?: any, batchSizeConfig?: BatchSizeConfig) {
-    this.deviceRegisterCache = deviceRegisterCache;
+
+  constructor(logger?: any, batchSizeConfig?: BatchSizeConfig) {
     this.logger = logger || console;
-    this.batchSizeManager = new BatchSizeManager(batchSizeConfig, logger);
+    this.batchSizeManager = new BatchSizeManager(batchSizeConfig, this.logger);
+    const tenantCache = cacheManager.getTenantCache().getTenant();
+    this.tenantId = tenantCache?.tenant_id || null;
   }
 
   /**
@@ -99,12 +102,12 @@ export class CollectionCycleManager {
    * After the cycle completes, the cache is cleared to ensure fresh data on next cycle.
    */
   async executeCycle(
-    meterCache: MeterCache,
     bacnetClient: BACnetClient,
     database: any,
     readTimeoutMs: number = 3000
   ): Promise<CollectionCycleResult> {
     const cycleId = this.generateCycleId();
+    const meterCache = cacheManager.getMeterCache();
     const startTime = new Date();
     const errors: CollectionError[] = [];
     let metersProcessed = 0;
@@ -136,6 +139,26 @@ export class CollectionCycleManager {
         }
       }
 
+      // Also ensure device register cache is valid
+      const deviceRegisterCache = cacheManager.getDeviceRegisterCache();
+      if (!deviceRegisterCache.isValid()) {
+        this.logger.info('Device register cache is empty or invalid, loading from database');
+        try {
+          await deviceRegisterCache.reload(database);
+          this.logger.info('Device register cache reloaded');
+        } catch (reloadError) {
+          const errorMsg = reloadError instanceof Error ? reloadError.message : String(reloadError);
+          this.logger.error(`Failed to load device register cache from database: ${errorMsg}`);
+          errors.push({
+            meterId: 'system',
+            operation: 'connect',
+            error: `Device register cache reload failed: ${errorMsg}`,
+            timestamp: new Date(),
+          });
+          success = false;
+        }
+      }
+
       // Get all meters from cache
       const meters = meterCache.getMeters();
 
@@ -156,9 +179,6 @@ export class CollectionCycleManager {
       // Process each meter
       for (const meter of meters) {
         try {
-          // Log meter info including device_id
-          this.logger.info(`🔍 Processing Meter: ID=${meter.meter_id}, Name=${meter.name}, Device ID=${meter.device_id}, IP=${meter.ip}:${meter.port}`);
-
           // Create a batcher for this meter's readings
           const batcher = new ReadingBatcher(this.logger);
 
@@ -178,10 +198,10 @@ export class CollectionCycleManager {
           // Flush readings to database
           if (batcher.getPendingCount() > 0) {
             try {
-              const insertedCount = await batcher.flushBatch(database);
-              readingsCollected += insertedCount;
+              const insertionResult = await batcher.flushBatch(database);
+              readingsCollected += insertionResult.insertedCount;
               this.logger.info(
-                `Meter ${meter.meter_id}: inserted ${insertedCount} readings`
+                `Meter ${meter.meter_id}: inserted ${insertionResult.insertedCount} readings (${insertionResult.skippedCount} skipped, ${insertionResult.failedCount} failed)`
               );
             } catch (writeError) {
               const errorMsg = writeError instanceof Error ? writeError.message : String(writeError);
@@ -247,9 +267,9 @@ export class CollectionCycleManager {
         timeoutMetrics: this.calculateTimeoutMetrics(),
       };
     } finally {
-      // Clear cache after cycle completes to ensure fresh data on next cycle
-      this.logger.debug(`Clearing meter cache after cycle ${cycleId}`);
-      meterCache.clear();
+      // Note: Caches are NOT cleared here. Both meter and device register caches
+      // persist across cycles for performance. They are reloaded at startup and
+      // can be manually refreshed if needed.
     }
   }
 
@@ -303,8 +323,7 @@ export class CollectionCycleManager {
 
       this.logger.info(`Meter ${meter.meter_id} is online, proceeding with batch read`);
 
-      // Get all configured registers for this device from cache
-      const deviceRegisters = this.deviceRegisterCache.getDeviceRegisters(meter.device_id);
+      const deviceRegisters =  cacheManager.getDeviceRegisterCache().getDeviceRegisters(Number(meter.device_id));
       
       if (deviceRegisters.length === 0) {
         this.logger.warn(`No registers configured for device ${meter.device_id} (meter ${meter.meter_id}), skipping meter`);
@@ -322,7 +341,6 @@ export class CollectionCycleManager {
       // Log all register details for debugging
       this.logger.info(`📋 Device ${meter.device_id} Registers:`);
       deviceRegisters.forEach((reg: any, index: number) => {
-        this.logger.info(`  [${index + 1}] Register ID: ${reg.register_id}, Register #: ${reg.register}, Field: ${reg.field_name}, Unit: ${reg.unit}`);
       });
       this.logger.info(`📊 Total Register Numbers: [${deviceRegisters.map((r: any) => r.register).join(', ')}]`);
 
@@ -340,41 +358,91 @@ export class CollectionCycleManager {
         bacnetClient,
         batchRequests,
         deviceRegisters,
-        readTimeoutMs,
-        errors
+        readTimeoutMs
       );
 
       // Process batch results
       batchResults.forEach((result: any, index: number) => {
         const register = deviceRegisters[index];
 
-        if (result && result.success && result.value !== undefined) {
+        if (result && result.success && result.value !== undefined && result.value !== null) {
           let readValue = result.value;
           
-          // If value is still an object, try to extract the numeric value
-          if (typeof readValue === 'object' && readValue !== null) {
-            // Try common property names for BACnet wrapped values
-            if ('value' in readValue) {
-              readValue = readValue.value;
-            } else if ('_value' in readValue) {
-              readValue = readValue._value;
+          // Convert to number - handle multiple formats
+          let numericValue: number | null = null;
+          
+          if (typeof readValue === 'number') {
+            // Plain number
+            numericValue = readValue;
+          } else if (Array.isArray(readValue)) {
+            // Array of objects - extract first numeric value
+            if (readValue.length > 0 && typeof readValue[0] === 'object') {
+              const firstObj = readValue[0];
+              if (typeof firstObj.value === 'number') {
+                numericValue = firstObj.value;
+              } else if (typeof firstObj._value === 'number') {
+                numericValue = firstObj._value;
+              } else {
+                // Search for any numeric property
+                for (const [key, val] of Object.entries(firstObj)) {
+                  if (typeof val === 'number' && !isNaN(val)) {
+                    numericValue = val;
+                    break;
+                  }
+                }
+              }
+            }
+          } else if (typeof readValue === 'object' && readValue !== null) {
+            // Object - try to extract numeric value
+            if (typeof readValue.value === 'number') {
+              numericValue = readValue.value;
+            } else if (typeof readValue._value === 'number') {
+              numericValue = readValue._value;
+            } else if (typeof readValue.realValue === 'number') {
+              numericValue = readValue.realValue;
             } else {
-              // Last resort: convert to string and log the structure
-              this.logger.warn(`⚠️ Unexpected value structure for register ${register.register}: ${JSON.stringify(readValue)}`);
-              readValue = Object.values(readValue)[0] || readValue;
+              // Search for any numeric property
+              for (const [key, val] of Object.entries(readValue)) {
+                if (typeof val === 'number' && !isNaN(val)) {
+                  numericValue = val;
+                  break;
+                }
+              }
+            }
+          } else if (typeof readValue === 'string') {
+            // String - try to parse as number
+            const parsed = parseFloat(readValue);
+            if (!isNaN(parsed)) {
+              numericValue = parsed;
             }
           }
           
-          readings.push({
-            meter_id: meter.meter_id,
-            timestamp: new Date(),
-            data_point: register.field_name,
-            value: Number(readValue),
-            unit: register.unit || 'unknown',
-          });
-          this.logger.info(
-            `✅ Successfully read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: value=${readValue}`
-          );
+          // Only add reading if we got a valid number
+          if (numericValue !== null && !isNaN(numericValue)) {
+            readings.push({
+              meter_id: Number(meter.meter_id),
+              meter_element_id: Number(meter.meter_element_id),
+              field_name: register.field_name,
+              value: numericValue,
+              register: register.register,
+              element: meter.element,
+              created_at: new Date(),
+            });
+            this.logger.info(
+              `✅ Successfully read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: value=${numericValue}`
+            );
+          } else {
+            this.logger.warn(
+              `⚠️ Failed to read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: could not extract numeric value from ${JSON.stringify(readValue)}`
+            );
+            errors.push({
+              meterId: String(meter.meter_id),
+              dataPoint: register.field_name,
+              operation: 'read',
+              error: `Could not extract numeric value: ${JSON.stringify(readValue)}`,
+              timestamp: new Date(),
+            });
+          }
         } else {
           const errorMsg = (result && result.error) || 'Unknown error';
           this.logger.warn(
@@ -419,8 +487,7 @@ export class CollectionCycleManager {
     bacnetClient: BACnetClient,
     allRequests: BatchReadRequest[],
     deviceRegisters: any[],
-    readTimeoutMs: number,
-    errors: CollectionError[]
+    readTimeoutMs: number
   ): Promise<any[]> {
     const allResults: any[] = new Array(allRequests.length).fill(null);
     const port = meter.port || 47808;

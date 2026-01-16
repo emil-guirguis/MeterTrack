@@ -2,9 +2,10 @@
  * Tenant Sync Functions
  * 
  * Orchestrates synchronization of the tenant table from the remote Client System database
- * to the local Sync database. Handles insert, and update operations for tenants.
+ * to the local Sync database. Handles insert and update operations for tenants.
  * 
  * Note: Tenant sync is critical for loading API keys used in connectivity checks.
+ * Cache is reloaded only if tenant data was modified.
  */
 
 import { Pool } from 'pg';
@@ -13,12 +14,14 @@ import {
   getLocalEntities,
   upsertEntity,
 } from '../helpers/sync-functions.js';
-import { TenantEntity } from '../types/entities.js';
+import { cacheManager } from '../cache/index.js';
+import { SyncDatabase } from '../types/entities.js';
 
 export interface TenantSyncResult {
   success: boolean;
   inserted: number;
   updated: number;
+  dataModified: boolean;
   error?: string;
   timestamp: Date;
   loadedApiKey?: string;
@@ -32,29 +35,29 @@ export interface TenantSyncResult {
  * 2. Query local database for all tenants
  * 3. Identify inserts (in remote, not in local)
  * 4. Identify updates (in both, with different values)
- * 6. Execute insert/update operations
- * 7. Extract and return API key from synced tenant
+ * 5. Execute insert/update operations
+ * 6. Extract and return API key from synced tenant
+ * 7. Reload cache if data was modified
  * 8. Track and return counts
  * 
  * @param remotePool - Connection pool to the remote database
  * @param syncPool - Connection pool to the local sync database
- * @param tenantId - Tenant ID to sync (optional, if not provided syncs all tenants)
- * @returns TenantSyncResult with counts of inserted, and updated tenants, plus loaded API key
+ * @param tenantId - Tenant ID to sync
+ * @param syncDatabase - SyncDatabase instance for cache reload
+ * @returns TenantSyncResult with counts of inserted, updated tenants, plus loaded API key and dataModified flag
  */
 export async function syncTenant(
   remotePool: Pool,
   syncPool: Pool,
-  tenantId: number
+  tenantId: number,
+  syncDatabase?: SyncDatabase
 ): Promise<TenantSyncResult> {
   try {
-    console.log(`\n🔄 [Tenant Sync] Starting tenant synchronization${tenantId ? ` for tenant ${tenantId}` : ''}...`);
+    console.log(`\n🔄 [Tenant Sync] Starting tenant synchronization for tenant ${tenantId}...`);
 
     // Get remote tenants
     console.log(`\n🔍 [Tenant Sync] Querying remote database for tenants...`);
-    const remoteQuery = tenantId
-      ? `SELECT * FROM tenant WHERE tenant_id = $1`
-      : `SELECT * FROM tenant`;
-    const remoteTenants = await getRemoteEntities(remotePool, 'tenant', tenantId, ' sync-tenant.ts > syncTenant1');
+    const remoteTenants = await getRemoteEntities(remotePool, 'tenant', tenantId, 'sync-tenant.ts > syncTenant1');
     console.log(`📋 [Tenant Sync] Found ${remoteTenants.length} remote tenant(s)`);
 
     // Get local tenants
@@ -76,16 +79,14 @@ export async function syncTenant(
     for (const remoteTenant of remoteTenants) {
       if (!localMap.has(remoteTenant.tenant_id)) {
         try {
-          await upsertEntity(syncPool, 'tenant', remoteTenant , 'sync-tenant.ts > syncTenant2');
+          await upsertEntity(syncPool, 'tenant', remoteTenant, 'sync-tenant.ts > syncTenant2');
           insertedCount++;
           console.log(`   ✅ Inserted tenant: ${remoteTenant.name} (ID: ${remoteTenant.tenant_id})`);
 
           // If this is the target tenant, capture its API key
-          if (!tenantId || remoteTenant.tenant_id === tenantId) {
-            if (remoteTenant.api_key) {
-              loadedApiKey = remoteTenant.api_key;
-              console.log(`   🔑 [Tenant Sync] Captured API key for tenant ${remoteTenant.tenant_id}`);
-            }
+          if (remoteTenant.tenant_id === tenantId && remoteTenant.api_key) {
+            loadedApiKey = remoteTenant.api_key;
+            console.log(`   🔑 [Tenant Sync] Captured API key for tenant ${remoteTenant.tenant_id}`);
           }
         } catch (error) {
           console.error(`   ❌ Failed to insert tenant ${remoteTenant.tenant_id}:`, error);
@@ -117,11 +118,9 @@ export async function syncTenant(
             console.log(`   ✅ Updated tenant: ${remoteTenant.name} (ID: ${remoteTenant.tenant_id})`);
 
             // If this is the target tenant and API key changed, capture it
-            if (!tenantId || remoteTenant.tenant_id === tenantId) {
-              if (remoteTenant.api_key && remoteTenant.api_key !== localTenant.api_key) {
-                loadedApiKey = remoteTenant.api_key;
-                console.log(`   🔑 [Tenant Sync] Updated API key for tenant ${remoteTenant.tenant_id}`);
-              }
+            if (remoteTenant.tenant_id === tenantId && remoteTenant.api_key && remoteTenant.api_key !== localTenant.api_key) {
+              loadedApiKey = remoteTenant.api_key;
+              console.log(`   🔑 [Tenant Sync] Updated API key for tenant ${remoteTenant.tenant_id}`);
             }
           } catch (error) {
             console.error(`   ❌ Failed to update tenant ${remoteTenant.tenant_id}:`, error);
@@ -130,7 +129,7 @@ export async function syncTenant(
       }
     }
 
-    // If no specific tenant was requested, try to load API key from first tenant with one
+    // If no API key loaded yet, try to load from first tenant with one
     if (!loadedApiKey && remoteTenants.length > 0) {
       for (const remoteTenant of remoteTenants) {
         if (remoteTenant.api_key) {
@@ -141,19 +140,32 @@ export async function syncTenant(
       }
     }
 
-    // Log the sync operation
-    console.log(`\n📝 [Tenant Sync] Logging sync operation...`);
+    // Determine if data was modified
+    const dataModified = insertedCount > 0 || updatedCount > 0;
+
+    // Reload cache if data was modified
+    if (dataModified && syncDatabase) {
+      try {
+        console.log(`\n🔄 [Tenant Sync] Data was modified, reloading cache...`);
+        await cacheManager.reloadAll(syncDatabase);
+        console.log(`✅ [Tenant Sync] Cache reloaded successfully`);
+      } catch (error) {
+        console.error(`❌ [Tenant Sync] Failed to reload cache:`, error);
+        // Continue even if cache reload fails
+      }
+    }
 
     const result: TenantSyncResult = {
       success: true,
       inserted: insertedCount,
       updated: updatedCount,
+      dataModified,
       timestamp: new Date(),
       loadedApiKey,
     };
 
     console.log(`\n✅ [Tenant Sync] Sync completed successfully`);
-    console.log(`   Inserted: ${insertedCount}, Updated: ${updatedCount}`);
+    console.log(`   Inserted: ${insertedCount}, Updated: ${updatedCount}, Data Modified: ${dataModified}`);
     if (loadedApiKey) {
       console.log(`   🔑 API key loaded: ${loadedApiKey.substring(0, 8)}...`);
     }
@@ -168,6 +180,7 @@ export async function syncTenant(
       success: false,
       inserted: 0,
       updated: 0,
+      dataModified: false,
       error: errorMessage,
       timestamp: new Date(),
     };

@@ -6,6 +6,7 @@
  * 
  * Note: device_register associations are NOT tenant-filtered because devices are not tenant-scoped.
  * However, referential integrity is validated to ensure associated devices and registers exist.
+ * Cache is reloaded only if device_register data was modified.
  */
 
 import { Pool } from 'pg';
@@ -17,6 +18,8 @@ import {
   buildCompositeKeyString,
 } from '../helpers/sync-functions.js';
 import { validateEntityExists } from '../helpers/entity-validation.js';
+import { cacheManager } from '../cache/index.js';
+import { SyncDatabase } from '../types/entities.js';
 
 export interface DeviceRegisterSyncResult {
   success: boolean;
@@ -24,6 +27,7 @@ export interface DeviceRegisterSyncResult {
   updated: number;
   deleted: number;
   skipped: number;
+  dataModified: boolean;
   error?: string;
   timestamp: Date;
 }
@@ -39,34 +43,31 @@ export interface DeviceRegisterSyncResult {
  * 5. Identify updates (in both, with different values)
  * 6. Identify deletes (in local, not in remote)
  * 7. Execute insert/update/delete operations
- * 8. Track and return counts
+ * 8. Reload cache if data was modified
+ * 9. Track and return counts
  * 
  * @param remotePool - Connection pool to the remote database
  * @param syncPool - Connection pool to the local sync database
- * @returns DeviceRegisterSyncResult with counts of inserted, updated, deleted, and skipped associations
+ * @param syncDatabase - SyncDatabase instance for cache reload
+ * @returns DeviceRegisterSyncResult with counts of inserted, updated, deleted, skipped associations and dataModified flag
  */
 export async function syncDeviceRegisters(
   remotePool: Pool,
-  syncPool: Pool
+  syncPool: Pool,
+  syncDatabase?: SyncDatabase
 ): Promise<DeviceRegisterSyncResult> {
   try {
     console.log(`\n🔄 [Device Register Sync] Starting device_register synchronization...`);
 
     // Get remote device_register associations (no tenant filtering)
     console.log(`\n🔍 [Device Register Sync] Querying remote database for device_register associations...`);
-    const remoteAssociations = await getRemoteEntities(remotePool, 'device_register', 0, 'syncDeviceRegisters');
+    const remoteAssociations = await getRemoteEntities(remotePool, 'device_register', 0, 'sync-device-register.ts > syncDeviceRegisters1');
     console.log(`📋 [Device Register Sync] Found ${remoteAssociations.length} remote device_register association(s)`);
-    if (remoteAssociations.length > 0) {
-      console.log(`📊 [Device Register Sync] Remote device_register data:`, JSON.stringify(remoteAssociations, null, 2));
-    }
 
     // Get local device_register associations
     console.log(`\n🔍 [Device Register Sync] Querying local database for device_register associations...`);
     const localAssociations = await getLocalEntities(syncPool, 'device_register');
     console.log(`📋 [Device Register Sync] Found ${localAssociations.length} local device_register association(s)`);
-    if (localAssociations.length > 0) {
-      console.log(`📊 [Device Register Sync] Local device_register data:`, JSON.stringify(localAssociations, null, 2));
-    }
 
     // Track changes
     let insertedCount = 0;
@@ -104,14 +105,7 @@ export async function syncDeviceRegisters(
       if (!localMap.has(compositeKey)) {
         try {
           // Validate referential integrity before inserting
-          //const devieRegisterExists = await validateEntityExists(syncPool, 'device_register', remoteAssociation.device_register_id);
           const registerExists = await validateEntityExists(syncPool, 'register', remoteAssociation.register_id);
-
-          // if (!deviceExists) {
-          //   console.warn(`   ⚠️  Skipping device_register: device_id=${remoteAssociation.device_id} does not exist in sync database`);
-          //   skippedCount++;
-          //   continue;
-          // }
 
           if (!registerExists) {
             console.warn(`   ⚠️  Skipping device_register: register_id=${remoteAssociation.register_id} does not exist in sync database`);
@@ -119,7 +113,7 @@ export async function syncDeviceRegisters(
             continue;
           }
 
-          await upsertEntity(syncPool, 'device_register', remoteAssociation, 'sync-device.ts>syncDeviceRegisters');
+          await upsertEntity(syncPool, 'device_register', remoteAssociation, 'sync-device-register.ts > syncDeviceRegisters2');
           insertedCount++;
           console.log(`   ✅ Inserted device_register: device_id=${remoteAssociation.device_id}, register_id=${remoteAssociation.register_id}`);
         } catch (error) {
@@ -142,14 +136,7 @@ export async function syncDeviceRegisters(
         if (hasChanges) {
           try {
             // Validate referential integrity before updating
-           const deviceRegisterExists = await validateEntityExists(syncPool, 'device_register', remoteAssociation.device_register_id);
-          const registerExists = await validateEntityExists(syncPool, 'register', remoteAssociation.register_id);
-
-            // if (!deviceExists) {
-            //   console.warn(`   ⚠️  Skipping device_register update: device_id=${remoteAssociation.device_id} does not exist in sync database`);
-            //   skippedCount++;
-            //   continue;
-            // }
+            const registerExists = await validateEntityExists(syncPool, 'register', remoteAssociation.register_id);
 
             if (!registerExists) {
               console.warn(`   ⚠️  Skipping device_register update: register_id=${remoteAssociation.register_id} does not exist in sync database`);
@@ -157,7 +144,7 @@ export async function syncDeviceRegisters(
               continue;
             }
 
-            await upsertEntity(syncPool, 'device_register', remoteAssociation, 'syncDeviceRegisters');
+            await upsertEntity(syncPool, 'device_register', remoteAssociation, 'sync-device-register.ts > syncDeviceRegisters3');
             updatedCount++;
             console.log(`   ✅ Updated device_register: device_id=${remoteAssociation.device_id}, register_id=${remoteAssociation.register_id}`);
           } catch (error) {
@@ -167,8 +154,20 @@ export async function syncDeviceRegisters(
       }
     }
 
-    // Log the sync operation
-    console.log(`\n📝 [Device Register Sync] Logging sync operation...`);
+    // Determine if data was modified
+    const dataModified = insertedCount > 0 || updatedCount > 0 || deletedCount > 0;
+
+    // Reload cache if data was modified
+    if (dataModified && syncDatabase) {
+      try {
+        console.log(`\n🔄 [Device Register Sync] Data was modified, reloading cache...`);
+        await cacheManager.reloadAll(syncDatabase);
+        console.log(`✅ [Device Register Sync] Cache reloaded successfully`);
+      } catch (error) {
+        console.error(`❌ [Device Register Sync] Failed to reload cache:`, error);
+        // Continue even if cache reload fails
+      }
+    }
 
     const result: DeviceRegisterSyncResult = {
       success: true,
@@ -176,11 +175,12 @@ export async function syncDeviceRegisters(
       updated: updatedCount,
       deleted: deletedCount,
       skipped: skippedCount,
+      dataModified,
       timestamp: new Date(),
     };
 
     console.log(`\n✅ [Device Register Sync] Sync completed successfully`);
-    console.log(`   Inserted: ${insertedCount}, Updated: ${updatedCount}, Deleted: ${deletedCount}, Skipped: ${skippedCount}\n`);
+    console.log(`   Inserted: ${insertedCount}, Updated: ${updatedCount}, Deleted: ${deletedCount}, Skipped: ${skippedCount}, Data Modified: ${dataModified}\n`);
 
     return result;
   } catch (error) {
@@ -193,6 +193,7 @@ export async function syncDeviceRegisters(
       updated: 0,
       deleted: 0,
       skipped: 0,
+      dataModified: false,
       error: errorMessage,
       timestamp: new Date(),
     };

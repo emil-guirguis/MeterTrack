@@ -13,15 +13,14 @@ export class LocalApiServer {
     app;
     port;
     database;
-    syncManager;
     remoteToLocalSyncAgent;
     bacnetMeterReadingAgent;
     remotePool;
     server;
+    syncManager;
     constructor(config) {
         this.port = config.port;
         this.database = config.database;
-        this.syncManager = config.syncManager;
         this.remoteToLocalSyncAgent = config.remoteToLocalSyncAgent;
         this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
         this.remotePool = config.remotePool;
@@ -331,7 +330,7 @@ export class LocalApiServer {
                     });
                 }
                 // Trigger sync asynchronously
-                this.syncManager.triggerManualSync().catch(error => {
+                this.syncManager.triggerManualSync().catch((error) => {
                     console.error('❌ [API] Manual sync failed:', error);
                 });
                 const response = {
@@ -603,12 +602,11 @@ export class LocalApiServer {
 /**
  * Create and start local API server from environment variables
  */
-export async function createAndStartLocalApiServer(database, syncManager, remoteToLocalSyncAgent, bacnetMeterReadingAgent, remotePool) {
+export async function createAndStartLocalApiServer(database, remoteToLocalSyncAgent, bacnetMeterReadingAgent, remotePool) {
     const port = parseInt(process.env.LOCAL_API_PORT || '3002', 10);
     const server = new LocalApiServer({
         port,
         database,
-        syncManager,
         remoteToLocalSyncAgent,
         bacnetMeterReadingAgent,
         remotePool,

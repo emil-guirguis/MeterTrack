@@ -213,7 +213,6 @@ export interface SyncDatabase {
   updateTenantApiKey(apiKey: string): Promise<void>;
   getMeters(activeOnly: boolean): Promise<MeterEntity[]>;
   upsertMeter(meter: MeterEntity): Promise<void>;
-  deleteSyncMeter(meterId: number, meterElementId?: number): Promise<void>;
   logSyncOperation(batchSize: number, success: boolean, errorMessage?: string): Promise<void>;
   getUnsynchronizedReadings(limit: number): Promise<MeterReadingEntity[]>;
   deleteSynchronizedReadings(readingIds: number[]): Promise<number>;

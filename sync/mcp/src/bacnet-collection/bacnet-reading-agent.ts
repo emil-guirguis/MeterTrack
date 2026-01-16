@@ -1,22 +1,27 @@
 /**
  * Main BACnet meter reading agent with scheduling
+ * 
+ * Handles two independent cron jobs:
+ * 1. Collection cycle - collects readings from BACnet devices (every 15 minutes by default)
+ * 2. Upload cycle - uploads collected readings to Client System API (every 5 minutes by default)
  */
 
 import * as cron from 'node-cron';
 import { BACnetMeterReadingAgentConfig, CollectionCycleResult, AgentStatus, TimeoutMetrics, OfflineMeterStatus } from './types.js';
-import { MeterCache, DeviceRegisterCache } from '../cache/index.js';
+import { cacheManager } from '../cache/index.js';
 import { BACnetClient } from './bacnet-client.js';
 import { CollectionCycleManager } from './collection-cycle-manager.js';
+import { MeterReadingUploadManager } from './meter-reading-upload-manager.js';
 
 export class BACnetMeterReadingAgent {
   private config: BACnetMeterReadingAgentConfig;
-  private meterCache: MeterCache;
-  private deviceRegisterCache: DeviceRegisterCache;
   private bacnetClient: BACnetClient;
   private cycleManager: CollectionCycleManager;
+  private uploadManager?: MeterReadingUploadManager;
   private isRunning: boolean = false;
   private isCycleExecuting: boolean = false;
-  private cronJob: cron.ScheduledTask | null = null;
+  private collectionCronJob: cron.ScheduledTask | null = null;
+  private uploadCronJob: cron.ScheduledTask | null = null;
   private totalCyclesExecuted: number = 0;
   private totalReadingsCollected: number = 0;
   private totalErrorsEncountered: number = 0;
@@ -33,6 +38,7 @@ export class BACnetMeterReadingAgent {
   constructor(config: BACnetMeterReadingAgentConfig, logger?: any) {
     this.config = {
       collectionIntervalSeconds: 60,
+      uploadIntervalMinutes: 5,
       enableAutoStart: true,
       bacnetInterface: '0.0.0.0',
       bacnetPort: 47808,
@@ -48,9 +54,7 @@ export class BACnetMeterReadingAgent {
     };
 
     this.logger = logger || console;
-    // Use shared cache instances if provided, otherwise create new ones
-    this.meterCache = config.meterCache || new MeterCache();
-    this.deviceRegisterCache = config.deviceRegisterCache || new DeviceRegisterCache();
+    // Get singleton cache instances from CacheManager
     this.bacnetClient = new BACnetClient({
       bacnetInterface: this.config.bacnetInterface,
       bacnetPort: this.config.bacnetPort,
@@ -59,11 +63,23 @@ export class BACnetMeterReadingAgent {
       sequentialReadTimeout: this.config.sequentialReadTimeoutMs,
       connectivityCheckTimeout: this.config.connectivityCheckTimeoutMs,
     }, this.logger);
-    this.cycleManager = new CollectionCycleManager(this.deviceRegisterCache, this.logger);
+    this.cycleManager = new CollectionCycleManager(this.logger);
+
+    // Initialize upload manager if API client is provided
+    if (this.config.apiClient && this.config.syncDatabase) {
+      this.uploadManager = new MeterReadingUploadManager({
+        database: this.config.syncDatabase,
+        apiClient: this.config.apiClient,
+        uploadIntervalMinutes: this.config.uploadIntervalMinutes || 5,
+        batchSize: 1000,
+        maxRetries: 5,
+        enableAutoUpload: false, // We'll manage cron ourselves
+      });
+    }
   }
 
   /**
-   * Start the agent and schedule collection cycles
+   * Start the agent and schedule collection and upload cycles
    */
   async start(): Promise<void> {
     if (this.isRunning) {
@@ -74,27 +90,16 @@ export class BACnetMeterReadingAgent {
     try {
       this.logger.info('Starting BACnet Meter Reading Agent');
 
-      // Load meter cache on startup only if not already loaded
-      if (!this.meterCache.isValid()) {
-        await this.meterCache.reload(this.config.syncDatabase);
-        this.logger.info(`Loaded ${this.meterCache.getMeters().length} meters into cache`);
-      } else {
-        this.logger.info(`Using existing meter cache with ${this.meterCache.getMeters().length} meters`);
-      }
-
-      // Load device register cache on startup only if not already loaded
-      if (!this.deviceRegisterCache.isValid()) {
-        await this.deviceRegisterCache.initialize(this.config.syncDatabase);
-        this.logger.info('DeviceRegisterCache initialized');
-      } else {
-        this.logger.info('Using existing DeviceRegisterCache');
-      }
-
-      // Set up cron job to execute every N seconds
-      const cronExpression = `*/${this.config.collectionIntervalSeconds} * * * * *`;
+      // Caches are already populated by CacheManager.initializeAll() in index.ts
+      const meterCache = cacheManager.getMeterCache();
+      const metersInCache = meterCache.getMeters().length;
+      this.logger.info(`✅ [METER CACHE] Using meter cache with ${metersInCache} meters`);
+      
+      // Set up cron job for collection cycles every N seconds
+      const collectionCronExpression = `*/${this.config.collectionIntervalSeconds} * * * * *`;
       this.logger.info(`Scheduling collection cycles every ${this.config.collectionIntervalSeconds} seconds`);
 
-      this.cronJob = cron.schedule(cronExpression, async () => {
+      this.collectionCronJob = cron.schedule(collectionCronExpression, async () => {
         // Execute collection cycle if one is not already running
         if (!this.isCycleExecuting) {
           await this.executeCycleInternal();
@@ -102,6 +107,16 @@ export class BACnetMeterReadingAgent {
           this.logger.warn('Skipping collection cycle: previous cycle still executing');
         }
       });
+
+      // Set up cron job for upload cycles every N minutes (if upload manager is available)
+      if (this.uploadManager) {
+        const uploadCronExpression = `0 */${this.config.uploadIntervalMinutes} * * *`;
+        this.logger.info(`Scheduling upload cycles every ${this.config.uploadIntervalMinutes} minute(s)`);
+
+        this.uploadCronJob = cron.schedule(uploadCronExpression, async () => {
+          await this.uploadManager!.performUpload();
+        });
+      }
 
       this.isRunning = true;
       this.logger.info('BACnet Meter Reading Agent started successfully');
@@ -130,11 +145,24 @@ export class BACnetMeterReadingAgent {
     try {
       this.logger.info('Stopping BACnet Meter Reading Agent');
 
-      // Stop the cron job
-      if (this.cronJob) {
-        this.cronJob.stop();
-        this.cronJob = null;
-        this.logger.info('Cron job stopped');
+      // Stop the collection cron job
+      if (this.collectionCronJob) {
+        this.collectionCronJob.stop();
+        this.collectionCronJob = null;
+        this.logger.info('Collection cron job stopped');
+      }
+
+      // Stop the upload cron job
+      if (this.uploadCronJob) {
+        this.uploadCronJob.stop();
+        this.uploadCronJob = null;
+        this.logger.info('Upload cron job stopped');
+      }
+
+      // Stop upload manager
+      if (this.uploadManager) {
+        await this.uploadManager.stop();
+        this.logger.info('Upload manager stopped');
       }
 
       // Close BACnet connections
@@ -180,7 +208,6 @@ export class BACnetMeterReadingAgent {
 
       // Execute the collection cycle
       const result = await this.cycleManager.executeCycle(
-        this.meterCache,
         this.bacnetClient,
         this.config.syncDatabase,
         this.config.readTimeoutMs
