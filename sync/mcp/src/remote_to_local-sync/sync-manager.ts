@@ -199,7 +199,7 @@ export class SyncManager {
       const result = await this.uploadBatchWithRetry(readings);
 
       if (result.success) {
-        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
         const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
 
         console.log(`Successfully synced and deleted ${deletedCount} readings`);
@@ -277,7 +277,7 @@ export class SyncManager {
 
         await this.sleep(delay);
 
-        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is string => id !== undefined);
         await this.database.incrementRetryCount(readingIds);
 
         return this.uploadBatchWithRetry(readings, retryCount + 1);
@@ -285,7 +285,7 @@ export class SyncManager {
 
       console.error(`Max retries (${this.maxRetries}) exceeded`);
 
-      const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+      const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is string => id !== undefined);
       await this.database.incrementRetryCount(readingIds);
 
       return { success: false, error: `Max retries exceeded: ${errorMessage}` };

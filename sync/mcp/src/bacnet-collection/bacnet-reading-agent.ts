@@ -12,7 +12,7 @@ import { cacheManager } from '../cache/index.js';
 import { BACnetClient } from './bacnet-client.js';
 import { CollectionCycleManager } from './collection-cycle-manager.js';
 import { MeterReadingUploadManager } from './meter-reading-upload-manager.js';
-import { CRON_SYNC_TO_REMOTE } from '../config/scheduling-constants.js';
+import { CRON_METER_READ, CRON_SYNC_TO_REMOTE } from '../config/scheduling-constants.js';
 
 export class BACnetMeterReadingAgent {
   private config: BACnetMeterReadingAgentConfig;
@@ -55,14 +55,11 @@ export class BACnetMeterReadingAgent {
 
     this.logger = logger || console;
     // Get singleton cache instances from CacheManager
-    this.bacnetClient = new BACnetClient({
-      bacnetInterface: this.config.bacnetInterface,
-      bacnetPort: this.config.bacnetPort,
-      apduTimeout: this.config.connectionTimeoutMs,
-      batchReadTimeout: this.config.batchReadTimeoutMs,
-      sequentialReadTimeout: this.config.sequentialReadTimeoutMs,
-      connectivityCheckTimeout: this.config.connectivityCheckTimeoutMs,
-    }, this.logger);
+    this.bacnetClient = new BACnetClient(
+      this.config.bacnetInterface,
+      this.config.bacnetPort,
+      this.config.connectionTimeoutMs
+    );
     this.cycleManager = new CollectionCycleManager(this.logger);
 
     // Initialize upload manager if API client is provided
@@ -93,9 +90,9 @@ export class BACnetMeterReadingAgent {
       const metersInCache = meterCache.getMeters().length;
       this.logger.info(`✅ [METER CACHE] Using meter cache with ${metersInCache} meters`);
       
-      // Set up cron job for collection cycles every N seconds
-      const collectionCronExpression = `*/${this.config.collectionIntervalSeconds} * * * * *`;
-      this.logger.info(`Scheduling collection cycles every ${this.config.collectionIntervalSeconds} seconds`);
+      // Set up cron job for collection cycles using CRON_METER_READ constant (10 minutes)
+      const collectionCronExpression = CRON_METER_READ;
+      this.logger.info(`Scheduling collection cycles with cron: ${collectionCronExpression}`);
 
       this.collectionCronJob = cron.schedule(collectionCronExpression, async () => {
         // Execute collection cycle if one is not already running
@@ -106,12 +103,22 @@ export class BACnetMeterReadingAgent {
         }
       });
 
-      // Set up cron job for upload cycles (if upload manager is available)
+      // Start upload manager (if available)
       if (this.uploadManager) {
+        this.logger.info('Starting upload manager...');
+        await this.uploadManager.start();
+        this.logger.info('Upload manager started successfully');
+
+        // Perform initial upload immediately
+        this.logger.info('Performing initial upload...');
+        await this.uploadManager.performUpload();
+        this.logger.info('Initial upload completed');
+
         const uploadCronExpression = CRON_SYNC_TO_REMOTE;
         this.logger.info(`Scheduling upload cycles with cron: ${uploadCronExpression}`);
 
         this.uploadCronJob = cron.schedule(uploadCronExpression, async () => {
+          this.logger.info('Cron job triggered - performing scheduled upload');
           await this.uploadManager!.performUpload();
         });
       }

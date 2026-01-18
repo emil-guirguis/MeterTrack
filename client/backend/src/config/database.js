@@ -109,17 +109,24 @@ class PostgresDB {
      */
     async transaction(callback) {
         console.log('='.repeat(120));
+        console.log('🔄 [TRANSACTION] Starting transaction...');
         const client = await this.getClient();
         try {
             await client.query('BEGIN');
+            console.log('🔄 [TRANSACTION] BEGIN executed');
             const result = await callback(client);
+            console.log('🔄 [TRANSACTION] Callback completed, committing...');
             await client.query('COMMIT');
+            console.log('✅ [TRANSACTION] COMMIT executed successfully');
             return result;
         } catch (error) {
+            console.error('❌ [TRANSACTION] Error occurred, rolling back:', error instanceof Error ? error.message : error);
             await client.query('ROLLBACK');
+            console.log('🔄 [TRANSACTION] ROLLBACK executed');
             throw error;
         } finally {
             client.release();
+            console.log('🔄 [TRANSACTION] Client released');
         }
         console.log('='.repeat(120));
     }

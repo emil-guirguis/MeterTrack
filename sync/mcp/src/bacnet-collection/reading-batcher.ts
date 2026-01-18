@@ -198,6 +198,7 @@ export class ReadingBatcher {
     let totalFailed = 0;
     const allErrors: string[] = [];
     let totalRetryAttempts = 0;
+    const insertedReadingIds: string[] = [];
 
     // Use the global syncPool directly
     if (!syncPool) {
@@ -287,7 +288,7 @@ export class ReadingBatcher {
               placeholders.push(`$${idx + 1}`);
             });
             
-            const insertQuery = `INSERT INTO ${tableName} (${allColumns.join(', ')}) VALUES (${placeholders.join(', ')})`;
+            const insertQuery = `INSERT INTO ${tableName} (${allColumns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING meter_reading_id`;
             
             this.logger.debug(`   Generated INSERT for meter ${row.meter_id}: ${allColumns.length} columns`);
             this.logger.info(`   📝 INSERT statement: ${insertQuery}`);
@@ -300,6 +301,15 @@ export class ReadingBatcher {
             
             this.logger.info(`   ✓ INSERT executed in ${insertDuration}ms, rows affected: ${result.rowCount}`);
             insertedCount += result.rowCount || 0;
+            
+            // Capture the returned reading IDs
+            if (result.rows && result.rows.length > 0) {
+              result.rows.forEach((row: any) => {
+                if (row.meter_reading_id) {
+                  insertedReadingIds.push(row.meter_reading_id);
+                }
+              });
+            }
           }
           
           this.logger.info(`   ✓ All ${groupedReadings.size} INSERT statement(s) completed successfully`);
@@ -382,6 +392,7 @@ export class ReadingBatcher {
       timestamp: startTime,
       errors: allErrors.length > 0 ? allErrors : undefined,
       retryAttempts: totalRetryAttempts,
+      insertedReadingIds,
     };
 
     // Log final summary

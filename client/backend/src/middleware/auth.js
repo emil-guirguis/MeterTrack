@@ -98,7 +98,8 @@ const authenticateToken = async (req, res, next) => {
       try {
         permissions = PermissionsService.toFlatArray(user.permissions);
       } catch (e) {
-        console.warn('[AUTH MIDDLEWARE] Failed to convert permissions, using role-based:', e.message);
+        const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+        console.warn('[AUTH MIDDLEWARE] Failed to convert permissions, using role-based:', errorMsg);
       }
     }
     
@@ -191,7 +192,7 @@ const verifyApiKey = async (apiKey, hashedApiKey) => {
 const getSiteIdFromApiKey = async (apiKey) => {
   try {
     const result = await db.query(
-      'SELECT tenant_id FROM tenant WHERE api_key = $1 AND is_active = true',
+      'SELECT tenant_id FROM tenant WHERE api_key = $1 AND active = true',
       [apiKey]
     );
     
@@ -199,8 +200,8 @@ const getSiteIdFromApiKey = async (apiKey) => {
       return null;
     }
     
-    // @ts-ignore - rows is an array of objects with id property
-    return result.rows[0].id;
+    // @ts-ignore - rows is an array of objects with tenant_id property
+    return result.rows[0].tenant_id;
   } catch (error) {
     console.error('Error getting site ID from API key:', error);
     return null;
@@ -213,27 +214,39 @@ const authenticateSyncServer = async (req, res, next) => {
     const apiKey = req.headers['x-api-key'];
     
     if (!apiKey) {
+      console.error('❌ [Auth] No API key provided in X-API-Key header');
       return res.status(401).json({
         success: false,
         message: 'API key required'
       });
     }
 
-    // Get site ID from API key
-    const siteId = await getSiteIdFromApiKey(apiKey);
+    console.log(`🔑 [Auth] Authenticating sync server with API key: ${apiKey.substring(0, 8)}...`);
+
+    // Get tenant ID from API key
+    const result = await db.query(
+      'SELECT tenant_id FROM tenant WHERE api_key = $1 AND active = true',
+      [apiKey]
+    );
     
-    if (!siteId) {
+    if (result.rows.length === 0) {
+      console.error('❌ [Auth] Invalid API key or tenant not active');
       return res.status(401).json({
         success: false,
         message: 'Invalid API key'
       });
     }
 
-    // Attach site ID to request
-    req.siteId = siteId;
+    // @ts-ignore - rows is an array of objects with tenant_id property
+    const tenantId = result.rows[0].tenant_id;
+    console.log(`✅ [Auth] Sync server authenticated for tenant ${tenantId}`);
+
+    // Attach tenant ID to request
+    req.tenantId = tenantId;
+    req.siteId = tenantId; // For backward compatibility
     next();
   } catch (error) {
-    console.error('Sync authentication error:', error);
+    console.error('❌ [Auth] Sync authentication error:', error);
     res.status(500).json({
       success: false,
       message: 'Authentication error'

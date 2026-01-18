@@ -200,6 +200,12 @@ export class CollectionCycleManager {
             try {
               const insertionResult = await batcher.flushBatch(database);
               readingsCollected += insertionResult.insertedCount;
+              
+              // Mark inserted readings as pending
+              if (insertionResult.insertedReadingIds && insertionResult.insertedReadingIds.length > 0) {
+                await database.markReadingsAsPending(insertionResult.insertedReadingIds);
+              }
+              
               this.logger.info(
                 `Meter ${meter.meter_id}: inserted ${insertionResult.insertedCount} readings (${insertionResult.skippedCount} skipped, ${insertionResult.failedCount} failed)`
               );
@@ -244,6 +250,19 @@ export class CollectionCycleManager {
         success: success && errors.length === 0,
         timeoutMetrics: this.calculateTimeoutMetrics(),
       };
+
+      // Log failures to database
+      for (const error of errors) {
+        try {
+          await database.logReadingFailure(
+            error.meterId,
+            error.operation,
+            error.error
+          );
+        } catch (logError) {
+          this.logger.warn(`Failed to log error to database: ${logError}`);
+        }
+      }
 
       this.logger.info(
         `Collection cycle ${cycleId} completed: ` +
@@ -572,13 +591,23 @@ export class CollectionCycleManager {
           `🔴 Batch ${batchNumber} failed for meter ${meter.meter_id}: ${errorMsg}, attempting sequential fallback`
         );
 
-        // Attempt sequential fallback for this batch
-        const sequentialResults = await bacnetClient.readPropertySequential(
-          meter.ip,
-          port,
-          batchRequests,
-          readTimeoutMs
-        );
+        // Attempt sequential fallback - read properties one at a time
+        const sequentialResults: any[] = [];
+        for (const request of batchRequests) {
+          try {
+            const result = await bacnetClient.readProperty(
+              meter.ip,
+              port,
+              request.objectType,
+              request.objectInstance,
+              request.propertyId,
+              readTimeoutMs
+            );
+            sequentialResults.push(result);
+          } catch (seqError) {
+            this.logger.warn(`Sequential read failed for ${request.objectType}:${request.objectInstance}.${request.propertyId}: ${seqError}`);
+          }
+        }
 
         // Store sequential results
         sequentialResults.forEach((result: any, index: number) => {

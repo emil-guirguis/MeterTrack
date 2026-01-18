@@ -2,169 +2,98 @@
 
 ## Introduction
 
-After meter readings are collected from BACnet devices and inserted into the sync database, the system must upload these readings to the remote client database. This feature ensures that meter readings are synchronized from the sync system to the client system, with proper error handling and data cleanup. Readings remain in the sync database until successfully uploaded, ensuring no data loss.
+The sync MCP system currently collects meter readings from BACnet devices and stores them in the local sync database. However, these readings are never uploaded to the remote client database. This feature adds the capability to synchronize collected meter readings from the local sync database to the remote client database, enabling the client application to access and display the readings.
 
 ## Glossary
 
-- **Sync Database**: Local database in the sync system where meter readings are initially stored
-- **Remote Database**: Client system database where meter readings are ultimately stored
+- **Sync Database**: Local PostgreSQL database that stores meter readings collected from BACnet devices
+- **Remote Database**: Client-side PostgreSQL database that the client application uses
 - **Meter Reading**: A single data point collected from a meter at a specific timestamp
 - **Unsynchronized Reading**: A meter reading in the sync database that has not yet been uploaded to the remote database
 - **Synchronized Reading**: A meter reading that has been successfully uploaded to the remote database
-- **Upload Batch**: A group of meter readings uploaded together to the remote database
-- **Retry Count**: Number of times an upload has been attempted for a reading
-- **Connectivity**: The ability to reach the remote client system API
+- **Batch Upload**: Uploading multiple meter readings in a single transaction
+- **Retry Logic**: Mechanism to retry failed uploads with exponential backoff
 
 ## Requirements
 
-### Requirement 1: Retrieve and Upload Unsynchronized Readings in Batches
+### Requirement 1: Upload Unsynchronized Readings to Remote Database
 
-**User Story:** As a sync system, I want to retrieve meter readings that have not yet been uploaded and upload them in batches of 50, so that I can efficiently send them to the remote database.
-
-#### Acceptance Criteria
-
-1. WHEN the upload manager starts, THE System SHALL query the sync database for readings where is_synchronized = false
-2. WHEN querying for unsynchronized readings, THE System SHALL retrieve them in batches of 50 readings
-3. WHEN retrieving readings, THE System SHALL include all required fields: meter_reading_id, meter_id, timestamp, data_point, value, unit, retry_count
-4. WHEN retrieving readings, THE System SHALL order them by timestamp ascending to maintain chronological order
-5. WHEN a batch of 50 readings is retrieved, THE System SHALL upload that batch to the remote database
-6. WHEN all batches have been uploaded successfully, THE System SHALL delete them from the sync database
-7. IF no unsynchronized readings exist, THEN THE System SHALL return an empty result and skip upload
-
-### Requirement 2: Format and Upload Readings in Batches of 50
-
-**User Story:** As a sync system, I want to format meter readings according to the remote API specification and upload them in batches of 50, so that they can be properly received and stored.
+**User Story:** As a sync system, I want to upload collected meter readings to the remote client database, so that the client application can access and display the readings.
 
 #### Acceptance Criteria
 
-1. WHEN preparing readings for upload, THE System SHALL format each reading into the format expected by the remote API
-2. WHEN formatting readings, THE System SHALL include meter_id, timestamp, data_point, value, and unit fields
-3. WHEN formatting readings, THE System SHALL ensure timestamp is in ISO 8601 format
-4. WHEN formatting readings, THE System SHALL ensure value is a valid number
-5. WHEN a batch of 50 readings is formatted, THE System SHALL send them together to the remote API endpoint
-6. WHEN multiple batches are needed, THE System SHALL upload each batch of 50 separately and sequentially
-7. WHEN all batches are uploaded successfully, THE System SHALL delete them from the sync database
+1. WHEN unsynchronized readings exist in the sync database, THE Upload_Service SHALL query them ordered by timestamp ascending
+2. WHEN readings are queried, THE Upload_Service SHALL retrieve them in batches of up to 1000 readings per query
+3. WHEN readings are retrieved, THE Upload_Service SHALL insert them into the remote database meter_reading table
+4. WHEN an insert succeeds, THE Upload_Service SHALL mark the reading as synchronized in the sync database
+5. WHEN an insert fails, THE Upload_Service SHALL retry the operation with exponential backoff (1s, 2s, 4s)
+6. WHEN max retries are exceeded, THE Upload_Service SHALL log the failure and move to the next batch
+7. WHEN a batch completes, THE Upload_Service SHALL log the operation with counts of inserted, failed, and skipped readings
 
-### Requirement 3: Upload Readings to Remote Database via API
+### Requirement 2: Automatic Upload Scheduling
 
-**User Story:** As a sync system, I want to upload meter readings in batches of 50 to the remote database, so that the client system has access to the collected data.
-
-#### Acceptance Criteria
-
-1. WHEN a batch of 50 readings is ready for upload, THE System SHALL send them to the remote client API endpoint
-2. WHEN sending a batch, THE System SHALL include the tenant API key for authentication
-3. WHEN the API request is sent, THE System SHALL wait for a response indicating success or failure
-4. IF the API returns success (HTTP 200), THEN THE System SHALL mark the batch as successful and delete those readings from sync database
-5. IF the API returns an error (HTTP 4xx or 5xx), THEN THE System SHALL log the error and prepare the batch for retry
-6. WHEN a batch fails, THE System SHALL increment retry_count for all readings in that batch
-7. WHEN multiple batches are being uploaded, THE System SHALL upload them sequentially (one at a time)
-
-### Requirement 4: Handle Connection Failures Gracefully
-
-**User Story:** As a sync system, I want to handle connection failures to the remote database, so that readings remain queued until connectivity is restored.
+**User Story:** As a sync system, I want to automatically upload readings on a regular schedule, so that readings are continuously synchronized without manual intervention.
 
 #### Acceptance Criteria
 
-1. WHEN the remote API is unreachable, THE System SHALL catch the connection error and not delete readings from sync database
-2. WHEN a connection error occurs, THE System SHALL log the error with details about which batch failed
-3. WHEN a connection error occurs, THE System SHALL maintain the readings in the sync database for later retry
-4. WHEN connectivity is restored, THE System SHALL automatically resume uploading queued batches
-5. WHILE the remote API is unreachable, THE System SHALL continue collecting new readings into the sync database
-6. WHEN a batch fails due to connection error, THE System SHALL increment retry_count for all readings in that batch
+1. WHEN the sync MCP starts, THE Upload_Agent SHALL initialize with a configurable upload interval
+2. WHEN the upload interval elapses, THE Upload_Agent SHALL trigger an upload cycle
+3. WHEN an upload cycle completes, THE Upload_Agent SHALL schedule the next cycle based on the configured interval
+4. WHEN the upload interval is configured via environment variable, THE Upload_Agent SHALL use that value (default: 5 minutes)
+5. WHEN auto-upload is disabled via environment variable, THE Upload_Agent SHALL not schedule automatic cycles
 
-### Requirement 5: Implement Retry Logic with Exponential Backoff and 8-Hour Cap
+### Requirement 3: Manual Upload Triggering
 
-**User Story:** As a sync system, I want to retry failed uploads with exponential backoff, so that transient failures don't cause permanent data loss, with retries continuing indefinitely at 8-hour intervals after reaching the cap.
-
-#### Acceptance Criteria
-
-1. WHEN an upload fails, THE System SHALL increment the retry_count for affected readings
-2. WHEN an upload fails, THE System SHALL schedule a retry with exponential backoff
-3. WHEN scheduling a retry, THE System SHALL use exponential backoff: 2^retry_count minutes (2m, 4m, 8m, 16m, 32m, 64m, 128m, 256m)
-4. WHEN the calculated retry delay would exceed 8 hours (480 minutes), THE System SHALL cap the retry delay at 8 hours
-5. WHEN a reading reaches the 8-hour retry interval, THE System SHALL continue retrying every 8 hours indefinitely
-6. WHEN connectivity is restored after a failed upload, THE System SHALL reset the retry interval back to exponential backoff starting at 2 minutes
-7. WHEN a reading is retrying indefinitely, THE System SHALL never mark it as failed - it remains in the sync database for manual intervention
-
-### Requirement 6: Delete Successfully Uploaded Readings from Sync Database
-
-**User Story:** As a sync system, I want to delete meter readings after successful upload, so that the sync database doesn't grow unbounded.
+**User Story:** As a user, I want to manually trigger an upload cycle, so that I can upload readings on demand without waiting for the scheduled interval.
 
 #### Acceptance Criteria
 
-1. WHEN an upload batch completes successfully, THE System SHALL delete the uploaded readings from the sync database
-2. WHEN deleting readings, THE System SHALL use the meter_reading_id to identify which readings to delete
-3. WHEN deletion completes, THE System SHALL log the count of deleted readings
-4. IF deletion fails, THEN THE System SHALL log the error but not retry (readings will be re-uploaded on next cycle)
-5. WHEN all readings in a batch are deleted, THE System SHALL verify the sync database no longer contains them
+1. WHEN the trigger_upload MCP tool is called, THE Upload_Agent SHALL immediately start an upload cycle
+2. WHEN an upload cycle is already in progress, THE Upload_Agent SHALL return a status indicating the current cycle is running
+3. WHEN an upload cycle completes, THE Upload_Agent SHALL return the results including counts and any errors
 
-### Requirement 7: Track Upload Status and Metrics
+### Requirement 4: Upload Status Monitoring
 
-**User Story:** As a sync system, I want to track upload status and metrics, so that I can monitor the health of the upload process.
+**User Story:** As a user, I want to monitor the status of the upload process, so that I can verify readings are being synchronized correctly.
 
 #### Acceptance Criteria
 
-1. WHEN an upload operation completes, THE System SHALL record the timestamp of the operation
-2. WHEN an upload operation completes, THE System SHALL record whether it succeeded or failed
-3. WHEN an upload operation completes, THE System SHALL record the count of readings uploaded
-4. WHEN an upload operation completes, THE System SHALL record the count of readings that failed
-5. WHEN an upload operation completes, THE System SHALL record any error messages
-6. WHEN queried, THE System SHALL return upload status including last upload time, success/failure, and queue size
+1. WHEN the get_upload_status MCP tool is called, THE Upload_Agent SHALL return the current status
+2. WHEN returning status, THE Upload_Agent SHALL include the last upload time, total readings uploaded, success rate, and any recent errors
+3. WHEN an upload cycle is in progress, THE Upload_Agent SHALL indicate the cycle is running and show progress
+4. WHEN no uploads have occurred, THE Upload_Agent SHALL return appropriate default values
 
-### Requirement 8: Monitor Connectivity to Remote Database
+### Requirement 5: Error Handling and Logging
 
-**User Story:** As a sync system, I want to continuously monitor connectivity to the remote database, so that I can detect when the client system becomes available or unavailable.
+**User Story:** As a system operator, I want detailed logging of upload operations, so that I can diagnose issues and monitor system health.
 
 #### Acceptance Criteria
 
-1. WHEN the upload manager starts, THE System SHALL begin monitoring connectivity to the remote API
-2. WHEN the remote API is reachable, THE System SHALL mark the connection as active
-3. WHEN the remote API is unreachable, THE System SHALL mark the connection as inactive
-4. WHEN connectivity changes from inactive to active, THE System SHALL trigger an immediate upload attempt
-5. WHEN connectivity is being monitored, THE System SHALL check at regular intervals (default 60 seconds)
+1. WHEN an upload operation starts, THE Upload_Service SHALL log the operation with timestamp and batch size
+2. WHEN an upload operation completes, THE Upload_Service SHALL log the results including inserted, failed, and skipped counts
+3. WHEN an error occurs during upload, THE Upload_Service SHALL log the error with full context including reading IDs and error message
+4. WHEN retries occur, THE Upload_Service SHALL log each retry attempt with the retry count and delay
+5. WHEN max retries are exceeded, THE Upload_Service SHALL log a warning with the reading IDs that failed
 
-### Requirement 9: Schedule Automatic Uploads
+### Requirement 6: Data Integrity
 
-**User Story:** As a sync system, I want to automatically upload readings on a schedule, so that data is synchronized without manual intervention.
-
-#### Acceptance Criteria
-
-1. WHEN the upload manager starts, THE System SHALL schedule automatic uploads at regular intervals (default 5 minutes)
-2. WHEN the scheduled time arrives, THE System SHALL trigger an upload operation if one is not already in progress
-3. IF an upload is already in progress, THEN THE System SHALL skip the scheduled upload and wait for the next interval
-4. WHEN the upload manager is stopped, THE System SHALL cancel all scheduled uploads
-5. WHEN the upload manager is restarted, THE System SHALL resume scheduled uploads
-
-### Requirement 10: Provide Manual Upload Trigger
-
-**User Story:** As a user, I want to manually trigger an upload operation, so that I can upload readings on demand without waiting for the schedule.
+**User Story:** As a system architect, I want to ensure data integrity during uploads, so that readings are not duplicated or lost.
 
 #### Acceptance Criteria
 
-1. WHEN a manual upload is triggered, THE System SHALL immediately start an upload operation
-2. WHEN a manual upload is triggered while one is in progress, THE System SHALL skip the new request and log a message
-3. WHEN a manual upload completes, THE System SHALL return the upload status and metrics
-4. WHEN a manual upload fails, THE System SHALL return the error details
-5. WHEN a manual upload is triggered, THE System SHALL not affect the scheduled upload interval
+1. WHEN readings are uploaded, THE Upload_Service SHALL use database transactions to ensure atomicity
+2. WHEN a transaction fails, THE Upload_Service SHALL rollback all changes and retry the batch
+3. WHEN readings are marked as synchronized, THE Upload_Service SHALL only mark readings that were successfully inserted
+4. WHEN duplicate readings are detected, THE Upload_Service SHALL skip them and log the duplicate
+5. WHEN the remote database is unavailable, THE Upload_Service SHALL retry with exponential backoff and eventually fail gracefully
 
-### Requirement 11: Display Meter Reading Upload Status Card in Frontend
+### Requirement 7: Cleanup of Synchronized Readings
 
-**User Story:** As a sync system operator, I want to see a card displaying meter reading upload status, so that I can monitor the health of the upload process and manually trigger retries.
+**User Story:** As a system operator, I want to clean up old synchronized readings, so that the sync database doesn't grow unbounded.
 
 #### Acceptance Criteria
 
-1. WHEN the sync frontend loads, THE System SHALL display a meter reading upload status card
-2. WHEN the card is displayed, THE System SHALL show the count of readings currently in the sync database (queue size)
-3. WHEN the card is displayed, THE System SHALL show the count of total readings uploaded
-4. WHEN the card is displayed, THE System SHALL show the timestamp of the last upload attempt
-5. WHEN the card is displayed, THE System SHALL show whether the last upload was successful or failed
-6. WHEN the card is displayed, THE System SHALL show the timestamp of the next scheduled upload
-7. WHEN the card is displayed, THE System SHALL show the current connectivity status to the remote database
-8. WHEN the card is displayed, THE System SHALL show a log of recent upload operations with timestamps and results
-9. WHEN a user clicks the "Retry Upload" button, THE System SHALL trigger a manual upload operation
-10. WHEN the upload is in progress, THE System SHALL display a loading indicator on the button
-11. WHEN the upload completes, THE System SHALL update the card with new metrics and log entry
-12. WHEN the card is displayed, THE System SHALL refresh the metrics every 30 seconds to show current status
-
-</content>
-</invoke>
+1. WHEN a cleanup cycle runs, THE Cleanup_Service SHALL delete synchronized readings older than a configurable threshold (default: 7 days)
+2. WHEN readings are deleted, THE Cleanup_Service SHALL log the count of deleted readings
+3. WHEN the cleanup interval is configured via environment variable, THE Cleanup_Service SHALL use that value (default: daily)
+4. WHEN no old readings exist, THE Cleanup_Service SHALL log that no cleanup was needed

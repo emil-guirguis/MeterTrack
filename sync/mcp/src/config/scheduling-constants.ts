@@ -44,6 +44,18 @@ export const CRON_SYNC_TO_REMOTE = minutesToCronEvery(15);
  * Cron expression: 0 [every 45 minutes] * * * (every 45 minutes at minute 0)
  */
 export const CRON_REMOTE_TO_LOCAL = minutesToCronEvery(45);
+
+/**
+ * Meter Reading Cleanup Interval
+ * 
+ * How often to delete meter readings older than 2 months
+ * Default: Daily at 2 AM
+ * 
+ * Used by: MeterReadingCleanupAgent
+ * Environment variable: METER_READING_CLEANUP_CRON
+ * Cron expression: "0 2 * * *" (every day at 2 AM)
+ */
+export const CRON_METER_READING_CLEANUP = "0 2 * * *";
 /**
  * Converts a number of minutes to a cron expression that runs every X minutes
  * @param minutes - Number of minutes between executions (1-59 recommended)

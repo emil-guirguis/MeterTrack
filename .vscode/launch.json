@@ -30,7 +30,6 @@
         "NODE_ENV": "development"
       },
       "preLaunchTask": "build-sync-mcp",
-      "preLaunchTaskWaitForDebugger": false,
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -91,7 +90,6 @@
       },
       "timeout": 30000,
       "preLaunchTask": "start-sync-frontend",
-      "preLaunchTaskWaitForDebugger": false,
       "skipFiles": [
         "<node_internals>/**"
       ]
@@ -105,6 +103,13 @@
     {
       "name": "Debug Sync Backend",
       "configurations": ["Sync MCP Server (Node.js)"]
+    },
+    {
+      "name": "Debug Sync + Remote Backend",
+      "configurations": [
+        "Client Backend (Node.js)",
+        "Sync MCP Server (Node.js)"
+      ]
     },
     {
       "name": "Debug All Backends",

@@ -232,8 +232,8 @@ export class LocalApiServer {
             is_synchronized,
             retry_count
           FROM meter_reading
-          WHERE timestamp >= NOW() - INTERVAL '${hours} hours'
-          ORDER BY timestamp DESC
+          WHERE created_at >= NOW() - INTERVAL '${hours} hours'
+          ORDER BY created_at DESC
           LIMIT 1000
         `;
                 const result = await execQuery(syncPool, query, [], 'server.ts>setupRoutes');

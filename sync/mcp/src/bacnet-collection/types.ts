@@ -130,6 +130,7 @@ export interface BatchInsertionResult {
   timestamp: Date;
   errors?: string[];
   retryAttempts: number;
+  insertedReadingIds?: string[];  // IDs of successfully inserted readings
 }
 
 // ==================== AGENT CONFIG ====================

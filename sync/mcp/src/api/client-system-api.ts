@@ -119,22 +119,65 @@ export class ClientSystemApiClient {
     readings: MeterReadingEntity[],
     retryCount: number = 0
   ): Promise<BatchUploadResponse> {
-    // Transform readings to API format
+    // Transform readings to API format - include all fields
     const request: BatchUploadRequest = {
       readings: readings.map((r) => ({
         meter_id: r.meter_id,
-        timestamp: r.timestamp.toISOString(),
-        data_point: r.data_point,
-        value: r.value,
-        unit: r.unit,
+        meter_element_id: r.meter_element_id ?? null,
+        active_energy: r.active_energy ?? null,
+        active_energy_export: r.active_energy_export ?? null,
+        apparent_energy: r.apparent_energy ?? null,
+        apparent_energy_export: r.apparent_energy_export ?? null,
+        apparent_power: r.apparent_power ?? null,
+        apparent_power_phase_a: r.apparent_power_phase_a ?? null,
+        apparent_power_phase_b: r.apparent_power_phase_b ?? null,
+        apparent_power_phase_c: r.apparent_power_phase_c ?? null,
+        current: r.current ?? null,
+        current_line_a: r.current_line_a ?? null,
+        current_line_b: r.current_line_b ?? null,
+        current_line_c: r.current_line_c ?? null,
+        frequency: r.frequency ?? null,
+        maximum_demand_real: r.maximum_demand_real ?? null,
+        power: r.power ?? null,
+        power_factor: r.power_factor ?? null,
+        power_factor_phase_a: r.power_factor_phase_a ?? null,
+        power_factor_phase_b: r.power_factor_phase_b ?? null,
+        power_factor_phase_c: r.power_factor_phase_c ?? null,
+        power_phase_a: r.power_phase_a ?? null,
+        power_phase_b: r.power_phase_b ?? null,
+        power_phase_c: r.power_phase_c ?? null,
+        reactive_energy: r.reactive_energy ?? null,
+        reactive_energy_export: r.reactive_energy_export ?? null,
+        reactive_power: r.reactive_power ?? null,
+        reactive_power_phase_a: r.reactive_power_phase_a ?? null,
+        reactive_power_phase_b: r.reactive_power_phase_b ?? null,
+        reactive_power_phase_c: r.reactive_power_phase_c ?? null,
+        voltage_a_b: r.voltage_a_b ?? null,
+        voltage_a_n: r.voltage_a_n ?? null,
+        voltage_b_c: r.voltage_b_c ?? null,
+        voltage_b_n: r.voltage_b_n ?? null,
+        voltage_c_a: r.voltage_c_a ?? null,
+        voltage_c_n: r.voltage_c_n ?? null,
+        voltage_p_n: r.voltage_p_n ?? null,
+        voltage_p_p: r.voltage_p_p ?? null,
+        voltage_thd: r.voltage_thd ?? null,
+        voltage_thd_phase_a: r.voltage_thd_phase_a ?? null,
+        voltage_thd_phase_b: r.voltage_thd_phase_b ?? null,
+        voltage_thd_phase_c: r.voltage_thd_phase_c ?? null,
       })),
     };
+
+    console.log(`📤 [ClientSystemApiClient] Uploading ${readings.length} readings`);
+    console.log(`📤 [ClientSystemApiClient] Sample reading:`, JSON.stringify(request.readings[0], null, 2));
+    console.log(`📤 [ClientSystemApiClient] API URL: ${this.client.defaults.baseURL}`);
+    console.log(`📤 [ClientSystemApiClient] API Key: ${this.apiKey.substring(0, 8)}...`);
 
     try {
       const response = await this.client.post<BatchUploadResponse>(
         '/sync/readings/batch',
         request
       );
+      console.log(`✅ [ClientSystemApiClient] Upload response:`, JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       // Handle retryable errors
@@ -146,6 +189,13 @@ export class ClientSystemApiClient {
 
       // Handle non-retryable errors
       if (axios.isAxiosError(error)) {
+        console.error(`❌ [ClientSystemApiClient] Axios error:`, {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        
         if (error.response?.status === 400) {
           return {
             success: false,

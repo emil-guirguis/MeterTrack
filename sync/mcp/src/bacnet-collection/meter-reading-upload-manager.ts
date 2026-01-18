@@ -67,39 +67,44 @@ export class MeterReadingUploadManager {
    * Start the upload manager (scheduling is managed by BACnetMeterReadingAgent)
    */
   async start(): Promise<void> {
-    console.log('Starting upload manager');
+    console.log('🚀 [UploadManager] Starting upload manager...');
     
     // Initialize tenant data from cache
     const tenantCache = cacheManager.getTenant();
     this.tenantId = tenantCache.tenant_id;
+    console.log(`🚀 [UploadManager] Tenant ID: ${this.tenantId}`);
     
     // Initialize API client
     this.apiClient = this.config.apiClient;
-    this.apiClient.setApiKey(tenantCache.api_key || '');
+    const apiKeyToSet = tenantCache.api_key || '';
+    console.log(`🚀 [UploadManager] Setting API key: ${apiKeyToSet.substring(0, 8)}...`);
+    this.apiClient.setApiKey(apiKeyToSet);
     
     // Initialize connectivity monitor
     this.connectivityMonitor = new ConnectivityMonitor(
       this.apiClient,
       this.config.connectivityCheckIntervalMs || 60000
     );
+    console.log('🚀 [UploadManager] Connectivity monitor initialized');
 
     this.connectivityMonitor.on('connected', () => {
-      console.log('Connectivity restored - auto-resuming upload');
+      console.log('🔗 [UploadManager] Connectivity restored - auto-resuming upload');
       this.status.isClientConnected = true;
       this.performUpload();
     });
 
     this.connectivityMonitor.on('disconnected', () => {
-      console.log('Connectivity lost - readings will be queued');
+      console.log('🔗 [UploadManager] Connectivity lost - readings will be queued');
       this.status.isClientConnected = false;
     });
 
     this.connectivityMonitor.start();
+    console.log('🚀 [UploadManager] Connectivity monitor started');
+    
     await this.checkClientConnectivity();
 
     // Perform initial upload
-    await this.performUpload();
-
+    console.log('🚀 [UploadManager] Upload manager started successfully');
     this.status.isRunning = true;
   }
 
@@ -151,10 +156,11 @@ export class MeterReadingUploadManager {
       const result = await this.uploadBatchWithRetry(readings);
 
       if (result.success) {
-        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is number => id !== undefined);
-        const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
-
-        console.log(`Successfully uploaded and deleted ${deletedCount} readings`);
+        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
+        
+        // Mark readings as synchronized (successfully inserted into remote database)
+        await this.database.markReadingsAsSynchronized(readingIds);
+        console.log(`✅ Marked ${readingIds.length} readings as synchronized`);
 
         await this.database.logSyncOperation(
           'upload',
@@ -212,42 +218,50 @@ export class MeterReadingUploadManager {
     }
 
     try {
+      console.log(`📤 [UploadManager] Sending ${readings.length} readings to client API...`);
+      console.log(`📤 [UploadManager] Sample reading:`, JSON.stringify(readings[0], null, 2));
+      
       const response = await this.apiClient.uploadBatch(readings);
 
+      console.log(`📤 [UploadManager] API response:`, JSON.stringify(response, null, 2));
+
       if (response.success) {
+        console.log(`✅ [UploadManager] Upload successful - ${response.recordsProcessed} records processed`);
         return { success: true };
       } else {
         // API returned an error response - increment retry count
-        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is string => id !== undefined);
         await this.database.incrementRetryCount(readingIds);
+        console.error(`❌ [UploadManager] API returned error: ${response.message}`);
         return { success: false, error: response.message };
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ [UploadManager] Upload error: ${errorMessage}`);
 
       if (errorMessage.includes('unreachable')) {
         this.status.isClientConnected = false;
         // Increment retry count for connection errors too
-        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is string => id !== undefined);
         await this.database.incrementRetryCount(readingIds);
         return { success: false, error: 'Client System unreachable' };
       }
 
       if (retryCount < this.maxRetries) {
         const delay = this.calculateBackoff(retryCount);
-        console.log(`Retry ${retryCount + 1}/${this.maxRetries} in ${delay}ms`);
+        console.log(`🔄 [UploadManager] Retry ${retryCount + 1}/${this.maxRetries} in ${delay}ms`);
 
         await this.sleep(delay);
 
-        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is string => id !== undefined);
         await this.database.incrementRetryCount(readingIds);
 
         return this.uploadBatchWithRetry(readings, retryCount + 1);
       }
 
-      console.error(`Max retries (${this.maxRetries}) exceeded`);
+      console.error(`❌ [UploadManager] Max retries (${this.maxRetries}) exceeded`);
 
-      const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+      const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is string => id !== undefined);
       await this.database.incrementRetryCount(readingIds);
 
       return { success: false, error: `Max retries exceeded: ${errorMessage}` };

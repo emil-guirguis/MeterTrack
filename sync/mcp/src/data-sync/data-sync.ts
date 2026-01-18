@@ -159,6 +159,7 @@ export class SyncDatabase {
           zip VARCHAR(20),
           country VARCHAR(100),
           active BOOLEAN DEFAULT true,
+          api_key VARCHAR(255),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
@@ -166,13 +167,13 @@ export class SyncDatabase {
       // Create meter table
       await execQuery(this.pool,
         `CREATE TABLE IF NOT EXISTS meter (
-          id VARCHAR(255) PRIMARY KEY,
+          id INTEGER PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           type VARCHAR(100),
           serial_number VARCHAR(255),
           installation_date VARCHAR(50),
-          device_id VARCHAR(255),
-          location_id VARCHAR(255),
+          device_id INTEGER,
+          location_id INTEGER,
           ip VARCHAR(50),
           port VARCHAR(10),
           protocol VARCHAR(50),
@@ -186,17 +187,59 @@ export class SyncDatabase {
       // Create meter_reading table
       await execQuery(this.pool,
         `
-        CREATE TABLE IF NOT EXISTS meter_reading (
-          id SERIAL PRIMARY KEY,
-          meter_id VARCHAR(255) NOT NULL REFERENCES meter(id),
-          timestamp TIMESTAMP NOT NULL,
-          data_point VARCHAR(255),
-          value NUMERIC,
-          unit VARCHAR(50),
-          is_synchronized BOOLEAN DEFAULT false,
-          retry_count INTEGER DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`);
+         CREATE TABLE IF NOT EXISTS public.meter_reading
+         (
+             meter_reading_id uuid NOT NULL DEFAULT gen_random_uuid(),
+             created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+             sync_status character varying(20) COLLATE pg_catalog."default",
+             tenant_id bigint NOT NULL DEFAULT 0,
+             meter_id bigint NOT NULL DEFAULT 0,
+             active_energy numeric(18,4) DEFAULT 0,
+             active_energy_export numeric(18,4) DEFAULT 0,
+             apparent_energy numeric(18,4) DEFAULT 0,
+             apparent_energy_export numeric(18,4) DEFAULT 0,
+             apparent_power numeric(18,4) DEFAULT 0,
+             apparent_power_phase_a numeric(18,4) DEFAULT 0,
+             apparent_power_phase_b numeric(18,4) DEFAULT 0,
+             apparent_power_phase_c numeric(18,4) DEFAULT 0,
+             current numeric(18,4) DEFAULT 0,
+             current_line_a numeric(18,4) DEFAULT 0,
+             current_line_b numeric(18,4) DEFAULT 0,
+             current_line_c numeric(18,4) DEFAULT 0,
+             frequency numeric(18,4) DEFAULT 0,
+             maximum_demand_real numeric(18,4) DEFAULT 0,
+             power numeric(18,4) DEFAULT 0,
+             power_factor numeric(18,4) DEFAULT 0,
+             power_factor_phase_a numeric(18,4) DEFAULT 0,
+             power_factor_phase_b numeric(18,4) DEFAULT 0,
+             power_factor_phase_c numeric(18,4) DEFAULT 0,
+             power_phase_a numeric(18,4) DEFAULT 0,
+             power_phase_b numeric(18,4) DEFAULT 0,
+             power_phase_c numeric(18,4) DEFAULT 0,
+             reactive_energy numeric(18,4) DEFAULT 0,
+             reactive_energy_export numeric(18,4) DEFAULT 0,
+             reactive_power numeric(18,4) DEFAULT 0,
+             reactive_power_phase_a numeric(18,4) DEFAULT 0,
+             reactive_power_phase_b numeric(18,4) DEFAULT 0,
+             reactive_power_phase_c numeric(18,4) DEFAULT 0,
+             voltage_a_b numeric(18,4) DEFAULT 0,
+             voltage_a_n numeric(18,4) DEFAULT 0,
+             voltage_b_c numeric(18,4) DEFAULT 0,
+             voltage_b_n numeric(18,4) DEFAULT 0,
+             voltage_c_a numeric(18,4) DEFAULT 0,
+             voltage_c_n numeric(18,4) DEFAULT 0,
+             voltage_p_n numeric(18,4) DEFAULT 0,
+             voltage_p_p numeric(18,4) DEFAULT 0,
+             voltage_thd numeric(18,4) DEFAULT 0,
+             voltage_thd_phase_a numeric(18,4) DEFAULT 0,
+             voltage_thd_phase_b numeric(18,4) DEFAULT 0,
+             voltage_thd_phase_c numeric(18,4) DEFAULT 0,
+             meter_element_id bigint,
+             is_synchronized boolean DEFAULT false,
+             retry_count bigint DEFAULT 0,
+             CONSTRAINT meter_readings_realtime_pkey PRIMARY KEY (meter_reading_id)
+         )
+        `);
 
       // Create sync_log table
       await execQuery(this.pool,
@@ -289,7 +332,7 @@ export class SyncDatabase {
         throw new Error(`Database integrity error: Tenant table contains ${rowCount} records instead of 1. Please contact support.`);
         console.error(`❌ [SQL] Tenant table contains ${rowCount} records - database may be corrupted`);
       }
-      
+
       // More than one record - database may be corrupted
     } catch (error: any) {
       // Check if error is due to table not existing
@@ -387,8 +430,8 @@ export class SyncDatabase {
    */
   async getRecentReadings(hours: number = 24): Promise<MeterReadingEntity[]> {
     const query = `SELECT * FROM meter_reading
-       WHERE timestamp >= NOW() - INTERVAL '${hours} hours'
-       ORDER BY timestamp DESC`;
+       WHERE created_at >= NOW() - INTERVAL '${hours} hours'
+       ORDER BY created_at DESC`;
     const result = await execQuery(this.pool, query, [], 'data-sync.ts>getRecentReadings');
     return result.rows;
   }
@@ -396,7 +439,7 @@ export class SyncDatabase {
   /**
    * Mark readings as synchronized
    */
-  async markReadingsAsSynchronized(readingIds: number[]): Promise<number> {
+  async markReadingsAsSynchronized(readingIds: string[]): Promise<number> {
     if (readingIds.length === 0) {
       return 0;
     }
@@ -743,7 +786,7 @@ export class SyncDatabase {
     try {
       const query = `SELECT * FROM meter_reading
          WHERE is_synchronized = false
-         ORDER BY timestamp ASC
+         ORDER BY created_at ASC
          LIMIT $1`;
       const result = await execQuery(this.pool, query, [limit], 'data-sync.ts>getUnsynchronizedReadings');
       return result.rows;
@@ -756,7 +799,7 @@ export class SyncDatabase {
   /**
    * Delete synchronized readings (implements SyncDatabase interface)
    */
-  async deleteSynchronizedReadings(readingIds: number[]): Promise<number> {
+  async deleteSynchronizedReadings(readingIds: string[]): Promise<number> {
     if (readingIds.length === 0) {
       return 0;
     }
@@ -764,7 +807,7 @@ export class SyncDatabase {
     try {
       const result = await this.pool.query(
         `DELETE FROM meter_reading
-         WHERE meter_reading_id = ANY($1::int[]) AND is_synchronized = true`,
+         WHERE meter_reading_id = ANY($1::uuid[]) AND is_synchronized = true`,
         [readingIds]
       );
       const deletedCount = result.rowCount || 0;
@@ -779,7 +822,7 @@ export class SyncDatabase {
   /**
    * Increment retry count for failed readings (implements SyncDatabase interface)
    */
-  async incrementRetryCount(readingIds: number[]): Promise<void> {
+  async incrementRetryCount(readingIds: string[]): Promise<void> {
     if (readingIds.length === 0) {
       return;
     }
@@ -787,15 +830,104 @@ export class SyncDatabase {
     try {
       await this.pool.query(
         `UPDATE meter_reading
-         SET retry_count = retry_count + 1,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE meter_reading_id = ANY($1::int[])`,
+         SET retry_count = retry_count + 1
+         WHERE meter_reading_id = ANY($1::uuid[])`,
         [readingIds]
       );
       console.log(`✅ [SQL] Incremented retry count for ${readingIds.length} reading(s)`);
     } catch (error) {
       console.error('❌ [SQL] Failed to increment retry count:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Mark readings as successfully uploaded
+   */
+  async markReadingsAsSuccessful(readingIds: string[]): Promise<void> {
+    if (readingIds.length === 0) {
+      return;
+    }
+
+    try {
+      await this.pool.query(
+        `UPDATE meter_reading
+         SET sync_status = 'successful'
+         WHERE meter_reading_id = ANY($1::uuid[])`,
+        [readingIds]
+      );
+      console.log(`✅ [SQL] Marked ${readingIds.length} reading(s) as successful`);
+    } catch (error) {
+      console.error('❌ [SQL] Failed to mark readings as successful:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark readings as pending (just collected from BACnet)
+   */
+  async markReadingsAsPending(readingIds: string[]): Promise<void> {
+    if (readingIds.length === 0) {
+      return;
+    }
+
+    try {
+      await this.pool.query(
+        `UPDATE meter_reading
+         SET sync_status = 'pending'
+         WHERE meter_reading_id = ANY($1::uuid[])`,
+        [readingIds]
+      );
+      console.log(`✅ [SQL] Marked ${readingIds.length} reading(s) as pending`);
+    } catch (error) {
+      console.error('❌ [SQL] Failed to mark readings as pending:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete meter readings older than cutoff date
+   */
+  async deleteOldReadings(cutoffDate: Date): Promise<number> {
+    try {
+      const result = await this.pool.query(
+        `DELETE FROM meter_reading
+         WHERE created_at < $1`,
+        [cutoffDate]
+      );
+      const deletedCount = result.rowCount || 0;
+      console.log(`✅ [SQL] Deleted ${deletedCount} old reading(s) before ${cutoffDate.toISOString()}`);
+      return deletedCount;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to delete old readings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Log meter reading collection failure
+   */
+  async logReadingFailure(meterId: string, operation: string, error: string): Promise<void> {
+    try {
+      // Get tenant ID from cache
+      const tenantCache = require('../cache/cache-manager.js').cacheManager.getTenant();
+      const tenantId = tenantCache?.tenant_id || 0;
+
+      await this.pool.query(
+        `INSERT INTO meter_reading (
+          tenant_id, meter_id, created_at, sync_status
+        ) VALUES ($1, $2, $3, $4)`,
+        [
+          tenantId,
+          parseInt(meterId, 10),
+          new Date(),
+          `failed_${operation}`
+        ]
+      );
+      console.log(`✅ [SQL] Logged reading failure for meter ${meterId}: ${operation} - ${error}`);
+    } catch (err) {
+      console.error('❌ [SQL] Failed to log reading failure:', err);
+      // Don't throw - logging failures shouldn't break the collection cycle
     }
   }
 

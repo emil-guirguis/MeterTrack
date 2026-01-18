@@ -15,6 +15,7 @@ import { ClientSystemApiClient } from './api/client-system-api.js';
 import { createAndStartLocalApiServer } from './api/server.js';
 import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
+import { MeterReadingCleanupAgent } from './bacnet-collection/meter-reading-cleanup-agent.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
 import { getBACnetCollectionIntervalSeconds, getBACnetUploadCronExpression } from './config/scheduling-constants.js';
 // Load environment variables from root .env file first, then local .env
@@ -51,6 +52,7 @@ class SyncMcpServer {
     remotePool;
     remoteToLocalSyncAgent;
     bacnetMeterReadingAgent;
+    meterReadingCleanupAgent;
     isInitialized = false;
     constructor() {
         this.server = new Server({
@@ -99,9 +101,18 @@ class SyncMcpServer {
             console.log('🔧 [Services] Initializing database schema...');
             await this.syncDatabase.initialize();
             console.log('✅ [Services] Database schema initialized');
+            // Step 4b: Update tenant API key from environment
+            const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
+            if (apiKeyFromEnv) {
+                console.log('🔑 [Services] Updating tenant API key from environment...');
+                await this.syncDatabase.updateTenantApiKey(apiKeyFromEnv);
+                console.log('✅ [Services] Tenant API key updated');
+            }
+            else {
+                console.warn('⚠️  [Services] No CLIENT_API_KEY in environment - API uploads may fail');
+            }
             // Step 5: Initialize BACnet Meter Reading Agent
             console.log('📊 [Services] Initializing BACnet Meter Reading Agent...');
-            const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
             if (apiKeyFromEnv) {
                 console.log(`✅ [Services] API key loaded from environment: ${apiKeyFromEnv.substring(0, 8)}...`);
             }
@@ -153,7 +164,18 @@ class SyncMcpServer {
             console.log('▶️  [Services] Starting BACnet Meter Reading Agent...');
             await this.bacnetMeterReadingAgent.start();
             console.log('✅ [Services] BACnet Meter Reading Agent started');
-            // Step 9: Initialize Local API Server
+            // Step 9: Initialize and start Meter Reading Cleanup Agent
+            console.log('🧹 [Services] Initializing Meter Reading Cleanup Agent...');
+            this.meterReadingCleanupAgent = new MeterReadingCleanupAgent({
+                database: this.syncDatabase,
+                retentionDays: parseInt(process.env.METER_READING_RETENTION_DAYS || '60', 10),
+                enableAutoStart: process.env.METER_READING_CLEANUP_AUTO_START !== 'false',
+            }, logger);
+            console.log('✅ [Services] Meter Reading Cleanup Agent initialized');
+            console.log('▶️  [Services] Starting Meter Reading Cleanup Agent...');
+            await this.meterReadingCleanupAgent.start();
+            console.log('✅ [Services] Meter Reading Cleanup Agent started');
+            // Step 10: Initialize Local API Server
             console.log('🌐 [Services] Initializing Local API Server...');
             this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, undefined, this.remotePool);
             console.log('✅ [Services] Local API Server started');
@@ -559,6 +581,9 @@ class SyncMcpServer {
      */
     async shutdown() {
         logger.info('Shutting down Sync MCP Server...');
+        if (this.meterReadingCleanupAgent) {
+            await this.meterReadingCleanupAgent.stop();
+        }
         if (this.bacnetMeterReadingAgent) {
             await this.bacnetMeterReadingAgent.stop();
         }

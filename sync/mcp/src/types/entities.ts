@@ -105,15 +105,54 @@ export interface MeterEntity {
   element: string;
 }
 export interface MeterReadingEntity {
-  meter_reading_id?: number;
+  meter_reading_id?: string;
   meter_id: number;
-  name: string;
-  timestamp: Date;
-  data_point: string;
-  value: number;
-  unit?: string;
+  created_at: Date;
   is_synchronized: boolean;
   retry_count: number;
+  active_energy?: number;
+  active_energy_export?: number;
+  apparent_energy?: number;
+  apparent_energy_export?: number;
+  apparent_power?: number;
+  apparent_power_phase_a?: number;
+  apparent_power_phase_b?: number;
+  apparent_power_phase_c?: number;
+  current?: number;
+  current_line_a?: number;
+  current_line_b?: number;
+  current_line_c?: number;
+  frequency?: number;
+  maximum_demand_real?: number;
+  power?: number;
+  power_factor?: number;
+  power_factor_phase_a?: number;
+  power_factor_phase_b?: number;
+  power_factor_phase_c?: number;
+  power_phase_a?: number;
+  power_phase_b?: number;
+  power_phase_c?: number;
+  reactive_energy?: number;
+  reactive_energy_export?: number;
+  reactive_power?: number;
+  reactive_power_phase_a?: number;
+  reactive_power_phase_b?: number;
+  reactive_power_phase_c?: number;
+  voltage_a_b?: number;
+  voltage_a_n?: number;
+  voltage_b_c?: number;
+  voltage_b_n?: number;
+  voltage_c_a?: number;
+  voltage_c_n?: number;
+  voltage_p_n?: number;
+  voltage_p_p?: number;
+  voltage_thd?: number;
+  voltage_thd_phase_a?: number;
+  voltage_thd_phase_b?: number;
+  voltage_thd_phase_c?: number;
+  meter_element_id?: number;
+  tenant_id?: number;
+  sync_status?: string;
 }
 
 export interface RegisterEntity {
@@ -142,10 +181,47 @@ export interface SyncLog {
 export interface BatchUploadRequest {
   readings: Array<{
     meter_id: number;
-    timestamp: string;
-    data_point: string;
-    value: number;
-    unit?: string;
+    meter_element_id?: number | null;
+    active_energy?: number | null;
+    active_energy_export?: number | null;
+    apparent_energy?: number | null;
+    apparent_energy_export?: number | null;
+    apparent_power?: number | null;
+    apparent_power_phase_a?: number | null;
+    apparent_power_phase_b?: number | null;
+    apparent_power_phase_c?: number | null;
+    current?: number | null;
+    current_line_a?: number | null;
+    current_line_b?: number | null;
+    current_line_c?: number | null;
+    frequency?: number | null;
+    maximum_demand_real?: number | null;
+    power?: number | null;
+    power_factor?: number | null;
+    power_factor_phase_a?: number | null;
+    power_factor_phase_b?: number | null;
+    power_factor_phase_c?: number | null;
+    power_phase_a?: number | null;
+    power_phase_b?: number | null;
+    power_phase_c?: number | null;
+    reactive_energy?: number | null;
+    reactive_energy_export?: number | null;
+    reactive_power?: number | null;
+    reactive_power_phase_a?: number | null;
+    reactive_power_phase_b?: number | null;
+    reactive_power_phase_c?: number | null;
+    voltage_a_b?: number | null;
+    voltage_a_n?: number | null;
+    voltage_b_c?: number | null;
+    voltage_b_n?: number | null;
+    voltage_c_a?: number | null;
+    voltage_c_n?: number | null;
+    voltage_p_n?: number | null;
+    voltage_p_p?: number | null;
+    voltage_thd?: number | null;
+    voltage_thd_phase_a?: number | null;
+    voltage_thd_phase_b?: number | null;
+    voltage_thd_phase_c?: number | null;
   }>;
 }
 
@@ -215,8 +291,12 @@ export interface SyncDatabase {
   upsertMeter(meter: MeterEntity): Promise<void>;
   logSyncOperation(operationType: string, readingsCount: number, success: boolean, errorMessage?: string): Promise<void>;
   getUnsynchronizedReadings(limit: number): Promise<MeterReadingEntity[]>;
-  deleteSynchronizedReadings(readingIds: number[]): Promise<number>;
-  incrementRetryCount(readingIds: number[]): Promise<void>;
+  deleteSynchronizedReadings(readingIds: string[]): Promise<number>;
+  markReadingsAsPending(readingIds: string[]): Promise<void>;
+  markReadingsAsSynchronized(readingIds: string[]): Promise<void>;
+  deleteOldReadings(cutoffDate: Date): Promise<number>;
+  incrementRetryCount(readingIds: string[]): Promise<void>;
+  logReadingFailure(meterId: string, operation: string, error: string): Promise<void>;
   getSyncStats(hours: number): Promise<any>;
   getRecentReadings(hours: number): Promise<MeterReadingEntity[]>;
   getRecentSyncLogs(limit: number): Promise<SyncLog[]>;

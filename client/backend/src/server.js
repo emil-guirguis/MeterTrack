@@ -508,7 +508,8 @@ app.use('/api/templates', authenticateToken, setTenantContext, templateRoutes);
 app.use('/api/emails', authenticateToken, setTenantContext, emailRoutes);
 app.use('/api/settings', authenticateToken, setTenantContext, settingsRoutes);
 app.use('/api/upload', authenticateToken, setTenantContext, uploadRoutes);
-app.use('/api/sync', authenticateToken, setTenantContext, syncRoutes);
+// Sync routes use API key authentication (not JWT), so no authenticateToken middleware
+app.use('/api/sync', syncRoutes);
 app.use('/api/schema', authenticateToken, setTenantContext, schemaRoutes);
 // app.use('/api/modbus', authenticateToken, setTenantContext, modbusRoutes); // Temporarily disabled
 // app.use('/api', authenticateToken, setTenantContext, directMeterRoutes); // Temporarily disabled
