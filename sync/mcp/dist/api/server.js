@@ -15,6 +15,7 @@ export class LocalApiServer {
     database;
     remoteToLocalSyncAgent;
     bacnetMeterReadingAgent;
+    meterReadingUploadManager;
     remotePool;
     server;
     syncManager;
@@ -23,6 +24,7 @@ export class LocalApiServer {
         this.database = config.database;
         this.remoteToLocalSyncAgent = config.remoteToLocalSyncAgent;
         this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
+        this.meterReadingUploadManager = config.meterReadingUploadManager;
         this.remotePool = config.remotePool;
         this.app = express();
         this.setupMiddleware();
@@ -522,6 +524,105 @@ export class LocalApiServer {
                 });
             }
         });
+        // Get meter reading upload status
+        this.app.get('/api/sync/meter-reading-upload/status', async (_req, res, next) => {
+            try {
+                console.log('📥 [API] GET /api/sync/meter-reading-upload/status - Request received');
+                if (!this.meterReadingUploadManager) {
+                    console.error('❌ [API] Meter reading upload manager not available');
+                    return res.status(503).json({
+                        error: 'Meter reading upload manager not available',
+                    });
+                }
+                const uploadStatus = this.meterReadingUploadManager.getStatus();
+                const response = {
+                    is_running: uploadStatus.isRunning,
+                    last_upload_time: uploadStatus.lastUploadTime || null,
+                    last_upload_success: uploadStatus.lastUploadSuccess !== undefined ? uploadStatus.lastUploadSuccess : null,
+                    last_upload_error: uploadStatus.lastUploadError || null,
+                    queue_size: uploadStatus.queueSize,
+                    total_uploaded: uploadStatus.totalUploaded,
+                    total_failed: uploadStatus.totalFailed,
+                    is_client_connected: uploadStatus.isClientConnected,
+                };
+                console.log(`📤 [API] GET /api/sync/meter-reading-upload/status - Returning:`, JSON.stringify(response, null, 2));
+                res.json(response);
+                console.log('✅ [API] GET /api/sync/meter-reading-upload/status - Response sent successfully');
+            }
+            catch (error) {
+                console.error('❌ [API] GET /api/sync/meter-reading-upload/status - Error:', error);
+                next(error);
+            }
+        });
+        // Get meter reading upload operation log
+        this.app.get('/api/sync/meter-reading-upload/log', async (_req, res, next) => {
+            try {
+                console.log('📥 [API] GET /api/sync/meter-reading-upload/log - Request received');
+                // Query recent sync operations from the sync database
+                const query = `
+          SELECT sync_operation_id, tenant_id, operation_type, readings_count, success, error_message, created_at
+          FROM sync_operation_log
+          WHERE operation_type = 'upload'
+          ORDER BY created_at DESC
+          LIMIT 20
+        `;
+                const result = await execQuery(syncPool, query, [], 'server.ts>setupRoutes');
+                const operations = result.rows.map((row) => ({
+                    sync_operation_id: row.sync_operation_id,
+                    tenant_id: row.tenant_id,
+                    operation_type: row.operation_type,
+                    readings_count: row.readings_count,
+                    success: row.success,
+                    error_message: row.error_message || null,
+                    created_at: row.created_at,
+                }));
+                console.log(`📤 [API] GET /api/sync/meter-reading-upload/log - Returning ${operations.length} operation(s)`);
+                res.json(operations);
+                console.log('✅ [API] GET /api/sync/meter-reading-upload/log - Response sent successfully');
+            }
+            catch (error) {
+                console.error('❌ [API] GET /api/sync/meter-reading-upload/log - Error:', error);
+                next(error);
+            }
+        });
+        // Trigger manual meter reading upload
+        this.app.post('/api/sync/meter-reading-upload/trigger', async (_req, res, next) => {
+            try {
+                console.log('📥 [API] POST /api/sync/meter-reading-upload/trigger - Request received');
+                if (!this.meterReadingUploadManager) {
+                    console.error('❌ [API] Meter reading upload manager not available');
+                    return res.status(503).json({
+                        success: false,
+                        error: 'Meter reading upload manager not available',
+                    });
+                }
+                const uploadStatus = this.meterReadingUploadManager.getStatus();
+                if (uploadStatus.isRunning) {
+                    console.warn('⚠️  [API] Upload is already in progress');
+                    return res.status(409).json({
+                        success: false,
+                        error: 'Upload is already in progress',
+                    });
+                }
+                // Trigger upload asynchronously
+                console.log('🔄 [API] Triggering meter reading upload...');
+                this.meterReadingUploadManager.triggerUpload().catch((error) => {
+                    console.error('❌ [API] Manual upload failed:', error);
+                });
+                const response = {
+                    success: true,
+                    message: 'Upload triggered successfully',
+                    queue_size: uploadStatus.queueSize,
+                };
+                console.log(`📤 [API] POST /api/sync/meter-reading-upload/trigger - Returning:`, JSON.stringify(response, null, 2));
+                res.json(response);
+                console.log('✅ [API] POST /api/sync/meter-reading-upload/trigger - Response sent successfully');
+            }
+            catch (error) {
+                console.error('❌ [API] POST /api/sync/meter-reading-upload/trigger - Error:', error);
+                next(error);
+            }
+        });
     }
     /**
      * Setup error handling middleware
@@ -557,7 +658,10 @@ export class LocalApiServer {
                     console.log(`   Meter sync status endpoint: http://localhost:${this.port}/api/local/meter-sync-status`);
                     console.log(`   Meter sync trigger endpoint: http://localhost:${this.port}/api/local/meter-sync-trigger`);
                     console.log(`   Meter reading status endpoint: http://localhost:${this.port}/api/meter-reading/status`);
-                    console.log(`   Meter reading trigger endpoint: http://localhost:${this.port}/api/meter-reading/trigger\n`);
+                    console.log(`   Meter reading trigger endpoint: http://localhost:${this.port}/api/meter-reading/trigger`);
+                    console.log(`   Meter reading upload status endpoint: http://localhost:${this.port}/api/sync/meter-reading-upload/status`);
+                    console.log(`   Meter reading upload log endpoint: http://localhost:${this.port}/api/sync/meter-reading-upload/log`);
+                    console.log(`   Meter reading upload trigger endpoint: http://localhost:${this.port}/api/sync/meter-reading-upload/trigger\n`);
                     resolve();
                 });
                 this.server.on('error', (error) => {
@@ -602,13 +706,14 @@ export class LocalApiServer {
 /**
  * Create and start local API server from environment variables
  */
-export async function createAndStartLocalApiServer(database, remoteToLocalSyncAgent, bacnetMeterReadingAgent, remotePool) {
+export async function createAndStartLocalApiServer(database, remoteToLocalSyncAgent, bacnetMeterReadingAgent, meterReadingUploadManager, remotePool) {
     const port = parseInt(process.env.LOCAL_API_PORT || '3002', 10);
     const server = new LocalApiServer({
         port,
         database,
         remoteToLocalSyncAgent,
         bacnetMeterReadingAgent,
+        meterReadingUploadManager,
         remotePool,
     });
     await server.start();

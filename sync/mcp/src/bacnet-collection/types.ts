@@ -136,8 +136,8 @@ export interface BatchInsertionResult {
 
 export interface BACnetMeterReadingAgentConfig {
   syncDatabase: any; // SyncDatabase type
-  collectionIntervalSeconds?: number;  // Default: 60
-  uploadIntervalMinutes?: number;       // Default: 5 (upload every 5 minutes)
+  collectionIntervalSeconds?: number;  // Default: 600 (10 minutes in seconds)
+  uploadCronExpression?: string;        // Default: "*/15 * * * *" (every 15 minutes)
   enableAutoStart?: boolean;            // Default: true
   bacnetInterface?: string;             // Default: '0.0.0.0'
   bacnetPort?: number;                  // Default: 47808

@@ -12,6 +12,7 @@ import { cacheManager } from '../cache/index.js';
 import { BACnetClient } from './bacnet-client.js';
 import { CollectionCycleManager } from './collection-cycle-manager.js';
 import { MeterReadingUploadManager } from './meter-reading-upload-manager.js';
+import { CRON_SYNC_TO_REMOTE } from '../config/scheduling-constants.js';
 
 export class BACnetMeterReadingAgent {
   private config: BACnetMeterReadingAgentConfig;
@@ -38,7 +39,6 @@ export class BACnetMeterReadingAgent {
   constructor(config: BACnetMeterReadingAgentConfig, logger?: any) {
     this.config = {
       collectionIntervalSeconds: 60,
-      uploadIntervalMinutes: 5,
       enableAutoStart: true,
       bacnetInterface: '0.0.0.0',
       bacnetPort: 47808,
@@ -70,10 +70,8 @@ export class BACnetMeterReadingAgent {
       this.uploadManager = new MeterReadingUploadManager({
         database: this.config.syncDatabase,
         apiClient: this.config.apiClient,
-        uploadIntervalMinutes: this.config.uploadIntervalMinutes || 5,
         batchSize: 1000,
         maxRetries: 5,
-        enableAutoUpload: false, // We'll manage cron ourselves
       });
     }
   }
@@ -108,10 +106,10 @@ export class BACnetMeterReadingAgent {
         }
       });
 
-      // Set up cron job for upload cycles every N minutes (if upload manager is available)
+      // Set up cron job for upload cycles (if upload manager is available)
       if (this.uploadManager) {
-        const uploadCronExpression = `0 */${this.config.uploadIntervalMinutes} * * *`;
-        this.logger.info(`Scheduling upload cycles every ${this.config.uploadIntervalMinutes} minute(s)`);
+        const uploadCronExpression = CRON_SYNC_TO_REMOTE;
+        this.logger.info(`Scheduling upload cycles with cron: ${uploadCronExpression}`);
 
         this.uploadCronJob = cron.schedule(uploadCronExpression, async () => {
           await this.uploadManager!.performUpload();

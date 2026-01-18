@@ -24,6 +24,14 @@ import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
 import { cacheManager } from './cache/cache-manager.js';
+import { 
+  CRON_METER_READ, 
+  CRON_REMOTE_TO_LOCAL, 
+  CRON_SYNC_TO_REMOTE,
+  getBACnetCollectionIntervalSeconds,
+  getBACnetUploadCronExpression,
+  getRemoteToLocalSyncCronExpression
+} from './config/scheduling-constants.js';
 
 // Load environment variables from root .env file first, then local .env
 import { fileURLToPath } from 'url';
@@ -150,8 +158,8 @@ class SyncMcpServer {
 
       this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
         syncDatabase: this.syncDatabase,
-        collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '900', 10), // 15 minutes
-        uploadIntervalMinutes: parseInt(process.env.BACNET_UPLOAD_INTERVAL_MINUTES || '5', 10),
+        collectionIntervalSeconds: getBACnetCollectionIntervalSeconds(),
+        uploadCronExpression: getBACnetUploadCronExpression(),
         enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
         bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
         bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
@@ -192,7 +200,7 @@ class SyncMcpServer {
 
       // Step 9: Initialize Local API Server
       console.log('🌐 [Services] Initializing Local API Server...');
-      this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, this.remotePool);
+      this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, undefined, this.remotePool);
       console.log('✅ [Services] Local API Server started');
 
       this.isInitialized = true;

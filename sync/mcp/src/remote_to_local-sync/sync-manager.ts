@@ -204,7 +204,11 @@ export class SyncManager {
 
         console.log(`Successfully synced and deleted ${deletedCount} readings`);
 
-        await this.database.logSyncOperation(readings.length, true);
+        await this.database.logSyncOperation(
+          'sync',
+          readings.length,
+          true
+        );
 
         this.status.lastSyncTime = new Date();
         this.status.lastSyncSuccess = true;
@@ -212,6 +216,7 @@ export class SyncManager {
         this.status.totalSynced += readings.length;
       } else {
         await this.database.logSyncOperation(
+          'sync',
           readings.length,
           false,
           result.error || 'Unknown error'
@@ -233,6 +238,7 @@ export class SyncManager {
       this.status.lastSyncError = error instanceof Error ? error.message : 'Unknown error';
 
       await this.database.logSyncOperation(
+        'sync',
         0,
         false,
         error instanceof Error ? error.message : 'Unknown error'

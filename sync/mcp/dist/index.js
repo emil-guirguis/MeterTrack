@@ -16,6 +16,7 @@ import { createAndStartLocalApiServer } from './api/server.js';
 import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
+import { getBACnetCollectionIntervalSeconds, getBACnetUploadCronExpression } from './config/scheduling-constants.js';
 // Load environment variables from root .env file first, then local .env
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -61,6 +62,7 @@ class SyncMcpServer {
             },
         });
         this.setupHandlers();
+        console.log('🚀 [Init] Sync MCP Server created');
     }
     /**
      * Initialize services
@@ -99,7 +101,6 @@ class SyncMcpServer {
             console.log('✅ [Services] Database schema initialized');
             // Step 5: Initialize BACnet Meter Reading Agent
             console.log('📊 [Services] Initializing BACnet Meter Reading Agent...');
-            // Load API key from environment variable
             const apiKeyFromEnv = process.env.CLIENT_API_KEY || '';
             if (apiKeyFromEnv) {
                 console.log(`✅ [Services] API key loaded from environment: ${apiKeyFromEnv.substring(0, 8)}...`);
@@ -117,8 +118,8 @@ class SyncMcpServer {
             console.log('✅ [Services] Client System API Client created');
             this.bacnetMeterReadingAgent = new BACnetMeterReadingAgent({
                 syncDatabase: this.syncDatabase,
-                collectionIntervalSeconds: parseInt(process.env.BACNET_COLLECTION_INTERVAL_SECONDS || '900', 10), // 15 minutes
-                uploadIntervalMinutes: parseInt(process.env.BACNET_UPLOAD_INTERVAL_MINUTES || '5', 10),
+                collectionIntervalSeconds: getBACnetCollectionIntervalSeconds(),
+                uploadCronExpression: getBACnetUploadCronExpression(),
                 enableAutoStart: process.env.BACNET_AUTO_START !== 'false',
                 bacnetInterface: process.env.BACNET_INTERFACE || '0.0.0.0',
                 bacnetPort: parseInt(process.env.BACNET_PORT || '47808', 10),
@@ -154,7 +155,7 @@ class SyncMcpServer {
             console.log('✅ [Services] BACnet Meter Reading Agent started');
             // Step 9: Initialize Local API Server
             console.log('🌐 [Services] Initializing Local API Server...');
-            this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, this.remotePool);
+            this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, undefined, this.remotePool);
             console.log('✅ [Services] Local API Server started');
             this.isInitialized = true;
             console.log('✅ [Services] All services initialized successfully\n');

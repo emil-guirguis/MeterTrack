@@ -72,7 +72,7 @@ class CacheManager {
  */
   getTenantId(): number | null {
     const tenantId = this.tenantCache.getTenantId() || null;
-    if (!tenantId || tenantId! > 0) {
+    if (!tenantId || tenantId <= 0) {
       throw new Error("Invalid tenant ID in cache");
     }
     return tenantId;

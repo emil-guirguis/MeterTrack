@@ -20,6 +20,7 @@ import { syncDeviceRegisters } from './sync-device-register.js';
 import { syncTenant } from './sync-tenant.js';
 import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
 import { cacheManager } from '../cache/index.js';
+import { getRemoteToLocalSyncIntervalMinutes, getRemoteToLocalSyncCronExpression } from '../config/scheduling-constants.js';
 
 export interface RemoteToLocalSyncAgentConfig {
   syncDatabase: SyncDatabase;
@@ -44,7 +45,7 @@ export class RemoteToLocalSyncAgent {
   constructor(config: RemoteToLocalSyncAgentConfig) {
     this.syncDatabase = config.syncDatabase;
     this.remotePool = config.remotePool;
-    this.syncIntervalMinutes = config.syncIntervalMinutes || 60;
+    this.syncIntervalMinutes = getRemoteToLocalSyncIntervalMinutes();
     this.enableAutoSync = config.enableAutoSync !== false;
     this.bacnetMeterReadingAgent = config.bacnetMeterReadingAgent;
 
@@ -71,12 +72,6 @@ export class RemoteToLocalSyncAgent {
    * 5. Schedule periodic syncs
    */
   async start(): Promise<void> {
-    this.tenantId = cacheManager.getTenantCache().getTenantId();
-    if (!this.tenantId) {
-      throw new Error('Failed to get tenant ID from cache');
-    }
-    console.log(`✅ [Sync Agent] Sync agent configured for tenant: ${this.tenantId}`);
-
     console.log('Starting sync agent...');
     if (this.cronJob) {
       console.log('Sync agent already running');
@@ -85,18 +80,17 @@ export class RemoteToLocalSyncAgent {
 
     console.log(`Starting sync agent with ${this.syncIntervalMinutes} minute interval`);
 
-
     // Perform initial sync (which includes cache loading)
     await this.performSync();
 
     if (this.enableAutoSync) {
       // Schedule sync job
-      const cronExpression = `0 */${this.syncIntervalMinutes} * * *`; // Every N hours at minute 0
+      const cronExpression = getRemoteToLocalSyncCronExpression();
       this.cronJob = cron.schedule(cronExpression, async () => {
         await this.performSync();
       });
 
-      console.log(`✅ [Sync Agent] Sync scheduled: every ${this.syncIntervalMinutes} hour(s)`);
+      console.log(`✅ [Sync Agent] Sync scheduled: every ${this.syncIntervalMinutes} minute(s)`);
     }
 
     this.status.isRunning = true;
@@ -136,6 +130,23 @@ export class RemoteToLocalSyncAgent {
         error: 'Sync already in progress',
         timestamp: new Date(),
       };
+    }
+
+    // Get tenant ID from cache if available, otherwise from remote database
+    if (!this.tenantId) {
+      try {
+        this.tenantId = cacheManager.getTenantCache().getTenantId();
+        console.log(`✅ [Sync Agent] Using tenant ID from cache: ${this.tenantId}`);
+      } catch (error) {
+        // Cache not initialized yet, query remote database for first tenant
+        console.log(`⚠️  [Sync Agent] Cache not initialized, querying remote database for tenant...`);
+        const result = await this.remotePool.query('SELECT tenant_id FROM tenant LIMIT 1');
+        if (result.rows.length === 0) {
+          throw new Error('No tenants found in remote database');
+        }
+        this.tenantId = result.rows[0].tenant_id;
+        console.log(`✅ [Sync Agent] Using tenant ID from remote database: ${this.tenantId}`);
+      }
     }
 
     // Check if BACnet meter collection is currently active
@@ -278,7 +289,12 @@ export class RemoteToLocalSyncAgent {
 
       // Log the failed sync operation
       try {
-        await this.syncDatabase.logSyncOperation(0, false, errorMessage);
+        await this.syncDatabase.logSyncOperation(
+          'sync',
+          0,
+          false,
+          errorMessage
+        );
       } catch (logError) {
         console.error('Failed to log sync error:', logError);
       }

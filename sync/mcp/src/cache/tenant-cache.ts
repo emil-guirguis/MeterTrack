@@ -5,6 +5,13 @@
 
 export interface CachedTenant {
   tenant_id: number;
+  name: string;
+  street?: string,
+  street2?: string,
+  city?: string,
+  state?: string,
+  zip?: string,
+  country?: string,
   api_key?: string;
 }
 
@@ -18,14 +25,14 @@ export class TenantCache {
   async initialize(syncDatabase: any): Promise<void> {
     try {
       console.log('📦 [TenantCache] Initializing tenant cache...');
-      
+
       this.tenants.clear();
       this.valid = false;
 
       // Load tenant from database
       console.log('📦 [TenantCache] Loading tenant from database...');
       const tenant = await syncDatabase.getTenant();
-      
+
       if (!tenant) {
         console.warn('⚠️  [TenantCache] WARNING: No tenant found in database!');
         this.valid = false;
@@ -34,13 +41,19 @@ export class TenantCache {
 
       const cached: CachedTenant = {
         tenant_id: tenant.tenant_id,
+        name: tenant.name,
+        street: tenant.street,
+        street2: tenant.street2,
+        city: tenant.city,
+        state: tenant.state,
+        zip: tenant.zip,
+        country: tenant.country,
         api_key: tenant.api_key,
       };
 
       this.tenants.set(tenant.tenant_id, cached);
-      this.tenants.set(tenant.api_key, cached);
       this.valid = true;
-      
+
       console.log(`✅ [TenantCache] Loaded tenant ${tenant.tenant_id}: ${tenant.name}`);
       if (tenant.api_key) {
         console.log(`✅ [TenantCache] API key available: ${tenant.api_key.substring(0, 8)}...`);
@@ -77,7 +90,7 @@ export class TenantCache {
    */
   getTenantId(): number | null {
     const tenantId = this.getTenant()?.tenant_id || null;
-    if (!tenantId || tenantId!> 0) {
+    if (!tenantId || tenantId <= 0) {
       throw new Error("Invalid tenant ID in cache");
     }
     return tenantId;

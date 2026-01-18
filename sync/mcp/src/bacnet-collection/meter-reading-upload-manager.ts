@@ -15,14 +15,13 @@ import { ClientSystemApiClient } from '../api/client-system-api.js';
 import { ConnectivityMonitor } from '../api/connectivity-monitor.js';
 import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
 import { cacheManager } from '../cache/cache-manager.js';
+import { CRON_SYNC_TO_REMOTE } from '../config/scheduling-constants.js';
 
 export interface MeterReadingUploadManagerConfig {
   database: SyncDatabase;
   apiClient: ClientSystemApiClient;
-  uploadIntervalMinutes?: number;
   batchSize?: number;
   maxRetries?: number;
-  enableAutoUpload?: boolean;
   connectivityCheckIntervalMs?: number;
 }
 
@@ -37,43 +36,51 @@ export interface UploadStatus {
   isClientConnected: boolean;
 }
 
-export interface TenantData {
-  tenant_id: number;
-  name: string;
-  street?: string;
-  street2?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-}
 
 export class MeterReadingUploadManager {
   private database: SyncDatabase;
-  private apiClient: ClientSystemApiClient;
-  private connectivityMonitor: ConnectivityMonitor;
-  private uploadIntervalMinutes: number;
+  private apiClient: ClientSystemApiClient | null = null;
+  private connectivityMonitor: ConnectivityMonitor | null = null;
   private batchSize: number;
   private maxRetries: number;
-  private enableAutoUpload: boolean;
+  private config: MeterReadingUploadManagerConfig;
 
   private cronJob?: cron.ScheduledTask;
   private isUploading: boolean = false;
-  private status: UploadStatus;
-  private apiKey: string = '';
-  private tenantData: TenantData | null = null;
+  private status: UploadStatus = {
+    isRunning: false,
+    queueSize: 0,
+    totalUploaded: 0,
+    totalFailed: 0,
+    isClientConnected: false,
+  };
+  private tenantId: number = 0;
 
   constructor(config: MeterReadingUploadManagerConfig) {
+    this.config = config;
     this.database = config.database;
-    this.apiClient = config.apiClient;
-    this.uploadIntervalMinutes = config.uploadIntervalMinutes || 5;
     this.batchSize = config.batchSize || 1000;
     this.maxRetries = config.maxRetries || 5;
-    this.enableAutoUpload = config.enableAutoUpload !== false;
+  }
 
+  /**
+   * Start the upload manager (scheduling is managed by BACnetMeterReadingAgent)
+   */
+  async start(): Promise<void> {
+    console.log('Starting upload manager');
+    
+    // Initialize tenant data from cache
+    const tenantCache = cacheManager.getTenant();
+    this.tenantId = tenantCache.tenant_id;
+    
+    // Initialize API client
+    this.apiClient = this.config.apiClient;
+    this.apiClient.setApiKey(tenantCache.api_key || '');
+    
+    // Initialize connectivity monitor
     this.connectivityMonitor = new ConnectivityMonitor(
       this.apiClient,
-      config.connectivityCheckIntervalMs || 60000
+      this.config.connectivityCheckIntervalMs || 60000
     );
 
     this.connectivityMonitor.on('connected', () => {
@@ -87,65 +94,11 @@ export class MeterReadingUploadManager {
       this.status.isClientConnected = false;
     });
 
-    this.status = {
-      isRunning: false,
-      queueSize: 0,
-      totalUploaded: 0,
-      totalFailed: 0,
-      isClientConnected: false,
-    };
-  }
-
-  /**
-   * Start the upload manager with scheduled uploads
-   */
-  async start(): Promise<void> {
-    if (this.cronJob) {
-      console.log('Upload manager already running');
-      return;
-    }
-
-    console.log(`Starting upload manager with ${this.uploadIntervalMinutes} minute interval`);
-
-    try {
-      const tenant = cacheManager.getTenantCache().getTenant();
-      if (tenant && tenant.api_key) {
-        this.apiKey = tenant.api_key;
-        console.log(`✅ [UploadManager] API key loaded from tenant: ${this.apiKey.substring(0, 8)}...`);
-        this.apiClient.setApiKey(this.apiKey);
-      } else {
-        console.warn('⚠️  [UploadManager] No API key found in tenant, connectivity checks may fail');
-      }
-
-      if (tenant) {
-        this.tenantData = {
-          tenant_id: tenant.tenant_id,
-          name: tenant.name || '',
-          street: tenant.street,
-          street2: tenant.street2,
-          city: tenant.city,
-          state: tenant.state,
-          zip: tenant.zip,
-          country: tenant.country,
-        };
-        console.log(`✅ [UploadManager] Tenant data loaded into memory: ${this.tenantData.name}`);
-      }
-    } catch (error) {
-      console.error('❌ [UploadManager] Failed to load tenant data:', error);
-    }
-
     this.connectivityMonitor.start();
     await this.checkClientConnectivity();
 
-    if (this.enableAutoUpload) {
-      const cronExpression = `*/${this.uploadIntervalMinutes} * * * *`;
-      this.cronJob = cron.schedule(cronExpression, async () => {
-        await this.performUpload();
-      });
-
-      console.log(`Upload scheduled: every ${this.uploadIntervalMinutes} minutes`);
-      await this.performUpload();
-    }
+    // Perform initial upload
+    await this.performUpload();
 
     this.status.isRunning = true;
   }
@@ -160,23 +113,10 @@ export class MeterReadingUploadManager {
       console.log('Upload manager stopped');
     }
 
-    this.connectivityMonitor.stop();
+    if (this.connectivityMonitor) {
+      this.connectivityMonitor.stop();
+    }
     this.status.isRunning = false;
-  }
-
-  /**
-   * Get tenant data from memory
-   */
-  getTenantData(): TenantData | null {
-    return this.tenantData ? { ...this.tenantData } : null;
-  }
-
-  /**
-   * Update tenant data in memory
-   */
-  setTenantData(tenant: TenantData): void {
-    this.tenantData = { ...tenant };
-    console.log(`✅ [UploadManager] Tenant data updated in memory: ${this.tenantData.name}`);
   }
 
   /**
@@ -194,8 +134,15 @@ export class MeterReadingUploadManager {
       await this.checkClientConnectivity();
       const readings = await this.database.getUnsynchronizedReadings(this.batchSize);
 
+      // Update queue size based on readings retrieved
+      this.status.queueSize = readings.length;
+
       if (readings.length === 0) {
         console.log('No readings to upload');
+        // Still update status to indicate upload was attempted
+        this.status.lastUploadTime = new Date();
+        this.status.lastUploadSuccess = true;
+        this.status.lastUploadError = undefined;
         return;
       }
 
@@ -209,7 +156,11 @@ export class MeterReadingUploadManager {
 
         console.log(`Successfully uploaded and deleted ${deletedCount} readings`);
 
-        await this.database.logSyncOperation(readings.length, true);
+        await this.database.logSyncOperation(
+          'upload',
+          readings.length,
+          true
+        );
 
         this.status.lastUploadTime = new Date();
         this.status.lastUploadSuccess = true;
@@ -217,6 +168,7 @@ export class MeterReadingUploadManager {
         this.status.totalUploaded += readings.length;
       } else {
         await this.database.logSyncOperation(
+          'upload',
           readings.length,
           false,
           result.error || 'Unknown error'
@@ -238,6 +190,7 @@ export class MeterReadingUploadManager {
       this.status.lastUploadError = error instanceof Error ? error.message : 'Unknown error';
 
       await this.database.logSyncOperation(
+        'upload',
         0,
         false,
         error instanceof Error ? error.message : 'Unknown error'
@@ -254,12 +207,19 @@ export class MeterReadingUploadManager {
     readings: MeterReadingEntity[],
     retryCount: number = 0
   ): Promise<{ success: boolean; error?: string }> {
+    if (!this.apiClient) {
+      return { success: false, error: 'API client not initialized' };
+    }
+
     try {
       const response = await this.apiClient.uploadBatch(readings);
 
       if (response.success) {
         return { success: true };
       } else {
+        // API returned an error response - increment retry count
+        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        await this.database.incrementRetryCount(readingIds);
         return { success: false, error: response.message };
       }
     } catch (error) {
@@ -267,6 +227,9 @@ export class MeterReadingUploadManager {
 
       if (errorMessage.includes('unreachable')) {
         this.status.isClientConnected = false;
+        // Increment retry count for connection errors too
+        const readingIds = readings.map((r) => r.meter_reading_id).filter((id): id is number => id !== undefined);
+        await this.database.incrementRetryCount(readingIds);
         return { success: false, error: 'Client System unreachable' };
       }
 
@@ -295,6 +258,9 @@ export class MeterReadingUploadManager {
    * Check Client System connectivity
    */
   private async checkClientConnectivity(): Promise<boolean> {
+    if (!this.connectivityMonitor) {
+      return false;
+    }
     const isConnected = this.connectivityMonitor.isConnected();
     console.log(`🔗 [UploadManager] checkClientConnectivity - Monitor says: ${isConnected}`);
     this.status.isClientConnected = isConnected;
@@ -313,6 +279,9 @@ export class MeterReadingUploadManager {
    * Get connectivity status
    */
   getConnectivityStatus() {
+    if (!this.connectivityMonitor) {
+      return null;
+    }
     return this.connectivityMonitor.getStatus();
   }
 
@@ -339,11 +308,28 @@ export class MeterReadingUploadManager {
   }
 
   /**
-   * Calculate exponential backoff delay
+   * Calculate exponential backoff delay in minutes
+   * 
+   * Exponential backoff progression:
+   * Retry 1: 2 minutes (2^1)
+   * Retry 2: 4 minutes (2^2)
+   * Retry 3: 8 minutes (2^3)
+   * Retry 4: 16 minutes (2^4)
+   * Retry 5: 32 minutes (2^5)
+   * Retry 6: 64 minutes (2^6)
+   * Retry 7: 128 minutes (2^7)
+   * Retry 8: 256 minutes (2^8)
+   * Retry 9+: 480 minutes (8 hours) - continues indefinitely
    */
   private calculateBackoff(retryCount: number): number {
-    const baseDelay = 2000;
-    return Math.min(baseDelay * Math.pow(2, retryCount), 60000);
+    // Calculate exponential backoff in minutes: 2^(retryCount + 1)
+    const backoffMinutes = Math.pow(2, retryCount + 1);
+
+    // Cap at 8 hours (480 minutes)
+    const cappedMinutes = Math.min(backoffMinutes, 480);
+
+    // Convert to milliseconds for setTimeout
+    return cappedMinutes * 60 * 1000;
   }
 
   /**
@@ -364,10 +350,8 @@ export function createMeterReadingUploadManagerFromEnv(
   const config: MeterReadingUploadManagerConfig = {
     database,
     apiClient,
-    uploadIntervalMinutes: parseInt(process.env.UPLOAD_INTERVAL_MINUTES || '5', 10),
     batchSize: parseInt(process.env.BATCH_SIZE || '1000', 10),
     maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
-    enableAutoUpload: process.env.ENABLE_AUTO_UPLOAD !== 'false',
   };
 
   return new MeterReadingUploadManager(config);

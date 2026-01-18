@@ -117,6 +117,61 @@ export const meterReadingApi = {
   },
 };
 
+export const meterReadingUploadApi = {
+  getStatus: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get<any>('/api/sync/meter-reading-upload/status');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Reading Upload] Failed to fetch upload status:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.error || 
+          error.message || 
+          'Failed to fetch upload status'
+        );
+      }
+      throw error;
+    }
+  },
+
+  getLog: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get<any[]>('/api/sync/meter-reading-upload/log');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Reading Upload] Failed to fetch upload log:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.error || 
+          error.message || 
+          'Failed to fetch upload log'
+        );
+      }
+      throw error;
+    }
+  },
+
+  triggerUpload: async (): Promise<{ success: boolean; message: string; queue_size?: number }> => {
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string; queue_size?: number }>(
+        '/api/sync/meter-reading-upload/trigger'
+      );
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Meter Reading Upload] Failed to trigger upload:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.error || 
+          error.message || 
+          'Failed to trigger upload'
+        );
+      }
+      throw error;
+    }
+  },
+};
+
 export const tenantApi = {
   getTenantInfo: async (): Promise<TenantInfo | null> => {
     try {

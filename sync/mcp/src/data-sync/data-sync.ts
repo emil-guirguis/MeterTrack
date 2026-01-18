@@ -203,6 +203,7 @@ export class SyncDatabase {
         `
         CREATE TABLE IF NOT EXISTS sync_log (
           id SERIAL PRIMARY KEY,
+          operation_type VARCHAR(50),
           batch_size INTEGER,
           success BOOLEAN,
           error_message TEXT,
@@ -714,17 +715,18 @@ export class SyncDatabase {
    * Log a sync operation (implements SyncDatabase interface)
    */
   async logSyncOperation(
-    batchSize: number,
+    operationType: string,
+    readingsCount: number,
     success: boolean,
     errorMessage?: string
   ): Promise<void> {
     try {
       await this.pool.query(
-        `INSERT INTO sync_log (batch_size, success, error_message)
-         VALUES ($1, $2, $3)`,
-        [batchSize, success, errorMessage || null]
+        `INSERT INTO sync_log (operation_type, batch_size, success, error_message)
+         VALUES ($1, $2, $3, $4)`,
+        [operationType, readingsCount, success, errorMessage || null]
       );
-      console.log(`✅ [SQL] Logged sync operation: ${batchSize} items, success=${success}`);
+      console.log(`✅ [SQL] Logged sync operation: type=${operationType}, count=${readingsCount}, success=${success}`);
     } catch (error) {
       console.error('❌ [SQL] Failed to log sync operation:', error);
       throw error;
@@ -733,12 +735,15 @@ export class SyncDatabase {
 
   /**
    * Get unsynchronized readings for sync (implements SyncDatabase interface)
+   * 
+   * Retrieves unsynchronized readings ordered by timestamp ascending to maintain chronological order.
+   * Requirements: 1.1, 1.2, 1.3, 1.4
    */
   async getUnsynchronizedReadings(limit: number = 1000): Promise<MeterReadingEntity[]> {
     try {
       const query = `SELECT * FROM meter_reading
          WHERE is_synchronized = false
-         ORDER BY created_at ASC
+         ORDER BY timestamp ASC
          LIMIT $1`;
       const result = await execQuery(this.pool, query, [limit], 'data-sync.ts>getUnsynchronizedReadings');
       return result.rows;
@@ -782,7 +787,8 @@ export class SyncDatabase {
     try {
       await this.pool.query(
         `UPDATE meter_reading
-         SET retry_count = retry_count + 1
+         SET retry_count = retry_count + 1,
+             updated_at = CURRENT_TIMESTAMP
          WHERE meter_reading_id = ANY($1::int[])`,
         [readingIds]
       );

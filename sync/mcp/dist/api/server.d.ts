@@ -6,6 +6,7 @@
  */
 import { RemoteToLocalSyncAgent } from '../remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
+import { MeterReadingUploadManager } from '../bacnet-collection/meter-reading-upload-manager.js';
 import { SyncDatabase } from '../types/entities.js';
 import { Pool } from 'pg';
 export interface LocalApiServerConfig {
@@ -13,6 +14,7 @@ export interface LocalApiServerConfig {
     database: SyncDatabase;
     remoteToLocalSyncAgent?: RemoteToLocalSyncAgent;
     bacnetMeterReadingAgent?: BACnetMeterReadingAgent;
+    meterReadingUploadManager?: MeterReadingUploadManager;
     remotePool?: Pool;
 }
 export declare class LocalApiServer {
@@ -21,6 +23,7 @@ export declare class LocalApiServer {
     private database;
     private remoteToLocalSyncAgent?;
     private bacnetMeterReadingAgent?;
+    private meterReadingUploadManager?;
     private remotePool?;
     private server?;
     private syncManager?;
@@ -53,4 +56,4 @@ export declare class LocalApiServer {
 /**
  * Create and start local API server from environment variables
  */
-export declare function createAndStartLocalApiServer(database: SyncDatabase, remoteToLocalSyncAgent?: RemoteToLocalSyncAgent, bacnetMeterReadingAgent?: BACnetMeterReadingAgent, remotePool?: Pool): Promise<LocalApiServer>;
+export declare function createAndStartLocalApiServer(database: SyncDatabase, remoteToLocalSyncAgent?: RemoteToLocalSyncAgent, bacnetMeterReadingAgent?: BACnetMeterReadingAgent, meterReadingUploadManager?: MeterReadingUploadManager, remotePool?: Pool): Promise<LocalApiServer>;
