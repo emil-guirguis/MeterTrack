@@ -18,8 +18,7 @@ export interface ContactInfo {
 
 // Location Management
 export interface Location {
-  id?: number;
-  location_id?: number;
+  location_id: number;
   name: string;
   tenant_id?: string | number;
   type: 'Warehouse' | 'Apartment' | 'Ofice' | 'Retail' | 'Hotel' | 'Building' | 'Other';

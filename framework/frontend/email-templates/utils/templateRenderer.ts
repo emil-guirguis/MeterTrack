@@ -7,10 +7,7 @@
 
 import {
   extractVariables,
-  substituteVariables,
-  validateVariables,
-  processTemplate,
-  type VariableFormatOptions
+  processTemplate
 } from './variableSubstitution';
 import type {
   TemplateRenderOptions,
@@ -38,7 +35,7 @@ import type {
 export function renderTemplate(
   template: string,
   variables: Record<string, any>,
-  options: TemplateRenderOptions = {}
+  options: TemplateRenderOptions = { variables: {} }
 ): TemplateRenderResult {
   const {
     escapeHtml = true,

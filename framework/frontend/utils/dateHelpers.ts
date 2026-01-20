@@ -14,7 +14,7 @@ export function formatDate(date: Date | string | number, locale: string = 'en-US
     return 'Invalid Date';
   }
   
-  return dateObj.toLocaleDateString(locale);
+  return dateObj.toLocaleDateString(locale || 'en-US');
 }
 
 /**
@@ -27,7 +27,7 @@ export function formatDateTime(date: Date | string | number, locale: string = 'e
     return 'Invalid Date';
   }
   
-  return dateObj.toLocaleString(locale);
+  return dateObj.toLocaleString(locale || 'en-US');
 }
 
 /**
@@ -53,13 +53,13 @@ export function formatTime(date: Date | string | number, locale: string = 'en-US
     return 'Invalid Time';
   }
   
-  return dateObj.toLocaleTimeString(locale);
+  return dateObj.toLocaleTimeString(locale || 'en-US');
 }
 
 /**
  * Get relative time string (e.g., "2 hours ago", "in 3 days")
  */
-export function getRelativeTime(date: Date | string | number, locale: string = 'en-US'): string {
+export function getRelativeTime(date: Date | string | number): string {
   const dateObj = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
   
   if (isNaN(dateObj.getTime())) {

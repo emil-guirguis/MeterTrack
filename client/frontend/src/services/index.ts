@@ -4,6 +4,7 @@ export { meterReadingService } from './meterReadingService';
 export { modbusService } from './modbusService';
 export { mcpService } from './mcpService';
 export { templateService } from './templateService';
+export { dashboardService } from './dashboardService';
 
 // Note: contactService, deviceService, locationService, meterService, and userService
 // have been moved to their respective feature folders:

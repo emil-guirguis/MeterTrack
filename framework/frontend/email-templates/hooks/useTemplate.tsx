@@ -409,7 +409,7 @@ export function useTemplate(config: UseTemplateConfig = {}): UseTemplateReturn {
     getMissingVariables,
     
     // Utility
-    canSave,
+    canSave: Boolean(canSave),
     hasErrors,
     hasWarnings
   };

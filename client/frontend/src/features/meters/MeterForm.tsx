@@ -6,9 +6,8 @@
  * Fields are automatically organized into tabs and sections based on formGrouping metadata.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { BaseForm, FormContainer } from '@framework/components/form';
-import { useSchema } from '@framework/components/form/utils/schemaLoader';
 import { useMetersEnhanced, type Meter } from './metersStore';
 import { useValidationDataProvider } from '../../hooks/useValidationDataProvider';
 import { ElementsGrid } from './ElementsGrid';
@@ -30,17 +29,12 @@ export const MeterForm: React.FC<MeterFormProps> = ({
   const meters = useMetersEnhanced();
   const baseValidationDataProvider = useValidationDataProvider();
   
-  // Use schema from cache (prefetched at login)
-  const { schema } = useSchema('meter');
 
   // Memoize the provider function to prevent unnecessary re-renders of ValidationFieldSelect
   const validationDataProvider = useCallback(
     (entityName: string, fieldDef: any) => baseValidationDataProvider(entityName, fieldDef),
     [baseValidationDataProvider]
   );
-
-  // Track active tab for conditional rendering of Elements grid
-  const [activeTab, setActiveTab] = useState<string>('');
 
   return (
     <FormContainer>
@@ -55,8 +49,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
           loading={loading}
           validationDataProvider={validationDataProvider}
           showTabs={true}
-          onTabChange={setActiveTab}
-          renderCustomField={(fieldName, fieldDef, value, error, isDisabled, onChange) => {
+          renderCustomField={(fieldName, _fieldDef, _value, _error, _isDisabled, _onChange) => {
             console.log(`[MeterForm] renderCustomField - fieldName: ${fieldName}`, {
               meter_id: meter?.meter_id,
               id: meter?.id,
@@ -75,7 +68,7 @@ export const MeterForm: React.FC<MeterFormProps> = ({
               if (meterId) {
                 console.log(`[MeterForm] ✅ Rendering ElementsGrid for meter ${meterId}`);
                 return (
-                  <div style={{ width: '100%', minHeight: '400px' }}>
+                  <div className="meter-form__elements-grid">
                     <ElementsGrid
                       meterId={Number(meterId)}
                       onError={(error) => console.error('ElementsGrid error:', error)}

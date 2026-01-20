@@ -10,6 +10,9 @@ export const UserRole = {
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 export const Permission = {
+  // Dashboard Management
+  DASHBOARD_READ: 'dashboard:read',
+  
   // User Management
   USER_CREATE: 'user:create',
   USER_READ: 'user:read',
@@ -104,6 +107,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     ...Object.values(Permission)
   ],
   [UserRole.MANAGER]: [
+    // Dashboard access
+    Permission.DASHBOARD_READ,
+    
     // User management (limited)
     Permission.USER_CREATE,
     Permission.USER_READ,
@@ -141,6 +147,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.TEMPLATE_DELETE
   ],
   [UserRole.TECHNICIAN]: [
+    // Dashboard access
+    Permission.DASHBOARD_READ,
+    
     // Read-only user access
     Permission.USER_READ,
     
@@ -166,6 +175,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.TEMPLATE_READ
   ],
   [UserRole.VIEWER]: [
+    // Dashboard access
+    Permission.DASHBOARD_READ,
+    
     // Read-only access to most entities
     Permission.USER_READ,
     Permission.LOCATION_READ,

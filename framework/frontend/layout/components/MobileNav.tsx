@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import type { MenuItem } from '../types';
+import { getIconElement } from '../../utils/iconHelper';
 import './MobileNav.css';
 
 interface MobileNavProps {
@@ -58,20 +59,6 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     onClose();
   };
 
-  const getIconElement = (iconName: string) => {
-    const iconMap: Record<string, string> = {
-      dashboard: '📊',
-      users: '👥',
-      building: '🏢',
-      contacts: '📞',
-      meter: '📏',
-      template: '📧',
-      settings: '⚙️',
-      management: '⚙️'
-    };
-    return iconMap[iconName] || '📄';
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -126,7 +113,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             }}
             type="button"
           >
-            <span className="action-icon">👤</span>
+            <span className="action-icon">
+              {getIconElement('person')}
+            </span>
             <span className="action-label">Profile</span>
           </button>
           <button 
@@ -137,7 +126,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             }}
             type="button"
           >
-            <span className="action-icon">⚙️</span>
+            <span className="action-icon">
+              {getIconElement('settings')}
+            </span>
             <span className="action-label">Settings</span>
           </button>
           <button 
@@ -148,7 +139,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             }}
             type="button"
           >
-            <span className="action-icon">❓</span>
+            <span className="action-icon">
+              {getIconElement('help')}
+            </span>
             <span className="action-label">Help</span>
           </button>
         </div>

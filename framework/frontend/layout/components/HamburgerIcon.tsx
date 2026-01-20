@@ -14,8 +14,7 @@ interface HamburgerIconProps {
  */
 export const HamburgerIcon: React.FC<HamburgerIconProps> = ({ 
   isOpen, 
-  className = '',
-  'aria-label': ariaLabel
+  className = ''
 }) => {
   return (
     <div 

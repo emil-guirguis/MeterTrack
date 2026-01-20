@@ -1,3 +1,8 @@
 /* Meter Form Component Styles - Minimal module-specific overrides */
 
 /* Module forms should rely on framework styling - keep this minimal */
+
+.meter-form__elements-grid {
+  width: 100%;
+  min-height: 400px;
+}

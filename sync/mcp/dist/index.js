@@ -17,7 +17,7 @@ import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
 import { MeterReadingCleanupAgent } from './bacnet-collection/meter-reading-cleanup-agent.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
-import { getBACnetCollectionIntervalSeconds, getBACnetUploadCronExpression } from './config/scheduling-constants.js';
+import { getBACnetCollectionIntervalSeconds, getBACnetUploadCronExpression, } from './config/scheduling-constants.js';
 // Load environment variables from root .env file first, then local .env
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -386,7 +386,6 @@ class SyncMcpServer {
      */
     async handleQueryMeterReadings(args) {
         const meterId = args.meter_id;
-        const hours = args.hours || 24;
         const limit = args.limit || 100;
         let readings = [];
         if (meterId) {

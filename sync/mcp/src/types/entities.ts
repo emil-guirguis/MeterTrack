@@ -293,7 +293,7 @@ export interface SyncDatabase {
   getUnsynchronizedReadings(limit: number): Promise<MeterReadingEntity[]>;
   deleteSynchronizedReadings(readingIds: string[]): Promise<number>;
   markReadingsAsPending(readingIds: string[]): Promise<void>;
-  markReadingsAsSynchronized(readingIds: string[]): Promise<void>;
+  markReadingsAsSynchronized(readingIds: string[]): Promise<number>;
   deleteOldReadings(cutoffDate: Date): Promise<number>;
   incrementRetryCount(readingIds: string[]): Promise<void>;
   logReadingFailure(meterId: string, operation: string, error: string): Promise<void>;

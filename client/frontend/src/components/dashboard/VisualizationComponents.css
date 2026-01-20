@@ -1,0 +1,19 @@
+.visualization-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.visualization-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.visualization-empty p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}

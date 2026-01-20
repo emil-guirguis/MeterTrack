@@ -16,6 +16,8 @@ import { ConnectivityMonitor } from '../api/connectivity-monitor.js';
 import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
 import { cacheManager } from '../cache/cache-manager.js';
 import { CRON_SYNC_TO_REMOTE } from '../config/scheduling-constants.js';
+import ReadingValidationMiddleware from './reading-validation-middleware.js';
+import { loadValidationConfig } from '../config/validation-config.js';
 
 export interface MeterReadingUploadManagerConfig {
   database: SyncDatabase;
@@ -41,6 +43,7 @@ export class MeterReadingUploadManager {
   private database: SyncDatabase;
   private apiClient: ClientSystemApiClient | null = null;
   private connectivityMonitor: ConnectivityMonitor | null = null;
+  private validationMiddleware: ReadingValidationMiddleware;
   private batchSize: number;
   private maxRetries: number;
   private config: MeterReadingUploadManagerConfig;
@@ -61,6 +64,14 @@ export class MeterReadingUploadManager {
     this.database = config.database;
     this.batchSize = config.batchSize || 1000;
     this.maxRetries = config.maxRetries || 5;
+    
+    // Initialize validation middleware with loaded config
+    const validationConfig = loadValidationConfig();
+    this.validationMiddleware = new ReadingValidationMiddleware({
+      strictMode: validationConfig.strictMode,
+      logValidationResults: validationConfig.logValidationResults,
+      validateBeforeUpload: validationConfig.validateBeforeUpload,
+    });
   }
 
   /**
@@ -151,12 +162,33 @@ export class MeterReadingUploadManager {
         return;
       }
 
-      console.log(`Uploading ${readings.length} readings...`);
+      console.log(`Validating ${readings.length} readings...`);
+      
+      // Validate readings before upload
+      const { validReadings, invalidReadings, report } = 
+        await this.validationMiddleware.validateReadingsBeforeUpload(readings);
 
-      const result = await this.uploadBatchWithRetry(readings);
+      if (invalidReadings.length > 0) {
+        console.warn(`⚠️  [UploadManager] Skipping ${invalidReadings.length} invalid readings`);
+        console.warn(`   Valid: ${validReadings.length}, Invalid: ${invalidReadings.length}`);
+        console.warn(`   Real data: ${report.realDataReadings}, Mock data: ${report.mockDataDetected}`);
+      }
+
+      // Only upload valid readings
+      if (validReadings.length === 0) {
+        console.log('No valid readings to upload after validation');
+        this.status.lastUploadTime = new Date();
+        this.status.lastUploadSuccess = true;
+        this.status.lastUploadError = undefined;
+        return;
+      }
+
+      console.log(`Uploading ${validReadings.length} valid readings...`);
+
+      const result = await this.uploadBatchWithRetry(validReadings);
 
       if (result.success) {
-        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
+        const readingIds = validReadings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
         
         // Mark readings as synchronized (successfully inserted into remote database)
         await this.database.markReadingsAsSynchronized(readingIds);
@@ -164,18 +196,18 @@ export class MeterReadingUploadManager {
 
         await this.database.logSyncOperation(
           'upload',
-          readings.length,
+          validReadings.length,
           true
         );
 
         this.status.lastUploadTime = new Date();
         this.status.lastUploadSuccess = true;
         this.status.lastUploadError = undefined;
-        this.status.totalUploaded += readings.length;
+        this.status.totalUploaded += validReadings.length;
       } else {
         await this.database.logSyncOperation(
           'upload',
-          readings.length,
+          validReadings.length,
           false,
           result.error || 'Unknown error'
         );
@@ -183,7 +215,7 @@ export class MeterReadingUploadManager {
         this.status.lastUploadTime = new Date();
         this.status.lastUploadSuccess = false;
         this.status.lastUploadError = result.error;
-        this.status.totalFailed += readings.length;
+        this.status.totalFailed += validReadings.length;
 
         console.error(`Upload failed: ${result.error}`);
       }
@@ -319,6 +351,20 @@ export class MeterReadingUploadManager {
    */
   async getUploadStats(hours: number = 24): Promise<any> {
     return this.database.getSyncStats(hours);
+  }
+
+  /**
+   * Get validation statistics
+   */
+  getValidationStats(): any {
+    return this.validationMiddleware.getStatistics();
+  }
+
+  /**
+   * Get latest validation report
+   */
+  getLatestValidationReport(): any {
+    return this.validationMiddleware.getLatestReport();
   }
 
   /**

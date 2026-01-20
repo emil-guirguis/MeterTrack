@@ -33,7 +33,7 @@ export function generateCSVReport(report: Report): string {
 
   // Process each section
   report.template.sections.forEach((section) => {
-    const sectionLines = generateSectionCSV(section, report.data);
+    const sectionLines = generateSectionCSV(section);
     if (sectionLines.length > 0) {
       lines.push(...sectionLines);
       lines.push(''); // Empty line between sections
@@ -46,7 +46,7 @@ export function generateCSVReport(report: Report): string {
 /**
  * Generate CSV content for a report section
  */
-function generateSectionCSV(section: ReportSection, data: any): string[] {
+function generateSectionCSV(section: ReportSection): string[] {
   const lines: string[] = [];
 
   // Add section title

@@ -5,7 +5,7 @@ import { ProtectedRoute, AuthGuard } from '../components/auth';
 import AppLayoutWrapper from '../components/layout/AppLayoutWrapper';
 import LoginPage from '../pages/LoginPage';
 import { ForgotPasswordPage, PasswordResetPage, TwoFactorManagementPage } from '../pages/auth';
-import { Dashboard } from '../pages/Dashboard';
+import { DashboardPage } from '../pages/DashboardPage';
 import { MeterReadingsPage } from '../pages/MeterReadingsPage';
 import { UserManagementPage } from '../features/users';
 import { LocationManagementPage } from '../features/locations';
@@ -16,9 +16,9 @@ import { SettingsPage, MetersPage } from '../pages';
 import ManagementForm from '../components/management/ManagementForm';
 
 // Dashboard Page with Layout
-const DashboardPage = () => (
+const DashboardPageWrapper = () => (
   <AppLayoutWrapper title="Dashboard">
-    <Dashboard />
+    <DashboardPage />
   </AppLayoutWrapper>
 );
 
@@ -47,7 +47,7 @@ const AppRoutes: React.FC = () => {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <DashboardPageWrapper />
             </ProtectedRoute>
           }
         />

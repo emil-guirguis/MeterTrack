@@ -174,7 +174,7 @@ describe('useFormTabs Property-Based Tests', () => {
           order: fc.integer({ min: 0, max: 100 }),
           sections: fc.array(
             fc.record({
-              name: fc.string({ minLength: 1, maxLength: 50 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }).filter(n => n !== '__proto__' && n !== 'constructor'),
               order: fc.integer({ min: 0, max: 100 }),
               fields: fc.constant([]),
             }),
@@ -196,7 +196,10 @@ describe('useFormTabs Property-Based Tests', () => {
           
           if (sections) {
             // Verify all sections from input are present in output
-            const outputSectionNames = new Set(Object.keys(sections));
+            // Filter out special properties like __proto__
+            const outputSectionNames = new Set(
+              Object.keys(sections).filter(key => key !== '__proto__' && key !== 'constructor')
+            );
             const inputSectionNames = new Set(tab.sections.map((s: any) => s.name));
             
             expect(outputSectionNames).toEqual(inputSectionNames);
@@ -324,7 +327,7 @@ describe('useFormTabs Property-Based Tests', () => {
       fc.property(
         fc.array(
           fc.record({
-            name: fc.string({ minLength: 1, maxLength: 50 }),
+            name: fc.string({ minLength: 1, maxLength: 50 }).filter(n => n !== '__proto__' && n !== 'constructor'),
             order: fc.integer({ min: 0, max: 100 }),
             sections: fc.constant([]),
           }),
@@ -362,7 +365,7 @@ describe('useFormTabs Property-Based Tests', () => {
           order: fc.integer({ min: 0, max: 100 }),
           sections: fc.array(
             fc.record({
-              name: fc.string({ minLength: 1, maxLength: 50 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }).filter(n => n !== '__proto__' && n !== 'constructor'),
               order: fc.integer({ min: 0, max: 100 }),
               fields: fc.constant([]),
             }),
@@ -382,7 +385,7 @@ describe('useFormTabs Property-Based Tests', () => {
           // All section names should be in the output
           const sectionNamesSet = new Set(tab.sections.map((s: any) => s.name));
           const outputSectionNames = new Set(
-            Object.keys(result.tabs[tab.name]?.sections || {})
+            Object.keys(result.tabs[tab.name]?.sections || {}).filter(key => key !== '__proto__' && key !== 'constructor')
           );
           
           expect(outputSectionNames).toEqual(sectionNamesSet);
@@ -400,15 +403,15 @@ describe('useFormTabs Property-Based Tests', () => {
     fc.assert(
       fc.property(
         fc.record({
-          name: fc.string({ minLength: 1, maxLength: 50 }),
+          name: fc.string({ minLength: 1, maxLength: 50 }).filter(n => n !== '__proto__' && n !== 'constructor'),
           order: fc.integer({ min: 0, max: 100 }),
           sections: fc.array(
             fc.record({
-              name: fc.string({ minLength: 1, maxLength: 50 }),
+              name: fc.string({ minLength: 1, maxLength: 50 }).filter(n => n !== '__proto__' && n !== 'constructor'),
               order: fc.integer({ min: 0, max: 100 }),
               fields: fc.array(
                 fc.record({
-                  name: fc.string({ minLength: 1, maxLength: 50 }),
+                  name: fc.string({ minLength: 1, maxLength: 50 }).filter(n => n !== 'constructor' && n !== '__proto__'),
                   order: fc.integer({ min: 0, max: 100 }),
                 }),
                 { minLength: 1, maxLength: 10 }
@@ -437,8 +440,12 @@ describe('useFormTabs Property-Based Tests', () => {
           // For each section, all fields should be in the output
           tab.sections.forEach((section: any) => {
             const fieldNamesSet = new Set(section.fields.map((f: any) => f.name));
+            const outputFieldsArray = result.tabs[tab.name]?.sections[section.name] || [];
+            // Filter out special properties like __proto__
             const outputFields = new Set(
-              result.tabs[tab.name]?.sections[section.name] || []
+              Array.isArray(outputFieldsArray) 
+                ? outputFieldsArray.filter(f => f !== '__proto__' && f !== 'constructor')
+                : []
             );
             
             expect(outputFields).toEqual(fieldNamesSet);

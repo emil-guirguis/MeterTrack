@@ -10,7 +10,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP;
 -- 2. Create user_2fa_methods table
 CREATE TABLE IF NOT EXISTS user_2fa_methods (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
   method_type VARCHAR(20) NOT NULL, -- 'totp', 'email_otp', 'sms_otp'
   secret_key VARCHAR(255), -- For TOTP
   phone_number VARCHAR(20), -- For SMS OTP
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS user_2fa_methods (
 -- 3. Create user_2fa_backup_codes table
 CREATE TABLE IF NOT EXISTS user_2fa_backup_codes (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
   code_hash VARCHAR(255) NOT NULL, -- Bcrypt hash of backup code
   is_used BOOLEAN DEFAULT false,
   used_at TIMESTAMP,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS user_2fa_backup_codes (
 -- 4. Create password_reset_tokens table
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
   token_hash VARCHAR(255) NOT NULL UNIQUE, -- Bcrypt hash of token
   expires_at TIMESTAMP NOT NULL,
   is_used BOOLEAN DEFAULT false,
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 -- 5. Create auth_logs table
 CREATE TABLE IF NOT EXISTS auth_logs (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  user_id INTEGER REFERENCES users(users_id) ON DELETE SET NULL,
   event_type VARCHAR(50) NOT NULL, -- 'login', 'password_change', 'password_reset', '2fa_enable', '2fa_disable', 'failed_login'
   status VARCHAR(20) NOT NULL, -- 'success', 'failed'
   ip_address VARCHAR(45),

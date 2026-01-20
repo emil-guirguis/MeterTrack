@@ -5,10 +5,15 @@
  */
 
 import type { Location, LocationCreateRequest, LocationUpdateRequest, ListParams, ListResponse, ApiResponse } from '../../types/entities';
-import { createEntityStore, createEntityHook } from '../../store/slices/createEntitySlice';
+import { createEntityStore, createEntityHook, type EntityService } from '../../store/slices/createEntitySlice';
 import { withApiCall, withTokenRefresh } from '../../store/middleware/apiMiddleware';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+
+// Normalized Location type for store (adds id field required by EntityService)
+interface LocationEntity extends Location {
+  id: string;
+}
 
 // ============================================================================
 // API SERVICE (Internal)
@@ -37,7 +42,7 @@ class LocationAPI {
     return response.json();
   }
 
-  async getLocations(params?: ListParams): Promise<ListResponse<Location>> {
+  async getLocations(params?: ListParams): Promise<ListResponse<LocationEntity>> {
     const searchParams = new URLSearchParams();
     
     if (params?.page) searchParams.append('page', params.page.toString());
@@ -59,30 +64,51 @@ class LocationAPI {
     const endpoint = `/location${queryString ? `?${queryString}` : ''}`;
     
     const response = await this.request<ApiResponse<ListResponse<Location>>>(endpoint);
-    return response.data;
+    const data = response.data;
+    
+    // Normalize Location to LocationEntity by adding id field
+    return {
+      items: data.items.map(item => ({
+        ...item,
+        id: String(item.location_id),
+      })),
+      total: data.total,
+      page: data.page,
+      pageSize: data.pageSize,
+      totalPages: data.totalPages,
+    };
   }
 
-  async getLocation(id: string): Promise<Location> {
+  async getLocation(id: string): Promise<LocationEntity> {
     const response = await this.request<ApiResponse<Location>>(`/location/${id}`);
-    return response.data;
+    return {
+      ...response.data,
+      id: String(response.data.location_id),
+    };
   }
 
-  async createLocation(data: LocationCreateRequest): Promise<Location> {
+  async createLocation(data: LocationCreateRequest): Promise<LocationEntity> {
     const response = await this.request<ApiResponse<Location>>('/location', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response.data;
+    return {
+      ...response.data,
+      id: String(response.data.location_id),
+    };
   }
 
-  async updateLocation(data: LocationUpdateRequest): Promise<Location> {
-    if (!data.id) throw new Error('Location ID is required for update');
+  async updateLocation(data: LocationUpdateRequest): Promise<LocationEntity> {
+    if (!data.location_id) throw new Error('Location ID is required for update');
     
-    const response = await this.request<ApiResponse<Location>>(`/location/${data.id}`, {
+    const response = await this.request<ApiResponse<Location>>(`/location/${data.location_id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.data;
+    return {
+      ...response.data,
+      id: String(response.data.location_id),
+    };
   }
 
   async deleteLocation(id: string): Promise<void> {
@@ -98,15 +124,14 @@ const api = new LocationAPI();
 // STORE CONFIGURATION
 // ============================================================================
 
-const locationsService = {
+const locationsService: EntityService<LocationEntity> = {
   async getAll(params?: any) {
     return withTokenRefresh(async () => {
       const result = await api.getLocations(params);
       return {
         items: result.items,
-        total: result.pagination?.totalItems || 0,
-        hasMore: result.pagination?.hasNextPage || false,
-        pagination: result.pagination,
+        total: result.total,
+        hasMore: (result.page || 1) < (result.totalPages || 1),
       };
     });
   },
@@ -115,12 +140,18 @@ const locationsService = {
     return withTokenRefresh(async () => api.getLocation(id));
   },
 
-  async create(data: Partial<Location>) {
-    return withTokenRefresh(async () => api.createLocation(data as any));
+  async create(data: Partial<LocationEntity>) {
+    return withTokenRefresh(async () => {
+      const { id, ...locationData } = data;
+      return api.createLocation(locationData as any);
+    });
   },
 
-  async update(id: string, data: Partial<Location>) {
-    return withTokenRefresh(async () => api.updateLocation({ id, ...data } as any));
+  async update(id: string, data: Partial<LocationEntity>) {
+    return withTokenRefresh(async () => {
+      const { id: _, ...locationData } = data;
+      return api.updateLocation({ location_id: id, ...locationData } as any);
+    });
   },
 
   async delete(id: string) {
@@ -148,19 +179,14 @@ export const useLocationsEnhanced = () => {
   return {
     ...locations,
     
-    // Computed values
-    activeLocations: locations.items.filter(location => location.status === 'active'),
-    inactiveLocations: locations.items.filter(location => location.status === 'inactive'),
-    officeLocations: locations.items.filter(location => location.type === 'office'),
-    warehouseLocations: locations.items.filter(location => location.type === 'warehouse'),
-    retailLocations: locations.items.filter(location => location.type === 'retail'),
-    
-    // Statistics
-    totalSquareFootage: locations.items.reduce((sum, location) => sum + (location.squareFootage || 0), 0),
-    totalUnits: locations.items.reduce((sum, location) => sum + (location.totalUnits || 0), 0),
+    // Calculate total units from all locations (if the property exists)
+    totalUnits: locations.items.reduce((sum, location) => {
+      // totalUnits may not exist on all locations, so default to 0
+      return sum + ((location as any).totalUnits || 0);
+    }, 0),
     
     // Enhanced actions
-    createLocation: async (data: Partial<Location>) => {
+    createLocation: async (data: Partial<LocationEntity>) => {
       return withApiCall(
         () => locations.createItem(data),
         {
@@ -171,7 +197,7 @@ export const useLocationsEnhanced = () => {
       );
     },
     
-    updateLocation: async (id: string, data: Partial<Location>) => {
+    updateLocation: async (id: string, data: Partial<LocationEntity>) => {
       return withApiCall(
         () => locations.updateItem(id, data),
         {
@@ -197,7 +223,7 @@ export const useLocationsEnhanced = () => {
     bulkUpdateStatus: async (locationIds: string[], status: string) => {
       return withApiCall(
         async () => {
-          const promises = locationIds.map(id => locations.updateItem(id, { status }));
+          const promises = locationIds.map(id => locations.updateItem(id, { status } as any));
           await Promise.all(promises);
         },
         {
@@ -227,13 +253,13 @@ export const useLocationsEnhanced = () => {
     // Location-based queries
     getLocationsByState: (state: string) => {
       return locations.items.filter(location => 
-        location.address.state.toLowerCase() === state.toLowerCase()
+        location.state?.toLowerCase() === state.toLowerCase()
       );
     },
     
     getLocationsByCity: (city: string) => {
       return locations.items.filter(location => 
-        location.address.city.toLowerCase().includes(city.toLowerCase())
+        location.city?.toLowerCase().includes(city.toLowerCase())
       );
     },
   };

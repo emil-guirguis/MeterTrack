@@ -1,0 +1,575 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  Grid,
+  FormHelperText,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { dashboardService, type DashboardCard } from '../../services/dashboardService';
+import './DashboardCardModal.css';
+
+interface DashboardCardModalProps {
+  isOpen: boolean;
+  card?: DashboardCard | null;
+  onClose: () => void;
+  onSuccess: (card: DashboardCard) => void;
+}
+
+interface FormData {
+  card_name: string;
+  card_description: string;
+  meter_element_id: string;
+  selected_columns: string[];
+  time_frame_type: 'custom' | 'last_month' | 'this_month_to_date' | 'since_installation';
+  custom_start_date: string;
+  custom_end_date: string;
+  visualization_type: 'pie' | 'line' | 'candlestick' | 'bar' | 'area';
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
+
+interface PowerColumn {
+  name: string;
+  type: string;
+  label: string;
+}
+
+interface MeterElement {
+  meter_element_id: number;
+  element: string;
+  meter_element_name: string;
+}
+
+interface Meter {
+  id: number;
+  name: string;
+}
+
+export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
+  isOpen,
+  card,
+  onClose,
+  onSuccess
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [formData, setFormData] = useState<FormData>({
+    card_name: '',
+    card_description: '',
+    meter_element_id: '',
+    selected_columns: [],
+    time_frame_type: 'last_month',
+    custom_start_date: '',
+    custom_end_date: '',
+    visualization_type: 'line'
+  });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [powerColumns, setPowerColumns] = useState<PowerColumn[]>([]);
+  const [meterElements, setMeterElements] = useState<MeterElement[]>([]);
+  const [loadingColumns, setLoadingColumns] = useState(false);
+  const [meters, setMeters] = useState<Meter[]>([]);
+  const [loadingMeters, setLoadingMeters] = useState(false);
+  const [selectedMeterId, setSelectedMeterId] = useState<number | null>(null);
+
+  // Load meters and power columns on mount
+  useEffect(() => {
+    if (isOpen) {
+      loadMeters();
+      loadPowerColumns();
+    }
+  }, [isOpen]);
+
+  // Populate form with card data when editing
+  useEffect(() => {
+    if (card && isOpen) {
+      setFormData({
+        card_name: card.card_name || '',
+        card_description: card.card_description || '',
+        meter_element_id: card.meter_element_id.toString(),
+        selected_columns: card.selected_columns || [],
+        time_frame_type: card.time_frame_type,
+        custom_start_date: card.custom_start_date ? new Date(card.custom_start_date).toISOString().split('T')[0] : '',
+        custom_end_date: card.custom_end_date ? new Date(card.custom_end_date).toISOString().split('T')[0] : '',
+        visualization_type: card.visualization_type
+      });
+      setSelectedMeterId(card.meter_id);
+      // Load meter elements for the existing meter
+      if (card.meter_id) {
+        loadMeterElements(card.meter_id);
+      }
+      setErrors({});
+    } else if (isOpen) {
+      // Reset form for create mode
+      setFormData({
+        card_name: '',
+        card_description: '',
+        meter_element_id: '',
+        selected_columns: [],
+        time_frame_type: 'last_month',
+        custom_start_date: '',
+        custom_end_date: '',
+        visualization_type: 'line'
+      });
+      setSelectedMeterId(null);
+      setMeterElements([]);
+      setErrors({});
+    }
+  }, [card, isOpen]);
+
+  // Load available power columns
+  const loadPowerColumns = async () => {
+    try {
+      setLoadingColumns(true);
+      const columns = await dashboardService.getPowerColumns();
+      setPowerColumns(columns);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load power columns';
+      console.error('Error loading power columns:', err);
+      setErrors(prev => ({ ...prev, powerColumns: errorMsg }));
+    } finally {
+      setLoadingColumns(false);
+    }
+  };
+
+  // Load available meters
+  const loadMeters = async () => {
+    try {
+      setLoadingMeters(true);
+      const meterList = await dashboardService.getMetersByTenant();
+      setMeters(meterList);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load meters';
+      console.error('Error loading meters:', err);
+      setErrors(prev => ({ ...prev, meters: errorMsg }));
+    } finally {
+      setLoadingMeters(false);
+    }
+  };
+
+  // Load available meter elements for selected meter
+  const loadMeterElements = async (meterId: number) => {
+    try {
+      setLoadingColumns(true);
+      const elements = await dashboardService.getMeterElementsByMeter(meterId);
+      // Convert API response format to component format
+      const formattedElements = elements.map(el => ({
+        meter_element_id: el.id,
+        element: el.element,
+        meter_element_name: el.name
+      }));
+      setMeterElements(formattedElements);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load meter elements';
+      console.error('Error loading meter elements:', err);
+      setErrors(prev => ({ ...prev, meterElements: errorMsg }));
+      setMeterElements([]);
+    } finally {
+      setLoadingColumns(false);
+    }
+  };
+
+  // Validate form data
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.card_name.trim()) {
+      newErrors.card_name = 'Card name is required';
+    }
+
+    if (!selectedMeterId) {
+      newErrors.meter_id = 'Meter is required';
+    }
+
+    if (!formData.meter_element_id) {
+      newErrors.meter_element_id = 'Meter element is required';
+    } else if (selectedMeterId) {
+      // Validate that selected element belongs to selected meter
+      const selectedElement = meterElements.find(
+        el => el.meter_element_id === parseInt(formData.meter_element_id)
+      );
+      if (!selectedElement) {
+        newErrors.meter_element_id = 'Selected meter element does not belong to the selected meter';
+      }
+    }
+
+    if (formData.selected_columns.length === 0) {
+      newErrors.selected_columns = 'At least one power column must be selected';
+    }
+
+    if (formData.time_frame_type === 'custom') {
+      if (!formData.custom_start_date) {
+        newErrors.custom_start_date = 'Start date is required for custom range';
+      }
+      if (!formData.custom_end_date) {
+        newErrors.custom_end_date = 'End date is required for custom range';
+      }
+      if (formData.custom_start_date && formData.custom_end_date) {
+        const startDate = new Date(formData.custom_start_date);
+        const endDate = new Date(formData.custom_end_date);
+        if (startDate >= endDate) {
+          newErrors.custom_end_date = 'End date must be after start date';
+        }
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form field changes
+  const handleFieldChange = (e: any) => {
+    const { name, value, type } = e.target;
+
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement;
+      if (name === 'selected_columns') {
+        setFormData(prev => ({
+          ...prev,
+          selected_columns: checkbox.checked
+            ? [...prev.selected_columns, value]
+            : prev.selected_columns.filter(col => col !== value)
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const submitData: Partial<DashboardCard> = {
+        card_name: formData.card_name,
+        card_description: formData.card_description,
+        meter_id: selectedMeterId || 0,
+        meter_element_id: parseInt(formData.meter_element_id),
+        selected_columns: formData.selected_columns,
+        time_frame_type: formData.time_frame_type,
+        visualization_type: formData.visualization_type
+      };
+
+      // Add custom date range if applicable
+      if (formData.time_frame_type === 'custom') {
+        submitData.custom_start_date = formData.custom_start_date;
+        submitData.custom_end_date = formData.custom_end_date;
+      }
+
+      let result: DashboardCard;
+      if (card) {
+        // Update existing card
+        result = await dashboardService.updateDashboardCard(card.dashboard_id, submitData);
+      } else {
+        // Create new card
+        result = await dashboardService.createDashboardCard(submitData);
+      }
+
+      onSuccess(result);
+      onClose();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to save dashboard card';
+      setErrors(prev => ({ ...prev, submit: errorMsg }));
+      console.error('Error saving dashboard card:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const title = card ? 'Edit Dashboard Card' : 'Create Dashboard Card';
+  const submitError = errors.submit;
+
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 2,
+        },
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h6">{title}</Typography>
+        <Button
+          onClick={onClose}
+          disabled={submitting}
+          sx={{ minWidth: 'auto', p: 1 }}
+        >
+          <CloseIcon />
+        </Button>
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ py: 3 }}>
+        <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {submitError && (
+            <Alert severity="error" onClose={() => setErrors(prev => { const newErrors = { ...prev }; delete newErrors.submit; return newErrors; })}>
+              {submitError}
+            </Alert>
+          )}
+
+          {/* Card Name */}
+          <TextField
+            fullWidth
+            label="Card Name"
+            name="card_name"
+            value={formData.card_name}
+            onChange={handleFieldChange}
+            placeholder="e.g., Monthly Energy Consumption"
+            error={!!errors.card_name}
+            helperText={errors.card_name}
+            disabled={submitting}
+            required
+            variant="outlined"
+          />
+
+          {/* Card Description */}
+          <TextField
+            fullWidth
+            label="Description"
+            name="card_description"
+            value={formData.card_description}
+            onChange={handleFieldChange}
+            placeholder="Optional description for this card"
+            multiline
+            rows={3}
+            disabled={submitting}
+            variant="outlined"
+          />
+
+          {/* Meter Selector */}
+          <FormControl fullWidth error={!!errors.meter_id} disabled={submitting || loadingMeters || meters.length === 0}>
+            <InputLabel>Meter *</InputLabel>
+            <Select
+              label="Meter *"
+              value={selectedMeterId || ''}
+              onChange={(e) => {
+                const meterId = e.target.value ? parseInt(e.target.value as string) : null;
+                setSelectedMeterId(meterId);
+                if (meterId) {
+                  loadMeterElements(meterId);
+                } else {
+                  setMeterElements([]);
+                }
+                setFormData(prev => ({
+                  ...prev,
+                  meter_element_id: ''
+                }));
+                if (errors.meter_id) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.meter_id;
+                    return newErrors;
+                  });
+                }
+              }}
+            >
+              <MenuItem value="">
+                <em>-- Select a meter --</em>
+              </MenuItem>
+              {meters.map(meter => (
+                <MenuItem key={meter.id} value={meter.id}>
+                  {meter.name}
+                </MenuItem>
+              ))}
+            </Select>
+            {loadingMeters && <FormHelperText>Loading meters...</FormHelperText>}
+            {errors.meters && <FormHelperText error>{errors.meters}</FormHelperText>}
+            {errors.meter_id && <FormHelperText error>{errors.meter_id}</FormHelperText>}
+          </FormControl>
+
+          {/* Meter Element Selector */}
+          <FormControl fullWidth error={!!errors.meter_element_id} disabled={submitting || meterElements.length === 0}>
+            <InputLabel>Meter Element *</InputLabel>
+            <Select
+              label="Meter Element *"
+              name="meter_element_id"
+              value={formData.meter_element_id}
+              onChange={handleFieldChange}
+            >
+              <MenuItem value="">
+                <em>-- Select a meter element --</em>
+              </MenuItem>
+              {meterElements.map(element => (
+                <MenuItem key={element.meter_element_id} value={element.meter_element_id}>
+                  {element.element} - {element.meter_element_name}
+                </MenuItem>
+              ))}
+            </Select>
+            {errors.meter_element_id && <FormHelperText error>{errors.meter_element_id}</FormHelperText>}
+          </FormControl>
+
+          {/* Power Columns Multi-Select */}
+          <FormControl fullWidth error={!!errors.selected_columns} disabled={submitting || loadingColumns}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Power Columns *
+            </Typography>
+            {loadingColumns ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading power columns...
+                </Typography>
+              </Box>
+            ) : powerColumns.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No power columns available
+              </Typography>
+            ) : (
+              <FormGroup sx={{ p: 1.5, backgroundColor: theme.palette.mode === 'light' ? '#f5f5f5' : '#fafafa', borderRadius: 1 }}>
+                {powerColumns.map(column => (
+                  <FormControlLabel
+                    key={column.name}
+                    control={
+                      <Checkbox
+                        name="selected_columns"
+                        value={column.name}
+                        checked={formData.selected_columns.includes(column.name)}
+                        onChange={handleFieldChange}
+                        disabled={submitting}
+                      />
+                    }
+                    label={column.label || column.name}
+                  />
+                ))}
+              </FormGroup>
+            )}
+            {errors.selected_columns && <FormHelperText error>{errors.selected_columns}</FormHelperText>}
+          </FormControl>
+
+          {/* Time Frame Type Selector */}
+          <FormControl fullWidth disabled={submitting}>
+            <InputLabel>Time Frame Type *</InputLabel>
+            <Select
+              label="Time Frame Type *"
+              name="time_frame_type"
+              value={formData.time_frame_type}
+              onChange={handleFieldChange}
+            >
+              <MenuItem value="last_month">Last Month</MenuItem>
+              <MenuItem value="this_month_to_date">This Month to Date</MenuItem>
+              <MenuItem value="since_installation">Since Installation</MenuItem>
+              <MenuItem value="custom">Custom Date Range</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Custom Date Range (Conditional) */}
+          {formData.time_frame_type === 'custom' && (
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  name="custom_start_date"
+                  type="date"
+                  value={formData.custom_start_date}
+                  onChange={handleFieldChange}
+                  error={!!errors.custom_start_date}
+                  helperText={errors.custom_start_date}
+                  disabled={submitting}
+                  required
+                  InputLabelProps={{ shrink: true }}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="End Date"
+                  name="custom_end_date"
+                  type="date"
+                  value={formData.custom_end_date}
+                  onChange={handleFieldChange}
+                  error={!!errors.custom_end_date}
+                  helperText={errors.custom_end_date}
+                  disabled={submitting}
+                  required
+                  InputLabelProps={{ shrink: true }}
+                  variant="outlined"
+                />
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Visualization Type Selector */}
+          <FormControl fullWidth disabled={submitting}>
+            <InputLabel>Visualization Type *</InputLabel>
+            <Select
+              label="Visualization Type *"
+              name="visualization_type"
+              value={formData.visualization_type}
+              onChange={handleFieldChange}
+            >
+              <MenuItem value="line">Line Chart</MenuItem>
+              <MenuItem value="bar">Bar Chart</MenuItem>
+              <MenuItem value="pie">Pie Chart</MenuItem>
+              <MenuItem value="area">Area Chart</MenuItem>
+              <MenuItem value="candlestick">Candlestick Chart</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ p: 2, gap: 1 }}>
+        <Button
+          onClick={onClose}
+          disabled={submitting}
+          variant="outlined"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={submitting}
+          variant="contained"
+          startIcon={submitting ? <CircularProgress size={20} /> : undefined}
+        >
+          {submitting ? 'Saving...' : card ? 'Update Card' : 'Create Card'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};

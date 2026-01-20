@@ -65,7 +65,9 @@ export const MaterialIcons = {
   // Other
   HOME: 'home',
   CALENDAR: 'calendar_today',
-  STAR: 'star'
+  STAR: 'star',
+  HELP: 'help',
+  SETTINGS: 'settings'
 } as const;
 
 /**

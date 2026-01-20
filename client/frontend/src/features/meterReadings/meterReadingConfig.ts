@@ -12,7 +12,6 @@ import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, ExportConfig } from '@framework/components/list/types/list';
 import {
-  createTwoLineColumn,
   createDateColumn,
 } from '../../config/listHelpers';
 

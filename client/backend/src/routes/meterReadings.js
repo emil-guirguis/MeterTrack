@@ -422,8 +422,8 @@ router.get('/meter/:meterId', [
 router.get('/stats/summary', requirePermission('meter:read'), async (req, res) => {
   try {
     // Validate tenant context is present
-    // @ts-ignore - tenantId is dynamically set by schema initialization
-    const userTenantId = req.user?.tenantId || req.user?.tenant_id;
+    // @ts-ignore - tenant_id is dynamically set by schema initialization
+    const userTenantId = req.user?.tenant_id;
     if (!userTenantId) {
       console.error('Missing tenant context:', { user: req.user });
       return res.status(401).json({

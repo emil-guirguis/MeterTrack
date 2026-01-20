@@ -226,7 +226,7 @@ export function useDashboard(config: UseDashboardConfig): DashboardReturn {
  * ```
  */
 export function useWidget(
-  widgetId: string,
+  _widgetId: string,
   fetchData?: () => Promise<any>,
   refreshInterval?: number
 ) {

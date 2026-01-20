@@ -29,6 +29,7 @@ const deviceRegisterRoutes = require('./routes/deviceRegister');
 const registersRoutes = require('./routes/registers');
 const autoCollectionRoutes = require('./routes/autoCollection');
 const meterElementRoutes = require('./routes/meterElement');
+const dashboardRoutes = require('./routes/dashboard');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 // Import tenant isolation middleware
@@ -94,6 +95,12 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     // Connect to PostgreSQL
     await db.connect();
     console.log('✅ [INIT] Database connected');
+
+    console.log('🔄 [INIT] Running database migrations...');
+    // Run database migrations
+    const { runMigrations } = require('../migrations/run-migrations');
+    await runMigrations();
+    console.log('✅ [INIT] Database migrations completed');
 
     console.log('🔄 [INIT] Initializing email templates...');
     // Initialize email templates (seed default templates if needed)
@@ -494,8 +501,8 @@ function setupThreadingEventHandlers() {
 const { authenticateToken } = require('./middleware/auth');
 
 // Routes
-app.use('/api/auth', authRoutes);
 app.use('/api/auth', authEnhancedRoutes);
+// app.use('/api/auth', authRoutes); // Using auth-enhanced instead
 
 // Apply authentication middleware globally to all protected routes
 // This must run BEFORE tenant context middleware
@@ -518,6 +525,7 @@ app.use('/api/devices/:deviceId/registers', authenticateToken, setTenantContext,
 app.use('/api/registers', authenticateToken, setTenantContext, registersRoutes);
 app.use('/api/auto-collection', authenticateToken, setTenantContext, autoCollectionRoutes);
 app.use('/api/meters/:meterId/elements', authenticateToken, setTenantContext, meterElementRoutes);
+app.use('/api/dashboard', authenticateToken, setTenantContext, dashboardRoutes);
 // app.use('/api/threading', authenticateToken, setTenantContext, threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint

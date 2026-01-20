@@ -69,7 +69,7 @@ export function substituteVariables(
 ): string {
   const { escapeHtml = true, defaultValue = '', strict = false } = options;
 
-  return template.replace(/\{\{([^}]+)\}\}/g, (match, expression) => {
+  return template.replace(/\{\{([^}]+)\}\}/g, (_match, expression) => {
     const parts = expression.split('|').map((p: string) => p.trim());
     const variableName = parts[0];
     const format = parts[1];
@@ -359,7 +359,7 @@ export function processConditionals(
   // Process {{#if variable}}...{{/if}} blocks
   return template.replace(
     /\{\{#if\s+([^}]+)\}\}([\s\S]*?)\{\{\/if\}\}/g,
-    (match, condition, content) => {
+    (_match, condition, content) => {
       const conditionValue = variables[condition.trim()];
       // Return content if condition is truthy, empty string otherwise
       return conditionValue ? content : '';
@@ -392,7 +392,7 @@ export function processLoops(
   // Process {{#each array}}...{{/each}} blocks
   return template.replace(
     /\{\{#each\s+([^}]+)\}\}([\s\S]*?)\{\{\/each\}\}/g,
-    (match, arrayName, content) => {
+    (_match, arrayName, content) => {
       const array = variables[arrayName.trim()];
       if (!Array.isArray(array)) {
         return '';

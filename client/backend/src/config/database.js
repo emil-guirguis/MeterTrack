@@ -79,12 +79,14 @@ class PostgresDB {
      * Execute a query with parameters
      */
     async query(text, params = []) {
-        // Log all queries to console
-        console.log(`█ SQL:', ${text}  Params: ${JSON.stringify(params, null, 2)}`);
+        // Log all queries to console with parameters substituted
+        const sqlWithParams = this._interpolateParams(text, params);
+        console.log(`█ SQL: ${sqlWithParams}`);
+        console.log(`  Params: ${JSON.stringify(params, null, 2)}`);
+        
         if (!this.pool) {
             throw new Error('Database not connected. Call connect() first.');
         }
-
 
         const client = await this.pool.connect();
         try {
@@ -102,6 +104,37 @@ class PostgresDB {
         } finally {
             client.release();
         }
+    }
+
+    /**
+     * Interpolate parameters into SQL query for display purposes
+     */
+    _interpolateParams(sql, params) {
+        if (!params || params.length === 0) {
+            return sql;
+        }
+
+        let result = sql;
+        params.forEach((param, index) => {
+            const placeholder = `$${index + 1}`;
+            let value;
+
+            if (param === null) {
+                value = 'NULL';
+            } else if (typeof param === 'string') {
+                value = `'${param.replace(/'/g, "''")}'`;
+            } else if (typeof param === 'boolean') {
+                value = param ? 'true' : 'false';
+            } else if (typeof param === 'object') {
+                value = `'${JSON.stringify(param).replace(/'/g, "''")}'`;
+            } else {
+                value = String(param);
+            }
+
+            result = result.replace(placeholder, value);
+        });
+
+        return result;
     }
 
     /**

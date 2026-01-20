@@ -123,6 +123,64 @@ export const useValidationDataProvider = () => {
       }
     }
 
+    // Handle meter_element entity
+    if (entityName === 'meter_element') {
+      console.log(`[ValidationDataProvider] Fetching meter elements from API`);
+
+      try {
+        // Get the meter_id from fieldDef if available (for filtering)
+        const meterId = fieldDef.meterId || fieldDef.meter_id;
+        
+        if (!meterId) {
+          console.warn(`[ValidationDataProvider] No meter_id provided for meter_element filtering`);
+          return [];
+        }
+
+        // Use authService's axios client which has proper interceptors and token handling
+        const response = await (authService as any).apiClient.get(`/dashboard/meters/${meterId}/elements`);
+
+        console.log(`[ValidationDataProvider] Meter elements response:`, response.data);
+
+        // Handle response format: { success, data: Array }
+        let elements = [];
+        if (response.data.success && Array.isArray(response.data.data)) {
+          elements = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          elements = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          elements = response.data.data;
+        }
+
+        if (elements.length === 0) {
+          console.warn(`[ValidationDataProvider] No meter elements found for meter ${meterId}`);
+          return [];
+        }
+
+        console.log(`[ValidationDataProvider] Fetched ${elements.length} meter elements`);
+
+        // Map meter elements to options, combining element and name for display
+        const options = elements.map((element: any) => {
+          console.log(`[ValidationDataProvider] Meter element object:`, element);
+          
+          // Combine element designation and name for the label
+          const label = element.element && element.name 
+            ? `${element.element} - ${element.name}`
+            : element.name || element.element || `Element ${element.id}`;
+
+          return {
+            id: element.id,
+            label,
+          };
+        });
+
+        console.log(`[ValidationDataProvider] Mapped ${options.length} meter element options`);
+        return options;
+      } catch (error) {
+        console.error(`[ValidationDataProvider] Error fetching meter elements:`, error);
+        return [];
+      }
+    }
+
     // Add more entity types here as needed
     console.warn(`[ValidationDataProvider] Entity type '${entityName}' not yet supported`);
     return [];

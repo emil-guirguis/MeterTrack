@@ -4,12 +4,11 @@
  * This example demonstrates basic usage of the email templates framework.
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   TemplateEditor,
   TemplatePreview,
   useTemplate,
-  type EmailTemplate,
   type TemplateVariable
 } from '../index';
 

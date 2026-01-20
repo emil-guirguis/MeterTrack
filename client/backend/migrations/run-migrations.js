@@ -9,11 +9,21 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const db = require('../src/config/database');
 
 async function runMigrations() {
+  let wasAlreadyConnected = false;
+  
   try {
     console.log('🔄 Starting database migrations...');
     
-    // Connect to database
-    await db.connect();
+    // Check if database is already connected (called from server.js)
+    wasAlreadyConnected = db.isConnected;
+    
+    // Only connect if not already connected
+    if (!wasAlreadyConnected) {
+      console.log('🔄 Connecting to database...');
+      await db.connect();
+    } else {
+      console.log('✅ Using existing database connection');
+    }
     
     // Get all migration files
     const migrationsDir = __dirname;
@@ -50,7 +60,13 @@ async function runMigrations() {
     console.error('\n❌ Migration process failed:', error.message);
     process.exit(1);
   } finally {
-    await db.disconnect();
+    // Only disconnect if we connected in this function
+    if (!wasAlreadyConnected && db.isConnected) {
+      console.log('🔄 Disconnecting from database...');
+      await db.disconnect();
+    } else if (wasAlreadyConnected) {
+      console.log('✅ Keeping database connection open (called from server.js)');
+    }
   }
 }
 
