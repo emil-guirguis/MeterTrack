@@ -1,18 +1,24 @@
 import React, { useEffect } from 'react';
-import { dashboardService, type DashboardCard as DashboardCardType, type AggregatedData } from '../../services/dashboardService';
-import { Visualization, type VisualizationType } from './VisualizationComponents';
 import './ExpandedCardModal.css';
 
-interface ExpandedCardModalProps {
-  card: DashboardCardType;
-  data: AggregatedData | null;
+export interface ExpandedCardModalProps {
+  card: any;
+  data: any | null;
+  loading?: boolean;
+  error?: string | null;
   onClose: () => void;
+  onRefresh?: () => void;
+  renderVisualization?: (data: any, columns: string[], height: number) => React.ReactNode;
 }
 
 export const ExpandedCardModal: React.FC<ExpandedCardModalProps> = ({
   card,
   data,
-  onClose
+  loading = false,
+  error = null,
+  onClose,
+  onRefresh,
+  renderVisualization
 }) => {
   // Handle Escape key press
   useEffect(() => {
@@ -57,9 +63,9 @@ export const ExpandedCardModal: React.FC<ExpandedCardModalProps> = ({
         {/* Header */}
         <div className="expanded-card-modal__header">
           <div className="expanded-card-modal__title-section">
-            <h2 className="expanded-card-modal__title">{card.card_name}</h2>
-            {card.card_description && (
-              <p className="expanded-card-modal__description">{card.card_description}</p>
+            <h2 className="expanded-card-modal__title">{card.card_name || card.title}</h2>
+            {(card.card_description || card.description) && (
+              <p className="expanded-card-modal__description">{card.card_description || card.description}</p>
             )}
           </div>
           <button
@@ -76,26 +82,49 @@ export const ExpandedCardModal: React.FC<ExpandedCardModalProps> = ({
         {/* Metadata */}
         <div className="expanded-card-modal__metadata">
           <span className="expanded-card-modal__time-frame">📅 {formatTimeFrame()}</span>
-          <span className="expanded-card-modal__visualization">📊 {card.visualization_type}</span>
+          <span className="expanded-card-modal__visualization">📊 {card.visualization_type || 'Chart'}</span>
+          {onRefresh && (
+            <button
+              type="button"
+              className="expanded-card-modal__refresh-btn"
+              onClick={onRefresh}
+              disabled={loading}
+              title="Refresh data"
+              aria-label="Refresh"
+            >
+              🔄
+            </button>
+          )}
         </div>
 
         {/* Visualization */}
         <div className="expanded-card-modal__visualization-container">
-          {data ? (
-            <Visualization
-              type={card.visualization_type as VisualizationType}
-              data={
-                data.grouped_data && Array.isArray(data.grouped_data) && data.grouped_data.length > 0 
-                  ? data.grouped_data 
-                  : data.aggregated_values
-              }
-              columns={card.selected_columns}
-              height={600}
-            />
-          ) : (
+          {error ? (
+            <div className="expanded-card-modal__error">
+              <p>{error}</p>
+            </div>
+          ) : loading ? (
             <div className="expanded-card-modal__loading">
               <div className="expanded-card-modal__spinner"></div>
               <p>Loading data...</p>
+            </div>
+          ) : data ? (
+            renderVisualization ? (
+              renderVisualization(
+                data.grouped_data && Array.isArray(data.grouped_data) && data.grouped_data.length > 0
+                  ? data.grouped_data
+                  : data.aggregated_values,
+                card.selected_columns || [],
+                600
+              )
+            ) : (
+              <div className="expanded-card-modal__no-renderer">
+                <p>Visualization renderer not provided</p>
+              </div>
+            )
+          ) : (
+            <div className="expanded-card-modal__no-data">
+              <p>No data available</p>
             </div>
           )}
         </div>

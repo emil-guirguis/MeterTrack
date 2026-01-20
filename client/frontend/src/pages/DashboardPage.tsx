@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
-import { DashboardCard } from '../components/dashboard/DashboardCard';
-import { DashboardCardModal } from '../components/dashboard/DashboardCardModal';
-import { ExpandedCardModal } from '../components/dashboard/ExpandedCardModal';
+import { DashboardPage as FrameworkDashboardPage } from '@framework/dashboards/components/DashboardPage';
+import { DashboardCard as FrameworkDashboardCard } from '@framework/dashboards/components/DashboardCard';
+import { DashboardCardModal as FrameworkDashboardCardModal } from '@framework/dashboards/components/DashboardCardModal';
+import { ExpandedCardModal as FrameworkExpandedCardModal } from '@framework/dashboards/components/ExpandedCardModal';
+import { Visualization } from '@framework/dashboards/components/Visualization';
+import type { DashboardCard as FrameworkDashboardCardType } from '@framework/dashboards/types';
 import { dashboardService, type DashboardCard as DashboardCardType, type AggregatedData } from '../services/dashboardService';
 import './DashboardPage.css';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
-
+/**
+ * Client-specific DashboardPage wrapper
+ * 
+ * This component wraps the framework DashboardPage and provides:
+ * - API communication through dashboardService
+ * - Client-specific data fetching and state management
+ * - Callbacks for card operations
+ * 
+ * The framework DashboardPage handles all UI rendering and layout management.
+ */
 export const DashboardPage: React.FC = () => {
   const [cards, setCards] = useState<DashboardCardType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,41 +30,112 @@ export const DashboardPage: React.FC = () => {
   const [expandedCardData, setExpandedCardData] = useState<AggregatedData | null>(null);
   const [layout, setLayout] = useState<Layout[]>([]);
   const [savingLayout, setSavingLayout] = useState(false);
+  const [cardDataMap, setCardDataMap] = useState<Record<number, AggregatedData | null>>({});
+  const [cardLoadingMap, setCardLoadingMap] = useState<Record<number, boolean>>({});
+  const [cardErrorMap, setCardErrorMap] = useState<Record<number, string | null>>({});
+  const [meters, setMeters] = useState<Array<{ id: number; name: string }>>([]);
+  const [meterElements, setMeterElements] = useState<Array<{ id: number; name: string; element?: string }>>([]);
+  const [powerColumns, setPowerColumns] = useState<Array<{ name: string; label: string; type?: string }>>([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Fetch all dashboard cards
   const fetchCards = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('📊 [DashboardPage] Fetching dashboard cards...');
       const response = await dashboardService.getDashboardCards({
         page: 1,
         limit: 100
       });
+      console.log('📊 [DashboardPage] API Response:', response);
+      console.log('📊 [DashboardPage] Cards received:', response.items.length);
       setCards(response.items);
       
       // Initialize layout from card positions
       const newLayout: Layout[] = response.items.map((card, index) => ({
         i: card.dashboard_id.toString(),
-        x: card.grid_x ?? (index % 3) * 4,
-        y: card.grid_y ?? Math.floor(index / 3) * 5,
-        w: card.grid_w ?? 4,
-        h: card.grid_h ?? 5,
+        x: card.grid_x ?? (index % 2) * 6,
+        y: card.grid_y ?? Math.floor(index / 2) * 8,
+        w: card.grid_w ?? 6,
+        h: card.grid_h ?? 8,
         static: false,
       }));
       setLayout(newLayout);
+      console.log('📊 [DashboardPage] Layout initialized:', newLayout);
+      console.log('📊 [DashboardPage] Cards with grid properties:', response.items.map(c => ({
+        id: c.dashboard_id,
+        grid_x: c.grid_x,
+        grid_y: c.grid_y,
+        grid_w: c.grid_w,
+        grid_h: c.grid_h
+      })));
+
+      // Fetch data for each card
+      response.items.forEach((card) => {
+        fetchCardData(card.dashboard_id);
+      });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch dashboard cards';
       setError(errorMsg);
-      console.error('Error fetching dashboard cards:', err);
+      console.error('❌ [DashboardPage] Error fetching dashboard cards:', err);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Fetch data for a specific card
+  const fetchCardData = useCallback(async (cardId: number) => {
+    try {
+      setCardLoadingMap(prev => ({ ...prev, [cardId]: true }));
+      setCardErrorMap(prev => ({ ...prev, [cardId]: null }));
+      const data = await dashboardService.getCardData(cardId);
+      setCardDataMap(prev => ({ ...prev, [cardId]: data }));
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch card data';
+      setCardErrorMap(prev => ({ ...prev, [cardId]: errorMsg }));
+      console.error(`Error fetching data for card ${cardId}:`, err);
+    } finally {
+      setCardLoadingMap(prev => ({ ...prev, [cardId]: false }));
     }
   }, []);
 
   // Load cards on mount
   useEffect(() => {
     fetchCards();
+    fetchMeters();
+    fetchPowerColumns();
   }, [fetchCards]);
+
+  // Fetch meters for the modal
+  const fetchMeters = useCallback(async () => {
+    try {
+      const metersData = await dashboardService.getMetersByTenant();
+      setMeters(metersData);
+    } catch (err) {
+      console.error('Error fetching meters:', err);
+    }
+  }, []);
+
+  // Fetch meter elements for the selected meter
+  const fetchMeterElements = useCallback(async (meterId: number) => {
+    try {
+      const elementsData = await dashboardService.getMeterElementsByMeter(meterId);
+      setMeterElements(elementsData);
+    } catch (err) {
+      console.error('Error fetching meter elements:', err);
+    }
+  }, []);
+
+  // Fetch power columns for the modal
+  const fetchPowerColumns = useCallback(async () => {
+    try {
+      const columnsData = await dashboardService.getPowerColumns();
+      setPowerColumns(columnsData);
+    } catch (err) {
+      console.error('Error fetching power columns:', err);
+    }
+  }, []);
 
   // Handle global refresh
   const handleGlobalRefresh = async (e: React.MouseEvent) => {
@@ -77,6 +158,9 @@ export const DashboardPage: React.FC = () => {
   // Handle edit card
   const handleEditCard = (card: DashboardCardType) => {
     setEditingCard(card);
+    if (card.meter_id) {
+      fetchMeterElements(card.meter_id);
+    }
     setShowModal(true);
   };
 
@@ -94,6 +178,8 @@ export const DashboardPage: React.FC = () => {
     } else {
       // Add new card to list
       setCards([...cards, card]);
+      // Fetch data for the new card
+      fetchCardData(card.dashboard_id);
     }
     handleModalClose();
   };
@@ -129,10 +215,16 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Handle delete card
-  const handleDeleteCard = async (cardId: number) => {
+  const handleDeleteCard = async (cardId: number | string) => {
+    const numCardId = typeof cardId === 'string' ? parseInt(cardId) : cardId;
     try {
-      await dashboardService.deleteDashboardCard(cardId);
-      setCards(cards.filter(c => c.dashboard_id !== cardId));
+      await dashboardService.deleteDashboardCard(numCardId);
+      setCards(cards.filter(c => c.dashboard_id !== numCardId));
+      setCardDataMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[numCardId];
+        return newMap;
+      });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to delete card';
       setError(errorMsg);
@@ -141,20 +233,15 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Handle drill-down
-  const handleDrillDown = (cardId: number) => {
+  const handleDrillDown = (cardId: number | string) => {
     // TODO: Navigate to detailed readings view
     console.log('Drill down for card:', cardId);
   };
 
   // Handle card refresh
-  const handleCardRefresh = (cardId: number) => {
-    // Update the card's last_refreshed timestamp by refetching the card
-    setCards(cards.map(c => {
-      if (c.dashboard_id === cardId) {
-        return { ...c, last_refreshed: new Date().toISOString() };
-      }
-      return c;
-    }));
+  const handleCardRefresh = (cardId: number | string) => {
+    const numCardId = typeof cardId === 'string' ? parseInt(cardId) : cardId;
+    fetchCardData(numCardId);
   };
 
   // Handle expand card
@@ -175,127 +262,191 @@ export const DashboardPage: React.FC = () => {
     setExpandedCardData(null);
   };
 
-  return (
-    <div className="dashboard-page">
-      {/* Page Header */}
-      <div className="dashboard-page__header">
-        <div className="dashboard-page__title-section">
-          <h1 className="dashboard-page__title">Dashboard</h1>
-        </div>
-        <div className="dashboard-page__header-actions">
-          <button
-            type="button"
-            className="dashboard-page__btn dashboard-page__btn--primary"
-            onClick={handleCreateCard}
-            title="Create a new dashboard card"
-          >
-            ➕ Create Card
-          </button>
-          <button
-            type="button"
-            className="dashboard-page__btn dashboard-page__btn--secondary"
-            onClick={handleGlobalRefresh}
-            disabled={refreshing}
-            title="Refresh all cards"
-          >
-            {refreshing ? (
-              <>
-                <span className="dashboard-page__spinner">⟳</span>
-                Refreshing...
-              </>
-            ) : (
-              <>
-                🔄 Refresh All
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+  // Handle error close
+  const handleErrorClose = () => {
+    setError(null);
+  };
 
-      {/* Error Message */}
-      {error && (
-        <div className="dashboard-page__error-banner">
-          <p>{error}</p>
-          <button
-            type="button"
-            className="dashboard-page__error-close"
-            onClick={() => setError(null)}
-            aria-label="Close error"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+  // Handle visualization change
+  const handleVisualizationChange = async (cardId: number | string, newType: string) => {
+    const numCardId = typeof cardId === 'string' ? parseInt(cardId) : cardId;
+    try {
+      const card = cards.find(c => c.dashboard_id === numCardId);
+      if (card) {
+        await dashboardService.updateDashboardCard(numCardId, {
+          visualization_type: newType as any
+        });
+        setCards(cards.map(c => 
+          c.dashboard_id === numCardId 
+            ? { ...c, visualization_type: newType as any }
+            : c
+        ));
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update visualization';
+      setError(errorMsg);
+      console.error('Error updating visualization:', err);
+    }
+  };
 
-      {/* Loading State */}
-      {loading ? (
-        <div className="dashboard-page__loading">
-          <div className="dashboard-page__loading-spinner"></div>
-          <p>Loading dashboard cards...</p>
-        </div>
-      ) : cards.length === 0 ? (
-        /* Empty State */
-        <div className="dashboard-page__empty">
-          <div className="dashboard-page__empty-icon">📊</div>
-          <h2 className="dashboard-page__empty-title">No Dashboard Cards Yet</h2>
-          <p className="dashboard-page__empty-description">
-            Create your first dashboard card to start monitoring your energy metrics.
-          </p>
-          <button
-            type="button"
-            className="dashboard-page__btn dashboard-page__btn--primary"
-            onClick={handleCreateCard}
-          >
-            ➕ Create Your First Card
-          </button>
-        </div>
-      ) : (
-        /* Cards Grid */
-        <ResponsiveGridLayout
-          className="dashboard-page__cards-grid"
-          layouts={{ lg: layout }}
-          onLayoutChange={handleLayoutChange}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-          rowHeight={60}
-          width={1200}
-          isDraggable={!savingLayout}
-          isResizable={!savingLayout}
-          compactType="vertical"
-          preventCollision={false}
-          useCSSTransforms={true}
-        >
-          {cards.map((card) => (
-            <div key={card.dashboard_id.toString()} className="dashboard-page__card-wrapper">
-              <DashboardCard
-                card={card}
-                onEdit={handleEditCard}
-                onDelete={handleDeleteCard}
-                onDrillDown={handleDrillDown}
-                onRefresh={handleCardRefresh}
-                onExpand={handleExpandCard}
-              />
-            </div>
-          ))}
-        </ResponsiveGridLayout>
-      )}
+  // Handle grouping change
+  const handleGroupingChange = async (cardId: number | string, newGrouping: string) => {
+    const numCardId = typeof cardId === 'string' ? parseInt(cardId) : cardId;
+    try {
+      const card = cards.find(c => c.dashboard_id === numCardId);
+      if (card) {
+        await dashboardService.updateDashboardCard(numCardId, {
+          grouping_type: newGrouping as any
+        });
+        setCards(cards.map(c => 
+          c.dashboard_id === numCardId 
+            ? { ...c, grouping_type: newGrouping as any }
+            : c
+        ));
+        // Refresh card data with new grouping
+        fetchCardData(numCardId);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update grouping';
+      setError(errorMsg);
+      console.error('Error updating grouping:', err);
+    }
+  };
 
-      {/* Dashboard Card Modal */}
-      <DashboardCardModal
-        isOpen={showModal}
-        card={editingCard}
-        onClose={handleModalClose}
-        onSuccess={handleModalSuccess}
+  // Handle time frame change
+  const handleTimeFrameChange = async (cardId: number | string, newTimeFrame: string) => {
+    const numCardId = typeof cardId === 'string' ? parseInt(cardId) : cardId;
+    try {
+      const card = cards.find(c => c.dashboard_id === numCardId);
+      if (card) {
+        await dashboardService.updateDashboardCard(numCardId, {
+          time_frame_type: newTimeFrame as any
+        });
+        setCards(cards.map(c => 
+          c.dashboard_id === numCardId 
+            ? { ...c, time_frame_type: newTimeFrame as any }
+            : c
+        ));
+        // Refresh card data with new time frame
+        fetchCardData(numCardId);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update time frame';
+      setError(errorMsg);
+      console.error('Error updating time frame:', err);
+    }
+  };
+
+  // Create a wrapper component for the framework DashboardCard that provides data
+  const ClientDashboardCard: React.FC<any> = ({ card, ...props }) => {
+    const cardData = cardDataMap[card.dashboard_id] || null;
+    const cardLoading = cardLoadingMap[card.dashboard_id] || false;
+    const cardError = cardErrorMap[card.dashboard_id] || null;
+
+    // Convert client card to framework card format
+    const frameworkCard: FrameworkDashboardCardType = {
+      id: card.dashboard_id,
+      title: card.card_name,
+      description: card.card_description,
+      visualization_type: card.visualization_type,
+      grid_x: card.grid_x,
+      grid_y: card.grid_y,
+      grid_w: card.grid_w,
+      grid_h: card.grid_h,
+      // Include client-specific properties for callbacks
+      ...card,
+    };
+
+    return (
+      <FrameworkDashboardCard
+        card={frameworkCard}
+        data={cardData}
+        loading={cardLoading}
+        error={cardError}
+        VisualizationComponent={Visualization}
+        onVisualizationChange={handleVisualizationChange}
+        onGroupingChange={handleGroupingChange}
+        onTimeFrameChange={handleTimeFrameChange}
+        {...props}
       />
+    );
+  };
 
-      {/* Expanded Card Modal */}
-      {expandedCard && (
-        <ExpandedCardModal
-          card={expandedCard}
-          data={expandedCardData}
-          onClose={handleCloseExpandedCard}
+  // Create a wrapper component for the modal that provides meters, elements, and power columns
+  const ClientDashboardCardModal = React.useMemo(() => {
+    return ({ isOpen, card, onClose, onSuccess }: any) => {
+      // When modal opens and we have a meter_id, fetch the meter elements
+      useEffect(() => {
+        if (isOpen && card?.meter_id) {
+          fetchMeterElements(card.meter_id);
+        }
+      }, [isOpen, card?.meter_id]);
+
+      const handleSubmit = async (data: any) => {
+        try {
+          setModalLoading(true);
+          let result;
+          if (card) {
+            // Update existing card
+            result = await dashboardService.updateDashboardCard(card.dashboard_id, data);
+          } else {
+            // Create new card
+            result = await dashboardService.createDashboardCard(data);
+          }
+          onSuccess?.(result);
+        } catch (err) {
+          console.error('Error saving card:', err);
+          // You might want to show an error in the modal here
+        } finally {
+          setModalLoading(false);
+        }
+      };
+
+      return (
+        <FrameworkDashboardCardModal
+          isOpen={isOpen}
+          card={card}
+          meters={meters}
+          meterElements={meterElements}
+          powerColumns={powerColumns}
+          loading={modalLoading}
+          onClose={onClose}
+          onSubmit={handleSubmit}
         />
-      )}
-    </div>
+      );
+    };
+  }, [meters, meterElements, powerColumns, modalLoading, fetchMeterElements]);
+
+  return (
+    <FrameworkDashboardPage
+      cards={cards.map(card => ({
+        ...card,
+        id: card.dashboard_id
+      })) as any}
+      loading={loading}
+      error={error}
+      layout={layout}
+      savingLayout={savingLayout}
+      onLayoutChange={handleLayoutChange}
+      onCreateCard={handleCreateCard}
+      onRefresh={handleGlobalRefresh}
+      onEditCard={handleEditCard as any}
+      onDeleteCard={handleDeleteCard as any}
+      onExpandCard={handleExpandCard as any}
+      onCardRefresh={handleCardRefresh}
+      onDrillDown={handleDrillDown}
+      onErrorClose={handleErrorClose}
+      refreshing={refreshing}
+      CardComponent={ClientDashboardCard}
+      ModalComponent={ClientDashboardCardModal}
+      ExpandedModalComponent={FrameworkExpandedCardModal}
+      showModal={showModal}
+      editingCard={editingCard as any}
+      expandedCardData={expandedCardData}
+      expandedCard={expandedCard as any}
+      onModalClose={handleModalClose}
+      onModalSuccess={handleModalSuccess as any}
+      onCloseExpandedCard={handleCloseExpandedCard}
+    />
   );
 };

@@ -49,7 +49,7 @@ const REALISTIC_RANGES = {
   current: { min: 0.1, max: 1000 }, // Amps
   power: { min: 0, max: 1000000 }, // Watts
   frequency: { min: 45, max: 65 }, // Hz
-  powerFactor: { min: 0, max: 1 }, // 0-1 range
+  powerFactor: { min: -1, max: 1 }, // -1 to 1 range (negative indicates reactive/leading power)
   energy: { min: 0, max: Number.MAX_SAFE_INTEGER }, // Wh
   temperature: { min: -40, max: 85 }, // Celsius
   humidity: { min: 0, max: 100 }, // Percentage
@@ -290,7 +290,7 @@ export class MeterReadingValidator {
         issues.push({
           code: 'INVALID_POWER_FACTOR',
           severity: 'error',
-          message: `Power factor ${reading.power_factor} is outside valid range (0-1)`,
+          message: `Power factor ${reading.power_factor} is outside valid range (-1 to 1)`,
           field: 'power_factor',
           value: reading.power_factor,
         });

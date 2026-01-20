@@ -93,6 +93,8 @@ export interface TenantEntity {
   zip?: string;
   country?: string;
   api_key?: string;
+  download_batch_size?: number;
+  upload_batch_size?: number;
 }
 export interface MeterEntity {
   meter_id: number;
@@ -293,13 +295,14 @@ export interface SyncDatabase {
   getUnsynchronizedReadings(limit: number): Promise<MeterReadingEntity[]>;
   deleteSynchronizedReadings(readingIds: string[]): Promise<number>;
   markReadingsAsPending(readingIds: string[]): Promise<void>;
-  markReadingsAsSynchronized(readingIds: string[]): Promise<number>;
+  markReadingsAsSynchronized(readingIds: string[], tenantId?: number): Promise<number>;
   deleteOldReadings(cutoffDate: Date): Promise<number>;
   incrementRetryCount(readingIds: string[]): Promise<void>;
   logReadingFailure(meterId: string, operation: string, error: string): Promise<void>;
   getSyncStats(hours: number): Promise<any>;
   getRecentReadings(hours: number): Promise<MeterReadingEntity[]>;
   getRecentSyncLogs(limit: number): Promise<SyncLog[]>;
+  getTenantBatchConfig(tenantId: number): Promise<{ downloadBatchSize: number; uploadBatchSize: number }>;
 
   // ==================== REGISTER METHODS ====================
   /**

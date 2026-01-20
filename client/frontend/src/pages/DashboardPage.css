@@ -16,7 +16,6 @@
 
 .react-grid-item img {
   pointer-events: none;
-  user-select: none;
 }
 
 .react-grid-item.cssTransforms {

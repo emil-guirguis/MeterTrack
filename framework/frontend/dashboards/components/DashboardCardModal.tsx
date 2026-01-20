@@ -23,19 +23,24 @@ import {
   useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { dashboardService, type DashboardCard } from '../../services/dashboardService';
 import './DashboardCardModal.css';
 
-interface DashboardCardModalProps {
+export interface DashboardCardModalProps {
   isOpen: boolean;
-  card?: DashboardCard | null;
+  card?: any | null;
+  meters: Array<{ id: number; name: string }>;
+  meterElements: Array<{ id: number; name: string; element?: string }>;
+  powerColumns: Array<{ name: string; label: string; type?: string }>;
+  loading?: boolean;
+  error?: string | null;
   onClose: () => void;
-  onSuccess: (card: DashboardCard) => void;
+  onSubmit: (data: any) => void;
 }
 
 interface FormData {
   card_name: string;
   card_description: string;
+  meter_id: string;
   meter_element_id: string;
   selected_columns: string[];
   time_frame_type: 'custom' | 'last_month' | 'this_month_to_date' | 'since_installation';
@@ -48,34 +53,23 @@ interface FormErrors {
   [key: string]: string;
 }
 
-interface PowerColumn {
-  name: string;
-  type: string;
-  label: string;
-}
-
-interface MeterElement {
-  meter_element_id: number;
-  element: string;
-  meter_element_name: string;
-}
-
-interface Meter {
-  id: number;
-  name: string;
-}
-
 export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
   isOpen,
   card,
+  meters,
+  meterElements,
+  powerColumns,
+  loading = false,
+  error: externalError = null,
   onClose,
-  onSuccess
+  onSubmit
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [formData, setFormData] = useState<FormData>({
     card_name: '',
     card_description: '',
+    meter_id: '',
     meter_element_id: '',
     selected_columns: [],
     time_frame_type: 'last_month',
@@ -86,20 +80,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
-  const [powerColumns, setPowerColumns] = useState<PowerColumn[]>([]);
-  const [meterElements, setMeterElements] = useState<MeterElement[]>([]);
-  const [loadingColumns, setLoadingColumns] = useState(false);
-  const [meters, setMeters] = useState<Meter[]>([]);
-  const [loadingMeters, setLoadingMeters] = useState(false);
   const [selectedMeterId, setSelectedMeterId] = useState<number | null>(null);
-
-  // Load meters and power columns on mount
-  useEffect(() => {
-    if (isOpen) {
-      loadMeters();
-      loadPowerColumns();
-    }
-  }, [isOpen]);
 
   // Populate form with card data when editing
   useEffect(() => {
@@ -107,24 +88,22 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
       setFormData({
         card_name: card.card_name || '',
         card_description: card.card_description || '',
-        meter_element_id: card.meter_element_id.toString(),
+        meter_id: card.meter_id?.toString() || '',
+        meter_element_id: card.meter_element_id?.toString() || '',
         selected_columns: card.selected_columns || [],
-        time_frame_type: card.time_frame_type,
+        time_frame_type: card.time_frame_type || 'last_month',
         custom_start_date: card.custom_start_date ? new Date(card.custom_start_date).toISOString().split('T')[0] : '',
         custom_end_date: card.custom_end_date ? new Date(card.custom_end_date).toISOString().split('T')[0] : '',
-        visualization_type: card.visualization_type
+        visualization_type: card.visualization_type || 'line'
       });
-      setSelectedMeterId(card.meter_id);
-      // Load meter elements for the existing meter
-      if (card.meter_id) {
-        loadMeterElements(card.meter_id);
-      }
+      setSelectedMeterId(card.meter_id || null);
       setErrors({});
     } else if (isOpen) {
       // Reset form for create mode
       setFormData({
         card_name: '',
         card_description: '',
+        meter_id: '',
         meter_element_id: '',
         selected_columns: [],
         time_frame_type: 'last_month',
@@ -133,62 +112,9 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
         visualization_type: 'line'
       });
       setSelectedMeterId(null);
-      setMeterElements([]);
       setErrors({});
     }
   }, [card, isOpen]);
-
-  // Load available power columns
-  const loadPowerColumns = async () => {
-    try {
-      setLoadingColumns(true);
-      const columns = await dashboardService.getPowerColumns();
-      setPowerColumns(columns);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load power columns';
-      console.error('Error loading power columns:', err);
-      setErrors(prev => ({ ...prev, powerColumns: errorMsg }));
-    } finally {
-      setLoadingColumns(false);
-    }
-  };
-
-  // Load available meters
-  const loadMeters = async () => {
-    try {
-      setLoadingMeters(true);
-      const meterList = await dashboardService.getMetersByTenant();
-      setMeters(meterList);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load meters';
-      console.error('Error loading meters:', err);
-      setErrors(prev => ({ ...prev, meters: errorMsg }));
-    } finally {
-      setLoadingMeters(false);
-    }
-  };
-
-  // Load available meter elements for selected meter
-  const loadMeterElements = async (meterId: number) => {
-    try {
-      setLoadingColumns(true);
-      const elements = await dashboardService.getMeterElementsByMeter(meterId);
-      // Convert API response format to component format
-      const formattedElements = elements.map(el => ({
-        meter_element_id: el.id,
-        element: el.element,
-        meter_element_name: el.name
-      }));
-      setMeterElements(formattedElements);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load meter elements';
-      console.error('Error loading meter elements:', err);
-      setErrors(prev => ({ ...prev, meterElements: errorMsg }));
-      setMeterElements([]);
-    } finally {
-      setLoadingColumns(false);
-    }
-  };
 
   // Validate form data
   const validateForm = (): boolean => {
@@ -205,12 +131,12 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
     if (!formData.meter_element_id) {
       newErrors.meter_element_id = 'Meter element is required';
     } else if (selectedMeterId) {
-      // Validate that selected element belongs to selected meter
+      // Validate that selected element exists in the provided list
       const selectedElement = meterElements.find(
-        el => el.meter_element_id === parseInt(formData.meter_element_id)
+        el => el.id === parseInt(formData.meter_element_id)
       );
       if (!selectedElement) {
-        newErrors.meter_element_id = 'Selected meter element does not belong to the selected meter';
+        newErrors.meter_element_id = 'Selected meter element is not available';
       }
     }
 
@@ -280,7 +206,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
     try {
       setSubmitting(true);
 
-      const submitData: Partial<DashboardCard> = {
+      const submitData: any = {
         card_name: formData.card_name,
         card_description: formData.card_description,
         meter_id: selectedMeterId || 0,
@@ -296,28 +222,13 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
         submitData.custom_end_date = formData.custom_end_date;
       }
 
-      let result: DashboardCard;
-      if (card) {
-        // Update existing card
-        result = await dashboardService.updateDashboardCard(card.dashboard_id, submitData);
-      } else {
-        // Create new card
-        result = await dashboardService.createDashboardCard(submitData);
-      }
-
-      onSuccess(result);
-      onClose();
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to save dashboard card';
-      setErrors(prev => ({ ...prev, submit: errorMsg }));
-      console.error('Error saving dashboard card:', err);
+      onSubmit(submitData);
     } finally {
       setSubmitting(false);
     }
   };
 
   const title = card ? 'Edit Dashboard Card' : 'Create Dashboard Card';
-  const submitError = errors.submit;
 
   return (
     <Dialog
@@ -333,10 +244,10 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
       }}
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">{title}</Typography>
+        {title}
         <Button
           onClick={onClose}
-          disabled={submitting}
+          disabled={submitting || loading}
           sx={{ minWidth: 'auto', p: 1 }}
         >
           <CloseIcon />
@@ -345,9 +256,9 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
 
       <DialogContent dividers sx={{ py: 3 }}>
         <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {submitError && (
-            <Alert severity="error" onClose={() => setErrors(prev => { const newErrors = { ...prev }; delete newErrors.submit; return newErrors; })}>
-              {submitError}
+          {externalError && (
+            <Alert severity="error" onClose={() => {}}>
+              {externalError}
             </Alert>
           )}
 
@@ -361,7 +272,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
             placeholder="e.g., Monthly Energy Consumption"
             error={!!errors.card_name}
             helperText={errors.card_name}
-            disabled={submitting}
+            disabled={submitting || loading}
             required
             variant="outlined"
           />
@@ -376,12 +287,12 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
             placeholder="Optional description for this card"
             multiline
             rows={3}
-            disabled={submitting}
+            disabled={submitting || loading}
             variant="outlined"
           />
 
           {/* Meter Selector */}
-          <FormControl fullWidth error={!!errors.meter_id} disabled={submitting || loadingMeters || meters.length === 0}>
+          <FormControl fullWidth error={!!errors.meter_id} disabled={submitting || loading || !meters || meters.length === 0}>
             <InputLabel>Meter *</InputLabel>
             <Select
               label="Meter *"
@@ -389,11 +300,6 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
               onChange={(e) => {
                 const meterId = e.target.value ? parseInt(e.target.value as string) : null;
                 setSelectedMeterId(meterId);
-                if (meterId) {
-                  loadMeterElements(meterId);
-                } else {
-                  setMeterElements([]);
-                }
                 setFormData(prev => ({
                   ...prev,
                   meter_element_id: ''
@@ -410,19 +316,17 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
               <MenuItem value="">
                 <em>-- Select a meter --</em>
               </MenuItem>
-              {meters.map(meter => (
+              {meters && meters.map(meter => (
                 <MenuItem key={meter.id} value={meter.id}>
                   {meter.name}
                 </MenuItem>
               ))}
             </Select>
-            {loadingMeters && <FormHelperText>Loading meters...</FormHelperText>}
-            {errors.meters && <FormHelperText error>{errors.meters}</FormHelperText>}
             {errors.meter_id && <FormHelperText error>{errors.meter_id}</FormHelperText>}
           </FormControl>
 
           {/* Meter Element Selector */}
-          <FormControl fullWidth error={!!errors.meter_element_id} disabled={submitting || meterElements.length === 0}>
+          <FormControl fullWidth error={!!errors.meter_element_id} disabled={submitting || loading || !meterElements || meterElements.length === 0}>
             <InputLabel>Meter Element *</InputLabel>
             <Select
               label="Meter Element *"
@@ -433,9 +337,9 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
               <MenuItem value="">
                 <em>-- Select a meter element --</em>
               </MenuItem>
-              {meterElements.map(element => (
-                <MenuItem key={element.meter_element_id} value={element.meter_element_id}>
-                  {element.element} - {element.meter_element_name}
+              {meterElements && meterElements.map(element => (
+                <MenuItem key={element.id} value={element.id}>
+                  {element.element ? `${element.element} - ${element.name}` : element.name}
                 </MenuItem>
               ))}
             </Select>
@@ -443,24 +347,17 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
           </FormControl>
 
           {/* Power Columns Multi-Select */}
-          <FormControl fullWidth error={!!errors.selected_columns} disabled={submitting || loadingColumns}>
+          <FormControl fullWidth error={!!errors.selected_columns} disabled={submitting || loading}>
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
               Power Columns *
             </Typography>
-            {loadingColumns ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CircularProgress size={20} />
-                <Typography variant="body2" color="text.secondary">
-                  Loading power columns...
-                </Typography>
-              </Box>
-            ) : powerColumns.length === 0 ? (
+            {!powerColumns || powerColumns.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 No power columns available
               </Typography>
             ) : (
               <FormGroup sx={{ p: 1.5, backgroundColor: theme.palette.mode === 'light' ? '#f5f5f5' : '#fafafa', borderRadius: 1 }}>
-                {powerColumns.map(column => (
+                {powerColumns && powerColumns.map(column => (
                   <FormControlLabel
                     key={column.name}
                     control={
@@ -469,7 +366,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
                         value={column.name}
                         checked={formData.selected_columns.includes(column.name)}
                         onChange={handleFieldChange}
-                        disabled={submitting}
+                        disabled={submitting || loading}
                       />
                     }
                     label={column.label || column.name}
@@ -481,7 +378,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
           </FormControl>
 
           {/* Time Frame Type Selector */}
-          <FormControl fullWidth disabled={submitting}>
+          <FormControl fullWidth disabled={submitting || loading}>
             <InputLabel>Time Frame Type *</InputLabel>
             <Select
               label="Time Frame Type *"
@@ -509,7 +406,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
                   onChange={handleFieldChange}
                   error={!!errors.custom_start_date}
                   helperText={errors.custom_start_date}
-                  disabled={submitting}
+                  disabled={submitting || loading}
                   required
                   InputLabelProps={{ shrink: true }}
                   variant="outlined"
@@ -525,7 +422,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
                   onChange={handleFieldChange}
                   error={!!errors.custom_end_date}
                   helperText={errors.custom_end_date}
-                  disabled={submitting}
+                  disabled={submitting || loading}
                   required
                   InputLabelProps={{ shrink: true }}
                   variant="outlined"
@@ -535,7 +432,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
           )}
 
           {/* Visualization Type Selector */}
-          <FormControl fullWidth disabled={submitting}>
+          <FormControl fullWidth disabled={submitting || loading}>
             <InputLabel>Visualization Type *</InputLabel>
             <Select
               label="Visualization Type *"
@@ -556,14 +453,14 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
       <DialogActions sx={{ p: 2, gap: 1 }}>
         <Button
           onClick={onClose}
-          disabled={submitting}
+          disabled={submitting || loading}
           variant="outlined"
         >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || loading}
           variant="contained"
           startIcon={submitting ? <CircularProgress size={20} /> : undefined}
         >

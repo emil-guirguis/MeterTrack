@@ -16,28 +16,33 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import './VisualizationComponents.css';
+import { VisualizationType } from '../types';
+import './Visualization.css';
 
-export type VisualizationType = 'pie' | 'line' | 'candlestick' | 'bar' | 'area';
-
+/**
+ * Generic visualization data interface
+ * Supports both single aggregation objects and time-series arrays
+ */
 export interface VisualizationData {
   [key: string]: number | string;
 }
 
-export interface VisualizationComponentProps {
+/**
+ * Generic visualization component props
+ * Works with any data structure that can be transformed to chart format
+ */
+export interface VisualizationProps {
+  /** Visualization type (pie, line, bar, area, candlestick) */
+  type?: VisualizationType;
+  /** Data to visualize - can be single object or array of objects */
   data: VisualizationData | VisualizationData[];
+  /** Column names to display in the visualization */
   columns: string[];
-  title?: string;
+  /** Chart height in pixels */
   height?: number;
+  /** Optional title for the visualization */
+  title?: string;
 }
-
-// Helper function to safely format numeric values
-const formatValue = (value: unknown): string => {
-  if (typeof value === 'number') {
-    return value.toFixed(2);
-  }
-  return String(value);
-};
 
 // Color palette for charts
 const COLORS = [
@@ -52,21 +57,31 @@ const COLORS = [
 ];
 
 /**
+ * Helper function to safely format numeric values
+ */
+const formatValue = (value: unknown): string => {
+  if (typeof value === 'number') {
+    return value.toFixed(2);
+  }
+  return String(value);
+};
+
+/**
  * Pie Chart Visualization
  * Displays aggregated values as a pie chart
  * Best for showing proportions of different columns
  */
-export const PieVisualization: React.FC<VisualizationComponentProps> = ({
+const PieVisualization: React.FC<VisualizationProps> = ({
   data,
   columns,
   height = 300,
 }) => {
-  // Handle array data - use first element or sum all
+  // Handle array data - sum all values
   let dataObj: VisualizationData;
   if (Array.isArray(data)) {
     if (data.length === 0) {
       return (
-        <div className="visualization-empty" style={{ height }}>
+        <div className="visualization-empty">
           <p>No data available</p>
         </div>
       );
@@ -91,22 +106,22 @@ export const PieVisualization: React.FC<VisualizationComponentProps> = ({
 
   if (filteredData.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
   }
 
   return (
-    <div className="visualization-container" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="visualization-container">
+      <ResponsiveContainer width="100%" height={height}>
         <PieChart>
           <Pie
             data={filteredData}
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, value }) => `${name}: ${formatValue(value)}`}
+            label={({ name, value }: any) => `${name}: ${formatValue(value)}`}
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
@@ -127,7 +142,7 @@ export const PieVisualization: React.FC<VisualizationComponentProps> = ({
  * Displays aggregated values as a line chart
  * Best for showing trends over time or comparing multiple values
  */
-export const LineVisualization: React.FC<VisualizationComponentProps> = ({
+const LineVisualization: React.FC<VisualizationProps> = ({
   data,
   columns,
   height = 300,
@@ -135,7 +150,7 @@ export const LineVisualization: React.FC<VisualizationComponentProps> = ({
   // Handle empty data
   if (!data || columns.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -179,7 +194,7 @@ export const LineVisualization: React.FC<VisualizationComponentProps> = ({
     });
   } else if (Array.isArray(data) && data.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -194,8 +209,8 @@ export const LineVisualization: React.FC<VisualizationComponentProps> = ({
   }
 
   return (
-    <div className="visualization-container" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="visualization-container">
+      <ResponsiveContainer width="100%" height={height}>
         <LineChart data={lineData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
@@ -229,7 +244,7 @@ export const LineVisualization: React.FC<VisualizationComponentProps> = ({
  * Displays aggregated values as a bar chart
  * Best for comparing values across different columns
  */
-export const BarVisualization: React.FC<VisualizationComponentProps> = ({
+const BarVisualization: React.FC<VisualizationProps> = ({
   data,
   columns,
   height = 300,
@@ -237,7 +252,7 @@ export const BarVisualization: React.FC<VisualizationComponentProps> = ({
   // Handle empty data
   if (!data || columns.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -281,7 +296,7 @@ export const BarVisualization: React.FC<VisualizationComponentProps> = ({
     });
   } else if (Array.isArray(data) && data.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -296,8 +311,8 @@ export const BarVisualization: React.FC<VisualizationComponentProps> = ({
   }
 
   return (
-    <div className="visualization-container" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="visualization-container">
+      <ResponsiveContainer width="100%" height={height}>
         <BarChart data={barData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
@@ -329,7 +344,7 @@ export const BarVisualization: React.FC<VisualizationComponentProps> = ({
  * Displays aggregated values as an area chart
  * Best for showing cumulative trends or stacked values
  */
-export const AreaVisualization: React.FC<VisualizationComponentProps> = ({
+const AreaVisualization: React.FC<VisualizationProps> = ({
   data,
   columns,
   height = 300,
@@ -337,7 +352,7 @@ export const AreaVisualization: React.FC<VisualizationComponentProps> = ({
   // Handle empty data
   if (!data || columns.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -381,7 +396,7 @@ export const AreaVisualization: React.FC<VisualizationComponentProps> = ({
     });
   } else if (Array.isArray(data) && data.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -396,8 +411,8 @@ export const AreaVisualization: React.FC<VisualizationComponentProps> = ({
   }
 
   return (
-    <div className="visualization-container" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="visualization-container">
+      <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={areaData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
           <defs>
             {columns.map((column, index) => (
@@ -438,10 +453,10 @@ export const AreaVisualization: React.FC<VisualizationComponentProps> = ({
  * Candlestick Chart Visualization
  * Displays aggregated values as a candlestick chart
  * Best for showing high/low/open/close values (financial data)
- * For this implementation, we'll use a bar chart as a fallback
+ * For this implementation, we use a bar chart as a fallback
  * since Recharts doesn't have native candlestick support
  */
-export const CandlestickVisualization: React.FC<VisualizationComponentProps> = ({
+const CandlestickVisualization: React.FC<VisualizationProps> = ({
   data,
   columns,
   height = 300,
@@ -449,7 +464,7 @@ export const CandlestickVisualization: React.FC<VisualizationComponentProps> = (
   // Handle empty data
   if (!data || columns.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -460,7 +475,7 @@ export const CandlestickVisualization: React.FC<VisualizationComponentProps> = (
   if (Array.isArray(data)) {
     if (data.length === 0) {
       return (
-        <div className="visualization-empty" style={{ height }}>
+        <div className="visualization-empty">
           <p>No data available</p>
         </div>
       );
@@ -487,8 +502,8 @@ export const CandlestickVisualization: React.FC<VisualizationComponentProps> = (
     ];
 
     return (
-      <div className="visualization-container" style={{ height }}>
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="visualization-container">
+        <ResponsiveContainer width="100%" height={height}>
           <BarChart data={candleData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -506,18 +521,15 @@ export const CandlestickVisualization: React.FC<VisualizationComponentProps> = (
   }
 
   // Fallback: display as bar chart
-  return <BarVisualization data={data} columns={columns} height={height} />;
+  return <BarVisualization data={data} type="bar" columns={columns} height={height} />;
 };
 
 /**
  * Generic Visualization Component
  * Renders the appropriate visualization based on type
+ * Works with generic data structures and supports multiple chart types
  */
-export interface GenericVisualizationProps extends VisualizationComponentProps {
-  type: VisualizationType;
-}
-
-export const Visualization: React.FC<GenericVisualizationProps> = ({
+export const Visualization: React.FC<VisualizationProps> = ({
   type,
   data,
   columns,
@@ -526,7 +538,7 @@ export const Visualization: React.FC<GenericVisualizationProps> = ({
   // Handle empty data
   if (!data || columns.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -535,7 +547,7 @@ export const Visualization: React.FC<GenericVisualizationProps> = ({
   // Check if data is empty array
   if (Array.isArray(data) && data.length === 0) {
     return (
-      <div className="visualization-empty" style={{ height }}>
+      <div className="visualization-empty">
         <p>No data available</p>
       </div>
     );
@@ -554,7 +566,7 @@ export const Visualization: React.FC<GenericVisualizationProps> = ({
       return <CandlestickVisualization data={data} columns={columns} height={height} />;
     default:
       return (
-        <div className="visualization-empty" style={{ height }}>
+        <div className="visualization-empty">
           <p>Unknown visualization type: {type}</p>
         </div>
       );

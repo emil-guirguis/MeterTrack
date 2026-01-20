@@ -10,10 +10,21 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 300px;
 }
 
 .visualization-empty p {
   margin: 0;
   color: #666;
   font-size: 14px;
+}
+
+/* Hide recharts legend text */
+.recharts-legend-item-text {
+  display: none !important;
+}
+
+/* Hide recharts legend icon */
+.recharts-legend-icon {
+  display: none !important;
 }

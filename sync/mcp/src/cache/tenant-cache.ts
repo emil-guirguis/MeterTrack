@@ -13,6 +13,8 @@ export interface CachedTenant {
   zip?: string,
   country?: string,
   api_key?: string;
+  download_batch_size?: number;
+  upload_batch_size?: number;
 }
 
 export class TenantCache {
@@ -49,6 +51,8 @@ export class TenantCache {
         zip: tenant.zip,
         country: tenant.country,
         api_key: tenant.api_key,
+        download_batch_size: tenant.download_batch_size || 1000,
+        upload_batch_size: tenant.upload_batch_size || 100,
       };
 
       this.tenants.set(tenant.tenant_id, cached);

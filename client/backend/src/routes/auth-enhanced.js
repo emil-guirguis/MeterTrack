@@ -1284,4 +1284,48 @@ router.post('/2fa/regenerate-backup-codes', authenticateToken, [
   }
 });
 
+/**
+ * GET /api/auth/verify
+ * Verify JWT token and return user information
+ * Requirements: 10.1
+ */
+router.get('/verify', authenticateToken, async (req, res) => {
+  try {
+    // Derive permissions from role using PermissionsService
+    const userRole = (req.user.role || 'viewer').toLowerCase();
+    const permissionsObj = PermissionsService.getPermissionsByRole(userRole);
+    let permissions = permissionsObj;
+
+    // If user has permissions in database, use those instead (keep as nested object)
+    if (req.user.permissions && typeof req.user.permissions === 'object' && !Array.isArray(req.user.permissions)) {
+      // Use nested object format as-is: { module: { action: true } }
+      permissions = req.user.permissions;
+    }
+
+    // Map user object to include client field and permissions
+    // Ensure users_id is set from id field (schema maps users_id to id)
+    const userResponse = {
+      ...req.user,
+      users_id: req.user.id,
+      permissions: permissions,
+      // @ts-ignore - tenant_id is dynamically set by schema initialization
+      client: req.user.tenant_id
+    };
+
+    res.json({
+      success: true,
+      data: {
+        user: userResponse
+      }
+    });
+  } catch (error) {
+    const err = /** @type {Error} */ (error);
+    console.error('Token verification error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Token verification failed'
+    });
+  }
+});
+
 module.exports = router;

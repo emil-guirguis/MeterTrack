@@ -160,9 +160,17 @@ export class SyncDatabase {
           country VARCHAR(100),
           active BOOLEAN DEFAULT true,
           api_key VARCHAR(255),
+          download_batch_size INTEGER NOT NULL DEFAULT 1000,
+          upload_batch_size INTEGER NOT NULL DEFAULT 100,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
+
+      // Add batch size columns if they don't exist (for existing tables)
+      await execQuery(this.pool,
+        `ALTER TABLE tenant ADD COLUMN IF NOT EXISTS download_batch_size INTEGER NOT NULL DEFAULT 1000`);
+      await execQuery(this.pool,
+        `ALTER TABLE tenant ADD COLUMN IF NOT EXISTS upload_batch_size INTEGER NOT NULL DEFAULT 100`);
 
       // Create meter table
       await execQuery(this.pool,
@@ -438,19 +446,47 @@ export class SyncDatabase {
 
   /**
    * Mark readings as synchronized
+   * 
+   * Updates both is_synchronized flag and sync_status column in a single query.
+   * This ensures atomicity and reduces SQL operations.
+   * 
+   * @param readingIds - Array of reading IDs to mark as synchronized
+   * @param tenantId - Optional tenant ID for filtering (for future multi-tenant support)
+   * @returns Number of rows updated
+   * @throws Error if the update fails
    */
-  async markReadingsAsSynchronized(readingIds: string[]): Promise<number> {
+  async markReadingsAsSynchronized(readingIds: string[], tenantId?: number): Promise<number> {
     if (readingIds.length === 0) {
       return 0;
     }
 
-    const result = await this.pool.query(
-      `UPDATE meter_reading
-       SET is_synchronized = true 
-       WHERE meter_reading_id = ANY($1::int[])`,
-      [readingIds]
-    );
-    return result.rowCount || 0;
+    try {
+      let query: string;
+      let params: any[];
+
+      if (tenantId) {
+        // Update with tenant filtering for multi-tenant support
+        query = `UPDATE meter_reading
+                 SET is_synchronized = true, sync_status = 'synchronized'
+                 WHERE meter_reading_id = ANY($1::uuid[]) AND tenant_id = $2`;
+        params = [readingIds, tenantId];
+      } else {
+        // Update without tenant filtering (backward compatible)
+        query = `UPDATE meter_reading
+                 SET is_synchronized = true, sync_status = 'synchronized'
+                 WHERE meter_reading_id = ANY($1::uuid[])`;
+        params = [readingIds];
+      }
+
+      const result = await this.pool.query(query, params);
+      const updatedCount = result.rowCount || 0;
+      
+      console.log(`✅ [SQL] Marked ${updatedCount} reading(s) as synchronized${tenantId ? ` for tenant ${tenantId}` : ''}`);
+      return updatedCount;
+    } catch (error) {
+      console.error('❌ [SQL] Failed to mark readings as synchronized:', error);
+      throw error;
+    }
   }
 
 
@@ -480,6 +516,56 @@ export class SyncDatabase {
       return tenant;
     } catch (error) {
       console.error('❌ [SQL] Error querying tenant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get tenant batch size configuration
+   * 
+   * Retrieves the download_batch_size and upload_batch_size for a specific tenant.
+   * Returns default values if tenant is not found or columns don't exist.
+   * 
+   * @param tenantId - The ID of the tenant
+   * @returns Object with downloadBatchSize and uploadBatchSize
+   * @throws Error if the query fails
+   */
+  async getTenantBatchConfig(tenantId: number): Promise<{ downloadBatchSize: number; uploadBatchSize: number }> {
+    try {
+      const query = `SELECT download_batch_size, upload_batch_size FROM tenant WHERE id = $1`;
+      const result = await execQuery(this.pool, query, [tenantId], 'data-sync.ts>getTenantBatchConfig');
+      
+      if (result.rows.length === 0) {
+        console.warn(`⚠️  [SQL] Tenant ${tenantId} not found, using default batch sizes`);
+        return {
+          downloadBatchSize: 1000,
+          uploadBatchSize: 100
+        };
+      }
+
+      const row = result.rows[0];
+      const downloadBatchSize = row.download_batch_size || 1000;
+      const uploadBatchSize = row.upload_batch_size || 100;
+
+      console.log(`✅ [SQL] Retrieved batch config for tenant ${tenantId}:`, {
+        downloadBatchSize,
+        uploadBatchSize
+      });
+
+      return {
+        downloadBatchSize,
+        uploadBatchSize
+      };
+    } catch (error: any) {
+      // If columns don't exist, log warning and return defaults
+      if (error.message.includes('does not exist') || error.code === '42703') {
+        console.warn(`⚠️  [SQL] Batch size columns do not exist in tenant table, using default values`);
+        return {
+          downloadBatchSize: 1000,
+          uploadBatchSize: 100
+        };
+      }
+      console.error('❌ [SQL] Error querying tenant batch config:', error);
       throw error;
     }
   }

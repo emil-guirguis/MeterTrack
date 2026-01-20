@@ -79,7 +79,6 @@ class Dashboard extends BaseModel {
       entityName: 'Dashboard',
       tableName: 'dashboard',
       description: 'Dashboard card configuration for displaying aggregated meter reading data',
-      formMaxWidth: '700px',
 
       customListColumns: {},
 
@@ -106,7 +105,6 @@ class Dashboard extends BaseModel {
                   maxLength: 255,
                   placeholder: 'Enter card name',
                   showOn: ['list', 'form'],
-                  filtertable: ['main'],
                 }),
                 field({
                   name: 'card_description',
@@ -179,7 +177,6 @@ class Dashboard extends BaseModel {
                   dbField: 'time_frame_type',
                   enumValues: ['custom', 'last_month', 'this_month_to_date', 'since_installation'],
                   showOn: ['list', 'form'],
-                  filtertable: ['true'],
                 }),
                 field({
                   name: 'custom_start_date',
@@ -221,7 +218,6 @@ class Dashboard extends BaseModel {
                   dbField: 'visualization_type',
                   enumValues: ['pie', 'line', 'candlestick', 'bar', 'area'],
                   showOn: ['list', 'form'],
-                  filtertable: ['true'],
                 }),
                 field({
                   name: 'grouping_type',
@@ -233,8 +229,53 @@ class Dashboard extends BaseModel {
                   dbField: 'grouping_type',
                   enumValues: ['total', 'hourly', 'daily', 'weekly', 'monthly'],
                   showOn: ['list', 'form'],
-                  filtertable: ['true'],
                   description: 'How to group the aggregated data',
+                }),
+              ],
+            }),
+            section({
+              name: 'Grid Layout',
+              order: 5,
+              fields: [
+                field({
+                  name: 'grid_x',
+                  order: 1,
+                  type: FieldTypes.NUMBER,
+                  default: null,
+                  required: false,
+                  label: 'Grid X Position',
+                  dbField: 'grid_x',
+                  showOn: ['form'],
+                }),
+                field({
+                  name: 'grid_y',
+                  order: 2,
+                  type: FieldTypes.NUMBER,
+                  default: null,
+                  required: false,
+                  label: 'Grid Y Position',
+                  dbField: 'grid_y',
+                  showOn: ['form'],
+                }),
+                field({
+                  name: 'grid_w',
+                  order: 3,
+                  type: FieldTypes.NUMBER,
+                  default: null,
+                  required: false,
+                  label: 'Grid Width',
+                  dbField: 'grid_w',
+                  showOn: ['form'],
+                }),
+                field({
+                  name: 'grid_h',
+                  order: 4,
+                  type: FieldTypes.NUMBER,
+                  default: null,
+                  required: false,
+                  label: 'Grid Height',
+                  dbField: 'grid_h',
+                  showOn: ['form'],
                 }),
               ],
             }),
@@ -367,6 +408,38 @@ class Dashboard extends BaseModel {
           enumValues: ['total', 'hourly', 'daily', 'weekly', 'monthly'],
           showOn: ['list', 'form'],
         }),
+        grid_x: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          required: false,
+          label: 'Grid X Position',
+          dbField: 'grid_x',
+          showOn: ['form'],
+        }),
+        grid_y: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          required: false,
+          label: 'Grid Y Position',
+          dbField: 'grid_y',
+          showOn: ['form'],
+        }),
+        grid_w: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          required: false,
+          label: 'Grid Width',
+          dbField: 'grid_w',
+          showOn: ['form'],
+        }),
+        grid_h: field({
+          type: FieldTypes.NUMBER,
+          default: null,
+          required: false,
+          label: 'Grid Height',
+          dbField: 'grid_h',
+          showOn: ['form'],
+        }),
       },
 
       // Entity fields - read-only, system-managed
@@ -471,7 +544,7 @@ class Dashboard extends BaseModel {
    * @returns {Promise<Array>} Array of dashboard cards
    */
   static async getByTenant(tenantId) {
-    const db = this._getDb();
+    const db = this.getDb();
     const query = `
       SELECT *
       FROM dashboard
@@ -489,7 +562,7 @@ class Dashboard extends BaseModel {
    * @returns {Promise<Array>} Array of dashboard cards
    */
   static async getByUser(userId, tenantId) {
-    const db = this._getDb();
+    const db = this.getDb();
     const query = `
       SELECT *
       FROM dashboard
@@ -507,7 +580,7 @@ class Dashboard extends BaseModel {
    * @returns {Promise<Array>} Array of dashboard cards
    */
   static async getByMeterElement(meterElementId, tenantId) {
-    const db = this._getDb();
+    const db = this.getDb();
     const query = `
       SELECT *
       FROM dashboard
@@ -523,7 +596,7 @@ class Dashboard extends BaseModel {
    * @returns {Promise<Object>} Dashboard statistics
    */
   static async getStats() {
-    const db = this._getDb();
+    const db = this.getDb();
     const query = `
       SELECT
         COUNT(*) as total_cards,

@@ -1,0 +1,20 @@
+/**
+ * DashboardCard Component Styles
+ */
+
+.dashboard-card {
+  position: relative;
+}
+
+.dashboard-card__drag-handle {
+  cursor: grab;
+}
+
+.dashboard-card__drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Ensure proper flex layout for card content */
+.dashboard-card .MuiCardContent-root {
+  overflow: auto;
+}

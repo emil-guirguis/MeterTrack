@@ -1,3 +1,26 @@
-// Barrel export for dashboard types
+/**
+ * Dashboard Types
+ * 
+ * Generic type definitions for dashboard components and utilities.
+ * These types are designed to be extended by client applications.
+ * 
+ * Exports:
+ * - DashboardCard: Generic card interface
+ * - DashboardConfig: Dashboard configuration
+ * - VisualizationType: Supported chart types
+ * - AggregatedData: Data structure for aggregated metrics
+ * - WidgetConfig: Widget configuration
+ * - DashboardLayout: Layout configuration
+ */
+
+// Core dashboard types
 export * from './dashboard';
+
+// Layout types
+export * from './layout';
+
+// Widget types
 export * from './widget';
+
+// Configuration types
+export * from './config';

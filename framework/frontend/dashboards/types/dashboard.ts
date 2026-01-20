@@ -4,6 +4,54 @@
  * Defines types for dashboard layouts, configuration, and state management
  */
 
+import { DashboardConfig } from './config';
+import { DashboardLayout, DashboardBreakpoint, GridPosition, DashboardGridItem } from './layout';
+
+/**
+ * Supported visualization types for dashboard cards
+ */
+export type VisualizationType = 'pie' | 'line' | 'bar' | 'area' | 'candlestick';
+
+/**
+ * Generic dashboard card interface
+ * Extensible to support client-specific properties
+ */
+export interface DashboardCard {
+  /** Card unique identifier */
+  id: string | number;
+  /** Card title */
+  title: string;
+  /** Card description */
+  description?: string;
+  /** Visualization type for this card */
+  visualization_type: VisualizationType;
+  /** Grid column position (1-based) */
+  grid_x?: number;
+  /** Grid row position (1-based) */
+  grid_y?: number;
+  /** Grid column width */
+  grid_w?: number;
+  /** Grid row height */
+  grid_h?: number;
+  /** Allow extension with additional properties */
+  [key: string]: any;
+}
+
+/**
+ * Generic aggregated data interface
+ * Extensible to support client-specific data structures
+ */
+export interface AggregatedData {
+  /** Card ID this data belongs to */
+  card_id: string | number;
+  /** Aggregated values (e.g., totals, averages) */
+  aggregated_values: Record<string, number>;
+  /** Grouped data for detailed visualization */
+  grouped_data?: Array<Record<string, any>>;
+  /** Allow extension with additional properties */
+  [key: string]: any;
+}
+
 /**
  * Dashboard layout configuration
  */
@@ -30,28 +78,6 @@ export interface DashboardBreakpoint {
   columns: number;
   /** Gap size at this breakpoint */
   gap?: number | string;
-}
-
-/**
- * Dashboard configuration
- */
-export interface DashboardConfig {
-  /** Dashboard unique identifier */
-  id: string;
-  /** Dashboard title */
-  title?: string;
-  /** Dashboard layout configuration */
-  layout: DashboardLayout;
-  /** Auto-refresh interval in milliseconds (0 = disabled) */
-  refreshInterval?: number;
-  /** Whether sections can be collapsed */
-  collapsible?: boolean;
-  /** Default collapsed state */
-  defaultCollapsed?: boolean;
-  /** Whether to persist state in localStorage */
-  persistState?: boolean;
-  /** localStorage key for state persistence */
-  storageKey?: string;
 }
 
 /**

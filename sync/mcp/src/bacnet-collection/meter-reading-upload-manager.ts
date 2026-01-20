@@ -45,6 +45,7 @@ export class MeterReadingUploadManager {
   private connectivityMonitor: ConnectivityMonitor | null = null;
   private validationMiddleware: ReadingValidationMiddleware;
   private batchSize: number;
+  private uploadBatchSize: number;
   private maxRetries: number;
   private config: MeterReadingUploadManagerConfig;
 
@@ -63,6 +64,7 @@ export class MeterReadingUploadManager {
     this.config = config;
     this.database = config.database;
     this.batchSize = config.batchSize || 1000;
+    this.uploadBatchSize = config.batchSize || 100;
     this.maxRetries = config.maxRetries || 5;
     
     // Initialize validation middleware with loaded config
@@ -84,6 +86,13 @@ export class MeterReadingUploadManager {
     const tenantCache = cacheManager.getTenant();
     this.tenantId = tenantCache.tenant_id;
     console.log(`🚀 [UploadManager] Tenant ID: ${this.tenantId}`);
+    
+    // Load batch sizes from tenant cache
+    this.uploadBatchSize = tenantCache.upload_batch_size || 100;
+    console.log(`📊 [UploadManager] Loaded batch config for tenant ${this.tenantId}:`, {
+      uploadBatchSize: this.uploadBatchSize,
+      source: 'tenant cache'
+    });
     
     // Initialize API client
     this.apiClient = this.config.apiClient;
@@ -148,7 +157,8 @@ export class MeterReadingUploadManager {
 
     try {
       await this.checkClientConnectivity();
-      const readings = await this.database.getUnsynchronizedReadings(this.batchSize);
+      // Use configured upload batch size for fetching readings
+      const readings = await this.database.getUnsynchronizedReadings(this.uploadBatchSize);
 
       // Update queue size based on readings retrieved
       this.status.queueSize = readings.length;
@@ -183,17 +193,34 @@ export class MeterReadingUploadManager {
         return;
       }
 
-      console.log(`Uploading ${validReadings.length} valid readings...`);
+      console.log(`Uploading ${validReadings.length} valid readings in batches of ${this.uploadBatchSize}...`);
 
-      const result = await this.uploadBatchWithRetry(validReadings);
-
-      if (result.success) {
-        const readingIds = validReadings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
+      // Split readings into batches and upload each batch
+      let totalUploaded = 0;
+      let totalFailed = 0;
+      
+      for (let i = 0; i < validReadings.length; i += this.uploadBatchSize) {
+        const batch = validReadings.slice(i, i + this.uploadBatchSize);
+        console.log(`📦 [UploadManager] Processing batch ${Math.floor(i / this.uploadBatchSize) + 1} with ${batch.length} readings`);
         
-        // Mark readings as synchronized (successfully inserted into remote database)
-        await this.database.markReadingsAsSynchronized(readingIds);
-        console.log(`✅ Marked ${readingIds.length} readings as synchronized`);
+        const result = await this.uploadBatchWithRetry(batch);
 
+        if (result.success) {
+          const readingIds = batch.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
+          
+          // Mark readings as synchronized (successfully inserted into remote database)
+          await this.database.markReadingsAsSynchronized(readingIds, this.tenantId);
+          console.log(`✅ Marked ${readingIds.length} readings as synchronized`);
+
+          totalUploaded += batch.length;
+        } else {
+          totalFailed += batch.length;
+          console.error(`❌ Batch upload failed: ${result.error}`);
+        }
+      }
+
+      // Log overall operation result
+      if (totalFailed === 0) {
         await this.database.logSyncOperation(
           'upload',
           validReadings.length,
@@ -203,21 +230,21 @@ export class MeterReadingUploadManager {
         this.status.lastUploadTime = new Date();
         this.status.lastUploadSuccess = true;
         this.status.lastUploadError = undefined;
-        this.status.totalUploaded += validReadings.length;
+        this.status.totalUploaded += totalUploaded;
       } else {
         await this.database.logSyncOperation(
           'upload',
           validReadings.length,
           false,
-          result.error || 'Unknown error'
+          `${totalFailed} readings failed to upload`
         );
 
         this.status.lastUploadTime = new Date();
         this.status.lastUploadSuccess = false;
-        this.status.lastUploadError = result.error;
-        this.status.totalFailed += validReadings.length;
+        this.status.lastUploadError = `${totalFailed} readings failed to upload`;
+        this.status.totalFailed += totalFailed;
 
-        console.error(`Upload failed: ${result.error}`);
+        console.error(`Upload partially failed: ${totalFailed}/${validReadings.length} readings failed`);
       }
 
     } catch (error) {

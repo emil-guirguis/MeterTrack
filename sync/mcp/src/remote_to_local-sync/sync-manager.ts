@@ -51,6 +51,9 @@ export class SyncManager {
   private batchSize: number;
   private maxRetries: number;
   private enableAutoSync: boolean;
+  private downloadBatchSize: number = 1000;
+  private uploadBatchSize: number = 100;
+  private tenantId: number | null = null;
 
   private cronJob?: cron.ScheduledTask;
   private isSyncing: boolean = false;
@@ -113,6 +116,7 @@ export class SyncManager {
       }
 
       if (tenant) {
+        this.tenantId = tenant.tenant_id;
         this.tenantData = {
           tenant_id: tenant.tenant_id,
           name: tenant.name || '',
@@ -124,6 +128,22 @@ export class SyncManager {
           country: tenant.country,
         };
         console.log(`✅ [SyncManager] Tenant data loaded into memory: ${this.tenantData.name}`);
+
+        // Load batch sizes from tenant configuration
+        try {
+          const batchConfig = await this.database.getTenantBatchConfig(tenant.tenant_id);
+          this.downloadBatchSize = batchConfig.downloadBatchSize;
+          this.uploadBatchSize = batchConfig.uploadBatchSize;
+          console.log(`📊 [SyncManager] Loaded batch config for tenant ${tenant.tenant_id}:`, {
+            downloadBatchSize: this.downloadBatchSize,
+            uploadBatchSize: this.uploadBatchSize,
+            source: 'database'
+          });
+        } catch (error) {
+          console.warn('⚠️  [SyncManager] Failed to load batch sizes, using defaults:', error);
+          this.downloadBatchSize = 1000;
+          this.uploadBatchSize = 100;
+        }
       }
     } catch (error) {
       console.error('❌ [SyncManager] Failed to load tenant data:', error);
@@ -187,47 +207,80 @@ export class SyncManager {
 
     try {
       await this.checkClientConnectivity();
-      const readings = await this.database.getUnsynchronizedReadings(this.batchSize);
+      
+      // Use configured download batch size for fetching readings
+      const readings = await this.database.getUnsynchronizedReadings(this.downloadBatchSize);
 
       if (readings.length === 0) {
         console.log('No readings to sync');
         return;
       }
 
-      console.log(`Syncing ${readings.length} readings...`);
+      console.log(`Syncing ${readings.length} readings using batch size ${this.uploadBatchSize}...`);
 
-      const result = await this.uploadBatchWithRetry(readings);
+      // Split readings into batches of uploadBatchSize
+      const batchCount = Math.ceil(readings.length / this.uploadBatchSize);
+      console.log(`📦 [SyncManager] Splitting into ${batchCount} batches of ${this.uploadBatchSize} readings`);
 
-      if (result.success) {
-        const readingIds = readings.map((r: MeterReadingEntity) => r.meter_reading_id).filter((id): id is string => id !== undefined);
+      let totalSuccessful = 0;
+      let totalFailed = 0;
+      let lastError: string | undefined;
+
+      for (let i = 0; i < readings.length; i += this.uploadBatchSize) {
+        const batch = readings.slice(i, i + this.uploadBatchSize);
+        const batchIndex = Math.floor(i / this.uploadBatchSize) + 1;
+        
+        console.log(`📤 [SyncManager] Processing batch ${batchIndex}/${batchCount} (${batch.length} readings)`);
+
+        const result = await this.uploadBatchWithRetry(batch);
+
+        if (result.success) {
+          totalSuccessful += batch.length;
+        } else {
+          totalFailed += batch.length;
+          lastError = result.error;
+        }
+      }
+
+      // Log batch operation completion
+      console.log(`✅ [SyncManager] Batch insertion complete: ${batchCount} batches processed, ${totalSuccessful} successful, ${totalFailed} failed`);
+
+      if (totalSuccessful > 0) {
+        const readingIds = readings
+          .slice(0, totalSuccessful)
+          .map((r: MeterReadingEntity) => r.meter_reading_id)
+          .filter((id): id is string => id !== undefined);
+        
         const deletedCount = await this.database.deleteSynchronizedReadings(readingIds);
 
         console.log(`Successfully synced and deleted ${deletedCount} readings`);
 
         await this.database.logSyncOperation(
           'sync',
-          readings.length,
+          totalSuccessful,
           true
         );
 
         this.status.lastSyncTime = new Date();
-        this.status.lastSyncSuccess = true;
-        this.status.lastSyncError = undefined;
-        this.status.totalSynced += readings.length;
-      } else {
+        this.status.lastSyncSuccess = totalFailed === 0;
+        this.status.lastSyncError = lastError;
+        this.status.totalSynced += totalSuccessful;
+      }
+
+      if (totalFailed > 0) {
         await this.database.logSyncOperation(
           'sync',
-          readings.length,
+          totalFailed,
           false,
-          result.error || 'Unknown error'
+          lastError || 'Unknown error'
         );
 
         this.status.lastSyncTime = new Date();
         this.status.lastSyncSuccess = false;
-        this.status.lastSyncError = result.error;
-        this.status.totalFailed += readings.length;
+        this.status.lastSyncError = lastError;
+        this.status.totalFailed += totalFailed;
 
-        console.error(`Sync failed: ${result.error}`);
+        console.error(`Sync failed for ${totalFailed} readings: ${lastError}`);
       }
 
     } catch (error) {

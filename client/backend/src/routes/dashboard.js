@@ -60,14 +60,73 @@ router.get('/cards', requirePermission('dashboard:read'), asyncHandler(async (re
       tenant_id: tenantId
     };
 
+    console.log('📊 [Dashboard API] Query options:', JSON.stringify(options));
+
     // Get dashboard cards
     const result = await Dashboard.findAll(options);
+    
+    console.log('📊 [Dashboard API] Query result rows:', result.rows.length);
+    console.log('📊 [Dashboard API] Query result pagination:', result.pagination);
+
+    // Get grid properties directly from database since they might not be in the model instance
+    console.log('📊 [Dashboard API] Fetching grid properties from database...');
+    const db = Dashboard.getDb();
+    const gridQuery = `
+      SELECT dashboard_id, grid_x, grid_y, grid_w, grid_h
+      FROM dashboard
+      WHERE tenant_id = $1
+      ORDER BY dashboard_id DESC
+      LIMIT $2 OFFSET $3
+    `;
+    const gridResult = await db.query(gridQuery, [
+      tenantId,
+      parseInt(limit),
+      (parseInt(page) - 1) * parseInt(limit)
+    ]);
+    
+    console.log('📊 [Dashboard API] Grid result rows:', gridResult.rows);
+    
+    const gridMap = {};
+    gridResult.rows.forEach(row => {
+      gridMap[row.dashboard_id] = {
+        grid_x: row.grid_x,
+        grid_y: row.grid_y,
+        grid_w: row.grid_w,
+        grid_h: row.grid_h
+      };
+    });
+    
+    console.log('📊 [Dashboard API] Grid map:', JSON.stringify(gridMap));
 
     // Map id to dashboard_id for API response
-    const items = result.rows.map(card => ({
-      ...card,
-      dashboard_id: card.id
-    }));
+    const items = result.rows.map(card => {
+      // Convert model instance to plain object by getting all properties
+      const cardData = {};
+      for (const key in card) {
+        if (card.hasOwnProperty(key)) {
+          cardData[key] = card[key];
+        }
+      }
+      // Also get non-enumerable properties
+      const allKeys = Object.getOwnPropertyNames(card);
+      for (const key of allKeys) {
+        if (!(key in cardData)) {
+          cardData[key] = card[key];
+        }
+      }
+      
+      // Add grid properties from database query
+      const gridProps = gridMap[card.dashboard_id] || {};
+      
+      return {
+        ...cardData,
+        dashboard_id: cardData.dashboard_id || cardData.id,
+        grid_x: gridProps.grid_x,
+        grid_y: gridProps.grid_y,
+        grid_w: gridProps.grid_w,
+        grid_h: gridProps.grid_h,
+      };
+    });
 
     res.json({
       success: true,
@@ -82,10 +141,11 @@ router.get('/cards', requirePermission('dashboard:read'), asyncHandler(async (re
   } catch (error) {
     const err = /** @type {Error} */ (error);
     console.error('❌ [Dashboard API] Error fetching cards:', err.message);
+    console.error('❌ [Dashboard API] Error stack:', err.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch dashboard cards',
-      ...(process.env.NODE_ENV !== 'production' ? { error: err.message } : {})
+      ...(process.env.NODE_ENV !== 'production' ? { error: err.message, stack: err.stack } : {})
     });
   }
 }));
