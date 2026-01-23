@@ -13,7 +13,7 @@ import {
   BatchUploadRequest,
   BatchUploadResponse,
   ConfigDownloadResponse,
-} from '../types/entities.js';
+} from '../types/index.js';
 
 export class ClientSystemApiClient {
   private client: AxiosInstance;

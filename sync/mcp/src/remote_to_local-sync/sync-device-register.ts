@@ -19,7 +19,7 @@ import {
 } from '../helpers/sync-functions.js';
 import { validateEntityExists } from '../helpers/entity-validation.js';
 import { cacheManager } from '../cache/index.js';
-import { SyncDatabase } from '../types/entities.js';
+import { SyncDatabase } from '../types/index.js';
 
 export interface DeviceRegisterSyncResult {
   success: boolean;

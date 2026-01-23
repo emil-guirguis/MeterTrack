@@ -12,6 +12,10 @@ import { queryMeters } from './tools/query-meters.js';
 import { queryReadings } from './tools/query-readings.js';
 import { getSiteStatus } from './tools/get-site-status.js';
 import { generateReport } from './tools/generate-report.js';
+import { checkMeterHealth } from './tools/check-meter-health.js';
+import { createNotification } from './tools/create-notification.js';
+import { getNotifications } from './tools/get-notifications.js';
+import { deleteNotification } from './tools/delete-notification.js';
 
 const server = new Server(
   {
@@ -136,6 +140,76 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['report_type', 'start_date', 'end_date'],
         },
       },
+      {
+        name: 'check_meter_health',
+        description: 'Check health status of all meters and elements. Identifies failing readings (error status) and stale readings (no update in past 1 hour).',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      {
+        name: 'create_notification',
+        description: 'Create a new notification for a tenant. Prevents duplicate notifications of the same type.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            tenant_id: {
+              type: 'number',
+              description: 'The tenant ID',
+            },
+            notification_type: {
+              type: 'string',
+              description: 'Type of notification (e.g., meter_health, alert, system)',
+            },
+            description: {
+              type: 'string',
+              description: 'Optional: Detailed description of the notification',
+            },
+          },
+          required: ['tenant_id', 'notification_type'],
+        },
+      },
+      {
+        name: 'get_notifications',
+        description: 'Get notifications for a tenant with optional filtering by type.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            tenant_id: {
+              type: 'number',
+              description: 'The tenant ID',
+            },
+            notification_type: {
+              type: 'string',
+              description: 'Optional: Filter by notification type',
+            },
+            limit: {
+              type: 'number',
+              description: 'Optional: Maximum number of notifications to return (default: 100)',
+            },
+            offset: {
+              type: 'number',
+              description: 'Optional: Number of notifications to skip (default: 0)',
+            },
+          },
+          required: ['tenant_id'],
+        },
+      },
+      {
+        name: 'delete_notification',
+        description: 'Delete a specific notification by ID.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            notification_id: {
+              type: 'number',
+              description: 'The notification ID to delete',
+            },
+          },
+          required: ['notification_id'],
+        },
+      },
     ],
   };
 });
@@ -160,6 +234,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           throw new Error('generate_report requires report_type, start_date, and end_date');
         }
         return await generateReport(args as any);
+      
+      case 'check_meter_health':
+        return await checkMeterHealth(args || {});
+      
+      case 'create_notification':
+        if (!args || !args.tenant_id || !args.notification_type) {
+          throw new Error('create_notification requires tenant_id and notification_type');
+        }
+        return await createNotification(args as any);
+      
+      case 'get_notifications':
+        if (!args || !args.tenant_id) {
+          throw new Error('get_notifications requires tenant_id');
+        }
+        return await getNotifications(args as any);
+      
+      case 'delete_notification':
+        if (!args || !args.notification_id) {
+          throw new Error('delete_notification requires notification_id');
+        }
+        return await deleteNotification(args as any);
       
       default:
         throw new Error(`Unknown tool: ${name}`);

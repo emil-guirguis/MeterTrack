@@ -456,16 +456,16 @@ router.post('/bootstrap', [
       const tenantResult = await db.query('SELECT tenant_id FROM tenant LIMIT 1');
       if (tenantResult.rows && tenantResult.rows.length > 0) {
         const tenantRow = /** @type {Record<string, any>} */ (tenantResult.rows[0]);
-        tenantId = tenantRow.id;
+        tenantId = tenantRow.tenant_id;
         console.log('[BOOTSTRAP] Using existing tenant:', tenantId);
       } else {
         // Create a default tenant
         const createTenantResult = await db.query(
-          'INSERT INTO tenant (name, active) VALUES ($1, $2) RETURNING id',
+          'INSERT INTO tenant (name, active) VALUES ($1, $2) RETURNING tenant_id',
           ['Default Tenant', true]
         );
         const createdTenantRow = /** @type {Record<string, any>} */ (createTenantResult.rows[0]);
-        tenantId = createdTenantRow.id;
+        tenantId = createdTenantRow.tenant_id;
         console.log('[BOOTSTRAP] Created default tenant:', tenantId);
       }
     } catch (err) {

@@ -7,7 +7,7 @@
 import { RemoteToLocalSyncAgent } from '../remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from '../bacnet-collection/bacnet-reading-agent.js';
 import { MeterReadingUploadManager } from '../bacnet-collection/meter-reading-upload-manager.js';
-import { SyncDatabase } from '../types/entities.js';
+import { SyncDatabase } from '../types/index.js';
 import { Pool } from 'pg';
 export interface LocalApiServerConfig {
     port: number;

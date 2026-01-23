@@ -5,7 +5,7 @@
  * Ensures only real BACnet data is uploaded to the Client System.
  */
 
-import { MeterReadingEntity } from '../types/entities.js';
+import { MeterReadingEntity } from '../entities/index.js';
 import MeterReadingValidator, { ValidationResult } from '../helpers/meter-reading-validator.js';
 
 export interface ValidationMiddlewareConfig {

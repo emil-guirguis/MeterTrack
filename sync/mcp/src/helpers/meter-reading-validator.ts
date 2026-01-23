@@ -9,7 +9,7 @@
  * - Device connectivity validation
  */
 
-import { MeterReadingEntity } from '../types/entities.js';
+import { MeterReadingEntity } from '../entities/index.js';
 
 export interface ValidationResult {
   isValid: boolean;

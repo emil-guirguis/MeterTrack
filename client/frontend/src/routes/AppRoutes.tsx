@@ -101,7 +101,9 @@ const AppRoutes: React.FC = () => {
           path="/meter-readings"
           element={
             <ProtectedRoute>
-              <MeterReadingsPage />
+              <AppLayoutWrapper title="Meter Readings">
+                <MeterReadingsPage />
+              </AppLayoutWrapper>
             </ProtectedRoute>
           }
         />

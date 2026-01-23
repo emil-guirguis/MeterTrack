@@ -8,22 +8,23 @@
 import React from 'react';
 import { MeterReadingList } from './MeterReadingList';
 import { useMeterReadingsEnhanced } from './meterReadingsStore';
-import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
+import { useMeterSelection } from '../../contexts/MeterSelectionContext';
 import type { MeterReading } from './meterReadingConfig';
 
 export const MeterReadingManagementPage: React.FC = () => {
   const store = useMeterReadingsEnhanced();
+  const { selectedMeter } = useMeterSelection();
 
-  // Fetch readings on mount
+  // Fetch readings when selected meter changes
   React.useEffect(() => {
-    store.fetchItems();
-  }, []);
+    if (selectedMeter) {
+      store.fetchItems({ meterId: selectedMeter });
+    }
+  }, [selectedMeter]);
 
   return (
-    <AppLayoutWrapper title="Meter Readings">
-      <div className="meter-reading-management-page">
-        <MeterReadingList />
-      </div>
-    </AppLayoutWrapper>
+    <div className="meter-reading-management-page">
+      <MeterReadingList />
+    </div>
   );
 };

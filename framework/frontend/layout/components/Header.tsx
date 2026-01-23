@@ -6,6 +6,35 @@ import { getAppVersion, formatVersion } from '../../utils/version';
 
 import './Header.css';
 
+// Speech Recognition API types
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult;
+  length: number;
+}
+
+interface SpeechRecognitionResult {
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+  length: number;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 /**
  * Header Component
  * 
@@ -28,8 +57,14 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -39,6 +74,9 @@ export const Header: React.FC<HeaderProps> = ({
       }
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
         setNotificationsOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
       }
     };
 
@@ -52,14 +90,111 @@ export const Header: React.FC<HeaderProps> = ({
       if (event.key === 'Escape') {
         if (userMenuOpen) setUserMenuOpen(false);
         if (notificationsOpen) setNotificationsOpen(false);
+        if (showSearchResults) setShowSearchResults(false);
+        if (isListening) stopListening();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [userMenuOpen, notificationsOpen]);
+  }, [userMenuOpen, notificationsOpen, showSearchResults, isListening]);
 
   const unreadNotifications = notifications.filter(n => !n.id.includes('read')).length;
+
+  // Initialize speech recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        let interimTranscript = '';
+        for (let i = event.results.length - 1; i >= 0; --i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            setSearchQuery(transcript);
+            handleSearch(transcript);
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
+  const startListening = () => {
+    if (recognitionRef.current && !isListening) {
+      recognitionRef.current.start();
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.abort();
+      setIsListening(false);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      // Call AI search endpoint
+      const response = await fetch('/api/ai/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ query })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.data?.results || []);
+        setShowSearchResults(true);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value.trim()) {
+      handleSearch(value);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  };
 
   return (
     <header
@@ -100,15 +235,70 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right side - Search, User menu and notifications */}
       <div className="app-header__right">
         {/* Search Bar */}
-        <div className="app-header__search">
+        <div className="app-header__search" ref={searchRef}>
           <div className="search-container">
             {getIconElement('search', 'search-icon')}
             <input
               type="search"
               className="search-input"
-              placeholder="Search..."
+              placeholder="Search devices, meters... or use voice"
               aria-label="Search"
+              value={searchQuery}
+              onChange={handleSearchInputChange}
+              onFocus={() => searchQuery && setShowSearchResults(true)}
             />
+            <button
+              className={`mic-button ${isListening ? 'listening' : ''}`}
+              onClick={isListening ? stopListening : startListening}
+              aria-label={isListening ? 'Stop listening' : 'Start voice search'}
+              title={isListening ? 'Stop listening' : 'Start voice search'}
+              type="button"
+            >
+              {getIconElement('mic', 'mic-icon')}
+            </button>
+
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="search-results-dropdown" role="region" aria-label="Search results">
+                <div className="search-results-list">
+                  {searchResults.slice(0, 5).map((result) => (
+                    <div key={result.id} className="search-result-item">
+                      <div className="result-icon">
+                        {getIconElement('electric_bolt', 'result-icon')}
+                      </div>
+                      <div className="result-content">
+                        <div className="result-name">{result.name}</div>
+                        <div className="result-meta">
+                          <span className="result-type">{result.type}</span>
+                          <span className="result-location">{result.location}</span>
+                        </div>
+                        <div className="result-consumption">
+                          {result.currentConsumption} {result.unit}
+                        </div>
+                      </div>
+                      <div className={`result-status ${result.status}`}>
+                        {result.status}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {searchResults.length > 5 && (
+                  <div className="search-results-footer">
+                    <button type="button" className="view-all-button">
+                      View all {searchResults.length} results
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showSearchResults && searchQuery && searchResults.length === 0 && (
+              <div className="search-results-dropdown" role="region" aria-label="Search results">
+                <div className="no-results">
+                  <p>No devices or meters found matching "{searchQuery}"</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

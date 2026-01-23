@@ -285,7 +285,7 @@ router.get('/logs',
           el.*,
           et.name as template_name
         FROM email_logs el
-        LEFT JOIN email_templates et ON el.template_id = et.id
+        LEFT JOIN email_templates et ON el.template_id = et.email_template_id
         WHERE 1=1
       `;
 
@@ -550,12 +550,12 @@ router.get('/notifications/logs',
         SELECT 
           nl.*,
           et.name as template_name,
-          m.id as meter_name,
+          m.meter_id as meter_name,
           b.name as location_name
         FROM notification_logs nl
-        LEFT JOIN email_templates et ON nl.template_id = et.id
-        LEFT JOIN meters m ON nl.meter_id = m.id
-        LEFT JOIN locations b ON nl.location_id = b.id
+        LEFT JOIN email_templates et ON nl.template_id = et.email_template_id
+        LEFT JOIN meters m ON nl.meter_id = m.meter_id
+        LEFT JOIN locations b ON nl.location_id = b.location_id
         WHERE 1=1
       `;
 
@@ -588,7 +588,7 @@ router.get('/notifications/logs',
 
       // Get total count
       const countQuery = query.replace(
-        'SELECT nl.*, et.name as template_name, m.id as meter_name, b.name as location_name',
+        'SELECT nl.*, et.name as template_name, m.meter_id as meter_name, b.name as location_name',
         'SELECT COUNT(*)'
       );
       const countResult = await db.query(countQuery, values);

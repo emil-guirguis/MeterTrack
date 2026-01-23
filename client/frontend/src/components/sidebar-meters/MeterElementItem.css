@@ -1,0 +1,68 @@
+.meter-element-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  margin: 2px 0;
+  margin-left: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.meter-element-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.meter-element-item.selected {
+  background-color: rgba(33, 150, 243, 0.1);
+  border-left: 3px solid #2196f3;
+  padding-left: 9px;
+  box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.2);
+}
+
+.meter-element-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+
+.favorite-indicator {
+  color: #ffc107;
+  font-size: 12px;
+  flex-shrink: 0;
+  text-shadow: 0 0 2px rgba(255, 193, 7, 0.3);
+}
+
+.element-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #555;
+}
+
+.favorite-button {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #999;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.favorite-button:hover {
+  color: #ffc107;
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+.favorite-button.favorited {
+  color: #ffc107;
+}

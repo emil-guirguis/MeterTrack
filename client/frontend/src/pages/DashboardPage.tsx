@@ -29,7 +29,6 @@ export const DashboardPage: React.FC = () => {
   const [expandedCard, setExpandedCard] = useState<DashboardCardType | null>(null);
   const [expandedCardData, setExpandedCardData] = useState<AggregatedData | null>(null);
   const [layout, setLayout] = useState<Layout[]>([]);
-  const [savingLayout, setSavingLayout] = useState(false);
   const [cardDataMap, setCardDataMap] = useState<Record<number, AggregatedData | null>>({});
   const [cardLoadingMap, setCardLoadingMap] = useState<Record<number, boolean>>({});
   const [cardErrorMap, setCardErrorMap] = useState<Record<number, string | null>>({});
@@ -37,6 +36,7 @@ export const DashboardPage: React.FC = () => {
   const [meterElements, setMeterElements] = useState<Array<{ id: number; name: string; element?: string }>>([]);
   const [powerColumns, setPowerColumns] = useState<Array<{ name: string; label: string; type?: string }>>([]);
   const [modalLoading, setModalLoading] = useState(false);
+  const isInitialLoadRef = React.useRef(true);
 
   // Fetch all dashboard cards
   const fetchCards = useCallback(async () => {
@@ -52,13 +52,13 @@ export const DashboardPage: React.FC = () => {
       console.log('📊 [DashboardPage] Cards received:', response.items.length);
       setCards(response.items);
       
-      // Initialize layout from card positions
+      // Initialize layout from card positions - use pixel values from API
       const newLayout: Layout[] = response.items.map((card, index) => ({
         i: card.dashboard_id.toString(),
-        x: card.grid_x ?? (index % 2) * 6,
-        y: card.grid_y ?? Math.floor(index / 2) * 8,
-        w: card.grid_w ?? 6,
-        h: card.grid_h ?? 8,
+        x: card.grid_x ?? 0,
+        y: card.grid_y ?? (index * 520),
+        w: card.grid_w ?? 300,
+        h: card.grid_h ?? 500,
         static: false,
       }));
       setLayout(newLayout);
@@ -75,6 +75,9 @@ export const DashboardPage: React.FC = () => {
       response.items.forEach((card) => {
         fetchCardData(card.dashboard_id);
       });
+      
+      // Mark initial load as complete - now we can save layout changes
+      isInitialLoadRef.current = false;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch dashboard cards';
       setError(errorMsg);
@@ -102,6 +105,7 @@ export const DashboardPage: React.FC = () => {
 
   // Load cards on mount
   useEffect(() => {
+    console.log('📊 [DashboardPage] useEffect: Loading cards on mount');
     fetchCards();
     fetchMeters();
     fetchPowerColumns();
@@ -123,7 +127,7 @@ export const DashboardPage: React.FC = () => {
       const elementsData = await dashboardService.getMeterElementsByMeter(meterId);
       setMeterElements(elementsData);
     } catch (err) {
-      console.error('Error fetching meter elements:', err);
+      console.error('❌ [DashboardPage] Error fetching meter elements:', err);
     }
   }, []);
 
@@ -156,10 +160,11 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Handle edit card
-  const handleEditCard = (card: DashboardCardType) => {
+  const handleEditCard = async (card: DashboardCardType) => {
     setEditingCard(card);
     if (card.meter_id) {
-      fetchMeterElements(card.meter_id);
+      // Fetch meter elements before opening modal to avoid flash
+      await fetchMeterElements(card.meter_id);
     }
     setShowModal(true);
   };
@@ -184,34 +189,17 @@ export const DashboardPage: React.FC = () => {
     handleModalClose();
   };
 
-  // Handle layout change
+  // Handle layout change - DISABLED - do not save layout changes
   const handleLayoutChange = async (newLayout: Layout[]) => {
-    setLayout(newLayout);
-    setSavingLayout(true);
-
-    try {
-      // Save layout changes for each card
-      const updates = newLayout.map(item => {
-        const card = cards.find(c => c.dashboard_id === parseInt(item.i));
-        if (card) {
-          return dashboardService.updateDashboardCard(card.dashboard_id, {
-            grid_x: item.x,
-            grid_y: item.y,
-            grid_w: item.w,
-            grid_h: item.h,
-          });
-        }
-        return Promise.resolve();
-      });
-
-      await Promise.all(updates);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to save layout';
-      setError(errorMsg);
-      console.error('Error saving layout:', err);
-    } finally {
-      setSavingLayout(false);
+    // Skip layout changes during initial load - react-grid-layout fires this on mount
+    if (isInitialLoadRef.current) {
+      console.log('📊 [DashboardPage] Layout change during initial load - IGNORING');
+      return;
     }
+    
+    // DO NOT SAVE - just update local state
+    setLayout(newLayout);
+    console.log('📊 [DashboardPage] Layout changed but NOT saving to database');
   };
 
   // Handle delete card
@@ -373,49 +361,44 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Create a wrapper component for the modal that provides meters, elements, and power columns
-  const ClientDashboardCardModal = React.useMemo(() => {
-    return ({ isOpen, card, onClose, onSuccess }: any) => {
-      // When modal opens and we have a meter_id, fetch the meter elements
-      useEffect(() => {
-        if (isOpen && card?.meter_id) {
-          fetchMeterElements(card.meter_id);
+  const ClientDashboardCardModal = React.memo(({ isOpen, card, onClose, onSuccess }: any) => {
+    const handleSubmit = useCallback(async (data: any) => {
+      try {
+        setModalLoading(true);
+        let result;
+        if (card) {
+          result = await dashboardService.updateDashboardCard(card.dashboard_id, data);
+        } else {
+          result = await dashboardService.createDashboardCard(data);
         }
-      }, [isOpen, card?.meter_id]);
+        onSuccess?.(result);
+      } catch (err) {
+        console.error('Error saving card:', err);
+      } finally {
+        setModalLoading(false);
+      }
+    }, [card, onSuccess]);
 
-      const handleSubmit = async (data: any) => {
-        try {
-          setModalLoading(true);
-          let result;
-          if (card) {
-            // Update existing card
-            result = await dashboardService.updateDashboardCard(card.dashboard_id, data);
-          } else {
-            // Create new card
-            result = await dashboardService.createDashboardCard(data);
-          }
-          onSuccess?.(result);
-        } catch (err) {
-          console.error('Error saving card:', err);
-          // You might want to show an error in the modal here
-        } finally {
-          setModalLoading(false);
-        }
-      };
-
-      return (
-        <FrameworkDashboardCardModal
-          isOpen={isOpen}
-          card={card}
-          meters={meters}
-          meterElements={meterElements}
-          powerColumns={powerColumns}
-          loading={modalLoading}
-          onClose={onClose}
-          onSubmit={handleSubmit}
-        />
-      );
-    };
-  }, [meters, meterElements, powerColumns, modalLoading, fetchMeterElements]);
+    return (
+      <FrameworkDashboardCardModal
+        isOpen={isOpen}
+        card={card}
+        meters={meters}
+        meterElements={meterElements}
+        powerColumns={powerColumns}
+        loading={modalLoading}
+        onClose={onClose}
+        onSubmit={handleSubmit}
+        onMeterSelect={fetchMeterElements}
+      />
+    );
+  }, (prevProps, nextProps) => {
+    // Only re-render if these props change
+    return prevProps.isOpen === nextProps.isOpen && 
+           prevProps.card === nextProps.card &&
+           prevProps.onClose === nextProps.onClose &&
+           prevProps.onSuccess === nextProps.onSuccess;
+  });
 
   return (
     <FrameworkDashboardPage
@@ -426,7 +409,6 @@ export const DashboardPage: React.FC = () => {
       loading={loading}
       error={error}
       layout={layout}
-      savingLayout={savingLayout}
       onLayoutChange={handleLayoutChange}
       onCreateCard={handleCreateCard}
       onRefresh={handleGlobalRefresh}

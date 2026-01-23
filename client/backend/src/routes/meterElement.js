@@ -69,14 +69,17 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Get all meter elements for this meter
-    const elements = await db.query(
-      `SELECT meter_element_id, meter_id, name, element
-       FROM meter_element
-       WHERE meter_id = $1
-       ORDER BY element ASC`,
-      [meterId]
-    );
+    // Simple query without favorite check
+    const query = `SELECT 
+      me.meter_element_id, 
+      me.meter_id, 
+      me.name, 
+      me.element
+     FROM meter_element me
+     WHERE me.meter_id = $1
+     ORDER BY me.element ASC`;
+
+    const elements = await db.query(query, [meterId]);
 
     res.json({
       success: true,

@@ -27,3 +27,37 @@ export async function execQuery(pool: Pool, query: string, params?: any[], logMe
     throw error;
   }
 }
+
+/**
+ * Transform raw query results into nested meter structure with elements
+ * Used by both client and sync backends to format meter data with favorite status
+ * 
+ * @param rows - Raw database query results
+ * @returns Nested structure: { id, name, elements: [...] }
+ */
+export function transformMetersWithElements(rows: any[]): any[] {
+  const metersMap: { [meterId: string]: any } = {};
+  
+  rows.forEach(row => {
+    if (!metersMap[row.meter_id]) {
+      metersMap[row.meter_id] = {
+        id: row.meter_id,
+        name: row.meter_name,
+        elements: []
+      };
+    }
+    
+    if (row.meter_element_id) {
+      metersMap[row.meter_id].elements.push({
+        meter_element_id: row.meter_element_id,
+        element: row.element,
+        name: row.name,
+        favorite_name: row.favorite_name,
+        is_favorited: row.is_favorited,
+        favorite_id: row.favorite_id
+      });
+    }
+  });
+
+  return Object.values(metersMap);
+}

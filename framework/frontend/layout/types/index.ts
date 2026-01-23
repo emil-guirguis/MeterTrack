@@ -48,6 +48,7 @@ export interface SidebarProps {
   currentPath: string;
   onToggle: () => void;
   onNavigate: (path: string) => void;
+  sidebarContent?: React.ReactNode;
 }
 
 export interface MenuItem {

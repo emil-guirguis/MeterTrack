@@ -173,7 +173,7 @@ router.get('/', [
     // Map filters to PG, excluding undefined values
     let filters = {};
     if (meterId !== undefined && meterId !== '') {
-      filters.meterid = meterId;
+      filters.meterid = parseInt(meterId); // Convert to number
     }
     
     // Use framework method to process additional filters from query parameters

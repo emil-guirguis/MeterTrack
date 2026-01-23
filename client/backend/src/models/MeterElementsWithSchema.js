@@ -85,7 +85,7 @@ class MeterElement extends BaseModel {
 
       // Entity fields - read-only, system-managed
       entityFields: {
-        id: field({
+        meter_element_id: field({
           name: 'meter_element_id',
           type: FieldTypes.NUMBER,
           default: null,

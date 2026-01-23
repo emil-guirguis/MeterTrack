@@ -1,0 +1,37 @@
+.star-icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-icon-button {
+  padding: 4px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+
+.star-icon-button:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.star-icon-button:disabled {
+  opacity: 0.7;
+}
+
+.star-icon-filled {
+  color: #ffc107;
+  font-size: 24px;
+}
+
+.star-icon-outlined {
+  color: #9e9e9e;
+  font-size: 24px;
+}
+
+.star-icon-loading {
+  color: #1976d2 !important;
+}

@@ -6,7 +6,7 @@
  */
 
 import * as cron from 'node-cron';
-import { SyncDatabase } from '../types/entities.js';
+import { SyncDatabase } from '../types/index.js';
 import { CRON_METER_READING_CLEANUP } from '../config/scheduling-constants.js';
 
 export interface MeterReadingCleanupAgentConfig {

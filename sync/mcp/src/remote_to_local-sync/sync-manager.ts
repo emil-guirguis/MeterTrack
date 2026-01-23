@@ -8,7 +8,7 @@
 import * as cron from 'node-cron';
 import { ClientSystemApiClient } from '../api/client-system-api.js';
 import { ConnectivityMonitor } from '../api/connectivity-monitor.js';
-import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
+import { SyncDatabase, MeterReadingEntity } from '../types/index.js';
 
 export interface SyncManagerConfig {
   database: SyncDatabase;

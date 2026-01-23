@@ -9,7 +9,7 @@ class AuthLoggingService {
   /**
    * Log authentication event
    * @param {Object} options - Logging options
-   * @param {number} [options.userId] - User ID
+   * @param {number} [options.userId] - User ID (optional, can be null for user_not_found events)
    * @param {string} options.eventType - Event type (login, password_change, password_reset, 2fa_enable, 2fa_disable, failed_login)
    * @param {string} options.status - Status (success, failed)
    * @param {string} [options.ipAddress] - IP address
@@ -26,12 +26,17 @@ class AuthLoggingService {
     details
   }) {
     try {
+      // Skip logging if userId is null/undefined and it's not a user_not_found event
+      // For user_not_found events, we can't log userId since the user doesn't exist
+      if (!userId && eventType !== 'login') {
+        console.warn('[AUTH LOG] Skipping log event - userId is required for', eventType);
+        return null;
+      }
+
       const result = await db.query(
-        `INSERT INTO auth_logs (user_id, event_type, status, ip_address, user_agent, details, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-         RETURNING auth_logs_id, user_id, event_type, status, created_at`,
+        'INSERT INTO auth_logs (user_id, event_type, status, ip_address, user_agent, details, created_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING auth_logs_id, user_id, event_type, status, created_at',
         [
-          userId,
+          userId || null,  // Explicitly pass null if userId is undefined
           eventType,
           status,
           ipAddress,
@@ -47,8 +52,9 @@ class AuthLoggingService {
       console.log(`[AUTH LOG] ${eventType} - ${status} - User: ${userId || 'unknown'}`);
       return result.rows[0];
     } catch (error) {
-      console.error('[AUTH LOG] Error logging event:', error);
-      throw error;
+      console.error('[AUTH LOG] Error logging event:', error.message);
+      // Don't throw - logging failures shouldn't break authentication
+      return null;
     }
   }
 

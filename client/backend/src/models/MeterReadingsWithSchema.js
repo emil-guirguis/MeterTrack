@@ -251,13 +251,6 @@ class MeterReadings extends BaseModel {
                     label: 'Port',
                     dbField: 'port',
                 }),
-                slaveId: field({
-                    type: FieldTypes.NUMBER,
-                    default: 0,
-                    required: false,
-                    label: 'Slave Id',
-                    dbField: 'slave_id',
-                }),
                 powerFactor: field({
                     type: FieldTypes.STRING,
                     default: '',
@@ -878,7 +871,7 @@ class MeterReadings extends BaseModel {
             
             // Entity fields - read-only, system-managed
             entityFields: {
-                id: field({
+                meter_reading_id: field({
                     name: 'meter_reading_id',
                     type: FieldTypes.STRING,
                     default: null,

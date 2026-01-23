@@ -105,6 +105,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo = '/
       // No 2FA required, proceed with normal login
       await login(credentials);
 
+      // Add a small delay to allow console logs to be visible
+      console.log('✅ Login successful, redirecting in 1 second...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Call success callback if provided
       if (onSuccess) {
         onSuccess();

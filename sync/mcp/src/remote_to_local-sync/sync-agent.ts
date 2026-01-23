@@ -13,7 +13,7 @@
 
 import * as cron from 'node-cron';
 import { Pool } from 'pg';
-import { MeterSyncResult, MeterSyncStatus, SyncDatabase, ComprehensiveSyncResult } from '../types/entities.js';
+import { MeterSyncResult, MeterSyncStatus, SyncDatabase, ComprehensiveSyncResult } from '../types/index.js';
 import { syncPool } from '../data-sync/data-sync.js';
 import { syncMeters } from './sync-meter.js';
 import { syncDeviceRegisters } from './sync-device-register.js';

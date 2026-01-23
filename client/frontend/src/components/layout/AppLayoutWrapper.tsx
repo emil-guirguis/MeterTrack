@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@framework/layout';
 import type { LayoutProps, MenuItem, AppLayoutConfig } from '@framework/layout';
 import { registerIconMappings } from '@framework/utils/iconHelper';
@@ -16,6 +17,8 @@ import { useUI } from '../../store/slices/uiSlice';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Permission } from '../../types/auth';
 import { generateBreadcrumbs, getPageTitle } from '../../utils/navigationUtils';
+import { SidebarMetersSection } from '../sidebar-meters';
+import { useMeterSelection } from '../../contexts/MeterSelectionContext';
 
 // Application-specific icon mappings
 const appIconMappings = {
@@ -119,6 +122,12 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
   // Use real authentication data
   const { user, logout: authLogout, checkPermission } = useAuth();
   
+  // Use meter selection context
+  const { setSelectedMeter, setSelectedElement } = useMeterSelection();
+  
+  // Use React Router navigation
+  const navigate = useNavigate();
+  
   const logout = () => {
     console.log('🚪 Logout button clicked');
     
@@ -154,7 +163,31 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
     uiState,
     usePageTitle,
     generateBreadcrumbs,
-    getPageTitle
+    getPageTitle,
+    sidebarContent: user ? (
+      <SidebarMetersSection
+        tenantId={user.client || '1'}
+        userId={user.users_id || '1'}
+        onMeterSelect={(meterId) => {
+          console.log('[AppLayoutWrapper] Meter selected:', meterId);
+          console.log('[AppLayoutWrapper] Setting selectedMeter in context');
+          setSelectedMeter(meterId);
+          setSelectedElement(null);
+          console.log('[AppLayoutWrapper] Context updated');
+          console.log('[AppLayoutWrapper] Navigating to /meter-readings');
+          navigate('/meter-readings');
+        }}
+        onMeterElementSelect={(meterId, elementId) => {
+          console.log('[AppLayoutWrapper] Meter element selected:', meterId, elementId);
+          console.log('[AppLayoutWrapper] Setting selectedMeter and selectedElement in context');
+          setSelectedMeter(meterId);
+          setSelectedElement(elementId);
+          console.log('[AppLayoutWrapper] Context updated');
+          console.log('[AppLayoutWrapper] Navigating to /meter-readings');
+          navigate('/meter-readings');
+        }}
+      />
+    ) : undefined,
   };
 
   return <AppLayout {...props} config={config} />;

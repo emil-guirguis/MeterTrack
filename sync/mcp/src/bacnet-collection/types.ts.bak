@@ -1,0 +1,8 @@
+/**
+ * DEPRECATED: This file has been refactored into the types layer.
+ * 
+ * Old imports from this file should be updated to use:
+ * - import from '../types'
+ * 
+ * This file is kept as a backup and can be deleted after verifying all imports are updated.
+ */

@@ -77,6 +77,31 @@
       ]
     },
     {
+      "name": "Client MCP Server (Node.js)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/client/mcp/dist/index.js",
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}/client/mcp",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "preLaunchTask": "build-client-mcp",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/client/mcp/dist/**/*.js"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/client/mcp/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
       "name": "Sync Frontend (Chrome)",
       "type": "chrome",
       "request": "launch",
@@ -122,6 +147,7 @@
       "name": "Debug Client Full (Backend + Frontend)",
       "configurations": [
         "Client Backend (Node.js)",
+        "Client MCP Server (Node.js)",
         "Client Frontend Server",
         "Client Frontend (Chrome)"
       ]
@@ -137,6 +163,7 @@
       "name": "Debug Everything",
       "configurations": [
         "Client Backend (Node.js)",
+        "Client MCP Server (Node.js)",
         "Client Frontend (Chrome)",
         "Sync MCP Server (Node.js)",
         "Sync Frontend (Chrome)"

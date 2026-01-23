@@ -225,8 +225,8 @@ router.post('/login', [
       });
     }
 
-    // @ts-ignore - id is dynamically set by schema initialization
-    const userId = user.id;
+    // @ts-ignore - users_id is dynamically set by schema initialization
+    const userId = user.users_id;
 
     // Check if account is locked (Requirement 9.5)
     const lockoutStatus = await checkLoginLockout(userId);
@@ -355,7 +355,7 @@ router.post('/login', [
       data: {
         user: {
           // @ts-ignore - properties are dynamically set by schema initialization
-          users_id: user.id,
+          users_id: user.users_id,
           // @ts-ignore
           email: user.email,
           // @ts-ignore
@@ -523,7 +523,7 @@ router.post('/verify-2fa', [
       data: {
         user: {
           // @ts-ignore - properties are dynamically set by schema initialization
-          users_id: user.id,
+          users_id: user.users_id,
           // @ts-ignore
           email: user.email,
           // @ts-ignore
@@ -704,8 +704,8 @@ router.post('/forgot-password', [
       const { token, token_hash, expires_at } = TokenService.generateResetToken();
 
       // Store token in database (Requirement 4.6)
-      // @ts-ignore - id is dynamically set by schema initialization
-      await TokenService.storeResetToken(user.id, token_hash, expires_at);
+      // @ts-ignore - users_id is dynamically set by schema initialization
+      await TokenService.storeResetToken(user.users_id, token_hash, expires_at);
 
       // Send email with reset link (Requirement 4.7, 4.8)
       const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
@@ -732,8 +732,8 @@ router.post('/forgot-password', [
       // Log the request (Requirement 10.6)
       try {
         await AuthLoggingService.logEvent({
-          // @ts-ignore - id is dynamically set by schema initialization
-          userId: user.id,
+          // @ts-ignore - users_id is dynamically set by schema initialization
+          userId: user.users_id,
           eventType: 'password_reset_requested',
           status: 'success',
           details: { email }

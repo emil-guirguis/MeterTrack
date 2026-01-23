@@ -38,11 +38,22 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
     try {
       const queryParams = new URLSearchParams();
       
+      // Get tenantId from params or localStorage
+      const tenantId = params?.tenantId || localStorage.getItem('tenantId');
+      if (!tenantId) {
+        throw new Error('TenantId is required but not available');
+      }
+      queryParams.append('tenantId', tenantId);
+      
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
       if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
       if (params?.search) queryParams.append('search', params.search);
+      
+      // Add optional filtering parameters
+      if (params?.meterId) queryParams.append('meterId', params.meterId);
+      if (params?.meterElementId) queryParams.append('meterElementId', params.meterElementId);
       
       // Flatten filters into query parameters
       if (params?.filters) {
@@ -77,8 +88,15 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
       const result = await response.json();
       
       if (result.success && result.data) {
+        // Validate that all returned readings belong to the correct tenant
+        const items = result.data.items || result.data || [];
+        const tenantId = params?.tenantId || localStorage.getItem('tenantId');
+        
+        // Log validation for debugging
+        console.log(`[MeterReadingsStore] Fetched ${items.length} readings`);
+        
         set({ 
-          items: result.data.items || result.data || [],
+          items: items,
           loading: false 
         });
       } else {

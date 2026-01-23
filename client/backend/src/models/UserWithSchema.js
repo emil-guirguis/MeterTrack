@@ -29,7 +29,7 @@ class User extends BaseModel {
      * @returns {string}
      */
     static get primaryKey() {
-        return 'id';
+        return 'users_id';
     }
 
     // ===== SCHEMA DEFINITION (Single Source of Truth) =====
@@ -223,8 +223,8 @@ class User extends BaseModel {
 
             // Entity fields - read-only, system-managed
             entityFields: {
-                id: field({
-                    name: 'id',
+                users_id: field({
+                    name: 'users_id',
                     type: FieldTypes.NUMBER,
                     default: null,
                     readOnly: true,

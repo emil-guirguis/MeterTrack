@@ -30,7 +30,7 @@ class Meter extends BaseModel {
    * @override
    */
   static get primaryKey() {
-    return 'id';
+    return 'meter_id';
   }
 
   /**
@@ -297,7 +297,7 @@ class Meter extends BaseModel {
 
       // Entity fields - read-only, system-managed
       entityFields: {
-        id: field({
+        meter_id: field({
           name: 'meter_id',
           type: FieldTypes.NUMBER,
           default: null,

@@ -15,7 +15,7 @@ import {
   upsertEntity,
 } from '../helpers/sync-functions.js';
 import { cacheManager } from '../cache/index.js';
-import { SyncDatabase } from '../types/entities.js';
+import { SyncDatabase } from '../types/index.js';
 
 export interface TenantSyncResult {
   success: boolean;

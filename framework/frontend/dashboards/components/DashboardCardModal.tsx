@@ -35,6 +35,7 @@ export interface DashboardCardModalProps {
   error?: string | null;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  onMeterSelect?: (meterId: number) => void;
 }
 
 interface FormData {
@@ -62,10 +63,12 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
   loading = false,
   error: externalError = null,
   onClose,
-  onSubmit
+  onSubmit,
+  onMeterSelect
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [formData, setFormData] = useState<FormData>({
     card_name: '',
     card_description: '',
@@ -82,24 +85,24 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [selectedMeterId, setSelectedMeterId] = useState<number | null>(null);
 
-  // Populate form with card data when editing
+  // Initialize form ONLY when modal first opens
   useEffect(() => {
-    if (card && isOpen) {
+    if (!isOpen) return;
+    
+    if (card) {
       setFormData({
         card_name: card.card_name || '',
         card_description: card.card_description || '',
         meter_id: card.meter_id?.toString() || '',
         meter_element_id: card.meter_element_id?.toString() || '',
-        selected_columns: card.selected_columns || [],
+        selected_columns: Array.isArray(card.selected_columns) ? card.selected_columns : [],
         time_frame_type: card.time_frame_type || 'last_month',
-        custom_start_date: card.custom_start_date ? new Date(card.custom_start_date).toISOString().split('T')[0] : '',
-        custom_end_date: card.custom_end_date ? new Date(card.custom_end_date).toISOString().split('T')[0] : '',
+        custom_start_date: card.custom_start_date || '',
+        custom_end_date: card.custom_end_date || '',
         visualization_type: card.visualization_type || 'line'
       });
       setSelectedMeterId(card.meter_id || null);
-      setErrors({});
-    } else if (isOpen) {
-      // Reset form for create mode
+    } else {
       setFormData({
         card_name: '',
         card_description: '',
@@ -112,9 +115,9 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
         visualization_type: 'line'
       });
       setSelectedMeterId(null);
-      setErrors({});
     }
-  }, [card, isOpen]);
+    setErrors({});
+  }, [isOpen, card]);
 
   // Validate form data
   const validateForm = (): boolean => {
@@ -222,6 +225,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
         submitData.custom_end_date = formData.custom_end_date;
       }
 
+      console.log('📋 [DashboardCardModal] Submitting form data:', submitData);
       onSubmit(submitData);
     } finally {
       setSubmitting(false);
@@ -304,6 +308,9 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
                   ...prev,
                   meter_element_id: ''
                 }));
+                if (meterId && onMeterSelect) {
+                  onMeterSelect(meterId);
+                }
                 if (errors.meter_id) {
                   setErrors(prev => {
                     const newErrors = { ...prev };
@@ -326,7 +333,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
           </FormControl>
 
           {/* Meter Element Selector */}
-          <FormControl fullWidth error={!!errors.meter_element_id} disabled={submitting || loading || !meterElements || meterElements.length === 0}>
+          <FormControl fullWidth error={!!errors.meter_element_id} disabled={submitting || loading || !selectedMeterId}>
             <InputLabel>Meter Element *</InputLabel>
             <Select
               label="Meter Element *"

@@ -13,7 +13,7 @@
 import * as cron from 'node-cron';
 import { ClientSystemApiClient } from '../api/client-system-api.js';
 import { ConnectivityMonitor } from '../api/connectivity-monitor.js';
-import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
+import { SyncDatabase, MeterReadingEntity } from '../types/index.js';
 import { cacheManager } from '../cache/cache-manager.js';
 import { CRON_SYNC_TO_REMOTE } from '../config/scheduling-constants.js';
 import ReadingValidationMiddleware from './reading-validation-middleware.js';

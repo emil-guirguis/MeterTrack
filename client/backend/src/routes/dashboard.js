@@ -68,63 +68,18 @@ router.get('/cards', requirePermission('dashboard:read'), asyncHandler(async (re
     console.log('📊 [Dashboard API] Query result rows:', result.rows.length);
     console.log('📊 [Dashboard API] Query result pagination:', result.pagination);
 
-    // Get grid properties directly from database since they might not be in the model instance
-    console.log('📊 [Dashboard API] Fetching grid properties from database...');
-    const db = Dashboard.getDb();
-    const gridQuery = `
-      SELECT dashboard_id, grid_x, grid_y, grid_w, grid_h
-      FROM dashboard
-      WHERE tenant_id = $1
-      ORDER BY dashboard_id DESC
-      LIMIT $2 OFFSET $3
-    `;
-    const gridResult = await db.query(gridQuery, [
-      tenantId,
-      parseInt(limit),
-      (parseInt(page) - 1) * parseInt(limit)
-    ]);
-    
-    console.log('📊 [Dashboard API] Grid result rows:', gridResult.rows);
-    
-    const gridMap = {};
-    gridResult.rows.forEach(row => {
-      gridMap[row.dashboard_id] = {
-        grid_x: row.grid_x,
-        grid_y: row.grid_y,
-        grid_w: row.grid_w,
-        grid_h: row.grid_h
-      };
-    });
-    
-    console.log('📊 [Dashboard API] Grid map:', JSON.stringify(gridMap));
-
     // Map id to dashboard_id for API response
-    const items = result.rows.map(card => {
-      // Convert model instance to plain object by getting all properties
-      const cardData = {};
-      for (const key in card) {
-        if (card.hasOwnProperty(key)) {
-          cardData[key] = card[key];
-        }
-      }
-      // Also get non-enumerable properties
-      const allKeys = Object.getOwnPropertyNames(card);
-      for (const key of allKeys) {
-        if (!(key in cardData)) {
-          cardData[key] = card[key];
-        }
-      }
-      
-      // Add grid properties from database query
-      const gridProps = gridMap[card.dashboard_id] || {};
+    const items = result.rows.map((card, index) => {
+      const cardIndex = (parseInt(page) - 1) * parseInt(limit) + index;
+      const cardData = /** @type {any} */ (card);
       
       return {
-        ...cardData,
-        dashboard_id: cardData.dashboard_id || cardData.id,
-        grid_x: gridProps.grid_x,
-        grid_y: gridProps.grid_y,
-        grid_w: gridProps.grid_w,
-        grid_h: gridProps.grid_h,
+        ...card,
+        dashboard_id: card.dashboard_id || card.id,
+        grid_x: cardData.grid_x !== null && cardData.grid_x !== undefined ? cardData.grid_x : 0,
+        grid_y: cardData.grid_y !== null && cardData.grid_y !== undefined ? cardData.grid_y : (cardIndex * 520),
+        grid_w: cardData.grid_w !== null && cardData.grid_w !== undefined ? cardData.grid_w : 500,
+        grid_h: cardData.grid_h !== null && cardData.grid_h !== undefined ? cardData.grid_h : 500,
       };
     });
 
@@ -138,6 +93,8 @@ router.get('/cards', requirePermission('dashboard:read'), asyncHandler(async (re
         totalPages: result.pagination.totalPages
       }
     });
+    
+    console.log('📊 [Dashboard API] Final response items:', JSON.stringify(items.map(i => ({ id: i.dashboard_id, grid_w: i.grid_w, grid_h: i.grid_h }))));
   } catch (error) {
     const err = /** @type {Error} */ (error);
     console.error('❌ [Dashboard API] Error fetching cards:', err.message);
@@ -185,9 +142,14 @@ router.get('/cards/:id', requirePermission('dashboard:read'), asyncHandler(async
     }
 
     // Map id to dashboard_id for API response
+    const cardData = /** @type {any} */ (card);
     const cardResponse = {
       ...card,
-      dashboard_id: card.id
+      dashboard_id: card.id,
+      grid_x: cardData.grid_x !== null && cardData.grid_x !== undefined ? cardData.grid_x : 0,
+      grid_y: cardData.grid_y !== null && cardData.grid_y !== undefined ? cardData.grid_y : 0,
+      grid_w: cardData.grid_w !== null && cardData.grid_w !== undefined ? cardData.grid_w : 500,
+      grid_h: cardData.grid_h !== null && cardData.grid_h !== undefined ? cardData.grid_h : 500,
     };
 
     res.json({ success: true, data: cardResponse });
@@ -327,7 +289,9 @@ router.post('/cards', requirePermission('dashboard:create'), asyncHandler(async 
       });
     }
 
-    const userId = req.user?.users_id;
+    const userId = req.user?.id;
+    console.log('📊 [Dashboard API] POST /cards - req.user:', req.user);
+    console.log('📊 [Dashboard API] POST /cards - userId:', userId);
     if (!userId) {
       return res.status(400).json({
         success: false,
@@ -406,10 +370,26 @@ router.post('/cards', requirePermission('dashboard:create'), asyncHandler(async 
     }
 
     // Create dashboard card with tenant and user info
+    // Get the next available grid position
+    const existingCards = await Dashboard.findAll({
+      where: { tenant_id: tenantId },
+      limit: 1000
+    });
+    
+    const nextIndex = existingCards.rows.length;
+    const defaultGridX = 0;  // Start at left
+    const defaultGridY = nextIndex * 520;  // Stack vertically with 20px gap
+    
     const cardData = {
       ...req.body,
       tenant_id: tenantId,
-      created_by_users_id: userId
+      created_by_users_id: userId,
+      // Set default grid values in PIXELS if not provided
+      // Only set if explicitly provided - don't override with defaults on insert
+      grid_x: req.body.grid_x !== undefined ? req.body.grid_x : defaultGridX,
+      grid_y: req.body.grid_y !== undefined ? req.body.grid_y : defaultGridY,
+      grid_w: req.body.grid_w !== undefined ? req.body.grid_w : 500,  // 500px width
+      grid_h: req.body.grid_h !== undefined ? req.body.grid_h : 500,  // 500px height
     };
 
     const card = new Dashboard(cardData);
@@ -418,9 +398,14 @@ router.post('/cards', requirePermission('dashboard:create'), asyncHandler(async 
     console.log('📊 [Dashboard API] Card created successfully:', card.id);
     
     // Map id to dashboard_id for API response
+    const cardObj = /** @type {any} */ (card);
     const cardResponse = {
       ...card,
-      dashboard_id: card.id
+      dashboard_id: card.id,
+      grid_x: cardObj.grid_x !== null && cardObj.grid_x !== undefined ? cardObj.grid_x : 0,
+      grid_y: cardObj.grid_y !== null && cardObj.grid_y !== undefined ? cardObj.grid_y : 0,
+      grid_w: cardObj.grid_w !== null && cardObj.grid_w !== undefined ? cardObj.grid_w : 500,
+      grid_h: cardObj.grid_h !== null && cardObj.grid_h !== undefined ? cardObj.grid_h : 500,
     };
     
     res.status(201).json({ success: true, data: cardResponse });
@@ -576,9 +561,14 @@ router.put('/cards/:id', requirePermission('dashboard:update'), asyncHandler(asy
     console.log('📊 [Dashboard API] Card updated successfully:', card.id);
     
     // Map id to dashboard_id for API response
+    const cardObj = /** @type {any} */ (card);
     const cardResponse = {
       ...card,
-      dashboard_id: card.id
+      dashboard_id: card.id,
+      grid_x: cardObj.grid_x !== null && cardObj.grid_x !== undefined ? cardObj.grid_x : 0,
+      grid_y: cardObj.grid_y !== null && cardObj.grid_y !== undefined ? cardObj.grid_y : 0,
+      grid_w: cardObj.grid_w !== null && cardObj.grid_w !== undefined ? cardObj.grid_w : 500,
+      grid_h: cardObj.grid_h !== null && cardObj.grid_h !== undefined ? cardObj.grid_h : 500,
     };
     
     res.json({ success: true, data: cardResponse });
@@ -1041,23 +1031,24 @@ router.get('/meters', requirePermission('dashboard:read'), asyncHandler(async (r
       });
     }
 
-    // Query meters for the tenant
-    const result = await Meter.findAll({
-      where: { tenant_id: tenantId },
-      select: ['id', 'name'],
-      order: [['name', 'ASC']]
-    });
+    // Custom query to get meters for the tenant
+    const query = `
+      SELECT 
+        meter_id as id,
+        name
+      FROM public.meter
+      WHERE tenant_id = $1
+      ORDER BY name ASC
+    `;
+    
+    const db = Meter.getDb();
+    const result = await db.query(query, [tenantId]);
 
-    const meters = result.rows.map(meter => ({
-      id: meter.id,
-      name: meter.name
-    }));
-
-    console.log(`📊 [Dashboard API] Retrieved ${meters.length} meters for tenant ${tenantId}`);
+    console.log(`📊 [Dashboard API] Retrieved ${result.rows.length} meters for tenant ${tenantId}`);
 
     res.json({
       success: true,
-      data: meters
+      data: result.rows
     });
   } catch (error) {
     const err = /** @type {Error} */ (error);
@@ -1126,7 +1117,7 @@ router.get('/meters/:meterId/elements', requirePermission('dashboard:read'), asy
     });
 
     const elements = result.rows.map(element => ({
-      id: element.id,
+      meter_element_id: element.meter_element_id || element.id,
       element: element.element,
       name: element.name,
       meter_id: element.meter_id
@@ -1137,6 +1128,67 @@ router.get('/meters/:meterId/elements', requirePermission('dashboard:read'), asy
     res.json({
       success: true,
       data: elements
+    });
+  } catch (error) {
+    const err = /** @type {Error} */ (error);
+    console.error('❌ [Dashboard API] Error fetching meter elements:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch meter elements',
+      ...(process.env.NODE_ENV !== 'production' ? { error: err.message } : {})
+    });
+  }
+}));
+
+/**
+ * GET /api/dashboard/meters/:meterId/elements
+ * 
+ * Retrieve all meter elements for a specific meter.
+ * 
+ * Requirements: 3.1
+ */
+router.get('/meters/:meterId/elements', requirePermission('dashboard:read'), asyncHandler(async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id;
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User must have a valid tenant_id'
+      });
+    }
+
+    const meterId = parseInt(req.params.meterId);
+    
+    // Verify meter belongs to tenant
+    const meter = await Meter.findById(meterId);
+    if (!meter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Meter not found'
+      });
+    }
+
+    if (meter.tenant_id !== tenantId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to access this meter'
+      });
+    }
+
+    // Get meter elements
+    const elements = await MeterElements.findAll({
+      where: { meter_id: meterId, tenant_id: tenantId },
+      limit: 1000
+    });
+
+    res.json({
+      success: true,
+      data: elements.rows.map(el => ({
+        meter_element_id: el.meter_element_id || el.id,
+        meter_id: el.meter_id,
+        element: el.element,
+        name: el.name
+      }))
     });
   } catch (error) {
     const err = /** @type {Error} */ (error);

@@ -15,6 +15,15 @@ const tenantStorage = new AsyncLocalStorage();
  */
 const setTenantContext = (req, res, next) => {
   try {
+    // Check if user is authenticated first
+    if (!req.user) {
+      console.error('[TENANT CONTEXT] ✗ No authenticated user found - authenticateToken middleware may not have run');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
     // Extract tenant_id from authenticated user
     // The user object should have tenant_id set by authenticateToken middleware
     const tenantId = req.user?.tenant_id;

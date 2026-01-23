@@ -30,6 +30,8 @@ const registersRoutes = require('./routes/registers');
 const autoCollectionRoutes = require('./routes/autoCollection');
 const meterElementRoutes = require('./routes/meterElement');
 const dashboardRoutes = require('./routes/dashboard');
+const favoritesRoutes = require('./routes/favorites');
+const aiSearchRoutes = require('./routes/aiSearch');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 // Import tenant isolation middleware
@@ -116,6 +118,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     // Initialize notification scheduler
     await initializeNotificationScheduler();
     console.log('✅ [INIT] Notification scheduler initialized');
+
+    console.log('🔄 [INIT] Initializing notification agent...');
+    // Initialize notification agent
+    await initializeNotificationAgent();
+    console.log('✅ [INIT] Notification agent initialized');
 
     // console.log('🔄 [INIT] Initializing meter data analyzer...');
     // // Initialize meter data analyzer
@@ -235,6 +242,30 @@ async function initializeNotificationScheduler() {
     console.error('❌ [NOTIFICATION_SCHEDULER] Failed to initialize:', error.message);
     console.error('❌ [NOTIFICATION_SCHEDULER] Stack:', error.stack);
     // Don't exit the process - the server can still run without scheduler
+  }
+}
+
+/**
+ * Initialize notification agent
+ * Monitors meter health and creates notifications
+ */
+async function initializeNotificationAgent() {
+  try {
+    console.log('🔔 [NOTIFICATION_AGENT] Starting initialization...');
+    // Import NotificationAgent
+    const notificationAgent = require('./services/NotificationAgent');
+
+    console.log('🔔 [NOTIFICATION_AGENT] NotificationAgent imported');
+    
+    // Initialize with default configuration
+    await notificationAgent.initialize();
+    console.log('🔔 [NOTIFICATION_AGENT] Initialize result: success');
+    
+    console.log('✅ [NOTIFICATION_AGENT] Initialized successfully');
+  } catch (error) {
+    console.error('❌ [NOTIFICATION_AGENT] Failed to initialize:', error.message);
+    console.error('❌ [NOTIFICATION_AGENT] Stack:', error.stack);
+    // Don't exit the process - the server can still run without agent
   }
 }
 
@@ -526,6 +557,8 @@ app.use('/api/registers', authenticateToken, setTenantContext, registersRoutes);
 app.use('/api/auto-collection', authenticateToken, setTenantContext, autoCollectionRoutes);
 app.use('/api/meters/:meterId/elements', authenticateToken, setTenantContext, meterElementRoutes);
 app.use('/api/dashboard', authenticateToken, setTenantContext, dashboardRoutes);
+app.use('/api/favorites', authenticateToken, setTenantContext, favoritesRoutes);
+app.use('/api/ai/search', authenticateToken, setTenantContext, aiSearchRoutes);
 // app.use('/api/threading', authenticateToken, setTenantContext, threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint

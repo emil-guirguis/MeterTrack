@@ -444,7 +444,7 @@ class Dashboard extends BaseModel {
 
       // Entity fields - read-only, system-managed
       entityFields: {
-        id: field({
+        dashboard_id: field({
           name: 'dashboard_id',
           type: FieldTypes.NUMBER,
           default: null,
@@ -483,6 +483,38 @@ class Dashboard extends BaseModel {
           readOnly: true,
           label: 'Updated At',
           dbField: 'updated_at',
+        }),
+        grid_x: field({
+          name: 'grid_x',
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: false,
+          label: 'Grid X Position',
+          dbField: 'grid_x',
+        }),
+        grid_y: field({
+          name: 'grid_y',
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: false,
+          label: 'Grid Y Position',
+          dbField: 'grid_y',
+        }),
+        grid_w: field({
+          name: 'grid_w',
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: false,
+          label: 'Grid Width',
+          dbField: 'grid_w',
+        }),
+        grid_h: field({
+          name: 'grid_h',
+          type: FieldTypes.NUMBER,
+          default: null,
+          readOnly: false,
+          label: 'Grid Height',
+          dbField: 'grid_h',
         }),
       },
 

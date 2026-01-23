@@ -1,0 +1,61 @@
+.sidebar-meters-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-y: auto;
+}
+
+.sidebar-meters-section .loading-state {
+  padding: 16px 12px;
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.sidebar-meters-section .error-state {
+  padding: 12px;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  margin: 8px;
+}
+
+.sidebar-meters-section .error-message {
+  color: #c62828;
+  font-size: 12px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.sidebar-meters-section .retry-button {
+  background-color: #c62828;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.sidebar-meters-section .retry-button:hover {
+  background-color: #b71c1c;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-meters-section .retry-button:active {
+  transform: scale(0.98);
+}

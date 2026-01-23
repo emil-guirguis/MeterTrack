@@ -28,6 +28,7 @@ export interface AppLayoutConfig {
   };
   usePageTitle?: (title: string) => void;
   getPageTitle?: (pathname: string) => string;
+  sidebarContent?: React.ReactNode;
 }
 
 export interface AppLayoutProps extends LayoutProps {
@@ -52,6 +53,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     responsive,
     uiState,
     getPageTitle,
+    sidebarContent,
   } = config;
 
   const { isMobile, isTablet, isDesktop } = responsive;
@@ -111,6 +113,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             currentPath={location.pathname}
             onToggle={toggleSidebar}
             onNavigate={navigateAndClose}
+            sidebarContent={sidebarContent}
           />
         )}
 

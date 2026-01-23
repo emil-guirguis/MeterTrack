@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { SyncManager } from './sync-manager.js';
-import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
+import { SyncDatabase, MeterReadingEntity } from '../types/index.js';
 import { ClientSystemApiClient } from '../api/client-system-api.js';
 
 describe('SyncManager Batch Size Configuration', () => {
@@ -306,8 +306,8 @@ describe('SyncManager Batch Size Configuration', () => {
 
             // Create fresh SyncManager for this iteration
             const freshSyncManager = new SyncManager({
-              database: freshMockDatabase as SyncDatabase,
-              apiClient: freshMockApiClient as ClientSystemApiClient,
+              database: freshMockDatabase as unknown as SyncDatabase,
+              apiClient: freshMockApiClient as unknown as ClientSystemApiClient,
               syncIntervalMinutes: 5,
               batchSize: 1000,
               maxRetries: 5,

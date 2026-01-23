@@ -372,7 +372,7 @@ router.get('/getmregisters', authenticateSyncServer, async (req, res) => {
     const deviceId = req.deviceId;
     const sql = `select dr.device_id, register, field_name
                  from register r 
-                    join device_register dr on dr.register_id = r.id 
+                    join device_register dr on dr.register_id = r.register_id 
                  where dr.device_id = $1`;
 
     const params = [deviceId];

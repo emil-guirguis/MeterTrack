@@ -19,7 +19,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   menuItems,
   currentPath,
   onToggle,
-  onNavigate
+  onNavigate,
+  sidebarContent
 }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const asideRef = useRef<HTMLElement | null>(null);
@@ -157,7 +158,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''}`}
       aria-label="Main navigation"
     >
-
+      {/* Custom Sidebar Content (e.g., Meters Section) */}
+      {sidebarContent && !isCollapsed && !isMobile && (
+        <div className="sidebar__custom-content">
+          {sidebarContent}
+        </div>
+      )}
 
       <nav className="sidebar__nav" id="main-navigation">
         <ul className="sidebar-menu">

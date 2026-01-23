@@ -6,7 +6,7 @@
  */
 
 import { Pool, PoolClient, QueryResult } from 'pg';
-import { TenantEntity, MeterEntity, MeterReadingEntity, SyncLog } from '../types/entities.js';
+import { TenantEntity, MeterEntity, MeterReadingEntity, SyncLog } from '../entities/index.js';
 import { execQuery } from '../helpers/sql-functions.js';
 
 export interface DatabaseConfig {

@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { MeterReadingUploadManager, MeterReadingUploadManagerConfig } from './meter-reading-upload-manager.js';
-import { SyncDatabase, MeterReadingEntity } from '../types/entities.js';
+import { SyncDatabase, MeterReadingEntity } from '../types/index.js';
 import { ClientSystemApiClient } from '../api/client-system-api.js';
 
 describe('MeterReadingUploadManager Batch Size Configuration', () => {

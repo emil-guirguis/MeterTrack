@@ -12,7 +12,7 @@
  */
 
 import { Pool } from 'pg';
-import { EntityMetadata, ENTITY_METADATA } from '../types/entities.js';
+import { EntityMetadata, ENTITY_METADATA } from '../types/index.js';
 import { execQuery } from '../helpers/sql-functions.js';
 
 /**

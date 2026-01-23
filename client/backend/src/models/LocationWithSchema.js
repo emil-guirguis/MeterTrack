@@ -246,7 +246,7 @@ class Location extends BaseModel {
 
             // Entity fields - read-only, system-managed
             entityFields: {
-                id: field({
+                location_id: field({
                     name: 'location_id',
                     type: FieldTypes.NUMBER,
                     default: null,

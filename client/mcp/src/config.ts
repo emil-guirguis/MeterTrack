@@ -4,11 +4,11 @@ dotenv.config();
 
 export const config = {
   database: {
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-    database: process.env.POSTGRES_DB || 'meterit_client',
-    user: process.env.POSTGRES_USER || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || '',
+    host: process.env.POSTGRES_CLIENT_HOST || process.env.POSTGRES_HOST || 'localhost',
+    port: parseInt(process.env.POSTGRES_CLIENT_PORT || process.env.POSTGRES_PORT || '5432', 10),
+    database: process.env.POSTGRES_CLIENT_DB || process.env.POSTGRES_DB || 'postgres',
+    user: process.env.POSTGRES_CLIENT_USER || process.env.POSTGRES_USER || 'postgres',
+    password: process.env.POSTGRES_CLIENT_PASSWORD || process.env.POSTGRES_PASSWORD || '',
   },
   email: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
