@@ -200,9 +200,15 @@ export const SidebarMetersSection: React.FC<SidebarMetersProps> = ({
    * Requirements: 5.3
    */
   const handleFavoritesItemClick = useCallback(
-    (meterId: string, elementId: string) => {
+    (meterId: string, elementId: string, gridType?: 'simple' | 'baselist') => {
+      console.log('[SidebarMetersSection] ===== FAVORITE ITEM CLICK HANDLER =====');
+      console.log('[SidebarMetersSection] meterId:', meterId, 'type:', typeof meterId);
+      console.log('[SidebarMetersSection] elementId:', elementId, 'type:', typeof elementId);
+      console.log('[SidebarMetersSection] gridType:', gridType);
+      console.log('[SidebarMetersSection] Setting selected item and calling onMeterElementSelect');
       setSelectedItem({ type: 'element', meterId, elementId });
-      onMeterElementSelect(meterId, elementId);
+      onMeterElementSelect(meterId, elementId, gridType);
+      console.log('[SidebarMetersSection] ===== FAVORITE ITEM CLICK COMPLETE =====');
     },
     [onMeterElementSelect]
   );

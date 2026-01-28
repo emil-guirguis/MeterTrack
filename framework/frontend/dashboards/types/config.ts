@@ -4,7 +4,7 @@
  * Defines types for dashboard configuration and settings
  */
 
-import { DashboardLayout } from './layout';
+import type { DashboardLayout } from './layout';
 
 /**
  * Dashboard configuration interface

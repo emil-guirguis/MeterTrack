@@ -8,7 +8,6 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import fc from 'fast-check';
 import { useCardData } from './useCardData';
 import type { DashboardCard, AggregatedData } from '../types/dashboard';
 

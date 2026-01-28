@@ -38,6 +38,7 @@ export const MeterDashboardExample: React.FC = () => {
       {/* Statistics Section using DashboardWidget */}
       <DashboardWidget
         id="meter-stats"
+        type="stat-card"
         title="📊 Meter Statistics"
         collapsible
         defaultCollapsed={false}

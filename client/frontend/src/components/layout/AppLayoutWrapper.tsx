@@ -177,14 +177,21 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
           console.log('[AppLayoutWrapper] Navigating to /meter-readings');
           navigate('/meter-readings');
         }}
-        onMeterElementSelect={(meterId, elementId) => {
+        onMeterElementSelect={(meterId, elementId, gridType) => {
+          console.log('[AppLayoutWrapper] ===== METER ELEMENT SELECT =====');
           console.log('[AppLayoutWrapper] Meter element selected:', meterId, elementId);
+          console.log('[AppLayoutWrapper] gridType:', gridType);
+          console.log('[AppLayoutWrapper] meterId type:', typeof meterId, 'elementId type:', typeof elementId);
           console.log('[AppLayoutWrapper] Setting selectedMeter and selectedElement in context');
           setSelectedMeter(meterId);
           setSelectedElement(elementId);
           console.log('[AppLayoutWrapper] Context updated');
-          console.log('[AppLayoutWrapper] Navigating to /meter-readings');
-          navigate('/meter-readings');
+          const url = gridType 
+            ? `/meter-readings?meterId=${meterId}&elementId=${elementId}&gridType=${gridType}`
+            : `/meter-readings?meterId=${meterId}&elementId=${elementId}`;
+          console.log('[AppLayoutWrapper] Navigating to:', url);
+          navigate(url);
+          console.log('[AppLayoutWrapper] ===== METER ELEMENT SELECT COMPLETE =====');
         }}
       />
     ) : undefined,

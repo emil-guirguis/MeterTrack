@@ -16,11 +16,11 @@
 // Core dashboard types
 export * from './dashboard';
 
-// Layout types
-export * from './layout';
+// Layout types (re-export to avoid conflicts)
+export type { DashboardLayout, DashboardBreakpoint, GridPosition, DashboardGridItem } from './layout';
 
 // Widget types
 export * from './widget';
 
 // Configuration types
-export * from './config';
+export type { DashboardConfig } from './config';

@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { VisualizationType } from '../types';
+import type { VisualizationType } from '../types';
 import './Visualization.css';
 
 /**

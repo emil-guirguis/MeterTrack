@@ -6,11 +6,11 @@
  * Validates: Requirements 3.1, 3.2, 3.3, 3.4
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import fc from 'fast-check';
 import { useLayout } from './useLayout';
-import type { DashboardLayout, GridPosition, LayoutItem } from '../types/dashboard';
+import type { DashboardLayout, GridPosition } from '../types/layout';
+import type { LayoutItem } from './useLayout';
 
 describe('useLayout Hook', () => {
   beforeEach(() => {

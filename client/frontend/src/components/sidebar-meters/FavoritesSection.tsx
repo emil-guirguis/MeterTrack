@@ -83,11 +83,29 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
   };
 
   /**
-   * Handle favorite item click - displays meter readings grid
+   * Handle favorite item click - displays simple grid
    * Requirements: 5.3
    */
   const handleFavoriteItemClick = (meterId: number, elementId: number) => {
-    onItemClick(String(meterId), String(elementId));
+    console.log('[FavoritesSection] ===== FAVORITE CLICKED (SINGLE) =====');
+    console.log('[FavoritesSection] meterId:', meterId, 'type:', typeof meterId);
+    console.log('[FavoritesSection] elementId:', elementId, 'type:', typeof elementId);
+    console.log('[FavoritesSection] Calling onItemClick with gridType: simple');
+    onItemClick(String(meterId), String(elementId), 'simple');
+    console.log('[FavoritesSection] ===== FAVORITE CLICK COMPLETE =====');
+  };
+
+  /**
+   * Handle favorite item double-click - displays old grid
+   * Requirements: 5.3
+   */
+  const handleFavoriteItemDoubleClick = (meterId: number, elementId: number) => {
+    console.log('[FavoritesSection] ===== FAVORITE CLICKED (DOUBLE) =====');
+    console.log('[FavoritesSection] meterId:', meterId, 'type:', typeof meterId);
+    console.log('[FavoritesSection] elementId:', elementId, 'type:', typeof elementId);
+    console.log('[FavoritesSection] Calling onItemClick with gridType: baselist');
+    onItemClick(String(meterId), String(elementId), 'baselist');
+    console.log('[FavoritesSection] ===== FAVORITE DOUBLE-CLICK COMPLETE =====');
   };
 
   
@@ -150,6 +168,7 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
               <div
                 className="favorite-item-content"
                 onClick={() => handleFavoriteItemClick(favorite.id1, favorite.id2)}
+                onDoubleClick={() => handleFavoriteItemDoubleClick(favorite.id1, favorite.id2)}
               >
                 {/* Favorite display text: "meter_name - element-element_name" */}
                 {/* Provide fallback if favorite_name is undefined or empty */}
@@ -164,9 +183,7 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
                 id2={String(favorite.id2)}
                 is_favorited={true}
                 is_loading={isLoading}
-                on_click={async () => {
-                  console.log('[FavoritesSection] Star clicked but disabled for debugging');
-                }}
+                on_click={createStarClickHandler(favorite.favorite_id, favorite.id1, favorite.id2)}
               />
             </div>
           );

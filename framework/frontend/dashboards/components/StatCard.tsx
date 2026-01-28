@@ -19,7 +19,6 @@ import './StatCard.css';
  * ```
  */
 export const StatCard: React.FC<StatCardProps> = ({
-  id,
   title,
   value,
   subtitle,
@@ -49,7 +48,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   const cardStyle: React.CSSProperties = {
     ...style,
     ...(color ? { borderLeftColor: color } : {})
-  };
+  } as any;
 
   const handleClick = () => {
     if (onClick && !loading) {

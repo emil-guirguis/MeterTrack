@@ -4,8 +4,8 @@
  * Defines types for dashboard layouts, configuration, and state management
  */
 
-import { DashboardConfig } from './config';
-import { DashboardLayout, DashboardBreakpoint, GridPosition, DashboardGridItem } from './layout';
+import type { DashboardConfig } from './config';
+import type { DashboardLayout } from './layout';
 
 /**
  * Supported visualization types for dashboard cards
@@ -50,34 +50,6 @@ export interface AggregatedData {
   grouped_data?: Array<Record<string, any>>;
   /** Allow extension with additional properties */
   [key: string]: any;
-}
-
-/**
- * Dashboard layout configuration
- */
-export interface DashboardLayout {
-  /** Number of columns in the grid */
-  columns: number;
-  /** Number of rows in the grid (optional, can be auto) */
-  rows?: number;
-  /** Gap between grid items in pixels or CSS units */
-  gap: number | string;
-  /** Responsive breakpoints for layout adjustments */
-  breakpoints?: DashboardBreakpoint[];
-}
-
-/**
- * Responsive breakpoint configuration
- */
-export interface DashboardBreakpoint {
-  /** Breakpoint name (e.g., 'mobile', 'tablet', 'desktop') */
-  name: string;
-  /** Maximum width for this breakpoint in pixels */
-  maxWidth: number;
-  /** Number of columns at this breakpoint */
-  columns: number;
-  /** Gap size at this breakpoint */
-  gap?: number | string;
 }
 
 /**
@@ -138,32 +110,4 @@ export interface DashboardActions {
 export interface DashboardReturn extends DashboardState, DashboardActions {
   /** Dashboard configuration */
   config: DashboardConfig;
-}
-
-/**
- * Grid item position
- */
-export interface GridPosition {
-  /** Column start position (1-based) */
-  column: number;
-  /** Row start position (1-based) */
-  row: number;
-  /** Column span (default: 1) */
-  columnSpan?: number;
-  /** Row span (default: 1) */
-  rowSpan?: number;
-}
-
-/**
- * Dashboard grid item
- */
-export interface DashboardGridItem {
-  /** Item unique identifier */
-  id: string;
-  /** Grid position */
-  position?: GridPosition;
-  /** Item content */
-  content: React.ReactNode;
-  /** Custom className */
-  className?: string;
 }

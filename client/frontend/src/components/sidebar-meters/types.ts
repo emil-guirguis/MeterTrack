@@ -51,7 +51,7 @@ export interface SidebarMetersProps {
   tenantId: string;
   userId: string;
   onMeterSelect: (meterId: string) => void;
-  onMeterElementSelect: (meterId: string, elementId: string) => void;
+  onMeterElementSelect: (meterId: string, elementId: string, gridType?: 'simple' | 'baselist') => void;
 }
 
 export interface MeterItemProps {
@@ -97,7 +97,7 @@ export interface FavoritesSectionProps {
   favorites: FavoriteDisplay[];
   meters: Meter[];
   meterElements: { [meterId: string]: MeterElement[] };
-  onItemClick: (meterId: string, elementId: string) => void;
+  onItemClick: (meterId: string, elementId: string, gridType?: 'simple' | 'baselist') => void;
   onStarClick: (favoriteId: number, meterId: string, elementId: string) => Promise<void>;
 }
 

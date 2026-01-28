@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { DashboardLayout, GridPosition } from '../types/dashboard';
+import type { DashboardLayout, GridPosition } from '../types/layout';
 
 /**
  * Layout item configuration

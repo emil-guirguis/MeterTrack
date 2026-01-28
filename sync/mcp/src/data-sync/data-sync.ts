@@ -53,8 +53,8 @@ export function initializePools(): void {
     database: syncConfig.database,
     user: syncConfig.user,
     password: syncConfig.password,
-    max: 10,
-    idleTimeoutMillis: 30000,
+    max: 5,
+    idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 5000,
   } as any);
 
@@ -83,8 +83,8 @@ export function initializePools(): void {
     database: remoteConfig.database,
     user: remoteConfig.user,
     password: remoteConfig.password,
-    max: 10,
-    idleTimeoutMillis: 30000,
+    max: 5,
+    idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 5000,
   } as any);
 

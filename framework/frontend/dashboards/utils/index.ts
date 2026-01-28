@@ -7,7 +7,7 @@
  * Exports:
  * - Formatters: formatNumber, formatCurrency, formatPercentage
  * - Layout Helpers: createResponsiveLayout, calculateColumns, getDeviceType
- * - Validators: validateDashboardConfig, validateCardData, etc.
+ * - Validators: validateDashboardCard, validateAggregatedData, validateDashboardLayout, etc.
  */
 
 // Layout calculation and responsive design utilities

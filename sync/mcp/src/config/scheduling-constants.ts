@@ -9,24 +9,24 @@
  * BACnet Collection Interval
  * 
  * How often to collect meter readings from BACnet devices
- * Default: 10 minutes (600 seconds)
+ * Default: 15 minutes (900 seconds)
  * 
  * Used by: BACnetMeterReadingAgent
  * Environment variable: BACNET_COLLECTION_INTERVAL_SECONDS
  */
-export const CRON_METER_READ = minutesToCronEvery(10);
+export const CRON_METER_READ = minutesToCronEvery(15);
 
 /**
  * BACnet Upload Interval
  * 
  * How often to upload collected meter readings to the remote Client System
- * Default: 15 minutes
+ * Default: 16 minutes
  * 
  * Used by: BACnetMeterReadingAgent, MeterReadingUploadManager
  * Environment variable: BACNET_UPLOAD_INTERVAL_MINUTES
- * Cron expression: 0 [every 15 minutes] * * * (every 15 minutes at minute 0)
+ * Cron expression: 0 [every 16 minutes] * * * (every 16 minutes at minute 0)
  */
-export const CRON_SYNC_TO_REMOTE = minutesToCronEvery(15);
+export const CRON_SYNC_TO_REMOTE = minutesToCronEvery(16);
 
 /**
  * Remote to Local Sync Interval

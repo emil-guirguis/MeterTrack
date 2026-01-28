@@ -78,7 +78,7 @@ export const DashboardWidget: React.FC<WidgetProps> = ({
   };
 
   return (
-    <div className={`dashboard-widget ${className}`} style={style}>
+    <div className={`dashboard-widget ${className}`} style={style as any}>
       {title && (
         <div className="dashboard-widget__header">
           <h3 className="dashboard-widget__title">{title}</h3>

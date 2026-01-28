@@ -4,7 +4,7 @@
  * Utility functions for dashboard layout calculations and responsive behavior
  */
 
-import type { DashboardLayout, DashboardBreakpoint } from '../types/dashboard';
+import type { DashboardLayout, DashboardBreakpoint } from '../types/layout';
 
 /**
  * Calculate number of columns based on viewport width and breakpoints

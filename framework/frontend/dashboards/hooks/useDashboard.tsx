@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { DashboardConfig, DashboardReturn } from '../types/dashboard';
+import type { DashboardConfig } from '../types/config';
+import type { DashboardReturn } from '../types/dashboard';
 
 /**
  * Configuration for useDashboard hook

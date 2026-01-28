@@ -28,12 +28,18 @@ interface MeterReadingsState {
  * Meter readings store hook
  * Read-only - no create/update/delete operations
  */
-export const useMeterReadings = create<MeterReadingsState>((set) => ({
+export const useMeterReadings = create<MeterReadingsState>((set) => {
+  console.log('[MeterReadingsStore] Store created');
+  return {
   items: [],
   loading: false,
   error: null,
 
   fetchItems: async (params?: any) => {
+    console.log('[MeterReadingsStore] ===== FETCH ITEMS CALLED =====');
+    console.log('[MeterReadingsStore] params:', params);
+    console.log('[MeterReadingsStore] params.meterId:', params?.meterId, 'type:', typeof params?.meterId);
+    console.log('[MeterReadingsStore] params.meterElementId:', params?.meterElementId, 'type:', typeof params?.meterElementId);
     set({ loading: true, error: null });
     try {
       const queryParams = new URLSearchParams();
@@ -68,6 +74,11 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
       const queryString = queryParams.toString();
       const endpoint = queryString ? `/meterreadings?${queryString}` : '/meterreadings';
       
+      console.log('[MeterReadingsStore] ===== QUERY STRING =====');
+      console.log('[MeterReadingsStore] Query string:', queryString);
+      console.log('[MeterReadingsStore] Full URL:', `${API_BASE_URL}${endpoint}`);
+      console.log('[MeterReadingsStore] ===== END QUERY STRING =====');
+      
       const token = tokenStorage.getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -81,19 +92,29 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
         headers
       });
 
+      console.log('[MeterReadingsStore] Response status:', response.status);
+
       if (!response.ok) {
         throw new Error('Failed to fetch meter readings');
       }
 
       const result = await response.json();
       
+      console.log('[MeterReadingsStore] ===== RESPONSE DATA =====');
+      console.log('[MeterReadingsStore] Response:', result);
+      console.log('[MeterReadingsStore] ===== END RESPONSE DATA =====');
+      
       if (result.success && result.data) {
-        // Validate that all returned readings belong to the correct tenant
-        const items = result.data.items || result.data || [];
-        const tenantId = params?.tenantId || localStorage.getItem('tenantId');
+        // Extract items from the response
+        // The API returns { items: [...], total, page, pageSize, totalPages, hasMore }
+        const items = Array.isArray(result.data) ? result.data : (result.data.items || []);
         
         // Log validation for debugging
         console.log(`[MeterReadingsStore] Fetched ${items.length} readings`);
+        if (items.length > 0) {
+          console.log(`[MeterReadingsStore] First item:`, items[0]);
+          console.log(`[MeterReadingsStore] First item keys:`, Object.keys(items[0]));
+        }
         
         set({ 
           items: items,
@@ -104,8 +125,8 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch meter readings';
+      console.error('[MeterReadingsStore] Error:', message);
       set({ error: message, loading: false });
-      console.error('Fetch meter readings error:', error);
     }
   },
 
@@ -132,8 +153,11 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
       const result = await response.json();
       
       if (result.success && result.data) {
+        // Extract items from the response
+        const items = Array.isArray(result.data) ? result.data : (result.data.items || []);
+        
         set({ 
-          items: result.data || [],
+          items: items,
           loading: false 
         });
       } else {
@@ -147,7 +171,8 @@ export const useMeterReadings = create<MeterReadingsState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
-}));
+  };
+});
 
 /**
  * Enhanced hook with additional computed properties

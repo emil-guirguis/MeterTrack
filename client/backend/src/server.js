@@ -98,11 +98,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     await db.connect();
     console.log('✅ [INIT] Database connected');
 
-    console.log('🔄 [INIT] Running database migrations...');
-    // Run database migrations
-    const { runMigrations } = require('../migrations/run-migrations');
-    await runMigrations();
-    console.log('✅ [INIT] Database migrations completed');
+    console.log('🔄 [INIT] Skipping database migrations (migrations folder removed)...');
 
     console.log('🔄 [INIT] Initializing email templates...');
     // Initialize email templates (seed default templates if needed)

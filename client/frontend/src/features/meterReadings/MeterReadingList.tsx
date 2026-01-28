@@ -1,65 +1,26 @@
 import React from 'react';
-import { BaseList } from '@framework/components/list/BaseList';
 import { useMeterReadingsEnhanced } from './meterReadingsStore';
-import { useBaseList } from '@framework/components/list/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import { useMeterSelection } from '../../contexts/MeterSelectionContext';
-import type { MeterReading } from './meterReadingConfig';
-import { Permission } from '../../types/auth';
-import {
-  meterReadingColumns,
-  meterReadingFilters,
-  meterReadingStats,
-  meterReadingExportConfig,
-} from './meterReadingConfig';
-import '@framework/components/common/TableCellStyles.css';
+import { SimpleMeterReadingGrid } from './SimpleMeterReadingGrid';
 import './MeterReadingList.css';
 
 interface MeterReadingListProps {
-  onMeterReadingSelect?: (reading: MeterReading) => void;
+  onMeterReadingSelect?: (reading: any) => void;
+  gridType?: 'simple' | 'baselist';
+  onGridTypeChange?: (type: 'simple' | 'baselist') => void;
 }
 
 export const MeterReadingList: React.FC<MeterReadingListProps> = ({
-  onMeterReadingSelect,
+  gridType = 'simple',
+  onGridTypeChange,
 }) => {
   const meterReadings = useMeterReadingsEnhanced();
   const auth = useAuth();
   const { selectedMeter, selectedElement } = useMeterSelection();
-  
-  // Initialize base list hook with meter reading configuration
-  // Note: Read-only - no create/edit/delete operations
-  const baseList = useBaseList<MeterReading, any>({
-    entityName: 'meter reading',
-    entityNamePlural: 'meter readings',
-    useStore: useMeterReadingsEnhanced,
-    features: {
-      allowCreate: false,      // Read-only
-      allowEdit: false,        // Read-only
-      allowDelete: false,      // Read-only
-      allowBulkActions: false, // Read-only
-      allowExport: true,
-      allowImport: false,
-      allowSearch: true,
-      allowFilters: true,
-      allowStats: true,
-    },
-    permissions: {
-      create: Permission.METER_READ,
-      update: Permission.METER_READ,
-      delete: Permission.METER_READ,
-    },
-    columns: meterReadingColumns,
-    filters: meterReadingFilters,
-    stats: meterReadingStats,
-    bulkActions: [],
-    export: meterReadingExportConfig,
-    authContext: auth,
-  });
 
   /**
    * Check for missing tenantId
-   * 
-   * Validates: Requirements 5.3, 6.1
    */
   const tenantError = React.useMemo(() => {
     if (!auth.user?.client) {
@@ -70,98 +31,79 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
 
   /**
    * Memoized filtered data based on selected meter and element
-   * 
-   * This prevents unnecessary re-renders by only recomputing when:
-   * - baseList.data changes (new data from store)
-   * - baseList.loading changes (loading state)
-   * - selectedMeter changes (user selects different meter)
-   * - selectedElement changes (user selects different element)
-   * 
-   * Validates: Requirements 2.1, 2.3, 3.1
    */
   const filteredData = React.useMemo(() => {
-    // If data is still loading, return empty array to show loading state
-    if (baseList.loading) {
-      return [];
+    if (meterReadings.loading) {
+      return meterReadings.items;
     }
-    
-    // If no meter is selected, return all data
+
     if (!selectedMeter) {
-      return baseList.data;
+      return meterReadings.items;
     }
 
     // Filter by selected meter and optionally by selected element
-    const filtered = baseList.data.filter((reading: any) => {
-      // Try both meterId and meter_id field names, convert to string for comparison
-      const readingMeterId = String(reading.meterId || reading.meter_id || '');
+    const filtered = meterReadings.items.filter((reading: any) => {
+      const readingMeterId = String(reading.meter_id || '');
       const meterMatch = readingMeterId === selectedMeter;
-      
+
       if (!selectedElement) {
         return meterMatch;
       }
-      
-      // Try both meterElementId and meter_element_id field names, convert to string for comparison
-      const readingElementId = String(reading.meterElementId || reading.meter_element_id || '');
+
+      const readingElementId = String(reading.meter_element_id || '');
       return meterMatch && readingElementId === selectedElement;
     });
-    
+
+    console.log('[MeterReadingList] Filtering with selectedMeter:', selectedMeter, 'selectedElement:', selectedElement);
+    console.log('[MeterReadingList] Total items:', meterReadings.items.length);
+    console.log('[MeterReadingList] Filtered items:', filtered.length);
+    if (meterReadings.items.length > 0) {
+      console.log('[MeterReadingList] First item:', meterReadings.items[0]);
+    }
+
     return filtered;
-  }, [baseList.data, baseList.loading, selectedMeter, selectedElement]);
+  }, [meterReadings.items, meterReadings.loading, selectedMeter, selectedElement]);
 
   /**
-   * Memoized title that displays selected meter and element information
-   * 
-   * Validates: Requirement 1.3
+   * Memoized title
    */
   const title = React.useMemo(() => {
     if (!selectedMeter) {
       return 'Meter Readings';
     }
-    
+
     if (selectedElement) {
       return `Meter Readings - Meter ${selectedMeter} / Element ${selectedElement}`;
     }
-    
+
     return `Meter Readings - Meter ${selectedMeter}`;
   }, [selectedMeter, selectedElement]);
 
   /**
-   * Memoized empty state message based on selection state
-   * 
-   * Shows different messages depending on:
-   * - No meter selected: prompts user to select a meter
-   * - Meter selected but no data: indicates no readings found
-   * 
-   * Validates: Requirements 2.4, 3.3
+   * Memoized empty state message
    */
   const emptyMessage = React.useMemo(() => {
     if (!selectedMeter) {
       return 'No meter readings found. Select a meter from the sidebar to view readings.';
     }
-    
+
     if (selectedElement) {
       return `No meter readings found for meter ${selectedMeter} and element ${selectedElement}.`;
     }
-    
+
     return `No meter readings found for meter ${selectedMeter}.`;
   }, [selectedMeter, selectedElement]);
 
   /**
    * Determine which error to display
-   * Priority: tenantError > API error > none
-   * 
-   * Validates: Requirements 5.3, 6.1, 6.2
    */
-  const displayError = tenantError || baseList.error;
+  const displayError = tenantError || meterReadings.error;
 
   /**
    * Handle retry button click
-   * Re-fetches data from the store
-   * 
-   * Validates: Requirements 6.4
    */
   const handleRetry = () => {
-    baseList.clearError?.();
+    meterReadings.clearError();
     meterReadings.fetchItems({
       tenantId: auth.user?.client,
       meterId: selectedMeter,
@@ -169,30 +111,62 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
     });
   };
 
+  /**
+   * Handle grid type change
+   */
+  const handleGridTypeChange = (type: 'simple' | 'baselist') => {
+    onGridTypeChange?.(type);
+  };
+
+  // If gridType is 'baselist', render the old BaseList component
+  if (gridType === 'baselist') {
+    return (
+      <div className="meter-reading-list">
+        <div className="meter-reading-list__header">
+          <h2>{title}</h2>
+          <button onClick={() => handleGridTypeChange('simple')} className="meter-reading-list__switch-btn" type="button">
+            Switch to Simple Grid
+          </button>
+        </div>
+        {displayError && (
+          <div className="meter-reading-list__error">
+            <p>{displayError}</p>
+            <button onClick={handleRetry} className="meter-reading-list__retry-btn" type="button">
+              Retry
+            </button>
+          </div>
+        )}
+        {!displayError && (
+          <div className="meter-reading-list__baselist-placeholder">
+            Old BaseList Grid (to be implemented)
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="meter-reading-list">
+      <div className="meter-reading-list__header">
+        <h2>{title}</h2>
+      </div>
+
       {displayError && (
-        <div className="error-container">
-          <div className="error-message">{displayError}</div>
-          <button onClick={handleRetry} className="retry-button">
+        <div className="meter-reading-list__error">
+          <p>{displayError}</p>
+          <button onClick={handleRetry} className="meter-reading-list__retry-btn" type="button">
             Retry
           </button>
         </div>
       )}
-      <BaseList
-        title={title}
-        filters={baseList.renderFilters()}
-        headerActions={baseList.renderHeaderActions()}
-        stats={baseList.renderStats()}
-        data={filteredData}
-        columns={baseList.columns}
-        loading={baseList.loading}
-        error={null}
-        emptyMessage={emptyMessage}
-        // onSelect={onMeterReadingSelect}
-        pagination={baseList.pagination}
-      />
-      {baseList.renderExportModal()}
+
+      {!displayError && (
+        <SimpleMeterReadingGrid
+          data={filteredData as any}
+          loading={meterReadings.loading}
+          error={undefined}
+        />
+      )}
     </div>
   );
 };

@@ -25,7 +25,13 @@ import type { DashboardCard as DashboardCardType, AggregatedData } from '../type
  * This demonstrates the separation between framework and client-specific code
  */
 class MockClientDashboardService {
-  constructor(private _tenantId: string, private _authToken: string) {}
+  tenantId: string;
+  authToken: string;
+
+  constructor(tenantId: string, authToken: string) {
+    this.tenantId = tenantId;
+    this.authToken = authToken;
+  }
 
   /**
    * Get all dashboard cards for the tenant
