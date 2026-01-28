@@ -5,6 +5,7 @@
   padding: 12px 0;
   border-bottom: 2px solid #e0e0e0;
   margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .favorites-header {

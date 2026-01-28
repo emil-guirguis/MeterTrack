@@ -3,20 +3,40 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 interface MeterSelectionContextType {
   selectedMeter: string | null;
   selectedElement: string | null;
-  setSelectedMeter: (meterId: string | null) => void;
-  setSelectedElement: (elementId: string | null) => void;
+  selectedMeterName: string | null;
+  selectedElementName: string | null;
+  selectedElementNumber: number | null;
+  setSelectedMeter: (meterId: string | null, meterName?: string | null) => void;
+  setSelectedElement: (elementId: string | null, elementName?: string | null, elementNumber?: number | null) => void;
   clearSelection: () => void;
 }
 
 const MeterSelectionContext = createContext<MeterSelectionContextType | undefined>(undefined);
 
 export const MeterSelectionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [selectedMeter, setSelectedMeter] = useState<string | null>(null);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [selectedMeter, setSelectedMeterState] = useState<string | null>(null);
+  const [selectedElement, setSelectedElementState] = useState<string | null>(null);
+  const [selectedMeterName, setSelectedMeterName] = useState<string | null>(null);
+  const [selectedElementName, setSelectedElementName] = useState<string | null>(null);
+  const [selectedElementNumber, setSelectedElementNumber] = useState<number | null>(null);
+
+  const setSelectedMeter = (meterId: string | null, meterName: string | null = null) => {
+    setSelectedMeterState(meterId);
+    setSelectedMeterName(meterName || null);
+  };
+
+  const setSelectedElement = (elementId: string | null, elementName: string | null = null, elementNumber: number | null = null) => {
+    setSelectedElementState(elementId);
+    setSelectedElementName(elementName || null);
+    setSelectedElementNumber(elementNumber || null);
+  };
 
   const clearSelection = () => {
-    setSelectedMeter(null);
-    setSelectedElement(null);
+    setSelectedMeterState(null);
+    setSelectedElementState(null);
+    setSelectedMeterName(null);
+    setSelectedElementName(null);
+    setSelectedElementNumber(null);
   };
 
   return (
@@ -24,6 +44,9 @@ export const MeterSelectionProvider: React.FC<{ children: ReactNode }> = ({ chil
       value={{
         selectedMeter,
         selectedElement,
+        selectedMeterName,
+        selectedElementName,
+        selectedElementNumber,
         setSelectedMeter,
         setSelectedElement,
         clearSelection,

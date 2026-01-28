@@ -86,12 +86,13 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
    * Handle favorite item click - displays simple grid
    * Requirements: 5.3
    */
-  const handleFavoriteItemClick = (meterId: number, elementId: number) => {
+  const handleFavoriteItemClick = (meterId: number, elementId: number, favoriteName: string) => {
     console.log('[FavoritesSection] ===== FAVORITE CLICKED (SINGLE) =====');
     console.log('[FavoritesSection] meterId:', meterId, 'type:', typeof meterId);
     console.log('[FavoritesSection] elementId:', elementId, 'type:', typeof elementId);
+    console.log('[FavoritesSection] favoriteName:', favoriteName);
     console.log('[FavoritesSection] Calling onItemClick with gridType: simple');
-    onItemClick(String(meterId), String(elementId), 'simple');
+    onItemClick(String(meterId), String(elementId), favoriteName, 'simple');
     console.log('[FavoritesSection] ===== FAVORITE CLICK COMPLETE =====');
   };
 
@@ -99,12 +100,13 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
    * Handle favorite item double-click - displays old grid
    * Requirements: 5.3
    */
-  const handleFavoriteItemDoubleClick = (meterId: number, elementId: number) => {
+  const handleFavoriteItemDoubleClick = (meterId: number, elementId: number, favoriteName: string) => {
     console.log('[FavoritesSection] ===== FAVORITE CLICKED (DOUBLE) =====');
     console.log('[FavoritesSection] meterId:', meterId, 'type:', typeof meterId);
     console.log('[FavoritesSection] elementId:', elementId, 'type:', typeof elementId);
+    console.log('[FavoritesSection] favoriteName:', favoriteName);
     console.log('[FavoritesSection] Calling onItemClick with gridType: baselist');
-    onItemClick(String(meterId), String(elementId), 'baselist');
+    onItemClick(String(meterId), String(elementId), favoriteName, 'baselist');
     console.log('[FavoritesSection] ===== FAVORITE DOUBLE-CLICK COMPLETE =====');
   };
 
@@ -167,8 +169,8 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
 
               <div
                 className="favorite-item-content"
-                onClick={() => handleFavoriteItemClick(favorite.id1, favorite.id2)}
-                onDoubleClick={() => handleFavoriteItemDoubleClick(favorite.id1, favorite.id2)}
+                onClick={() => handleFavoriteItemClick(favorite.id1, favorite.id2, favorite.favorite_name || '')}
+                onDoubleClick={() => handleFavoriteItemDoubleClick(favorite.id1, favorite.id2, favorite.favorite_name || '')}
               >
                 {/* Favorite display text: "meter_name - element-element_name" */}
                 {/* Provide fallback if favorite_name is undefined or empty */}

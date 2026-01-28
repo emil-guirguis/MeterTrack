@@ -25,9 +25,11 @@ export const MeterReadingManagementPage: React.FC = () => {
 
   const meterId = searchParams.get('meterId');
   const elementId = searchParams.get('elementId');
+  const elementName = searchParams.get('elementName');
+  const elementNumber = searchParams.get('elementNumber');
   const urlGridType = searchParams.get('gridType') as 'simple' | 'baselist' | null;
 
-  console.log('[MeterReadingManagementPage] URL params - meterId:', meterId, 'elementId:', elementId, 'gridType:', urlGridType);
+  console.log('[MeterReadingManagementPage] URL params - meterId:', meterId, 'elementId:', elementId, 'elementName:', elementName, 'elementNumber:', elementNumber, 'gridType:', urlGridType);
   console.log('[MeterReadingManagementPage] auth.user?.client:', auth.user?.client);
 
   // Set context values from URL params and fetch readings
@@ -40,7 +42,8 @@ export const MeterReadingManagementPage: React.FC = () => {
       console.log('[MeterReadingManagementPage] Conditions met, setting context and fetching');
       setSelectedMeter(meterId);
       if (elementId) {
-        setSelectedElement(elementId);
+        const parsedElementNumber = elementNumber ? parseInt(elementNumber) : undefined;
+        setSelectedElement(elementId, elementName || undefined, parsedElementNumber);
       }
       
       // Set gridType from URL if provided
@@ -60,7 +63,7 @@ export const MeterReadingManagementPage: React.FC = () => {
     } else {
       console.log('[MeterReadingManagementPage] Conditions NOT met - meterId:', meterId, 'tenantId:', auth.user?.client);
     }
-  }, [meterId, elementId, auth.user?.client, urlGridType]);
+  }, [meterId, elementId, elementName, elementNumber, auth.user?.client, urlGridType]);
 
   return (
     <div className="meter-reading-management-page">

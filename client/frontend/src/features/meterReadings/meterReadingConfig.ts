@@ -29,6 +29,11 @@ export interface MeterReading {
   created_at: string | Date;
   sync_status?: string | null;
   
+  // Meter and element info (from joins)
+  meter_name?: string | null;
+  element_name?: string | null;
+  element_number?: number | null;
+  
   // Energy metrics
   active_energy?: number | null;
   active_energy_export?: number | null;

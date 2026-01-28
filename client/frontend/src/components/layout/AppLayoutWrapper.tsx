@@ -168,27 +168,31 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
       <SidebarMetersSection
         tenantId={user.client || '1'}
         userId={user.users_id || '1'}
-        onMeterSelect={(meterId) => {
-          console.log('[AppLayoutWrapper] Meter selected:', meterId);
-          console.log('[AppLayoutWrapper] Setting selectedMeter in context');
-          setSelectedMeter(meterId);
+        onMeterSelect={(meterId, meterName) => {
+          console.log('[AppLayoutWrapper] Meter selected:', meterId, 'name:', meterName);
+          console.log('[AppLayoutWrapper] Setting selectedMeter in context with name:', meterName);
+          setSelectedMeter(meterId, meterName);
           setSelectedElement(null);
           console.log('[AppLayoutWrapper] Context updated');
           console.log('[AppLayoutWrapper] Navigating to /meter-readings');
           navigate('/meter-readings');
         }}
-        onMeterElementSelect={(meterId, elementId, gridType) => {
+        onMeterElementSelect={(meterId, elementId, elementName, elementNumber, gridType) => {
           console.log('[AppLayoutWrapper] ===== METER ELEMENT SELECT =====');
-          console.log('[AppLayoutWrapper] Meter element selected:', meterId, elementId);
+          console.log('[AppLayoutWrapper] Meter element selected:', meterId, elementId, 'name:', elementName, 'number:', elementNumber);
           console.log('[AppLayoutWrapper] gridType:', gridType);
           console.log('[AppLayoutWrapper] meterId type:', typeof meterId, 'elementId type:', typeof elementId);
           console.log('[AppLayoutWrapper] Setting selectedMeter and selectedElement in context');
           setSelectedMeter(meterId);
-          setSelectedElement(elementId);
+          setSelectedElement(elementId, elementName, elementNumber);
           console.log('[AppLayoutWrapper] Context updated');
-          const url = gridType 
-            ? `/meter-readings?meterId=${meterId}&elementId=${elementId}&gridType=${gridType}`
-            : `/meter-readings?meterId=${meterId}&elementId=${elementId}`;
+          const params = new URLSearchParams();
+          params.set('meterId', meterId);
+          params.set('elementId', elementId);
+          if (elementName) params.set('elementName', elementName);
+          if (elementNumber) params.set('elementNumber', String(elementNumber));
+          if (gridType) params.set('gridType', gridType);
+          const url = `/meter-readings?${params.toString()}`;
           console.log('[AppLayoutWrapper] Navigating to:', url);
           navigate(url);
           console.log('[AppLayoutWrapper] ===== METER ELEMENT SELECT COMPLETE =====');

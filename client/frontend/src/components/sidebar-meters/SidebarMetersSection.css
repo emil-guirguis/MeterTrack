@@ -1,10 +1,7 @@
 .sidebar-meters-section {
   display: flex;
   flex-direction: column;
-  height: 100%;
   background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  overflow-y: auto;
 }
 
 .sidebar-meters-section .loading-state {

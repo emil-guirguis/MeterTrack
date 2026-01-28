@@ -108,9 +108,9 @@ export const SidebarMetersSection: React.FC<SidebarMetersProps> = ({
    * Handle meter selection
    */
   const handleMeterSelect = useCallback(
-    (meterId: string) => {
+    (meterId: string, meterName?: string) => {
       setSelectedItem({ type: 'meter', meterId });
-      onMeterSelect(meterId);
+      onMeterSelect(meterId, meterName);
     },
     [onMeterSelect]
   );
@@ -119,9 +119,9 @@ export const SidebarMetersSection: React.FC<SidebarMetersProps> = ({
    * Handle meter element selection
    */
   const handleMeterElementSelect = useCallback(
-    (meterId: string, elementId: string) => {
+    (meterId: string, elementId: string, elementName?: string, elementNumber?: number) => {
       setSelectedItem({ type: 'element', meterId, elementId });
-      onMeterElementSelect(meterId, elementId);
+      onMeterElementSelect(meterId, elementId, elementName, elementNumber);
     },
     [onMeterElementSelect]
   );
@@ -200,14 +200,16 @@ export const SidebarMetersSection: React.FC<SidebarMetersProps> = ({
    * Requirements: 5.3
    */
   const handleFavoritesItemClick = useCallback(
-    (meterId: string, elementId: string, gridType?: 'simple' | 'baselist') => {
+    (meterId: string, elementId: string, favoriteName?: string, gridType?: 'simple' | 'baselist') => {
       console.log('[SidebarMetersSection] ===== FAVORITE ITEM CLICK HANDLER =====');
       console.log('[SidebarMetersSection] meterId:', meterId, 'type:', typeof meterId);
       console.log('[SidebarMetersSection] elementId:', elementId, 'type:', typeof elementId);
+      console.log('[SidebarMetersSection] favoriteName:', favoriteName);
       console.log('[SidebarMetersSection] gridType:', gridType);
       console.log('[SidebarMetersSection] Setting selected item and calling onMeterElementSelect');
+      
       setSelectedItem({ type: 'element', meterId, elementId });
-      onMeterElementSelect(meterId, elementId, gridType);
+      onMeterElementSelect(meterId, elementId, favoriteName, undefined, gridType);
       console.log('[SidebarMetersSection] ===== FAVORITE ITEM CLICK COMPLETE =====');
     },
     [onMeterElementSelect]

@@ -50,8 +50,8 @@ export interface MeterReading {
 export interface SidebarMetersProps {
   tenantId: string;
   userId: string;
-  onMeterSelect: (meterId: string) => void;
-  onMeterElementSelect: (meterId: string, elementId: string, gridType?: 'simple' | 'baselist') => void;
+  onMeterSelect: (meterId: string, meterName?: string) => void;
+  onMeterElementSelect: (meterId: string, elementId: string, elementName?: string, elementNumber?: number, gridType?: 'simple' | 'baselist') => void;
 }
 
 export interface MeterItemProps {
@@ -97,7 +97,7 @@ export interface FavoritesSectionProps {
   favorites: FavoriteDisplay[];
   meters: Meter[];
   meterElements: { [meterId: string]: MeterElement[] };
-  onItemClick: (meterId: string, elementId: string, gridType?: 'simple' | 'baselist') => void;
+  onItemClick: (meterId: string, elementId: string, favoriteName?: string, gridType?: 'simple' | 'baselist') => void;
   onStarClick: (favoriteId: number, meterId: string, elementId: string) => Promise<void>;
 }
 
@@ -108,8 +108,8 @@ export interface MetersListProps {
   expandedMeters: Set<string>;
   selectedItem: SelectedItem | null;
   onMeterExpand: (meterId: string) => void;
-  onMeterSelect: (meterId: string) => void;
-  onMeterElementSelect: (meterId: string, elementId: string) => void;
+  onMeterSelect: (meterId: string, meterName?: string) => void;
+  onMeterElementSelect: (meterId: string, elementId: string, elementName?: string, elementNumber?: number) => void;
   onFavoriteToggle: (meterId: string, elementId?: string) => void;
 }
 

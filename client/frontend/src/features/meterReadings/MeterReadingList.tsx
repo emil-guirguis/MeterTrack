@@ -17,7 +17,7 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
 }) => {
   const meterReadings = useMeterReadingsEnhanced();
   const auth = useAuth();
-  const { selectedMeter, selectedElement } = useMeterSelection();
+  const { selectedMeter, selectedElement, selectedMeterName, selectedElementName, selectedElementNumber } = useMeterSelection();
 
   /**
    * Check for missing tenantId
@@ -65,34 +65,30 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
   }, [meterReadings.items, meterReadings.loading, selectedMeter, selectedElement]);
 
   /**
-   * Memoized title
+   * Memoized title - display favorite caption if available, otherwise just "Meter Readings"
    */
   const title = React.useMemo(() => {
+    console.log('[MeterReadingList] Title calculation:', {
+      selectedMeter,
+      selectedElement,
+      selectedMeterName,
+      selectedElementName,
+      selectedElementNumber,
+    });
+
     if (!selectedMeter) {
       return 'Meter Readings';
     }
 
-    if (selectedElement) {
-      return `Meter Readings - Meter ${selectedMeter} / Element ${selectedElement}`;
+    // If we have an element name (which comes from favorite caption), use it
+    if (selectedElement && selectedElementName) {
+      return `Meter Readings - ${selectedElementName}`;
     }
 
-    return `Meter Readings - Meter ${selectedMeter}`;
-  }, [selectedMeter, selectedElement]);
+    return 'Meter Readings';
+  }, [selectedMeter, selectedElement, selectedElementName]);
 
-  /**
-   * Memoized empty state message
-   */
-  const emptyMessage = React.useMemo(() => {
-    if (!selectedMeter) {
-      return 'No meter readings found. Select a meter from the sidebar to view readings.';
-    }
 
-    if (selectedElement) {
-      return `No meter readings found for meter ${selectedMeter} and element ${selectedElement}.`;
-    }
-
-    return `No meter readings found for meter ${selectedMeter}.`;
-  }, [selectedMeter, selectedElement]);
 
   /**
    * Determine which error to display

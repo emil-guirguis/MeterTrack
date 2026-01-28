@@ -24,7 +24,7 @@ export const MetersList: React.FC<MetersListProps> = ({
   onMeterElementSelect,
   onFavoriteToggle,
 }) => {
-  const [isMetersCollapsed, setIsMetersCollapsed] = useState(false);
+  const [isMetersCollapsed, setIsMetersCollapsed] = useState(true);
 
 
 
@@ -90,7 +90,7 @@ export const MetersList: React.FC<MetersListProps> = ({
                     isExpanded={isExpanded}
                     isSelected={isMeterSelected}
                     onExpand={() => handleMeterExpand(meter.id)}
-                    onSelect={() => onMeterSelect(meter.id)}
+                    onSelect={() => onMeterSelect(meter.id, meter.name)}
                     onFavoriteToggle={() => onFavoriteToggle(meter.id)}
                   />
 
@@ -125,7 +125,7 @@ export const MetersList: React.FC<MetersListProps> = ({
                               meterId={meter.id}
                               isFavorite={isElementFavorite}
                               isSelected={isElementSelected}
-                              onSelect={() => onMeterElementSelect(meter.id, elementId)}
+                              onSelect={() => onMeterElementSelect(meter.id, elementId, element.name, parseInt(element.meter_element_id))}
                               onFavoriteToggle={() => onFavoriteToggle(meter.id, elementId)}
                               id1={meter.id}
                               id2={elementId}
