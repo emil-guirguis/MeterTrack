@@ -50,16 +50,15 @@ export class BatchSizeManager {
   /**
    * Get the batch size for a meter
    * 
-   * If the meter hasn't been seen before, initializes it with the configured
-   * initial batch size. If initialBatchSize is 'all', uses totalRegisters.
+   * If the meter hasn't been seen before, initializes it with a small batch size.
+   * Starts with max 5 registers per batch to avoid timeouts, then grows on success.
    */
   getBatchSize(meterId: number, totalRegisters: number): number {
     let state = this.meterStates.get(meterId);
 
     if (!state) {
-      // Initialize new meter state
-      const initialSize =
-        this.initialBatchSize === 'all' ? totalRegisters : this.initialBatchSize;
+      // Initialize new meter state with small batch size (max 5)
+      const initialSize = Math.min(5, totalRegisters);
 
       state = {
         meterId,
@@ -71,7 +70,7 @@ export class BatchSizeManager {
       };
 
       this.meterStates.set(meterId, state);
-      this.logger.debug(
+      this.logger.info(
         `Initialized batch size for meter ${meterId}: ${state.currentBatchSize} (total registers: ${totalRegisters})`
       );
     }

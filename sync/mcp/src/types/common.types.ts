@@ -66,7 +66,7 @@ export const ENTITY_METADATA: Record<string, EntityMetadata> = {
     tableName: 'meter',
     primaryKey: ['meter_id', 'meter_element_id'],
     columns: ['meter_id', 'device_id', 'name', 'active', 'ip', 'port', 'meter_element_id', 'element'],
-    compositeKey: ['id', 'meter_element_id'],
+    compositeKey: ['meter_id', 'meter_element_id'],
     tenantFiltered: true,
     remoteQuery: `select m.meter_id, m.device_id, m.ip, m.port, m.active ,  
                          me.meter_element_id, me.element, me.name as name 

@@ -101,11 +101,11 @@ export class CollectionCycleManager {
    * If the cache is empty, it will be loaded from the database before processing.
    * After the cycle completes, the cache is cleared to ensure fresh data on next cycle.
    */
-  async executeCycle(
-    bacnetClient: BACnetClient,
-    database: any,
-    readTimeoutMs: number = 3000
-  ): Promise<CollectionCycleResult> {
+async executeCycle(
+  bacnetClient: BACnetClient,
+  database: any,
+  readTimeoutMs: number = 15000  // ← change from 3000 to 15000 (15 seconds)
+): Promise<CollectionCycleResult> {
     const cycleId = this.generateCycleId();
     const meterCache = cacheManager.getMeterCache();
     const startTime = new Date();
@@ -162,6 +162,15 @@ export class CollectionCycleManager {
       // Get all meters from cache
       const meters = meterCache.getMeters();
 
+      // 🔴 BREAKPOINT: Log meters from cache
+      this.logger.info(`\n${'='.repeat(80)}`);
+      this.logger.info(`🔴 BREAKPOINT: executeCycle - Meters from cache`);
+      this.logger.info(`   Total meters in cache: ${meters.length}`);
+      meters.forEach((meter: any, idx: number) => {
+        this.logger.info(`   Meter ${idx + 1}: id=${meter.meter_id}, element=${meter.element}, meter_element_id=${meter.meter_element_id}, name=${meter.name}`);
+      });
+      this.logger.info(`${'='.repeat(80)}\n`);
+
       if (meters.length === 0) {
         this.logger.warn('No meters in cache for collection cycle');
         return {
@@ -200,12 +209,12 @@ export class CollectionCycleManager {
             try {
               const insertionResult = await batcher.flushBatch(database);
               readingsCollected += insertionResult.insertedCount;
-              
+
               // Mark inserted readings as pending
               if (insertionResult.insertedReadingIds && insertionResult.insertedReadingIds.length > 0) {
                 await database.markReadingsAsPending(insertionResult.insertedReadingIds);
               }
-              
+
               this.logger.info(
                 `Meter ${meter.meter_id}: inserted ${insertionResult.insertedCount} readings (${insertionResult.skippedCount} skipped, ${insertionResult.failedCount} failed)`
               );
@@ -304,6 +313,17 @@ export class CollectionCycleManager {
    * - On complete failure, attempts sequential fallback
    * - Records metrics for monitoring
    */
+  /**
+   * Read all data points from a meter with adaptive batch sizing
+   * 
+   * For DENT PowerScout 48 HD:
+   * - Elements A–P use instance blocks of 10000 each
+   * - Element A: 0–9999
+   * - Element B: 10000–19999
+   * - Element C: 20000–29999
+   * - ... up to Element P: 150000–159999
+   * - The relative register number from the DB is added to the element's base offset
+   */
   private async readMeterDataPoints(
     meter: any,
     bacnetClient: BACnetClient,
@@ -313,21 +333,28 @@ export class CollectionCycleManager {
     const readings: PendingReading[] = [];
 
     try {
-      // Check if meter is online before attempting to read
-      this.logger.info(`Checking connectivity for meter ${meter.meter_id} at ${meter.ip}:${meter.port || 47808}`);
+      // ────────────────────────────────────────────────────────────────
+      // 🔴 BREAKPOINT: Full meter context
+      // ────────────────────────────────────────────────────────────────
+      this.logger.info(`\n${'='.repeat(100)}`);
+      this.logger.info(`🔴 readMeterDataPoints START ── Meter ID: ${meter.meter_id}`);
+      this.logger.info(`   Element: ${meter.element} | Meter Element ID: ${meter.meter_element_id}`);
+      this.logger.info(`   Device ID: ${meter.device_id} | IP: ${meter.ip}:${meter.port || 47808}`);
+      this.logger.info(`   Full meter:`, JSON.stringify(meter, null, 2));
+      this.logger.info(`${'='.repeat(100)}\n`);
+
+      // Check connectivity
+      this.logger.info(`Checking connectivity → ${meter.ip}:${meter.port || 47808}`);
       const isOnline = await bacnetClient.checkConnectivity(meter.ip, meter.port || 47808);
 
       if (!isOnline) {
-        // Meter is offline, skip it and record offline status with timestamp
-        this.logger.warn(`Meter ${meter.meter_id} is offline or unreachable, skipping meter`);
+        this.logger.warn(`Meter ${meter.meter_id} (${meter.element}) is OFFLINE → skipping`);
         errors.push({
           meterId: String(meter.meter_id),
           operation: 'connectivity',
-          error: `Meter offline or unreachable at ${meter.ip}:${meter.port || 47808}`,
+          error: `Offline/unreachable at ${meter.ip}:${meter.port || 47808}`,
           timestamp: new Date(),
         });
-
-        // Record offline timeout event for metrics
         this.recordTimeoutEvent(
           String(meter.meter_id),
           0,
@@ -336,16 +363,16 @@ export class CollectionCycleManager {
           'offline',
           false
         );
-
         return readings;
       }
 
-      this.logger.info(`Meter ${meter.meter_id} is online, proceeding with batch read`);
+      this.logger.info(`Meter ${meter.meter_id} (${meter.element}) is ONLINE → proceeding`);
 
-      const deviceRegisters =  cacheManager.getDeviceRegisterCache().getDeviceRegisters(Number(meter.device_id));
-      
+      // Load registers for this device
+      const deviceRegisters = cacheManager.getDeviceRegisterCache().getDeviceRegisters(Number(meter.device_id));
+
       if (deviceRegisters.length === 0) {
-        this.logger.warn(`No registers configured for device ${meter.device_id} (meter ${meter.meter_id}), skipping meter`);
+        this.logger.warn(`No registers found for device ${meter.device_id} (meter ${meter.meter_id}, element ${meter.element})`);
         errors.push({
           meterId: String(meter.meter_id),
           operation: 'read',
@@ -355,23 +382,75 @@ export class CollectionCycleManager {
         return readings;
       }
 
-      this.logger.info(`Found ${deviceRegisters.length} configured registers for device ${meter.device_id}`);
-      
-      // Log all register details for debugging
-      this.logger.info(`📋 Device ${meter.device_id} Registers:`);
-      deviceRegisters.forEach((reg: any, index: number) => {
+      this.logger.info(`Loaded ${deviceRegisters.length} registers for device ${meter.device_id}`);
+
+      // ────────────────────────────────────────────────────────────────
+      // Calculate element base offset for PowerScout 48 HD
+      // ────────────────────────────────────────────────────────────────
+      const elementLetter = meter.element.trim().toUpperCase();
+      if (!/^[A-P]$/.test(elementLetter)) {
+        const msg = `Invalid element letter for PowerScout 48HD: "${elementLetter}" (must be A–P)`;
+        this.logger.error(msg);
+        errors.push({
+          meterId: String(meter.meter_id),
+          operation: 'read',
+          error: msg,
+          timestamp: new Date(),
+        });
+        return readings;
+      }
+
+      const elementIndex = elementLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1; // A=1, B=2, ..., P=16
+      const baseOffset = (elementIndex - 1) * 10000;
+
+      this.logger.info(`\n${'─'.repeat(80)}`);
+      this.logger.info(`Element ${elementLetter} calculation`);
+      this.logger.info(`   Letter → Index: ${elementLetter} → ${elementIndex}`);
+      this.logger.info(`   Base offset: ${baseOffset}  (range: ${baseOffset} – ${baseOffset + 9999})`);
+      this.logger.info(`${'─'.repeat(80)}\n`);
+
+      // ────────────────────────────────────────────────────────────────
+      // Build actual BACnet read requests with correct instances
+      // ────────────────────────────────────────────────────────────────
+      const batchRequests: BatchReadRequest[] = deviceRegisters
+        .map((register: any, idx: number) => {
+          const relative = Number(register.register);
+          if (isNaN(relative)) {
+            this.logger.error(`Invalid register number at index ${idx} - field: ${register.field_name} - value: ${register.register}`);
+            return undefined;
+          }
+
+          const fullInstance = baseOffset + relative;
+
+          return {
+            objectType: 'analogInput', // adjust if some are AV/BV etc.
+            objectInstance: fullInstance,
+            propertyId: 'presentValue',
+            fieldName: register.field_name,
+          } as BatchReadRequest;
+        })
+        .filter((req): req is BatchReadRequest => req !== undefined);
+
+      // ────────────────────────────────────────────────────────────────
+      // Log EVERY request clearly
+      // ────────────────────────────────────────────────────────────────
+      this.logger.info(`\n${'='.repeat(100)}`);
+      this.logger.info(`🔴 BACnet Read Targets for Meter ${meter.meter_id} - Element ${elementLetter}`);
+      this.logger.info(`   Total requests: ${batchRequests.length}`);
+      this.logger.info(`   Element base: ${baseOffset}`);
+      batchRequests.forEach((req, idx) => {
+        const reg = deviceRegisters[idx];
+        this.logger.info(
+          `  ${String(idx + 1).padStart(3)}. ${reg.field_name.padEnd(24)} ` +
+          `← AI:${String(req.objectInstance).padEnd(8)} presentValue ` +
+          `(relative: ${reg.register})`
+        );
       });
-      this.logger.info(`📊 Total Register Numbers: [${deviceRegisters.map((r: any) => r.register).join(', ')}]`);
+      this.logger.info(`${'='.repeat(100)}\n`);
 
-      // Build batch read requests for all registers
-      const batchRequests: BatchReadRequest[] = deviceRegisters.map((register: any) => ({
-        objectType: 'analogInput',
-        objectInstance: register.register,
-        propertyId: 'presentValue',
-        fieldName: register.field_name,
-      }));
-
-      // Perform batch read with adaptive sizing and timeout handling
+      // ────────────────────────────────────────────────────────────────
+      // Perform the adaptive batch read
+      // ────────────────────────────────────────────────────────────────
       const batchResults = await this.performBatchReadWithAdaptiveSizing(
         meter,
         bacnetClient,
@@ -380,21 +459,34 @@ export class CollectionCycleManager {
         readTimeoutMs
       );
 
-      // Process batch results
+      // ────────────────────────────────────────────────────────────────
+      // Process results with detailed logging
+      // ────────────────────────────────────────────────────────────────
+      // ────────────────────────────────────────────────────────────────
+      // Process results with detailed logging
+      // ────────────────────────────────────────────────────────────────
       batchResults.forEach((result: any, index: number) => {
         const register = deviceRegisters[index];
+        const instance = batchRequests[index]?.objectInstance;
 
-        if (result && result.success && result.value !== undefined && result.value !== null) {
+        // Log first 5 + any failures
+        if (index < 5 || !result?.success) {
+          this.logger.info(`\n${'─'.repeat(80)}`);
+          this.logger.info(`Result #${index + 1}  AI:${instance}  ${register.field_name}`);
+          this.logger.info(`   Success: ${result?.success ?? false}`);
+          this.logger.info(`   Value:   ${JSON.stringify(result?.value)}`);
+          this.logger.info(`   Error:   ${result?.error ?? 'none'}`);
+          this.logger.info(`${'─'.repeat(80)}\n`);
+        }
+
+        if (result?.success && result.value !== undefined && result.value !== null) {
           let readValue = result.value;
-          
-          // Convert to number - handle multiple formats
           let numericValue: number | null = null;
-          
+
+          // ── PASTE YOUR ORIGINAL VALUE EXTRACTION LOGIC HERE ──
           if (typeof readValue === 'number') {
-            // Plain number
             numericValue = readValue;
           } else if (Array.isArray(readValue)) {
-            // Array of objects - extract first numeric value
             if (readValue.length > 0 && typeof readValue[0] === 'object') {
               const firstObj = readValue[0];
               if (typeof firstObj.value === 'number') {
@@ -402,8 +494,7 @@ export class CollectionCycleManager {
               } else if (typeof firstObj._value === 'number') {
                 numericValue = firstObj._value;
               } else {
-                // Search for any numeric property
-                for (const [key, val] of Object.entries(firstObj)) {
+                for (const val of Object.values(firstObj)) {
                   if (typeof val === 'number' && !isNaN(val)) {
                     numericValue = val;
                     break;
@@ -412,7 +503,6 @@ export class CollectionCycleManager {
               }
             }
           } else if (typeof readValue === 'object' && readValue !== null) {
-            // Object - try to extract numeric value
             if (typeof readValue.value === 'number') {
               numericValue = readValue.value;
             } else if (typeof readValue._value === 'number') {
@@ -420,8 +510,7 @@ export class CollectionCycleManager {
             } else if (typeof readValue.realValue === 'number') {
               numericValue = readValue.realValue;
             } else {
-              // Search for any numeric property
-              for (const [key, val] of Object.entries(readValue)) {
+              for (const val of Object.values(readValue)) {
                 if (typeof val === 'number' && !isNaN(val)) {
                   numericValue = val;
                   break;
@@ -429,14 +518,13 @@ export class CollectionCycleManager {
               }
             }
           } else if (typeof readValue === 'string') {
-            // String - try to parse as number
             const parsed = parseFloat(readValue);
             if (!isNaN(parsed)) {
               numericValue = parsed;
             }
           }
-          
-          // Only add reading if we got a valid number
+          // ── END OF ORIGINAL PARSING ──
+
           if (numericValue !== null && !isNaN(numericValue)) {
             readings.push({
               meter_id: Number(meter.meter_id),
@@ -447,42 +535,32 @@ export class CollectionCycleManager {
               element: meter.element,
               created_at: new Date(),
             });
+
             this.logger.info(
-              `✅ Successfully read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: value=${numericValue}`
+              `SUCCESS → ${register.field_name.padEnd(24)} ` +
+              `AI:${instance} = ${numericValue}`
             );
           } else {
             this.logger.warn(
-              `⚠️ Failed to read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: could not extract numeric value from ${JSON.stringify(readValue)}`
+              `Could not parse numeric value for ${register.field_name} (AI:${instance}): ` +
+              JSON.stringify(result.value)
             );
-            errors.push({
-              meterId: String(meter.meter_id),
-              dataPoint: register.field_name,
-              operation: 'read',
-              error: `Could not extract numeric value: ${JSON.stringify(readValue)}`,
-              timestamp: new Date(),
-            });
+            // Optionally push an error here if you want to record bad parses
           }
         } else {
-          const errorMsg = (result && result.error) || 'Unknown error';
           this.logger.warn(
-            `⚠️ Failed to read register ${register.register} (${register.field_name}) from meter ${meter.meter_id}: ${errorMsg}`
+            `READ FAILED → ${register.field_name} (AI:${instance}): ${result?.error ?? 'no result'}`
           );
-          errors.push({
-            meterId: String(meter.meter_id),
-            dataPoint: register.field_name,
-            operation: 'read',
-            error: errorMsg,
-            timestamp: new Date(),
-          });
         }
       });
+
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error reading meter data points for meter ${meter.meter_id}: ${errorMsg}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`readMeterDataPoints crashed for meter ${meter.meter_id} (${meter.element}): ${msg}`);
       errors.push({
         meterId: String(meter.meter_id),
         operation: 'read',
-        error: errorMsg,
+        error: msg,
         timestamp: new Date(),
       });
     }
@@ -510,6 +588,7 @@ export class CollectionCycleManager {
   ): Promise<any[]> {
     const allResults: any[] = new Array(allRequests.length).fill(null);
     const port = meter.port || 47808;
+    const MAX_RETRIES_PER_BATCH = 5; // Prevent infinite retry loops
 
     // Get initial batch size from manager
     let currentBatchSize = this.batchSizeManager.getBatchSize(meter.meter_id, allRequests.length);
@@ -520,6 +599,7 @@ export class CollectionCycleManager {
 
     // Process all registers in batches
     let batchIndex = 0;
+    let retryCount = 0;
 
     for (let i = 0; i < allRequests.length; i += currentBatchSize) {
       const batchEnd = Math.min(i + currentBatchSize, allRequests.length);
@@ -540,17 +620,17 @@ export class CollectionCycleManager {
         );
 
         // Check if any results indicate timeout
-        const hasTimeoutError = batchResults.some((r: any) => 
-          r.error && r.error.includes('timeout')
+        const hasTimeoutError = batchResults.some((r: any) =>
+          r?.error && (r.error.includes('timeout') || r.error.includes('ERR_TIMEOUT'))
         );
 
         if (hasTimeoutError) {
-          // Batch read timed out - reduce batch size and retry
+          // Batch read timed out - force sequential fallback to get at least some data
           this.logger.warn(
-            `⏱️  Batch ${batchNumber} timed out for meter ${meter.meter_id}, reducing batch size`
+            `⏱️  Batch ${batchNumber} timed out for meter ${meter.meter_id}, forcing sequential fallback`
           );
 
-          // Record timeout event with reduced_batch recovery method
+          // Record timeout event
           this.recordTimeoutEvent(
             String(meter.meter_id),
             batchRequests.length,
@@ -562,34 +642,79 @@ export class CollectionCycleManager {
 
           this.batchSizeManager.recordTimeout(meter.meter_id);
 
-          // Get new batch size and retry this batch
-          const previousBatchSize = currentBatchSize;
-          currentBatchSize = this.batchSizeManager.getBatchSize(meter.meter_id, allRequests.length);
-          this.logger.info(
-            `📉 Batch size reduced from ${previousBatchSize} to ${currentBatchSize}, retrying batch ${batchNumber}`
+          // Force sequential fallback immediately on timeout
+          const sequentialResults: any[] = [];
+          for (const request of batchRequests) {
+            try {
+              const result = await bacnetClient.readProperty(
+                meter.ip,
+                port,
+                request.objectType,
+                request.objectInstance,
+                request.propertyId,
+                readTimeoutMs
+              );
+              sequentialResults.push(result);
+            } catch (seqError) {
+              this.logger.warn(
+                `Sequential read failed for ${request.objectType}:${request.objectInstance}.${request.propertyId}: ${seqError}`
+              );
+              sequentialResults.push({
+                success: false,
+                error: String(seqError),
+              });
+            }
+          }
+
+          // Store sequential results
+          sequentialResults.forEach((result: any, index: number) => {
+            allResults[i + index] = result;
+          });
+
+          // Record sequential recovery success
+          const successCount = sequentialResults.filter((r: any) => r?.success).length;
+          this.recordTimeoutEvent(
+            String(meter.meter_id),
+            batchRequests.length,
+            currentBatchSize,
+            readTimeoutMs,
+            'sequential',
+            successCount > 0
           );
 
-          // Retry this batch with smaller size
-          i -= currentBatchSize; // Back up to retry this batch
-          batchIndex++;
-          continue;
+          this.logger.info(
+            `Sequential fallback for batch ${batchNumber}: ${successCount}/${batchRequests.length} succeeded`
+          );
+        } else {
+          // Store successful results
+          batchResults.forEach((result: any, index: number) => {
+            allResults[i + index] = result;
+          });
+
+          // Record success for metrics
+          this.batchSizeManager.recordSuccess(meter.meter_id);
+          retryCount = 0; // Reset retry count on success
+          this.logger.info(`✅ Batch ${batchNumber} completed successfully for meter ${meter.meter_id}`);
         }
 
-        // Store successful results
-        batchResults.forEach((result: any, index: number) => {
-          allResults[i + index] = result;
-        });
-
-        // Record success for metrics
-        this.batchSizeManager.recordSuccess(meter.meter_id);
-        this.logger.info(`✅ Batch ${batchNumber} completed successfully for meter ${meter.meter_id}`);
-
       } catch (batchError) {
-        // Batch read failed completely - attempt sequential fallback
+        // Batch read threw an error (real timeout or exception) - force sequential fallback
         const errorMsg = batchError instanceof Error ? batchError.message : String(batchError);
         this.logger.error(
-          `🔴 Batch ${batchNumber} failed for meter ${meter.meter_id}: ${errorMsg}, attempting sequential fallback`
+          `🔴 Batch ${batchNumber} threw error for meter ${meter.meter_id}: ${errorMsg}, forcing sequential fallback`
         );
+
+        // Record timeout event
+        this.recordTimeoutEvent(
+          String(meter.meter_id),
+          batchRequests.length,
+          currentBatchSize,
+          readTimeoutMs,
+          'reduced_batch',
+          false
+        );
+
+        this.batchSizeManager.recordTimeout(meter.meter_id);
 
         // Attempt sequential fallback - read properties one at a time
         const sequentialResults: any[] = [];
@@ -605,7 +730,13 @@ export class CollectionCycleManager {
             );
             sequentialResults.push(result);
           } catch (seqError) {
-            this.logger.warn(`Sequential read failed for ${request.objectType}:${request.objectInstance}.${request.propertyId}: ${seqError}`);
+            this.logger.warn(
+              `Sequential read failed for ${request.objectType}:${request.objectInstance}.${request.propertyId}: ${seqError}`
+            );
+            sequentialResults.push({
+              success: false,
+              error: String(seqError),
+            });
           }
         }
 
@@ -615,7 +746,7 @@ export class CollectionCycleManager {
         });
 
         // Record timeout event with sequential recovery method
-        const successCount = sequentialResults.filter((r: any) => r.success).length;
+        const successCount = sequentialResults.filter((r: any) => r?.success).length;
         this.recordTimeoutEvent(
           String(meter.meter_id),
           batchRequests.length,
@@ -625,8 +756,9 @@ export class CollectionCycleManager {
           successCount > 0
         );
 
-        // Record timeout for metrics since we had to fall back
-        this.batchSizeManager.recordTimeout(meter.meter_id);
+        this.logger.info(
+          `Sequential fallback for batch ${batchNumber}: ${successCount}/${batchRequests.length} succeeded`
+        );
       }
 
       batchIndex++;

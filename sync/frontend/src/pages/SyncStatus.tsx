@@ -21,7 +21,6 @@ import { useAppStore } from '../stores/useAppStore';
 import { syncApi, tenantApi, meterSyncApi } from '../api/services';
 import CompanyInfoCard from '../components/CompanyInfoCard';
 import BACnetMeterReadingCard from '../components/BACnetMeterReadingCard';
-import BACnetDebugCard from '../components/BACnetDebugCard';
 import MeterSyncCard from '../components/MeterSyncCard';
 
 const POLLING_INTERVAL = parseInt(import.meta.env.VITE_POLLING_INTERVAL || '500000');
@@ -330,14 +329,9 @@ export default function SyncStatus() {
           <MeterSyncCard />
         </Grid>
 
-        {/* BACnet Meter Reading Agent Status */}
+        {/* Collection Status & Control */}
         <Grid item xs={12}>
           <BACnetMeterReadingCard />
-        </Grid>
-
-        {/* BACnet Manual Trigger */}
-        <Grid item xs={12} md={6}>
-          <BACnetDebugCard />
         </Grid>
       </Grid>
 

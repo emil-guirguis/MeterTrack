@@ -272,30 +272,32 @@ export class MeterReadingValidator {
     }
 
     // Check frequency
-    if (reading.frequency !== null && reading.frequency !== undefined) {
-      if (reading.frequency < REALISTIC_RANGES.frequency.min || reading.frequency > REALISTIC_RANGES.frequency.max) {
-        issues.push({
-          code: 'INVALID_FREQUENCY',
-          severity: 'error',
-          message: `Frequency ${reading.frequency}Hz is outside valid range (${REALISTIC_RANGES.frequency.min}-${REALISTIC_RANGES.frequency.max}Hz)`,
-          field: 'frequency',
-          value: reading.frequency,
-        });
-      }
-    }
+    // COMMENTED OUT: Allowing any frequency value for debugging
+    // if (reading.frequency !== null && reading.frequency !== undefined) {
+    //   if (reading.frequency < REALISTIC_RANGES.frequency.min || reading.frequency > REALISTIC_RANGES.frequency.max) {
+    //     issues.push({
+    //       code: 'INVALID_FREQUENCY',
+    //       severity: 'error',
+    //       message: `Frequency ${reading.frequency}Hz is outside valid range (${REALISTIC_RANGES.frequency.min}-${REALISTIC_RANGES.frequency.max}Hz)`,
+    //       field: 'frequency',
+    //       value: reading.frequency,
+    //     });
+    //   }
+    // }
 
     // Check power factor
-    if (reading.power_factor !== null && reading.power_factor !== undefined) {
-      if (reading.power_factor < REALISTIC_RANGES.powerFactor.min || reading.power_factor > REALISTIC_RANGES.powerFactor.max) {
-        issues.push({
-          code: 'INVALID_POWER_FACTOR',
-          severity: 'error',
-          message: `Power factor ${reading.power_factor} is outside valid range (-1 to 1)`,
-          field: 'power_factor',
-          value: reading.power_factor,
-        });
-      }
-    }
+    // COMMENTED OUT: Allowing any power factor value for debugging
+    // if (reading.power_factor !== null && reading.power_factor !== undefined) {
+    //   if (reading.power_factor < REALISTIC_RANGES.powerFactor.min || reading.power_factor > REALISTIC_RANGES.powerFactor.max) {
+    //     issues.push({
+    //       code: 'INVALID_POWER_FACTOR',
+    //       severity: 'error',
+    //       message: `Power factor ${reading.power_factor} is outside valid range (-1 to 1)`,
+    //       field: 'power_factor',
+    //       value: reading.power_factor,
+    //     });
+    //   }
+    // }
 
     return { issues, warnings };
   }

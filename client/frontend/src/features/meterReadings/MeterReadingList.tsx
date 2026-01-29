@@ -3,6 +3,7 @@ import { useMeterReadingsEnhanced } from './meterReadingsStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useMeterSelection } from '../../contexts/MeterSelectionContext';
 import { SimpleMeterReadingGrid } from './SimpleMeterReadingGrid';
+import { MeterReadingExportButtons } from '../../components/MeterReadingExportButtons';
 import './MeterReadingList.css';
 
 interface MeterReadingListProps {
@@ -120,9 +121,17 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
       <div className="meter-reading-list">
         <div className="meter-reading-list__header">
           <h2>{title}</h2>
-          <button onClick={() => handleGridTypeChange('simple')} className="meter-reading-list__switch-btn" type="button">
-            Switch to Simple Grid
-          </button>
+          <div className="meter-reading-list__header-controls">
+            <MeterReadingExportButtons
+              filteredData={filteredData as any}
+              selectedMeterName={selectedMeterName || undefined}
+              selectedElementName={selectedElementName || undefined}
+              loading={meterReadings.loading}
+            />
+            <button onClick={() => handleGridTypeChange('simple')} className="meter-reading-list__switch-btn" type="button">
+              Switch to Simple Grid
+            </button>
+          </div>
         </div>
         {displayError && (
           <div className="meter-reading-list__error">
@@ -145,6 +154,12 @@ export const MeterReadingList: React.FC<MeterReadingListProps> = ({
     <div className="meter-reading-list">
       <div className="meter-reading-list__header">
         <h2>{title}</h2>
+        <MeterReadingExportButtons
+          filteredData={filteredData as any}
+          selectedMeterName={selectedMeterName || undefined}
+          selectedElementName={selectedElementName || undefined}
+          loading={meterReadings.loading}
+        />
       </div>
 
       {displayError && (

@@ -479,6 +479,9 @@ export class LocalApiServer {
             try {
                 console.log('📥 [API] POST /api/meter-reading/trigger - Request received');
                 debugger; // Breakpoint for debugging
+                // Set a longer timeout for this endpoint (collection can take time)
+                // Default is 120 seconds, but we'll set it to 5 minutes for manual triggers
+                res.setTimeout(300000); // 5 minutes
                 if (!this.bacnetMeterReadingAgent) {
                     console.error('❌ [API] BACnet meter reading agent not available');
                     return res.status(503).json({

@@ -134,7 +134,9 @@ export class BACnetClient {
     try {
       const objectTypeId = this.getObjectTypeId(objectType);
       const propertyIdNum = this.getPropertyId(propertyId);
-      const address = `${ip}:${port}`;
+      // Note: bacnet-node doesn't use port in the address
+      // The port is configured at client initialization
+      const address = ip;
 
       return new Promise((resolve) => {
         const effectiveTimeout = Math.max(timeoutMs, this.apduTimeout);
@@ -213,7 +215,9 @@ export class BACnetClient {
     timeoutMs: number
   ): Promise<BatchReadResult[]> {
     try {
-      const address = `${ip}:${port}`;
+      // Note: bacnet-node doesn't use port in the address for readPropertyMultiple
+      // The port is configured at client initialization
+      const address = ip;
 
       // Convert requests to node-bacnet format
       const bacnetRequests = requests.map((req) => ({
@@ -227,6 +231,22 @@ export class BACnetClient {
           },
         ],
       }));
+
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`🔴 BREAKPOINT: BACnet readPropertyMultiple`);
+      console.log(`   Address: ${address}`);
+      console.log(`   Total requests: ${requests.length}`);
+      console.log(`   First 3 requests:`);
+      bacnetRequests.slice(0, 3).forEach((req: any, idx: number) => {
+        console.log(`     Request ${idx + 1}:`);
+        console.log(`       objectId.type: ${req.objectId.type} (analogInput)`);
+        console.log(`       objectId.instance: ${req.objectId.instance}`);
+        console.log(`       properties[0].id: ${req.properties[0].id} (presentValue)`);
+      });
+      if (bacnetRequests.length > 3) {
+        console.log(`   ... and ${bacnetRequests.length - 3} more requests`);
+      }
+      console.log(`${'='.repeat(80)}\n`);
 
       return new Promise((resolve) => {
         const effectiveTimeout = Math.max(timeoutMs, this.apduTimeout);

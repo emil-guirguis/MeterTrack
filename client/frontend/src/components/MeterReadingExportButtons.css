@@ -1,0 +1,293 @@
+/**
+ * Meter Reading Export Buttons Styling
+ * 
+ * Styles for the MeterReadingExportButtons component including:
+ * - Button styling to match dashboard design
+ * - Hover states and smooth transitions
+ * - Disabled state styling
+ * - Loading indicator animation
+ * - Consistent positioning with other dashboard controls
+ * 
+ * Feature: meter-reading-export
+ * Requirements: 6.1, 6.2, 6.3
+ */
+
+/* Container for export buttons */
+.meter-reading-export-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Base button styling */
+.meter-reading-export-buttons .MuiButton-root {
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  border: 1px solid #d0d0d0;
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+/* Button hover state */
+.meter-reading-export-buttons .MuiButton-outlined:hover {
+  background-color: #e8e8e8;
+  border-color: #999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Button active/pressed state */
+.meter-reading-export-buttons .MuiButton-outlined:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Disabled button state */
+.meter-reading-export-buttons .MuiButton-outlined:disabled {
+  background-color: #f9f9f9;
+  border-color: #e0e0e0;
+  color: #bdbdbd;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Icon styling within buttons */
+.meter-reading-export-buttons .MuiButton-startIcon {
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Loading indicator (CircularProgress) styling */
+.meter-reading-export-buttons .MuiCircularProgress-root {
+  color: #1976d2;
+}
+
+/* Tooltip styling */
+.meter-reading-export-buttons .MuiTooltip-tooltip {
+  background-color: #333;
+  color: #fff;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.meter-reading-export-buttons .MuiTooltip-arrow {
+  color: #333;
+}
+
+/* Stack container for button layout */
+.meter-reading-export-buttons .MuiStack-root {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .meter-reading-export-buttons {
+    gap: 6px;
+  }
+
+  .meter-reading-export-buttons .MuiButton-root {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  /* Hide button text on very small screens, show only icons */
+  @media (max-width: 480px) {
+    .meter-reading-export-buttons .MuiButton-root {
+      padding: 6px 8px;
+      min-width: auto;
+    }
+
+    .meter-reading-export-buttons .MuiButton-root .MuiButton-label {
+      display: none;
+    }
+
+    .meter-reading-export-buttons .MuiButton-startIcon {
+      margin-right: 0;
+    }
+  }
+}
+
+/* Animation for loading indicator */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.meter-reading-export-buttons .MuiCircularProgress-circle {
+  animation: spin 1s linear infinite;
+}
+
+/* Focus state for keyboard navigation - WCAG AA compliant */
+.meter-reading-export-buttons .MuiButton-root:focus-visible {
+  outline: 3px solid #1976d2;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.25);
+}
+
+/* Focus state for keyboard navigation on disabled buttons */
+.meter-reading-export-buttons .MuiButton-root:disabled:focus-visible {
+  outline: 3px solid #bdbdbd;
+  outline-offset: 2px;
+}
+
+/* Ensure focus is visible even when button is disabled */
+.meter-reading-export-buttons .MuiButton-root:focus {
+  outline: 3px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* Accessibility: High contrast mode support */
+@media (prefers-contrast: more) {
+  .meter-reading-export-buttons .MuiButton-outlined {
+    border-width: 2px;
+  }
+
+  .meter-reading-export-buttons .MuiButton-outlined:hover {
+    border-color: #333;
+  }
+
+  /* Enhanced focus indicator for high contrast mode */
+  .meter-reading-export-buttons .MuiButton-root:focus-visible {
+    outline-width: 4px;
+    outline-color: #000;
+  }
+
+  .meter-reading-export-buttons .MuiButton-root:disabled:focus-visible {
+    outline-color: #666;
+  }
+}
+
+/* Accessibility: Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .meter-reading-export-buttons .MuiButton-root,
+  .meter-reading-export-buttons .MuiButton-root:hover,
+  .meter-reading-export-buttons .MuiButton-root:active {
+    transition: none;
+    transform: none;
+  }
+
+  .meter-reading-export-buttons .MuiCircularProgress-circle {
+    animation: none;
+  }
+
+  /* Ensure focus indicator is still visible in reduced motion mode */
+  .meter-reading-export-buttons .MuiButton-root:focus-visible {
+    outline: 3px solid #1976d2;
+    outline-offset: 2px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .meter-reading-export-buttons .MuiButton-root {
+    border-color: #555;
+    color: #e0e0e0;
+    background-color: #2a2a2a;
+  }
+
+  .meter-reading-export-buttons .MuiButton-outlined:hover {
+    background-color: #3a3a3a;
+    border-color: #777;
+  }
+
+  .meter-reading-export-buttons .MuiButton-outlined:disabled {
+    background-color: #1a1a1a;
+    border-color: #444;
+    color: #666;
+  }
+
+  .meter-reading-export-buttons .MuiTooltip-tooltip {
+    background-color: #e0e0e0;
+    color: #333;
+  }
+
+  .meter-reading-export-buttons .MuiTooltip-arrow {
+    color: #e0e0e0;
+  }
+}
+
+
+/* Accessibility: Screen reader only text for additional context */
+.meter-reading-export-buttons .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Accessibility: Ensure buttons have sufficient touch target size (WCAG 2.5.5) */
+@media (pointer: coarse) {
+  .meter-reading-export-buttons .MuiButton-root {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 16px;
+  }
+}
+
+/* Accessibility: Ensure text is readable with zoom */
+.meter-reading-export-buttons .MuiButton-root {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Accessibility: Ensure disabled buttons are visually distinct */
+.meter-reading-export-buttons .MuiButton-root:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Accessibility: Tooltip should be readable */
+.meter-reading-export-buttons .MuiTooltip-tooltip {
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 300px;
+}
+
+/* Accessibility: Ensure button group is properly labeled */
+.meter-reading-export-buttons[role="group"] {
+  display: flex;
+  align-items: center;
+}
+
+/* Accessibility: Loading indicator should be announced */
+.meter-reading-export-buttons .MuiCircularProgress-root[aria-label] {
+  display: inline-flex;
+}
+
+/* Accessibility: Ensure buttons are keyboard navigable */
+.meter-reading-export-buttons .MuiButton-root {
+  position: relative;
+}
+
+/* Accessibility: Visible focus indicator for keyboard users */
+.meter-reading-export-buttons .MuiButton-root:focus-visible::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  pointer-events: none;
+}

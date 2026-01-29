@@ -28,6 +28,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import EmailIcon from '@mui/icons-material/Email';
 import './DashboardCard.css';
 
 /**
@@ -139,6 +141,101 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
     e.preventDefault();
     if (window.confirm(`Are you sure you want to delete "${card.title}"?`)) {
       onDelete?.(card.id);
+    }
+  };
+
+  // Handle export button click
+  const handleExportClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!data || !data.aggregated_values) {
+      alert('No data available to export');
+      return;
+    }
+
+    try {
+      // Generate CSV from aggregated values
+      const headers = Object.keys(data.aggregated_values);
+      const csvContent = [
+        headers.join(','),
+        headers.map(header => data.aggregated_values[header]).join(',')
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const cardName = (card as any).card_name || card.title || 'export';
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${cardName}-${timestamp}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export data');
+    }
+  };
+
+  // Handle email button click
+  const handleEmailClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!data || !data.aggregated_values) {
+      alert('No data available to email');
+      return;
+    }
+
+    try {
+      // Generate CSV from aggregated values
+      const headers = Object.keys(data.aggregated_values);
+      const csvContent = [
+        headers.join(','),
+        headers.map(header => data.aggregated_values[header]).join(',')
+      ].join('\n');
+
+      // Create base64 encoded content
+      const fileBase64 = btoa(unescape(encodeURIComponent(csvContent)));
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const cardName = (card as any).card_name || card.title || 'export';
+      const filename = `${cardName}-${timestamp}.csv`;
+
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+
+      // Send to backend email endpoint with JSON body
+      fetch('/api/emails/send-with-attachment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subject: `Dashboard Export - ${cardName} (${timestamp})`,
+          body: `Please find the attached dashboard export file: ${filename}`,
+          filename: filename,
+          fileBase64: fileBase64
+        })
+      })
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            alert('Email sent successfully');
+          } else {
+            alert('Failed to send email: ' + (result.message || 'Unknown error'));
+          }
+        })
+        .catch(err => {
+          console.error('Email error:', err);
+          alert('Failed to send email');
+        });
+    } catch (err) {
+      console.error('Email error:', err);
+      alert('Failed to prepare email');
     }
   };
 
@@ -289,6 +386,26 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
           >
             {formatLastRefreshed()}
           </Typography>
+          {/* Export Button */}
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleExportClick}
+            title="Export to CSV"
+            aria-label="Export to CSV"
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          />
+          {/* Email Button */}
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<EmailIcon />}
+            onClick={handleEmailClick}
+            title="Email readings"
+            aria-label="Email readings"
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          />
           <Button
             size="small"
             variant="text"

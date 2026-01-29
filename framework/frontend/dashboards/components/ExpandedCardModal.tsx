@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './ExpandedCardModal.css';
 
 export interface ExpandedCardModalProps {
@@ -20,6 +20,8 @@ export const ExpandedCardModal: React.FC<ExpandedCardModalProps> = ({
   onRefresh,
   renderVisualization
 }) => {
+  const [exporting, setExporting] = useState(false);
+
   // Handle Escape key press
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -36,6 +38,88 @@ export const ExpandedCardModal: React.FC<ExpandedCardModalProps> = ({
       document.body.style.overflow = 'unset';
     };
   }, [onClose]);
+
+  // Handle CSV export
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      // Use detailed readings items if available, otherwise try to generate from aggregated data
+      const itemsToExport = data?.items || [];
+      
+      if (!itemsToExport || itemsToExport.length === 0) {
+        alert('No data available to export');
+        return;
+      }
+
+      // Get column headers from first item
+      const firstItem = itemsToExport[0];
+      const headers = Object.keys(firstItem).filter(key => key !== 'meter_reading_id');
+      
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...itemsToExport.map((row: any) =>
+          headers.map(header => {
+            const value = row[header];
+            // Escape quotes and wrap in quotes if contains comma
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const meterElementName = card.meter_element_name || data?.card_info?.meter_element_name || 'readings';
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${meterElementName}-${timestamp}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Handle email
+  const handleEmail = async () => {
+    try {
+      // Use detailed readings items if available
+      const itemsToExport = data?.items || [];
+      
+      if (!itemsToExport || itemsToExport.length === 0) {
+        alert('No data available to email');
+        return;
+      }
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const meterElementName = card.meter_element_name || data?.card_info?.meter_element_name || 'readings';
+      const filename = `${meterElementName}-${timestamp}.csv`;
+      
+      // Create mailto URL
+      const subject = encodeURIComponent(`Meter Readings Export - ${meterElementName} (${timestamp})`);
+      const body = encodeURIComponent(`Please find the attached meter readings export file: ${filename}`);
+      const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+      
+      // Open email client
+      window.location.href = mailtoUrl;
+    } catch (err) {
+      console.error('Email error:', err);
+      alert('Failed to open email client');
+    }
+  };
 
   // Format time frame display
   const formatTimeFrame = (): string => {
@@ -95,6 +179,26 @@ export const ExpandedCardModal: React.FC<ExpandedCardModalProps> = ({
               🔄
             </button>
           )}
+          <button
+            type="button"
+            className="expanded-card-modal__export-btn"
+            onClick={handleExport}
+            disabled={exporting || !data || !data.items || data.items.length === 0}
+            title="Export to CSV"
+            aria-label="Export to CSV"
+          >
+            {exporting ? '⬇️ Exporting...' : '⬇️ Export'}
+          </button>
+          <button
+            type="button"
+            className="expanded-card-modal__email-btn"
+            onClick={handleEmail}
+            disabled={!data || !data.items || data.items.length === 0}
+            title="Email readings"
+            aria-label="Email readings"
+          >
+            ✉️ Email
+          </button>
         </div>
 
         {/* Visualization */}

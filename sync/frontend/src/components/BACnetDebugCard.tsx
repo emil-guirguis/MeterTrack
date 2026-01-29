@@ -46,9 +46,9 @@ export default function BACnetDebugCard() {
         <CardContent>
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box>
-              <Typography variant="h6">BACnet Manual Trigger</Typography>
+              <Typography variant="h6">Manual Meter Collection</Typography>
               <Typography variant="body2" color="text.secondary">
-                Manually execute meter reading collection
+                Manually trigger BACnet meter reading collection cycle
               </Typography>
             </Box>
             <Button
@@ -58,7 +58,7 @@ export default function BACnetDebugCard() {
               disabled={isTriggering}
               size="small"
             >
-              {isTriggering ? 'Reading...' : 'Read Meters'}
+              {isTriggering ? 'Collecting...' : 'Collect Now'}
             </Button>
           </Box>
         </CardContent>

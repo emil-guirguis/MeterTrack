@@ -142,7 +142,7 @@ export default function BACnetMeterReadingCard() {
                 <ErrorIcon color="error" fontSize="large" />
               )}
               <Box>
-                <Typography variant="h6">BACnet Meter Reading Agent</Typography>
+                <Typography variant="h6">Collection Status & Control</Typography>
                 <Chip
                   icon={agentStatus.isRunning ? <CheckCircleIcon /> : <ErrorIcon />}
                   label={agentStatus.isRunning ? 'Running' : 'Stopped'}
@@ -158,7 +158,7 @@ export default function BACnetMeterReadingCard() {
               disabled={isTriggering || !agentStatus.isRunning}
               size="small"
             >
-              {isTriggering ? 'Collecting...' : 'Trigger Collection'}
+              {isTriggering ? 'Collecting...' : 'Collect Now'}
             </Button>
           </Box>
 

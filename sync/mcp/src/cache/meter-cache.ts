@@ -32,6 +32,15 @@ export class MeterCache {
       const syncMeters = await syncDatabase.getMeters(true);
 
       console.log(`📦 [MeterCache] Database returned ${syncMeters.length} meters`);
+      
+      // 🔴 BREAKPOINT: Log all meters returned
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`🔴 BREAKPOINT: MeterCache.initialize - All meters from database:`);
+      console.log(`   Total count: ${syncMeters.length}`);
+      syncMeters.forEach((meter: any, idx: number) => {
+        console.log(`   Meter ${idx + 1}: id=${meter.meter_id}, element=${meter.element}, meter_element_id=${meter.meter_element_id}, name=${meter.name}, ip=${meter.ip}`);
+      });
+      console.log(`${'='.repeat(80)}\n`);
 
       // Process each meter
       for (const row of syncMeters) {

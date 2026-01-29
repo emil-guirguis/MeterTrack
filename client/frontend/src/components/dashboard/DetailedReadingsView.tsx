@@ -98,6 +98,37 @@ export const DetailedReadingsView: React.FC<DetailedReadingsViewProps> = ({
     }
   };
 
+  // Handle email
+  const handleEmail = async () => {
+    try {
+      const blob = await dashboardService.exportReadingsToCSV(cardId);
+      
+      // Create download link for email
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename
+      const timestamp = new Date().toISOString().split('T')[0];
+      const meterElementName = data?.card_info?.meter_element_name || 'readings';
+      const filename = `${meterElementName}-${timestamp}.csv`;
+      
+      // Create mailto URL
+      const subject = encodeURIComponent(`Meter Readings Export - ${meterElementName} (${timestamp})`);
+      const body = encodeURIComponent(`Please find the attached meter readings export file: ${filename}`);
+      const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+      
+      // Open email client
+      window.location.href = mailtoUrl;
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to open email client';
+      setError(errorMsg);
+    }
+  };
+
   // Handle back button
   const handleBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -208,6 +239,15 @@ export const DetailedReadingsView: React.FC<DetailedReadingsViewProps> = ({
             title="Export to CSV"
           >
             {exporting ? '⬇️ Exporting...' : '⬇️ Export CSV'}
+          </button>
+          <button
+            type="button"
+            className="detailed-readings-view__email-btn"
+            onClick={handleEmail}
+            disabled={!hasData}
+            title="Email readings"
+          >
+            ✉️ Email
           </button>
         </div>
       </div>

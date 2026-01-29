@@ -6,6 +6,7 @@ import { invalidateExpiredCache } from '@framework/components/form/utils/schemaL
 import { useAuth } from './hooks/useAuth';
 import { setupDebugConsole } from './utils/debugConsole';
 import { MeterSelectionProvider } from './contexts/MeterSelectionContext';
+import { NotificationProvider } from './components/NotificationProvider';
 import './App.css';
 
 // Initialize debug console on app startup
@@ -40,11 +41,13 @@ function App() {
   }, []);
 
   return (
-    <MeterSelectionProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </MeterSelectionProvider>
+    <NotificationProvider>
+      <MeterSelectionProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </MeterSelectionProvider>
+    </NotificationProvider>
   );
 }
 

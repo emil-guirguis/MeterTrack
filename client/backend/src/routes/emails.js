@@ -157,6 +157,105 @@ router.post('/send-raw',
   }
 );
 
+// POST /api/emails/send-with-attachment - Send email with CSV attachment
+router.post('/send-with-attachment',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      // Parse multipart form data manually since we're not using multer middleware
+      const contentType = req.get('content-type');
+      
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Content-Type must be multipart/form-data'
+        });
+      }
+
+      // For now, we'll expect the file to be sent as base64 in the body
+      // This is a workaround since we don't have multer middleware configured for this route
+      const { subject, body, filename, fileContent, fileBase64 } = req.body;
+
+      if (!subject) {
+        return res.status(400).json({
+          success: false,
+          message: 'Subject is required'
+        });
+      }
+
+      if (!filename) {
+        return res.status(400).json({
+          success: false,
+          message: 'Filename is required'
+        });
+      }
+
+      // Get file content - either from fileContent (string) or fileBase64 (base64 encoded)
+      let fileBuffer;
+      if (fileBase64) {
+        fileBuffer = Buffer.from(fileBase64, 'base64');
+      } else if (fileContent) {
+        fileBuffer = Buffer.from(fileContent, 'utf-8');
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'File content is required (either fileContent or fileBase64)'
+        });
+      }
+
+      // Get user's email from authenticated user
+      const userEmail = req.user?.email;
+      if (!userEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'User email not found'
+        });
+      }
+
+      // Prepare email data with attachment
+      const emailData = {
+        to: userEmail,
+        subject: subject,
+        text: body || 'Please find the attached file',
+        attachments: [
+          {
+            filename: filename,
+            content: fileBuffer,
+            contentType: 'text/csv'
+          }
+        ],
+        trackingId: `attachment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+
+      // Send email
+      const result = await emailService.sendEmail(emailData);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          data: {
+            messageId: result.messageId,
+            trackingId: emailData.trackingId,
+            recipient: userEmail
+          },
+          message: 'Email with attachment sent successfully'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error sending email with attachment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send email with attachment'
+      });
+    }
+  }
+);
+
 // POST /api/emails/send-bulk - Send bulk emails
 router.post('/send-bulk',
   requirePermission('email:send'),

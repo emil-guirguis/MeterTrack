@@ -189,7 +189,9 @@ export class SyncDatabase {
           notes TEXT,
           active BOOLEAN DEFAULT true,
           created_at VARCHAR(50),
-          updated_at VARCHAR(50)
+          updated_at VARCHAR(50),
+          meter_element_id INTEGER,
+          element VARCHAR(255)
         )`);
 
       // Create meter_reading table
@@ -773,12 +775,52 @@ export class SyncDatabase {
 
   /**
    * Get all meters (implements SyncDatabase interface)
+   * 
+   * Returns each meter with its meter_element_id and element.
+   * Each row represents one meter element that should be read independently.
    */
   async getMeters(activeOnly: boolean = true): Promise<MeterEntity[]> {
     const query = activeOnly
-      ? 'SELECT meter_id, name, active, ip, port, meter_element_id, TRIM(element) as element, device_id FROM meter WHERE active = true ORDER BY name'
-      : 'SELECT meter_id, name, active, ip, port, meter_element_id, TRIM(element) as element, device_id FROM meter ORDER BY name';
+      ? `SELECT 
+           meter_id, 
+           name, 
+           active, 
+           ip, 
+           port, 
+           meter_element_id, 
+           element, 
+           device_id 
+         FROM meter
+         WHERE active = true 
+         ORDER BY meter_id, meter_element_id`
+      : `SELECT 
+           meter_id, 
+           name, 
+           active, 
+           ip, 
+           port, 
+           meter_element_id, 
+           element, 
+           device_id 
+         FROM meter
+         ORDER BY meter_id, meter_element_id`;
+    
+    console.log(`\n🔍 [DATA-SYNC] Executing getMeters query (activeOnly=${activeOnly})`);
+    console.log(`   Query: ${query}`);
+    
     const result = await execQuery(this.pool, query);
+    
+    console.log(`\n📊 [DATA-SYNC] getMeters returned ${result.rows.length} rows`);
+    if (result.rows.length > 0) {
+      console.log(`   First 3 rows:`);
+      result.rows.slice(0, 3).forEach((row: any, idx: number) => {
+        console.log(`     Row ${idx + 1}: meter_id=${row.meter_id}, element=${row.element}, meter_element_id=${row.meter_element_id}, name=${row.name}`);
+      });
+      if (result.rows.length > 3) {
+        console.log(`   ... and ${result.rows.length - 3} more rows`);
+      }
+    }
+    
     return result.rows;
   }
 
@@ -814,9 +856,9 @@ export class SyncDatabase {
       console.log(`   ✓ All validations passed`);
       console.log(`   Executing INSERT/UPDATE query...`);
 
-      const sql = `INSERT INTO meter (id, device_id,name, active, ip, port, meter_element_id, element)
+      const sql = `INSERT INTO meter (meter_id, device_id, name, active, ip, port, meter_element_id, element)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (id, meter_element_id) DO UPDATE SET
+         ON CONFLICT (meter_id, meter_element_id) DO UPDATE SET
            device_id = EXCLUDED.device_id,
            name = EXCLUDED.name,
            active = EXCLUDED.active,
