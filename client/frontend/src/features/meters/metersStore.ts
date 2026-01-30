@@ -6,6 +6,7 @@ import { tokenStorage } from '../../utils/tokenStorage';
 
 // Meter TypeScript type
 export type Meter = {
+  id?: string; // Alias for meter_id for compatibility
   meter_id: number;
   name: string;
   serial_number: string;
@@ -28,7 +29,6 @@ export type Meter = {
   configuration?: {
     ipAddress?: string;
     port?: number;
-    slaveId?: number;
   };
   [key: string]: any;
 };

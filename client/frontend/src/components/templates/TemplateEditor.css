@@ -73,7 +73,6 @@
   margin: 0 2px;
   display: inline-block;
   cursor: pointer;
-  user-select: none;
 }
 
 .template-editor-editable .template-variable:hover {

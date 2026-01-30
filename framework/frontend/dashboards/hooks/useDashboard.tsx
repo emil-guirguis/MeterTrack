@@ -94,7 +94,7 @@ export function useDashboard(config: UseDashboardConfig): DashboardReturn {
   );
 
   // Refs for cleanup
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
   // Persist state to localStorage
@@ -237,7 +237,7 @@ export function useWidget(
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
   const refresh = useCallback(async () => {

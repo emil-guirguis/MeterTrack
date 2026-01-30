@@ -24,7 +24,6 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { notificationService } from '../../services/notificationService';
-import { NotificationSettings } from '../../types/notifications';
 
 interface EmailTemplate {
   id: string;
@@ -39,7 +38,6 @@ interface NotificationSettingsTabProps {
 export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = ({
   emailTemplates = []
 }) => {
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +59,6 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
       setIsLoading(true);
       setError(null);
       const loadedSettings = await notificationService.getSettings();
-      setSettings(loadedSettings);
       setFormData({
         health_check_cron: loadedSettings.health_check_cron,
         daily_email_cron: loadedSettings.daily_email_cron,
@@ -109,14 +106,13 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
       }
 
       // Save settings
-      const updatedSettings = await notificationService.updateSettings({
+      await notificationService.updateSettings({
         health_check_cron: formData.health_check_cron,
         daily_email_cron: formData.daily_email_cron,
         email_template_id: formData.email_template_id || null,
         enabled: formData.enabled
       });
 
-      setSettings(updatedSettings);
       setSuccess('Notification settings saved successfully');
 
       // Clear success message after 3 seconds

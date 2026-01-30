@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AppLayoutWrapper as AppLayout } from '../../components/layout';
-import { EntityManagementPage, FormModal } from '@framework/components/modal';
+import { FormModal } from '@framework/components/modal';
 
 import { UserList } from '../../features/users/UserList';
 import { UserForm } from '../../features/users/UserForm';
@@ -22,12 +22,6 @@ export const UserManagementPage: React.FC = () => {
   // Check permissions
   const canCreate = checkPermission(Permission.USER_CREATE);
   const canUpdate = checkPermission(Permission.USER_UPDATE);
-
-  // Handle user selection for viewing
-  const handleUserSelect = useCallback((user: User) => {
-    setSelectedUser(user);
-    setShowViewModal(true);
-  }, []);
 
   // Handle user editing
   const handleUserEdit = useCallback((user: User) => {
@@ -61,7 +55,7 @@ export const UserManagementPage: React.FC = () => {
     
     try {
       // Use _id if id is not available (legacy compatibility)
-      const userId = selectedUser.id || (selectedUser as any)._id;
+      const userId = selectedUser.users_id || (selectedUser as any)._id;
       await users.updateUser(userId, userData);
       setShowEditModal(false);
       setSelectedUser(null);
@@ -92,7 +86,6 @@ export const UserManagementPage: React.FC = () => {
     >
       <div className="user-management-page">
         <UserList
-          onUserSelect={handleUserSelect}
           onUserEdit={handleUserEdit}
           onUserCreate={handleUserCreate}
         />

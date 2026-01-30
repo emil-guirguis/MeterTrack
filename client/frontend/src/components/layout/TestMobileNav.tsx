@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import MobileNav from './MobileNav';
+import './TestMobileNav.css';
 
 const TestMobileNav: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,30 +11,25 @@ const TestMobileNav: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="test-mobile-nav">
       <h1>Mobile Nav Test</h1>
       <p>Current state: {isOpen ? 'OPEN' : 'CLOSED'}</p>
       
       <button 
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          padding: '10px 20px',
-          background: '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: 'pointer',
-          marginBottom: '20px'
-        }}
+        className="test-mobile-nav__button"
       >
         {isOpen ? 'Close' : 'Open'} Mobile Nav
       </button>
 
-      <MobileNav
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        menuItems={menuItems}
-      />
+      <div className="test-mobile-nav__menu">
+        {menuItems.map(item => (
+          <a key={item.id} href={item.path} className="test-mobile-nav__item">
+            {item.label}
+          </a>
+        ))}
+      </div>
     </div>
   );
 };

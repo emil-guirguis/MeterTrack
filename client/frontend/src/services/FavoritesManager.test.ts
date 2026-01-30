@@ -48,7 +48,7 @@ describe('FavoritesManager', () => {
         data: { success: true, data: mockFavorites },
       });
 
-      const result = await manager.load_favorites('user1', 'tenant1');
+      const result = await manager.load_favorites('user1');
 
       expect(result).toEqual(mockFavorites);
       expect(mockApiClient.get).toHaveBeenCalledWith('/favorites', {
@@ -63,7 +63,7 @@ describe('FavoritesManager', () => {
         data: { success: true, data: [] },
       });
 
-      const result = await manager.load_favorites('user1', 'tenant1');
+      const result = await manager.load_favorites('user1');
 
       expect(result).toEqual([]);
       expect(manager.get_all_favorites()).toEqual([]);
@@ -74,7 +74,7 @@ describe('FavoritesManager', () => {
         new Error('Network error')
       );
 
-      await expect(manager.load_favorites('user1', 'tenant1')).rejects.toThrow(
+      await expect(manager.load_favorites('user1')).rejects.toThrow(
         'Network error occurred'
       );
     });
@@ -95,7 +95,7 @@ describe('FavoritesManager', () => {
         data: { success: true, data: mockFavorite },
       });
 
-      const result = await manager.add_favorite('meter1', 'element1', 'user1', 'tenant1');
+      const result = await manager.add_favorite('meter1', 'element1', 'user1');
 
       expect(result).toEqual(mockFavorite);
       expect(mockApiClient.post).toHaveBeenCalledWith('/favorites', {
@@ -113,7 +113,7 @@ describe('FavoritesManager', () => {
       );
 
       await expect(
-        manager.add_favorite('meter1', 'element1', 'user1', 'tenant1')
+        manager.add_favorite('meter1', 'element1', 'user1')
       ).rejects.toThrow('Network error occurred');
     });
   });
@@ -138,7 +138,7 @@ describe('FavoritesManager', () => {
       expect(manager.is_favorited('meter1', 'element1')).toBe(true);
 
       // Then remove it
-      await manager.remove_favorite('meter1', 'element1', 'user1', 'tenant1');
+      await manager.remove_favorite('meter1', 'element1', 'user1');
 
       expect(mockApiClient.delete).toHaveBeenCalledWith('/favorites', {
         params: {
@@ -156,7 +156,7 @@ describe('FavoritesManager', () => {
       );
 
       await expect(
-        manager.remove_favorite('meter1', 'element1', 'user1', 'tenant1')
+        manager.remove_favorite('meter1', 'element1', 'user1')
       ).rejects.toThrow('Network error occurred');
     });
   });

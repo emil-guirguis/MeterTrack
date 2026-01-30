@@ -287,7 +287,6 @@ export const DetailedReadingsView: React.FC<DetailedReadingsViewProps> = ({
                     key={column}
                     className={`detailed-readings-view__grid-header ${sortBy === column ? 'detailed-readings-view__grid-header--active' : ''}`}
                     onClick={() => handleSort(column)}
-                    style={{ cursor: 'pointer' }}
                   >
                     <span className="detailed-readings-view__header-text">
                       {column.replace(/_/g, ' ').toUpperCase()}

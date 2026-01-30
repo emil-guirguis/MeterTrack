@@ -42,8 +42,8 @@ export const BasicFormTabsExample: React.FC<{ schema: any }> = ({ schema }) => {
             {fieldNames.map((fieldName) => (
               <div key={fieldName} className="form__field">
                 {/* Render your field here */}
-                <label>{fieldName}</label>
-                <input type="text" />
+                <label htmlFor={`field-${fieldName}`}>{fieldName}</label>
+                <input id={`field-${fieldName}`} type="text" />
               </div>
             ))}
           </div>
@@ -58,9 +58,8 @@ export const BasicFormTabsExample: React.FC<{ schema: any }> = ({ schema }) => {
  * 
  * Shows how to use the hook within a form component that uses BaseForm
  */
-export const FormWithTabsExample: React.FC<{ schema: any; entity?: any }> = ({
+export const FormWithTabsExample: React.FC<{ schema: any }> = ({
   schema,
-  entity,
 }) => {
   const [activeTab, setActiveTab] = useState('Basic');
   const { tabs, tabList, fieldSections } = useFormTabs(schema.formTabs, activeTab);

@@ -67,7 +67,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
     }
 
     const styles: Record<string, string> = {};
-    breakpoints.forEach((bp, index) => {
+    breakpoints.forEach((bp: any, index: number) => {
       styles[`--bp-${index}-max-width`] = `${bp.maxWidth}px`;
       styles[`--bp-${index}-columns`] = `${bp.columns}`;
       if (bp.gap !== undefined) {

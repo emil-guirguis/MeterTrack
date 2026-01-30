@@ -164,13 +164,13 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      
+
       const timestamp = new Date().toISOString().split('T')[0];
       const cardName = (card as any).card_name || card.title || 'export';
       link.setAttribute('href', url);
       link.setAttribute('download', `${cardName}-${timestamp}.csv`);
       link.style.visibility = 'hidden';
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -199,7 +199,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
 
       // Create base64 encoded content
       const fileBase64 = btoa(unescape(encodeURIComponent(csvContent)));
-      
+
       const timestamp = new Date().toISOString().split('T')[0];
       const cardName = (card as any).card_name || card.title || 'export';
       const filename = `${cardName}-${timestamp}.csv`;
@@ -360,15 +360,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
 
         {/* Action Buttons Row - Right Justified */}
         <Box sx={{ display: 'flex', gap: 0.5, ml: 'auto', alignItems: 'center' }}>
-          <Button
-            size="small"
-            variant="text"
-            startIcon={<FullscreenIcon />}
-            onClick={handleExpand}
-            title="Expand to fullscreen"
-            aria-label="Expand"
-            sx={{ minWidth: 'auto', p: 0.5 }}
-          />
+
           <Button
             size="small"
             variant="text"
@@ -386,6 +378,25 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
           >
             {formatLastRefreshed()}
           </Typography>
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<EditIcon />}
+            onClick={handleEdit}
+            title="Edit card"
+            aria-label="Edit"
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          />
+          <Button
+            size="small"
+            variant="text"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleDelete}
+            title="Delete card"
+            aria-label="Delete"
+            sx={{ minWidth: 'auto', p: 0.5 }}
+          />
           {/* Export Button */}
           <Button
             size="small"
@@ -409,20 +420,10 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
           <Button
             size="small"
             variant="text"
-            startIcon={<EditIcon />}
-            onClick={handleEdit}
-            title="Edit card"
-            aria-label="Edit"
-            sx={{ minWidth: 'auto', p: 0.5 }}
-          />
-          <Button
-            size="small"
-            variant="text"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={handleDelete}
-            title="Delete card"
-            aria-label="Delete"
+            startIcon={<FullscreenIcon />}
+            onClick={handleExpand}
+            title="Expand to fullscreen"
+            aria-label="Expand"
             sx={{ minWidth: 'auto', p: 0.5 }}
           />
         </Box>

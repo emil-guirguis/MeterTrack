@@ -15,6 +15,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useAppStore } from '../stores/useAppStore';
+import './Layout.css';
 
 const drawerWidth = 240;
 
@@ -64,7 +65,7 @@ export default function Layout() {
                     title={isDisabled ? 'Connect your account first' : ''} 
                     placement="right"
                   >
-                    <span style={{ width: '100%' }}>
+                    <span className="layout-tooltip-wrapper">
                       <ListItemButton
                         selected={location.pathname === item.path}
                         onClick={() => !isDisabled && navigate(item.path)}

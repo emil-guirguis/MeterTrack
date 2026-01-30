@@ -16,8 +16,8 @@ import {
   Alert
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import type { Notification } from '../../types/notifications';
 import { notificationService } from '../../services/notificationService';
-import { Notification } from '../../types/notifications';
 import NotificationList from './NotificationList';
 
 interface NotificationBellProps {

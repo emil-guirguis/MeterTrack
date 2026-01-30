@@ -1,0 +1,33 @@
+.secondaryText {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badgeActive {
+  background-color: #4caf50;
+}
+
+.badgeInactive {
+  background-color: #9e9e9e;
+}
+
+.badgePending {
+  background-color: #ff9800;
+}
+
+.badgeDraft {
+  background-color: #2196f3;
+}
+
+.badgeDefault {
+  background-color: #9e9e9e;
+}

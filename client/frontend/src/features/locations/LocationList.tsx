@@ -34,13 +34,13 @@ export const LocationList: React.FC<LocationListProps> = ({
       message: `Delete location "${location.name}"? This cannot be undone.`,
       confirmText: 'Delete',
       onConfirm: async () => {
-        await locations.deleteItem(location.id);
+        await locations.deleteItem(String(location.id));
         await locations.fetchItems();
       }
     });
   };
 
-  const baseList = useBaseList<Location, ReturnType<typeof useLocationsEnhanced>>({
+  const baseList = useBaseList<any, any>({
     entityName: 'location',
     entityNamePlural: 'locations',
     useStore: useLocationsEnhanced,

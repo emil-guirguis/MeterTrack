@@ -82,10 +82,9 @@ function cleanupAllTemporaryFiles(): void {
  * Creates a temporary file blob URL from CSV content
  * 
  * @param csvContent - The CSV content as a string
- * @param filename - The filename for the temporary file
  * @returns Object URL for the temporary file
  */
-function createTemporaryFile(csvContent: string, filename: string): string {
+function createTemporaryFile(csvContent: string): string {
   // Create a Blob from the CSV content with UTF-8 encoding
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   
@@ -189,7 +188,7 @@ export async function handleEmail(options: EmailOptions): Promise<void> {
     }
 
     // Create temporary file
-    temporaryFileUrl = createTemporaryFile(csvContent, filename);
+    temporaryFileUrl = createTemporaryFile(csvContent);
 
     // Format email subject with meter information
     const subject = formatEmailSubject(meterInfo);

@@ -134,14 +134,15 @@ class TwoFactorService {
 
       // Check each code
       for (const row of result.rows) {
-        const isValid = bcrypt.compareSync(code, row.code_hash);
+        const backupCodeRow = /** @type {{id: number, code_hash: string}} */ (/** @type {unknown} */ (row));
+        const isValid = bcrypt.compareSync(code, backupCodeRow.code_hash);
         if (isValid) {
           // Mark code as used
           await db.query(
             `UPDATE user_2fa_backup_codes
              SET is_used = true, used_at = NOW()
              WHERE id = $1`,
-            [row.id]
+            [backupCodeRow.id]
           );
           return true;
         }
@@ -213,34 +214,39 @@ class TwoFactorService {
         return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
+      /** @type {any} */
       const otpRecord = result.rows[0];
+      const id = otpRecord.id;
+      const code_hash = otpRecord.code_hash;
+      const expires_at = otpRecord.expires_at;
+      const attempts = otpRecord.attempts;
 
       // Check if locked (3 failed attempts)
-      if (otpRecord.attempts >= 3) {
+      if (attempts >= 3) {
         return { isValid: false, attemptsRemaining: 0, isLocked: true };
       }
 
       // Check if expired
-      if (new Date() > new Date(otpRecord.expires_at)) {
+      if (new Date() > new Date(expires_at)) {
         return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
       // Verify code
-      const isValid = bcrypt.compareSync(code, otpRecord.code_hash);
+      const isValid = bcrypt.compareSync(code, code_hash);
 
       if (isValid) {
         // Delete OTP on successful verification
         await db.query(
           'DELETE FROM email_otp_codes WHERE id = $1',
-          [otpRecord.id]
+          [id]
         );
         return { isValid: true, attemptsRemaining: 3, isLocked: false };
       } else {
         // Increment attempts
-        const newAttempts = otpRecord.attempts + 1;
+        const newAttempts = attempts + 1;
         await db.query(
           'UPDATE email_otp_codes SET attempts = $1 WHERE id = $2',
-          [newAttempts, otpRecord.id]
+          [newAttempts, id]
         );
 
         const attemptsRemaining = Math.max(0, 3 - newAttempts);
@@ -313,34 +319,39 @@ class TwoFactorService {
         return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
+      /** @type {any} */
       const otpRecord = result.rows[0];
+      const id = otpRecord.id;
+      const code_hash = otpRecord.code_hash;
+      const expires_at = otpRecord.expires_at;
+      const attempts = otpRecord.attempts;
 
       // Check if locked (3 failed attempts)
-      if (otpRecord.attempts >= 3) {
+      if (attempts >= 3) {
         return { isValid: false, attemptsRemaining: 0, isLocked: true };
       }
 
       // Check if expired
-      if (new Date() > new Date(otpRecord.expires_at)) {
+      if (new Date() > new Date(expires_at)) {
         return { isValid: false, attemptsRemaining: 0, isLocked: false };
       }
 
       // Verify code
-      const isValid = bcrypt.compareSync(code, otpRecord.code_hash);
+      const isValid = bcrypt.compareSync(code, code_hash);
 
       if (isValid) {
         // Delete OTP on successful verification
         await db.query(
           'DELETE FROM sms_otp_codes WHERE id = $1',
-          [otpRecord.id]
+          [id]
         );
         return { isValid: true, attemptsRemaining: 3, isLocked: false };
       } else {
         // Increment attempts
-        const newAttempts = otpRecord.attempts + 1;
+        const newAttempts = attempts + 1;
         await db.query(
           'UPDATE sms_otp_codes SET attempts = $1 WHERE id = $2',
-          [newAttempts, otpRecord.id]
+          [newAttempts, id]
         );
 
         const attemptsRemaining = Math.max(0, 3 - newAttempts);

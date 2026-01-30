@@ -2,6 +2,9 @@
 
 import type { ReactNode } from 'react';
 
+// Permission Types
+export type Permission = string;
+
 // Responsive Design
 export interface ResponsiveConfig {
   colors: {

@@ -18,7 +18,8 @@ export interface ContactInfo {
 
 // Location Management
 export interface Location {
-  location_id: number;
+  id?: string; // Alias for location_id for compatibility
+  location_id?: number;
   name: string;
   tenant_id?: string | number;
   type: 'Warehouse' | 'Apartment' | 'Ofice' | 'Retail' | 'Hotel' | 'Building' | 'Other';
@@ -40,7 +41,7 @@ export interface LocationCreateRequest {
   name: string;
   address: Address;
   contactInfo: ContactInfo;
-  type: 'office' | 'warehouse' | 'retail' | 'residential' | 'industrial';
+  type: 'Warehouse' | 'Apartment' | 'Ofice' | 'Retail' | 'Hotel' | 'Building' | 'Other';
   status?: 'active' | 'inactive' | 'maintenance';
   totalFloors?: number;
   totalUnits?: number;
@@ -51,7 +52,7 @@ export interface LocationCreateRequest {
 }
 
 export interface LocationUpdateRequest extends Partial<LocationCreateRequest> {
-  location_id: string;
+  location_id: number;
 }
 
 
@@ -71,7 +72,6 @@ export interface MeterConfig {
   registers?: number[];
   communicationProtocol?: string;
   baudRate?: number;
-  slaveId?: number;
   ipAddress?: string;
   port?: number;
 }
@@ -104,9 +104,8 @@ export interface DetailedMeterReading {
   createdAt: Date;
   updatedAt: Date;
   
-  // Additional optional fields from modbus agent
+  // Additional optional fields from BACnet agent
   deviceIP?: string;
-  slaveId?: number;
   source?: string;
   voltage?: number;
   current?: number;
@@ -207,12 +206,12 @@ export interface DetailedMeterReading {
   lastCommunication?: Date;
   dataQuality?: 'good' | 'estimated' | 'questionable' | 'bad';
   
-  // Register-specific Modbus data
-  modbusRegister40001?: number;
-  modbusRegister40002?: number;
-  modbusRegister40003?: number;
-  modbusRegister40004?: number;
-  modbusRegister40005?: number;
+  // Register-specific data
+  register40001?: number;
+  register40002?: number;
+  register40003?: number;
+  register40004?: number;
+  register40005?: number;
   
   // Device information
   deviceModel?: string;
@@ -257,7 +256,6 @@ export interface Meter {
   model: string; // Model number
   ip: string; // IP address for connection
   portNumber: number; // Port number for connection
-  slaveId?: number; // Modbus slave ID
   type: 'electric' | 'gas' | 'water' | 'steam' | 'other';
   locationId?: string;
   locationName?: string; // For display purposes

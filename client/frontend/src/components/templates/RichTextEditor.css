@@ -217,7 +217,6 @@
 /* Readonly state */
 .rich-text-editor-content.readonly .rich-text-editor-editable {
   cursor: default;
-  user-select: text;
 }
 
 .rich-text-editor-content.readonly .rich-text-editor-editable:before {

@@ -58,10 +58,8 @@ export const EmailTemplateList: React.FC<EmailTemplateListProps> = ({
 
   // Check permissions
   const canCreate = checkPermission(Permission.TEMPLATE_CREATE);
-  const canUpdate = checkPermission(Permission.TEMPLATE_UPDATE);
   const canDelete = checkPermission(Permission.TEMPLATE_DELETE);
   const canExport = checkPermission(Permission.TEMPLATE_READ); // Assuming export requires read permission
-  const canImport = checkPermission(Permission.TEMPLATE_CREATE); // Assuming import requires create permission
 
   // Menu state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

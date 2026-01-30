@@ -24,6 +24,7 @@ interface ExtendedFieldDefinition extends FieldDefinition {
   enumValues?: string[];
   description?: string;
   placeholder?: string;
+  filterable?: boolean;
 }
 
 /**
@@ -44,7 +45,7 @@ export function generateColumnsFromSchema<T extends Record<string, any>>(
 
   // Filter fields that should be shown in list
   const listFields = Object.entries(fields)
-    .filter(([fieldName, fieldDef]) => {
+    .filter(([, fieldDef]) => {
       // Only include fields with showOn containing 'list'
       const showOn = Array.isArray(fieldDef.showOn) ? fieldDef.showOn : [];
       if (!showOn.includes('list')) {
@@ -148,7 +149,7 @@ export function generateFiltersFromSchema(
 
   // Filter fields that should be filterable
   const filterableFields = Object.entries(fields)
-    .filter(([fieldName, fieldDef]) => {
+    .filter(([, fieldDef]) => {
       // Only include fields with showOn containing 'list'
       const showOn = Array.isArray(fieldDef.showOn) ? fieldDef.showOn : [];
       if (!showOn.includes('list')) {
@@ -220,7 +221,7 @@ export function generateFiltersFromSchema(
         };
       }
 
-      if (fieldDef.type === 'string' && fieldDef.filtertable) {
+      if (fieldDef.type === 'string' && fieldDef.filterable) {
         // Text filter for string fields marked as filterable
         return {
           key: fieldName,

@@ -10,7 +10,7 @@ export interface ThreadManagerConfig {
 }
 
 export interface WorkerMessage {
-  type: 'start' | 'stop' | 'status' | 'config' | 'data' | 'ping' | 'restart' | 'health-check';
+  type: 'start' | 'stop' | 'status' | 'config' | 'data' | 'ping' | 'restart' | 'health-check' | 'gc' | 'cleanup';
   payload?: any;
   requestId?: string;
   timestamp?: string;

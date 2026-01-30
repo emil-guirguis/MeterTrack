@@ -12,8 +12,8 @@
  */
 export function getAppVersion(): string {
   // Try to get version from environment (injected at build time)
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_VERSION) {
-    return import.meta.env.VITE_APP_VERSION;
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_APP_VERSION) {
+    return (import.meta as any).env.VITE_APP_VERSION;
   }
   
   // Fallback for development

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-export interface FieldDefinition {
+export interface FormFieldDefinition {
   showOn?: string[];
   label?: string;
   [key: string]: any;

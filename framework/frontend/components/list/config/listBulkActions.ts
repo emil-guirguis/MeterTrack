@@ -7,7 +7,7 @@
  */
 
 import type { BulkActionConfig } from '../types/list';
-import type { Permission } from '../types/auth';
+import type { Permission } from '../types/ui';
 
 /**
  * Create a bulk activate action.

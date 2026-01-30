@@ -15,7 +15,6 @@ export interface MeterConfig {
   registers?: number[];
   communicationProtocol?: string;
   baudRate?: number;
-  slaveId?: number;
   ipAddress?: string;
   port?: number;
 }
@@ -107,7 +106,6 @@ export interface CreateMeterRequest {
   ip: string;
   serial_number: string;
   portNumber: number;
-  slaveId?: number;
   location?: string;
   description?: string;
   type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';
@@ -142,7 +140,6 @@ export const MeterFieldValidation = {
   model: { maxLength: 100 },
   ip: { pattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/ },
   portNumber: { min: 1, max: 65535 },
-  slaveId: { min: 1, max: 247 },
   location: { maxLength: 200 },
   description: { maxLength: 500 },
   notes: { maxLength: 500 },

@@ -3,9 +3,15 @@
  * 
  * Discovers numeric power columns from the meter_reading table schema.
  * Implements caching with invalidation logic.
+ * Uses register names for column labels.
  */
 
 const db = require('../config/database');
+
+// Cache for register mappings
+let registerMappings = null;
+let registerMappingsTimestamp = null;
+const REGISTER_CACHE_TTL = 3600000; // 1 hour
 
 class PowerColumnDiscoveryService {
   constructor() {
@@ -34,8 +40,6 @@ class PowerColumnDiscoveryService {
       'deviceip',
       'ip',
       'port',
-      'slave_id',
-      'slaveid',
       'source',
       'unit_of_measurement',
       'data_quality',
@@ -90,10 +94,13 @@ class PowerColumnDiscoveryService {
       const result = await db.query(query);
       const columns = result.rows || [];
 
-      // Filter and transform columns
-      const powerColumns = columns
-        .filter(col => this.isNumericColumn(col))
-        .map(col => this.transformColumnMetadata(col));
+      // Filter columns
+      const numericColumns = columns.filter(col => this.isNumericColumn(col));
+
+      // Transform columns (now async)
+      const powerColumns = await Promise.all(
+        numericColumns.map(col => this.transformColumnMetadata(col))
+      );
 
       // Update cache
       this.cache = powerColumns;
@@ -129,14 +136,14 @@ class PowerColumnDiscoveryService {
   /**
    * Transform column metadata into API response format
    * @param {Object} column - Column metadata from information_schema
-   * @returns {Object} Transformed column metadata
+   * @returns {Promise<Object>} Transformed column metadata
    */
-  transformColumnMetadata(column) {
+  async transformColumnMetadata(column) {
     const columnName = column.column_name;
     const dataType = column.data_type || column.udt_name;
 
-    // Generate human-readable label from column name
-    const label = this.generateLabel(columnName);
+    // Generate human-readable label from column name (with register names)
+    const label = await this.generateLabel(columnName);
 
     return {
       name: columnName,
@@ -149,15 +156,72 @@ class PowerColumnDiscoveryService {
 
   /**
    * Generate human-readable label from column name
+   * Uses register names if available, falls back to formatted column name
    * @param {string} columnName - Database column name
-   * @returns {string} Human-readable label
+   * @returns {Promise<string>} Human-readable label
    */
-  generateLabel(columnName) {
-    // Convert snake_case to Title Case
+  async generateLabel(columnName) {
+    try {
+      // Fetch register mappings if not cached
+      if (!registerMappings || !this.isRegisterCacheValid()) {
+        await this.fetchRegisterMappings();
+      }
+
+      // Look up register name
+      if (registerMappings && registerMappings[columnName]) {
+        const register = registerMappings[columnName];
+        if (register.unit) {
+          return `${register.name} (${register.unit})`;
+        }
+        return register.name;
+      }
+    } catch (error) {
+      console.warn(`⚠️ [PowerColumnDiscovery] Failed to fetch register for ${columnName}, using fallback`);
+    }
+
+    // Fallback: Convert snake_case to Title Case
     return columnName
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+  }
+
+  /**
+   * Fetch register mappings from database
+   */
+  async fetchRegisterMappings() {
+    try {
+      const result = await db.query(
+        `SELECT field_name, name, unit FROM register ORDER BY field_name`
+      );
+
+      registerMappings = {};
+      result.rows.forEach(row => {
+        registerMappings[row.field_name] = {
+          name: row.name,
+          unit: row.unit
+        };
+      });
+
+      registerMappingsTimestamp = Date.now();
+      console.log(`📊 [PowerColumnDiscovery] Loaded ${result.rows.length} register mappings`);
+    } catch (error) {
+      console.error('❌ [PowerColumnDiscovery] Failed to fetch register mappings:', error.message);
+      registerMappings = null;
+    }
+  }
+
+  /**
+   * Check if register cache is still valid
+   */
+  isRegisterCacheValid() {
+    if (!registerMappings || !registerMappingsTimestamp) {
+      return false;
+    }
+
+    const now = Date.now();
+    const age = now - registerMappingsTimestamp;
+    return age < REGISTER_CACHE_TTL;
   }
 
   /**

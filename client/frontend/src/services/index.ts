@@ -1,7 +1,7 @@
 // Export all services from this file
 export { default as authService } from './authService';
+export { apiClient } from './apiClient';
 export { meterReadingService } from './meterReadingService';
-export { modbusService } from './modbusService';
 export { mcpService } from './mcpService';
 export { templateService } from './templateService';
 export { dashboardService } from './dashboardService';

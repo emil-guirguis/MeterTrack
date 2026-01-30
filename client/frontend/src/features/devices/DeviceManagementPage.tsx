@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { DeviceList } from './DeviceList';
 import { DeviceForm } from './DeviceForm';
 import { FormModal } from '@framework/components/modal';
-
-import { useDevicesEnhanced } from './devicesStore';
-import AppLayoutWrapper from '../../components/layout/AppLayoutWrapper';
-
+import { AppLayoutWrapper } from '../../components/layout/AppLayoutWrapper';
 import type { Device } from './deviceConfig';
 
 export const DeviceManagementPage: React.FC = () => {

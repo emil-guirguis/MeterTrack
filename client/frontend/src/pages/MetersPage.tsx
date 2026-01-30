@@ -33,7 +33,7 @@ const MetersPage: React.FC = () => {
       if (viewMode === 'create') {
         await meters.createMeter(data);
       } else if (viewMode === 'edit' && selectedMeter) {
-        await meters.updateMeter(selectedMeter.meter_id, data);
+        await meters.updateMeter(String(selectedMeter.meter_id), data);
       }
       setViewMode('list');
       setSelectedMeter(null);
@@ -114,10 +114,6 @@ const MetersPage: React.FC = () => {
             <div className="detail-item">
               <label>Port:</label>
               <span>{meter.portNumber}</span>
-            </div>
-            <div className="detail-item">
-              <label>Slave ID:</label>
-              <span>{meter.slaveId || 1}</span>
             </div>
             <div className="detail-item">
               <label>Protocol:</label>

@@ -88,7 +88,6 @@ export const JSONBField: React.FC<JSONBFieldProps> = ({
   disabled = false,
   required = false,
   description,
-  onChange,
   onBlur,
   jsonbConfig,
 }) => {
@@ -155,16 +154,17 @@ export const JSONBField: React.FC<JSONBFieldProps> = ({
       >
         {deserializedValue !== undefined && deserializedValue !== null ? (
           <JsonView
-            data={deserializedValue}
-            shouldExpandNode={() => !jsonbConfig?.collapsed}
-            collapseStringsAfterLength={
-              jsonbConfig?.collapseStringsAfterLength ?? 50
-            }
-            displayDataTypes={jsonbConfig?.displayDataTypes ?? true}
-            enableClipboard={jsonbConfig?.enableClipboard ?? true}
-            quotesOnKeys={jsonbConfig?.quotesOnKeys ?? true}
-            sortKeys={jsonbConfig?.sortKeys ?? false}
-            theme={jsonbConfig?.theme ?? 'default'}
+            {...{
+              src: deserializedValue,
+              shouldExpandNode: () => !jsonbConfig?.collapsed,
+              collapseStringsAfterLength:
+                jsonbConfig?.collapseStringsAfterLength ?? 50,
+              displayDataTypes: jsonbConfig?.displayDataTypes ?? true,
+              enableClipboard: jsonbConfig?.enableClipboard ?? true,
+              quotesOnKeys: jsonbConfig?.quotesOnKeys ?? true,
+              sortKeys: jsonbConfig?.sortKeys ?? false,
+              theme: jsonbConfig?.theme as any ?? 'default',
+            } as any}
           />
         ) : (
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>

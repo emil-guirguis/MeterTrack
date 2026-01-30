@@ -22,7 +22,6 @@ const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/upload');
 const syncRoutes = require('./routes/sync');
 const schemaRoutes = require('./routes/schema');
-// const modbusRoutes = require('./routes/modbus'); // Temporarily disabled
 // const directMeterRoutes = require('./routes/directMeter'); // Temporarily disabled
 const devicesRoutes = require('./routes/device');
 const deviceRegisterRoutes = require('./routes/deviceRegister');
@@ -32,6 +31,8 @@ const meterElementRoutes = require('./routes/meterElement');
 const dashboardRoutes = require('./routes/dashboard');
 const favoritesRoutes = require('./routes/favorites');
 const aiSearchRoutes = require('./routes/aiSearch');
+const reportsRoutes = require('./routes/reports');
+const emailLogsRoutes = require('./routes/email-logs');
 // const { router: threadingRoutes, initializeThreadingService } = require('./routes/threading');
 
 // Import tenant isolation middleware
@@ -435,19 +436,6 @@ async function initializeThreadingSystem() {
         maxMemoryMB: parseInt(process.env.WORKER_MAX_MEMORY_MB) || 512,
         logLevel: process.env.WORKER_LOG_LEVEL || 'info',
         moduleConfig: {
-          modbus: {
-            host: process.env.MODBUS_HOST || 'localhost',
-            port: parseInt(process.env.MODBUS_PORT) || 502,
-            timeout: parseInt(process.env.MODBUS_TIMEOUT) || 5000,
-            retryAttempts: parseInt(process.env.MODBUS_RETRY_ATTEMPTS) || 3,
-            retryDelay: parseInt(process.env.MODBUS_RETRY_DELAY) || 1000,
-            unitId: parseInt(process.env.MODBUS_UNIT_ID) || 1,
-            registers: {
-              start: parseInt(process.env.MODBUS_REGISTER_START) || 0,
-              count: parseInt(process.env.MODBUS_REGISTER_COUNT) || 10,
-              interval: parseInt(process.env.MODBUS_COLLECTION_INTERVAL) || 5000
-            }
-          },
           database: {
             poolSize: parseInt(process.env.DB_POOL_SIZE) || 10,
             timeout: parseInt(process.env.DB_TIMEOUT) || 10000,
@@ -545,7 +533,6 @@ app.use('/api/upload', authenticateToken, setTenantContext, uploadRoutes);
 // Sync routes use API key authentication (not JWT), so no authenticateToken middleware
 app.use('/api/sync', syncRoutes);
 app.use('/api/schema', authenticateToken, setTenantContext, schemaRoutes);
-// app.use('/api/modbus', authenticateToken, setTenantContext, modbusRoutes); // Temporarily disabled
 // app.use('/api', authenticateToken, setTenantContext, directMeterRoutes); // Temporarily disabled
 app.use('/api/device', authenticateToken, setTenantContext, devicesRoutes);
 app.use('/api/devices/:deviceId/registers', authenticateToken, setTenantContext, deviceRegisterRoutes);
@@ -555,6 +542,8 @@ app.use('/api/meters/:meterId/elements', authenticateToken, setTenantContext, me
 app.use('/api/dashboard', authenticateToken, setTenantContext, dashboardRoutes);
 app.use('/api/favorites', authenticateToken, setTenantContext, favoritesRoutes);
 app.use('/api/ai/search', authenticateToken, setTenantContext, aiSearchRoutes);
+app.use('/api/reports', authenticateToken, setTenantContext, reportsRoutes);
+app.use('/api/email-logs', authenticateToken, setTenantContext, emailLogsRoutes);
 // app.use('/api/threading', authenticateToken, setTenantContext, threadingRoutes); // TEMPORARILY DISABLED
 
 // Health check endpoint

@@ -29,7 +29,6 @@
       "env": {
         "NODE_ENV": "development"
       },
-      "preLaunchTask": "build-sync-mcp",
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -88,7 +87,6 @@
       "env": {
         "NODE_ENV": "development"
       },
-      "preLaunchTask": "build-client-mcp",
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -114,7 +112,6 @@
         "webpack:///./~/*": "${workspaceFolder}/node_modules/*"
       },
       "timeout": 30000,
-      "preLaunchTask": "start-sync-frontend",
       "skipFiles": [
         "<node_internals>/**"
       ]

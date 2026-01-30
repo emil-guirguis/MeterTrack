@@ -31,12 +31,6 @@ global.console = {
 global.testUtils = {
   // Helper to create mock configurations
   createMockConfig: (overrides = {}) => ({
-    modbus: {
-      ip: '10.10.10.22',
-      port: 502,
-      slaveId: 1,
-      timeout: 5000
-    },
     database: {
       url: 'postgresql://localhost:5432/test',
       database: 'test',

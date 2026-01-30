@@ -9,7 +9,7 @@ interface ReadingsChartProps {
 export default function ReadingsChart({ readings, meters }: ReadingsChartProps) {
   // Group readings by meter and data point
   const groupedReadings = readings.reduce((acc, reading) => {
-    const key = `${reading.meter_external_id}-${reading.data_point}`;
+    const key = `${reading.meter_id}-${reading.data_point}`;
     if (!acc[key]) {
       acc[key] = [];
     }
@@ -25,8 +25,8 @@ export default function ReadingsChart({ readings, meters }: ReadingsChartProps) 
         </Typography>
 
         {Object.entries(groupedReadings).map(([key, meterReadings]) => {
-          const [meterExternalId, dataPoint] = key.split('-');
-          const meter = meters.find((m) => m.external_id === meterExternalId);
+          const [meterId, dataPoint] = key.split('-');
+          const meter = meters.find((m) => String(m.meter_id) === meterId);
           const sortedReadings = [...meterReadings]
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .slice(0, 10);

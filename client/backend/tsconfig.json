@@ -25,7 +25,7 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": false,
     "lib": ["ES2020", "DOM"],
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "include": [
     "src/**/*"

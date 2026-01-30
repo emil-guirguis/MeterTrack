@@ -59,10 +59,10 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
         return <div>No device selected</div>;
       }
       
-      // Get device ID - use 'id' field from device object
-      const deviceId = device.id;
+      // Get device ID - use 'device_id' field from device object
+      const deviceId = device.device_id;
       if (!deviceId && deviceId !== 0) {
-        console.log('Device has no id:', device);
+        console.log('Device has no device_id:', device);
         console.log('Device keys:', Object.keys(device));
         console.log('All device values:', device);
         return <div>Device ID not available. Available keys: {Object.keys(device).join(', ')}</div>;

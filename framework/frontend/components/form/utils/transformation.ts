@@ -230,8 +230,8 @@ export function prepareFormData<T extends Record<string, any>>(
   // Normalize email fields
   if (shouldNormalizeEmail) {
     emailFields.forEach(field => {
-      if (result[field] && typeof result[field] === 'string') {
-        result[field] = normalizeEmail(result[field]) as any;
+      if ((result as any)[field] && typeof (result as any)[field] === 'string') {
+        (result as any)[field] = normalizeEmail((result as any)[field]);
       }
     });
   }

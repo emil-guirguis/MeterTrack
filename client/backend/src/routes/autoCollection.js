@@ -24,10 +24,11 @@ router.get('/status', requirePermission('meter:read'), async (req, res) => {
     });
   } catch (error) {
     console.error('Get auto collection status error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to get auto collection status',
-      error: error.message
+      error: errorMessage
     });
   }
 });
@@ -36,7 +37,7 @@ router.get('/status', requirePermission('meter:read'), async (req, res) => {
  * Start auto collection
  * POST /api/auto-collection/start
  */
-router.post('/start', requirePermission('meter:update'), async (req, res) => {
+router.post('/start', requirePermission('meter:update'), async (_req, res) => {
   try {
     const result = autoMeterCollectionService.startCollection();
     
@@ -53,10 +54,11 @@ router.post('/start', requirePermission('meter:update'), async (req, res) => {
     }
   } catch (error) {
     console.error('Start auto collection error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to start auto collection',
-      error: error.message
+      error: errorMessage
     });
   }
 });
@@ -65,9 +67,9 @@ router.post('/start', requirePermission('meter:update'), async (req, res) => {
  * Stop auto collection
  * POST /api/auto-collection/stop
  */
-router.post('/stop', requirePermission('meter:update'), async (req, res) => {
+router.post('/stop', requirePermission('meter:update'), async (_req, res) => {
   try {
-    const result = autoMeterCollectionService.stopCollection();
+    autoMeterCollectionService.stopCollection();
     
     res.json({
       success: true,
@@ -75,10 +77,11 @@ router.post('/stop', requirePermission('meter:update'), async (req, res) => {
     });
   } catch (error) {
     console.error('Stop auto collection error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to stop auto collection',
-      error: error.message
+      error: errorMessage
     });
   }
 });
@@ -107,10 +110,11 @@ router.post('/interval', requirePermission('meter:update'), async (req, res) => 
     });
   } catch (error) {
     console.error('Update collection interval error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to update collection interval',
-      error: error.message
+      error: errorMessage
     });
   }
 });
@@ -119,7 +123,7 @@ router.post('/interval', requirePermission('meter:update'), async (req, res) => 
  * Get collection statistics
  * GET /api/auto-collection/stats
  */
-router.get('/stats', requirePermission('meter:read'), async (req, res) => {
+router.get('/stats', requirePermission('meter:read'), async (_req, res) => {
   try {
     const stats = autoMeterCollectionService.getCollectionStats();
     
@@ -129,10 +133,11 @@ router.get('/stats', requirePermission('meter:read'), async (req, res) => {
     });
   } catch (error) {
     console.error('Get collection stats error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to get collection statistics',
-      error: error.message
+      error: errorMessage
     });
   }
 });
@@ -141,7 +146,7 @@ router.get('/stats', requirePermission('meter:read'), async (req, res) => {
  * Trigger manual collection cycle
  * POST /api/auto-collection/collect-now
  */
-router.post('/collect-now', requirePermission('meter:update'), async (req, res) => {
+router.post('/collect-now', requirePermission('meter:update'), async (_req, res) => {
   try {
     // Trigger a manual collection cycle
     console.log('🔄 Manual collection cycle triggered by user');
@@ -161,10 +166,11 @@ router.post('/collect-now', requirePermission('meter:update'), async (req, res) 
     });
   } catch (error) {
     console.error('Manual collection trigger error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({
       success: false,
       message: 'Failed to trigger manual collection',
-      error: error.message
+      error: errorMessage
     });
   }
 });

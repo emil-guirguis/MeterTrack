@@ -13,6 +13,28 @@ import type { DashboardLayout } from './layout';
 export type VisualizationType = 'pie' | 'line' | 'bar' | 'area' | 'candlestick';
 
 /**
+ * Grid item for dashboard grid layout
+ */
+export interface DashboardGridItem {
+  /** Item unique identifier */
+  id: string | number;
+  /** Item content to render */
+  content: React.ReactNode;
+  /** Grid position and size */
+  position?: {
+    column: number;
+    row: number;
+    columnSpan?: number;
+    rowSpan?: number;
+  };
+  /** Custom CSS class */
+  className?: string;
+}
+
+// Re-export DashboardLayout for convenience
+export type { DashboardLayout };
+
+/**
  * Generic dashboard card interface
  * Extensible to support client-specific properties
  */

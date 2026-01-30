@@ -30,7 +30,7 @@ export interface ValidationRule {
  * Validation schema for a form
  * Maps field names to arrays of validation rules
  */
-export interface ValidationSchema<T = any> {
+export interface ValidationSchema {
   [K: string]: ValidationRule[];
 }
 
@@ -90,7 +90,7 @@ export interface FormSectionConfig {
  */
 export interface BaseFormConfig<T = any> {
   initialValues: Partial<T>;
-  validationSchema?: ValidationSchema<T>;
+  validationSchema?: ValidationSchema;
   onSubmit: (values: T) => Promise<void>;
   authContext?: AuthContextProvider;
   permissions?: FormPermissions;

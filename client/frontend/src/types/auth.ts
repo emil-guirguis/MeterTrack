@@ -54,6 +54,7 @@ export const Permission = {
 export type Permission = typeof Permission[keyof typeof Permission];
 
 export interface User {
+  id?: string; // Alias for users_id for compatibility
   users_id: string;
   email: string;
   name: string;
@@ -95,7 +96,7 @@ export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
-  checkPermission: (permission: string) => boolean;
+  checkPermission: (permission?: string) => boolean;
   hasRole: (role: UserRole) => boolean;
   getLocationsByTenant: (tenantId: string) => any[];
 }

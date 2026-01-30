@@ -26,25 +26,7 @@ export interface WorkerConfig {
   enableProfiling: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   moduleConfig: {
-    modbus: ModbusWorkerConfig;
     database: DatabaseWorkerConfig;
-  };
-}
-
-/**
- * Modbus configuration for worker
- */
-export interface ModbusWorkerConfig {
-  host: string;
-  port: number;
-  timeout: number;
-  retryAttempts: number;
-  retryDelay: number;
-  unitId: number;
-  registers: {
-    start: number;
-    count: number;
-    interval: number;
   };
 }
 
@@ -350,20 +332,6 @@ export class ConfigurationManager extends EventEmitter {
         enableProfiling: false,
         logLevel: 'info',
         moduleConfig: {
-          modbus: {
-            host: 'localhost',
-            port: 502,
-            timeout: 5000,
-            retryAttempts: 3,
-            retryDelay: 1000,
-            unitId: 1,
-            registers: {
-              start: 0,
-              count: 10,
-              interval: 5000
-            }
-          }
-          ,
           database: {
             connectionString: 'mongodb://localhost:27017/mcp-data',
             poolSize: 10,

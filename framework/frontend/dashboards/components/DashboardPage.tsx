@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
-import { Box, Button, CircularProgress, Typography, Alert } from '@mui/material';
 import type { DashboardCard as DashboardCardType, AggregatedData } from '../types/dashboard';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -204,12 +203,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         /* Cards Grid */
         <ResponsiveGridLayout
           className="dashboard-page__cards-grid"
+          layout={localLayout}
           layouts={{ lg: localLayout }}
           onLayoutChange={handleLayoutChange}
           breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
           cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
           rowHeight={60}
-          width={1200}
           isDraggable={!savingLayout}
           isResizable={!savingLayout}
           compactType="vertical"

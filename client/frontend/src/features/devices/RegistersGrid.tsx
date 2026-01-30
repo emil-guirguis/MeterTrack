@@ -29,7 +29,6 @@ interface RegistersGridProps {
 export const RegistersGrid: React.FC<RegistersGridProps> = ({
   deviceId,
   onError,
-  onSuccess,
 }) => {
   console.log('RegistersGrid rendered with deviceId:', deviceId);
   
@@ -69,7 +68,7 @@ export const RegistersGrid: React.FC<RegistersGridProps> = ({
   }, [deviceId, loadRegisters]);
 
   const gridData = registers.map((dr) => ({
-    id: dr.register_id, // Use register_id as the unique identifier
+    id: dr.id, // Use id as the unique identifier
     device_id: dr.device_id,
     register: dr.register?.register || '',
     name: dr.register?.name || '',

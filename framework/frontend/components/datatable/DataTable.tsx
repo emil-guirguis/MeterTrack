@@ -15,7 +15,6 @@ export function DataTable<T extends Record<string, any>>({
   onSelect,
   pagination,
   bulkActions = [],
-  headerActions,
   responsive = true,
   striped = true,
   hoverable = true,

@@ -17,7 +17,7 @@ import {
   Divider
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Notification } from '../../types/notifications';
+import type { Notification } from '../../types/notifications';
 import { formatDistanceToNow } from 'date-fns';
 
 interface NotificationListProps {

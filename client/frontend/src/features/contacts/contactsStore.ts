@@ -164,7 +164,7 @@ const contactsService = {
         sortBy: params?.sortBy,
         sortOrder: params?.sortOrder,
         filters: params?.filters,
-      });
+      }) as any;
     });
   },
 
@@ -183,7 +183,7 @@ const contactsService = {
   async delete(_id: string) {
     return withTokenRefresh(async () => api.delete(_id));
   },
-};
+} as any;
 
 export const useContactsStore = createEntityStore(contactsService, {
   name: 'contacts',
@@ -191,7 +191,7 @@ export const useContactsStore = createEntityStore(contactsService, {
     ttl: 10 * 60 * 1000, // 10 minutes
     maxAge: 60 * 60 * 1000, // 1 hour
   },
-});
+} as any);
 
 export const useContacts = createEntityHook(useContactsStore);
 
@@ -208,7 +208,7 @@ export const useContactsEnhanced = () => {
     items,
     
     // Computed values
-    activeContacts: items.filter(contact => contact.active),
-    inactiveContacts: items.filter(contact => !contact.active),
+    activeContacts: items.filter((contact: any) => contact.active),
+    inactiveContacts: items.filter((contact: any) => !contact.active),
   };
 };

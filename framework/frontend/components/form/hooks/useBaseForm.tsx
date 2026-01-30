@@ -3,7 +3,6 @@ import type {
   BaseFormConfig,
   BaseFormReturn,
   ValidationErrors,
-  ValidationRule,
   FormState,
 } from '../types/form';
 import { validateField as validateFieldUtil } from '../utils/validation';
@@ -63,7 +62,7 @@ export function useBaseForm<T = any>(config: BaseFormConfig<T>): BaseFormReturn<
   /**
    * Check if user has permission to read a field
    */
-  const canReadField = useCallback((field: string): boolean => {
+  const canReadField = useCallback((): boolean => {
     if (!authContext || !permissions?.read) return true;
     
     const readPerms = Array.isArray(permissions.read) ? permissions.read : [permissions.read];
@@ -73,7 +72,7 @@ export function useBaseForm<T = any>(config: BaseFormConfig<T>): BaseFormReturn<
   /**
    * Check if user has permission to update a field
    */
-  const canUpdateField = useCallback((field: string): boolean => {
+  const canUpdateField = useCallback((): boolean => {
     if (!authContext || !permissions?.update) return true;
     
     const updatePerms = Array.isArray(permissions.update) ? permissions.update : [permissions.update];
@@ -84,7 +83,7 @@ export function useBaseForm<T = any>(config: BaseFormConfig<T>): BaseFormReturn<
    * Validate a single field
    */
   const validateField = useCallback(async (field: string): Promise<string | undefined> => {
-    const fieldRules = validationSchema[field];
+    const fieldRules = (validationSchema as any)[field];
     if (!fieldRules || fieldRules.length === 0) return undefined;
 
     const fieldValue = (values as any)[field];
@@ -204,7 +203,7 @@ export function useBaseForm<T = any>(config: BaseFormConfig<T>): BaseFormReturn<
     }
 
     // Check permissions
-    if (!canUpdateField('*')) {
+    if (!canUpdateField()) {
       console.error('User does not have permission to submit this form');
       return;
     }
@@ -240,7 +239,7 @@ export function useBaseForm<T = any>(config: BaseFormConfig<T>): BaseFormReturn<
    * Handle field blur event
    */
   const handleBlur = useCallback((field: string) => {
-    return (e: React.FocusEvent) => {
+    return () => {
       setFieldTouched(field, true);
       
       // Validate on blur if enabled

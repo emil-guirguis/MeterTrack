@@ -11,7 +11,6 @@ import { BaseForm } from '@framework/components/form/BaseForm';
 import { JSONBPermissionsRenderer } from '@framework/components/jsonbfield';
 import { useUsersEnhanced } from './usersStore';
 import type { User } from '../../types/auth';
-import { Permission } from '../../types/auth';
 import { ChangePasswordModal } from '../../components/auth/ChangePasswordModal';
 import authService from '../../services/authService';
 import {

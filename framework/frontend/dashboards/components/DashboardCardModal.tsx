@@ -136,7 +136,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
     } else if (selectedMeterId) {
       // Validate that selected element exists in the provided list
       const selectedElement = meterElements.find(
-        el => el.id === parseInt(formData.meter_element_id)
+        el => el.id.toString() === formData.meter_element_id
       );
       if (!selectedElement) {
         newErrors.meter_element_id = 'Selected meter element is not available';
@@ -213,7 +213,7 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
         card_name: formData.card_name,
         card_description: formData.card_description,
         meter_id: selectedMeterId || 0,
-        meter_element_id: parseInt(formData.meter_element_id),
+        meter_element_id: formData.meter_element_id ? parseInt(formData.meter_element_id) : 0,
         selected_columns: formData.selected_columns,
         time_frame_type: formData.time_frame_type,
         visualization_type: formData.visualization_type
@@ -338,14 +338,27 @@ export const DashboardCardModal: React.FC<DashboardCardModalProps> = ({
             <Select
               label="Meter Element *"
               name="meter_element_id"
-              value={formData.meter_element_id}
-              onChange={handleFieldChange}
+              value={formData.meter_element_id || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  meter_element_id: value
+                }));
+                if (errors.meter_element_id) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.meter_element_id;
+                    return newErrors;
+                  });
+                }
+              }}
             >
               <MenuItem value="">
                 <em>-- Select a meter element --</em>
               </MenuItem>
-              {meterElements && meterElements.map(element => (
-                <MenuItem key={element.id} value={element.id}>
+              {meterElements && meterElements.length > 0 && meterElements.map(element => (
+                <MenuItem key={element.id} value={element.id.toString()}>
                   {element.element ? `${element.element} - ${element.name}` : element.name}
                 </MenuItem>
               ))}

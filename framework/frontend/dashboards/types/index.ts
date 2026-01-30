@@ -19,6 +19,9 @@ export * from './dashboard';
 // Layout types (re-export to avoid conflicts)
 export type { DashboardLayout, DashboardBreakpoint, GridPosition, DashboardGridItem } from './layout';
 
+// Layout item type from hook
+export type { LayoutItem } from '../hooks/useLayout';
+
 // Widget types
 export * from './widget';
 

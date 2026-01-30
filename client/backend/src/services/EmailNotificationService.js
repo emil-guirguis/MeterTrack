@@ -23,13 +23,13 @@ class EmailNotificationService {
   /**
    * Initialize and start the email notification service
    */
-  async initialize() {
+  async initialize(tenantId = 1) {
     try {
       console.log('📧 Initializing EmailNotificationService...');
 
-      // Get current settings
-      const settings = await NotificationSettings.getCurrent();
-      const schedule = settings.daily_email_cron || CRON_CONSTANTS.NOTIFICATION_DAILY_EMAIL.DEFAULT;
+      // Get current settings for tenant
+      const settings = await NotificationSettings.getByTenant(tenantId);
+      const schedule = (settings && settings['daily_meter_health_email_time']) || CRON_CONSTANTS.NOTIFICATION_DAILY_EMAIL.DEFAULT;
 
       console.log(`📅 EmailNotificationService schedule: ${schedule}`);
 
@@ -38,7 +38,8 @@ class EmailNotificationService {
 
       console.log('✅ EmailNotificationService initialized successfully');
     } catch (error) {
-      console.error('❌ Error initializing EmailNotificationService:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('❌ Error initializing EmailNotificationService:', errorMessage);
       throw error;
     }
   }
@@ -82,19 +83,19 @@ class EmailNotificationService {
   /**
    * Run the daily email notification
    */
-  async run() {
+  async run(tenantId = 1) {
     try {
       this.lastRunTime = new Date();
       console.log(`\n${'='.repeat(80)}`);
       console.log(`📧 EmailNotificationService running at ${this.lastRunTime.toISOString()}`);
       console.log(`${'='.repeat(80)}`);
 
-      // Get current settings
-      const settings = await NotificationSettings.getCurrent();
+      // Get current settings for tenant
+      const settings = await NotificationSettings.getByTenant(tenantId);
 
       // Check if notifications are enabled
-      if (!settings.enabled) {
-        console.log('⚠️ Notifications are disabled. Skipping email send.');
+      if (!settings) {
+        console.log('⚠️ Notification settings not found. Skipping email send.');
         this.lastRunStatus = 'disabled';
         return;
       }
@@ -112,13 +113,14 @@ class EmailNotificationService {
       console.log(`📊 Found ${notifications.length} notifications to send`);
 
       // Get email template
-      if (!settings.email_template_id) {
+      const emailTemplateId = settings['email_template_id'];
+      if (!emailTemplateId) {
         console.log('⚠️ No email template configured. Skipping email send.');
         this.lastRunStatus = 'no_template';
         return;
       }
 
-      const template = await this.getEmailTemplate(settings.email_template_id);
+      const template = await this.getEmailTemplate(emailTemplateId);
       if (!template) {
         console.log('⚠️ Email template not found. Skipping email send.');
         this.lastRunStatus = 'template_not_found';
@@ -134,7 +136,8 @@ class EmailNotificationService {
       console.log('✅ Email sent successfully');
       this.lastRunStatus = 'success';
     } catch (error) {
-      console.error('❌ Error in EmailNotificationService.run():', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('❌ Error in EmailNotificationService.run():', errorMessage);
       this.lastRunStatus = 'error';
       throw error;
     }
@@ -156,7 +159,8 @@ class EmailNotificationService {
 
       return result.rows[0];
     } catch (error) {
-      console.error('Error getting email template:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error getting email template:', errorMessage);
       throw error;
     }
   }
@@ -220,7 +224,8 @@ class EmailNotificationService {
         console.log('⚠️ EmailService not available. Email not sent.');
       }
     } catch (error) {
-      console.error('Error sending email:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error sending email:', errorMessage);
       throw error;
     }
   }

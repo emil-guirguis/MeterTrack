@@ -14,9 +14,7 @@ import { registerIconMappings } from '@framework/utils/iconHelper';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useUI } from '../../store/slices/uiSlice';
-import { usePageTitle } from '../../hooks/usePageTitle';
 import { Permission } from '../../types/auth';
-import { generateBreadcrumbs, getPageTitle } from '../../utils/navigationUtils';
 import { SidebarMetersSection } from '../sidebar-meters';
 import { useMeterSelection } from '../../contexts/MeterSelectionContext';
 
@@ -158,12 +156,9 @@ export const AppLayoutWrapper: React.FC<LayoutProps> = (props) => {
     } : undefined,
     notifications: [], // TODO: Implement notifications
     onLogout: logout,
-    checkPermission,
+    checkPermission: (permission?: string) => permission ? checkPermission(permission) : true,
     responsive,
     uiState,
-    usePageTitle,
-    generateBreadcrumbs,
-    getPageTitle,
     sidebarContent: user ? (
       <SidebarMetersSection
         tenantId={user.client || '1'}

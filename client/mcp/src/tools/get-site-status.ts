@@ -1,23 +1,22 @@
 import { db } from '../database/client.js';
 import { logger } from '../utils/logger.js';
 
-interface GetSiteStatusArgs {
-  site_id?: number;
+interface GetTenantStatusArgs {
+  tenant_id?: number;
   include_inactive?: boolean;
 }
 
-interface SiteRow {
-  id: number;
+interface TenantRow {
+  tenant_id: number;
   name: string;
-  last_heartbeat: Date | null;
   is_active: boolean;
   created_at: Date;
   meter_count: number;
   last_reading_timestamp: Date | null;
 }
 
-export async function getSiteStatus(args: GetSiteStatusArgs) {
-  logger.info('Executing get_site_status tool', { args });
+export async function getTenantStatus(args: GetTenantStatusArgs) {
+  logger.info('Executing get_tenant_status tool', { args });
 
   try {
     // Build query with filters
@@ -25,13 +24,13 @@ export async function getSiteStatus(args: GetSiteStatusArgs) {
     const params: any[] = [];
     let paramIndex = 1;
 
-    if (args.site_id !== undefined) {
-      conditions.push(`s.id = $${paramIndex++}`);
-      params.push(args.site_id);
+    if (args.tenant_id !== undefined) {
+      conditions.push(`t.tenant_id = $${paramIndex++}`);
+      params.push(args.tenant_id);
     }
 
     if (!args.include_inactive) {
-      conditions.push(`s.is_active = $${paramIndex++}`);
+      conditions.push(`m.active = $${paramIndex++}`);
       params.push(true);
     }
 
@@ -39,53 +38,32 @@ export async function getSiteStatus(args: GetSiteStatusArgs) {
 
     const query = `
       SELECT 
-        s.tenant_id,
-        s.name,
-        s.last_heartbeat,
-        s.is_active,
-        s.created_at,
-        COUNT(DISTINCT m.id) as meter_count,
+        t.tenant_id,
+        t.name,
+        t.active,
+        t.created_at,
+        COUNT(DISTINCT m.meter_id) as meter_count,
         MAX(mr.timestamp) as last_reading_timestamp
-      FROM tenant s
-      LEFT JOIN meters m ON s.tenant_id = m.tenant_id
+      FROM tenant t
+      LEFT JOIN meter m ON t.tenant_id = m.tenant_id
       LEFT JOIN meter_reading mr ON m.meter_id = mr.meter_id
       ${whereClause}
-      GROUP BY s.tenant_id, s.name, s.last_heartbeat, s.is_active, s.created_at
-      ORDER BY s.name
+      GROUP BY t.tenant_id, t.name, t.active, t.created_at
+      ORDER BY t.name
     `;
 
-    const result = await db.query<SiteRow>(query, params);
+    const result = await db.query<TenantRow>(query, params);
 
-    // Calculate connectivity status
-    const now = new Date();
-    const sites = result.rows.map(row => {
-      const minutesSinceHeartbeat = row.last_heartbeat 
-        ? Math.floor((now.getTime() - new Date(row.last_heartbeat).getTime()) / 60000)
-        : null;
+    const tenants = result.rows.map(row => ({
+      tenant_id: row.tenant_id,
+      name: row.name,
+      is_active: row.is_active,
+      created_at: row.created_at,
+      meter_count: parseInt(row.meter_count as any, 10),
+      last_reading_timestamp: row.last_reading_timestamp,
+    }));
 
-      let connectivity_status: 'online' | 'offline' | 'unknown';
-      if (!row.last_heartbeat) {
-        connectivity_status = 'unknown';
-      } else if (minutesSinceHeartbeat !== null && minutesSinceHeartbeat <= 10) {
-        connectivity_status = 'online';
-      } else {
-        connectivity_status = 'offline';
-      }
-
-      return {
-        id: row.id,
-        name: row.name,
-        is_active: row.is_active,
-        created_at: row.created_at,
-        last_heartbeat: row.last_heartbeat,
-        minutes_since_heartbeat: minutesSinceHeartbeat,
-        connectivity_status,
-        meter_count: parseInt(row.meter_count as any, 10),
-        last_reading_timestamp: row.last_reading_timestamp,
-      };
-    });
-
-    logger.info('get_site_status completed', { count: sites.length });
+    logger.info('get_tenant_status completed', { count: tenants.length });
 
     return {
       content: [
@@ -93,14 +71,14 @@ export async function getSiteStatus(args: GetSiteStatusArgs) {
           type: 'text',
           text: JSON.stringify({
             success: true,
-            count: sites.length,
-            sites,
+            count: tenants.length,
+            tenants,
           }, null, 2),
         },
       ],
     };
   } catch (error) {
-    logger.error('get_site_status error', { 
+    logger.error('get_tenant_status error', { 
       error: error instanceof Error ? error.message : String(error) 
     });
     throw error;

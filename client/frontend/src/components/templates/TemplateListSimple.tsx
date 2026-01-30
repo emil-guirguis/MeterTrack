@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BaseList } from '@framework/components/list/BaseList';
-import { BaseForm } from '@framework/components/form/BaseForm';
 import { useTemplatesEnhanced } from '../../store/entities/templatesStore';
 import { useAuth } from '../../hooks/useAuth';
 import type { EmailTemplate } from '../../types/entities';
@@ -10,13 +9,11 @@ import '@framework/components/common/TableCellStyles.css';
 import './TemplateList.css';
 
 interface TemplateListProps {
-    onTemplateSelect?: (template: EmailTemplate) => void;
     onTemplateEdit?: (template: EmailTemplate) => void;
     onTemplateCreate?: () => void;
 }
 
 export const TemplateListSimple: React.FC<TemplateListProps> = ({
-    onTemplateSelect,
     onTemplateEdit,
     onTemplateCreate,
 }) => {
@@ -26,7 +23,6 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<string>('');
-    const [showExportModal, setShowExportModal] = useState(false);
 
     // Check permissions
     const canCreate = checkPermission(Permission.TEMPLATE_CREATE);
@@ -168,10 +164,6 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
     }, [canUpdate, templates]);
 
     // Handle template actions
-    const handleTemplateView = useCallback((template: EmailTemplate) => {
-        onTemplateSelect?.(template);
-    }, [onTemplateSelect]);
-
     const handleTemplateEdit = useCallback((template: EmailTemplate) => {
         if (!canUpdate) return;
         onTemplateEdit?.(template);
@@ -216,11 +208,6 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
         link.click();
         document.body.removeChild(link);
     }, []);
-
-    const exportAllTemplates = useCallback(() => {
-        exportTemplatesToCSV(templates.items);
-        setShowExportModal(false);
-    }, [templates.items, exportTemplatesToCSV]);
 
     const filters = (
         <>
@@ -279,15 +266,6 @@ export const TemplateListSimple: React.FC<TemplateListProps> = ({
 
     const headerActions = (
         <div className="data-table__header-actions-inline">
-            <button
-                type="button"
-                className="template-list__btn template-list__btn--secondary"
-                onClick={() => setShowExportModal(true)}
-                aria-label="Export templates to CSV"
-            >
-                📄 Export CSV
-            </button>
-
             {canCreate && (
                 <button
                     type="button"

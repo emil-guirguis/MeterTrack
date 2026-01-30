@@ -26,7 +26,6 @@ export function FormModal<T = any>({
   loading = false,
   error,
   onClose,
-  onSubmit,
   children,
   size = 'md',
   fullScreen = false,

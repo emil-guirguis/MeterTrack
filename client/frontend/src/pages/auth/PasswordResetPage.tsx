@@ -25,7 +25,6 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { authService } from '../../services/authService';
-import { PasswordValidator } from '../../utils/passwordValidator';
 
 interface PasswordRequirement {
   label: string;
@@ -80,7 +79,6 @@ const PasswordResetPage: React.FC = () => {
       return;
     }
 
-    const validation = PasswordValidator.validate(newPassword);
     const requirements = [
       { label: 'At least 12 characters', met: newPassword.length >= 12 },
       { label: 'At least one uppercase letter (A-Z)', met: /[A-Z]/.test(newPassword) },

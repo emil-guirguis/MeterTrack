@@ -13,7 +13,6 @@ import { MeterReadingList } from './MeterReadingList';
 import { useMeterReadingsEnhanced } from './meterReadingsStore';
 import { useMeterSelection } from '../../contexts/MeterSelectionContext';
 import { useAuth } from '../../hooks/useAuth';
-import type { MeterReading } from './meterReadingConfig';
 
 export const MeterReadingManagementPage: React.FC = () => {
   console.log('[MeterReadingManagementPage] RENDERING');

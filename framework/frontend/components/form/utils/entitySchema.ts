@@ -41,7 +41,7 @@ export interface LegacyFieldMapping {
 /**
  * Entity schema definition with form fields, entity fields, and legacy mappings
  */
-export interface EntitySchemaDefinition<TForm extends Record<string, any>, TEntity = any> {
+export interface EntitySchemaDefinition<TForm extends Record<string, any>> {
   /** Fields that appear in forms (user-editable) */
   formFields: FormSchema<TForm>;
   /** Additional fields that exist in the entity but not in forms */
@@ -65,7 +65,7 @@ export interface ValidationResult {
 /**
  * Validate schema definition for common errors
  */
-export function validateSchema(definition: EntitySchemaDefinition<any, any>): ValidationResult {
+export function validateSchema(definition: EntitySchemaDefinition<any>): ValidationResult {
   const errors: string[] = [];
   
   // Check for duplicate field names across form and entity fields
@@ -87,7 +87,7 @@ export function validateSchema(definition: EntitySchemaDefinition<any, any>): Va
   });
   
   // Check required fields have defaults
-  Object.entries(definition.formFields).forEach(([name, fieldDef]) => {
+  Object.entries(definition.formFields).forEach(([name, fieldDef]: [string, any]) => {
     if (fieldDef.required && fieldDef.default === undefined) {
       errors.push(`Required field '${name}' must have a default value`);
     }
@@ -137,7 +137,7 @@ export type InferLegacyFields<TFields> = TFields extends Record<string, any>
 /**
  * Infer complete entity type from schema definition
  */
-export type InferEntityType<T extends EntitySchemaDefinition<any, any>> = 
+export type InferEntityType<T extends EntitySchemaDefinition<any>> = 
   InferFormType<T['formFields']> & 
   InferEntityFields<T['entityFields']> &
   InferLegacyFields<T['legacyFields']>;
@@ -146,7 +146,7 @@ export type InferEntityType<T extends EntitySchemaDefinition<any, any>> =
  * Define an entity schema with form fields, entity fields, and legacy mappings
  */
 export function defineEntitySchema<TForm extends Record<string, any>>(
-  definition: EntitySchemaDefinition<TForm, any>
+  definition: EntitySchemaDefinition<TForm>
 ) {
   // Validate schema
   const validation = validateSchema(definition);

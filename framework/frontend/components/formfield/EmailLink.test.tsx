@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import * as userEvent from '@testing-library/user-event';
 import { EmailLink } from './EmailLink';
 
 describe('EmailLink', () => {
@@ -134,8 +133,7 @@ describe('EmailLink', () => {
     fireEvent.doubleClick(link);
     
     const input = screen.getByRole('textbox') as HTMLInputElement;
-    await userEvent.clear(input);
-    await userEvent.type(input, 'newemail@example.com');
+    fireEvent.change(input, { target: { value: 'newemail@example.com' } });
     fireEvent.blur(input);
     
     expect(onChange).toHaveBeenCalledWith('newemail@example.com');
@@ -149,8 +147,7 @@ describe('EmailLink', () => {
     fireEvent.doubleClick(link);
     
     const input = screen.getByRole('textbox') as HTMLInputElement;
-    await userEvent.clear(input);
-    await userEvent.type(input, 'newemail@example.com');
+    fireEvent.change(input, { target: { value: 'newemail@example.com' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     
     expect(onChange).toHaveBeenCalledWith('newemail@example.com');
@@ -166,8 +163,7 @@ describe('EmailLink', () => {
     fireEvent.doubleClick(link);
     
     const input = screen.getByRole('textbox') as HTMLInputElement;
-    await userEvent.clear(input);
-    await userEvent.type(input, 'newemail@example.com');
+    fireEvent.change(input, { target: { value: 'newemail@example.com' } });
     fireEvent.keyDown(input, { key: 'Escape' });
     
     expect(onChange).not.toHaveBeenCalled();

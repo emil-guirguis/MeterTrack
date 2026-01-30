@@ -74,12 +74,10 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
   onSaveError,
 }: EntityManagementPageProps<TEntity, TStore>): ReactElement {
   const store = useStore();
-  const [selectedEntity, setSelectedEntity] = useState<TEntity | null>(null);
   const [editingEntity, setEditingEntity] = useState<TEntity | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  const handleSelect = (entity: TEntity) => {
-    setSelectedEntity(entity);
+  const handleSelect = (_entity: TEntity) => {
     setEditingEntity(null);
     setShowForm(false);
   };
@@ -87,7 +85,6 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
   const handleEdit = (entity: TEntity) => {
     setEditingEntity(entity);
     setShowForm(true);
-    setSelectedEntity(null);
   };
 
   const handleCreate = () => {
@@ -143,10 +140,6 @@ export function EntityManagementPage<TEntity extends { id?: string | number }, T
 
   // Use default components if not provided
   const Layout = LayoutComponent || DefaultLayout;
-
-  const modalTitle = editingEntity 
-    ? `Edit ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`
-    : `Create New ${entityName.charAt(0).toUpperCase() + entityName.slice(1)}`;
 
   // Create dynamic prop names based on entity name
   const capitalizedEntity = entityName.charAt(0).toUpperCase() + entityName.slice(1);

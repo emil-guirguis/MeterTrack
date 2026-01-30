@@ -200,4 +200,6 @@ export function getCache(): Cache {
 export function resetCache(): void {
   if (cacheInstance) {
     cacheInstance.destroy();
-    cacheInstance = 
+    cacheInstance = null;
+  }
+}

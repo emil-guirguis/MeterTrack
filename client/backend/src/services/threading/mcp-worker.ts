@@ -3,16 +3,13 @@ import { WorkerMessage, WorkerResponse } from './types.js';
 import { createWorkerLogger } from './worker-logger.js';
 import winston from 'winston';
 
-// Import MCP server components (we'll need to copy/adapt these)
-import { ModbusMCPServerWorker } from './ModbusMCPServerWorker.js';
-
 /**
  * MCP Worker Thread Entry Point
  * This file runs in the worker thread and handles communication with the main thread
  */
 class MCPWorkerThread {
   private logger: winston.Logger;
-  private mcpServer: ModbusMCPServerWorker | null = null;
+  private mcpServer: any = null;
   private messagePort: MessagePort | null = null;
   private isShuttingDown = false;
 
@@ -120,15 +117,12 @@ class MCPWorkerThread {
         };
       }
 
-      // Create and start MCP server
-      this.mcpServer = new ModbusMCPServerWorker(message.payload?.config || workerData?.config);
-      await this.mcpServer.start();
-
-      this.logger.info('MCP Server started in worker thread');
+      // MCP Server instantiation removed (Modbus protocol removed)
+      this.logger.info('MCP Server start requested but Modbus protocol has been removed');
 
       return {
-        type: 'success',
-        payload: { message: 'MCP Server started successfully' },
+        type: 'error',
+        error: 'MCP Server start not available (Modbus protocol removed)',
         requestId: message.requestId
       };
     } catch (error) {
@@ -149,7 +143,7 @@ class MCPWorkerThread {
       this.isShuttingDown = true;
 
       if (this.mcpServer) {
-        await this.mcpServer.shutdown();
+        // MCP Server shutdown removed (Modbus protocol removed)
         this.mcpServer = null;
         this.logger.info('MCP Server stopped in worker thread');
       }

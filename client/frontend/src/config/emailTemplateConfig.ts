@@ -1,6 +1,6 @@
 import React from 'react';
 import type { EmailTemplate } from '../types/entities';
-import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '../types/list';
+import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
 import type { ColumnDefinition } from '../types/ui';
 import { renderTwoLineCell, renderStatusBadge, renderDateCell } from '../utils/renderHelpers';
 
@@ -87,19 +87,19 @@ export const emailTemplateFilters: FilterDefinition[] = [
 export const emailTemplateStats: StatDefinition<EmailTemplate>[] = [
   {
     label: 'Active Templates',
-    value: (items) => Array.isArray(items) ? items.filter(t => t.status === 'active').length : 0,
+    value: (items: EmailTemplate[]) => Array.isArray(items) ? items.filter(t => t.status === 'active').length : 0,
   },
   {
     label: 'Inactive Templates',
-    value: (items) => Array.isArray(items) ? items.filter(t => t.status === 'inactive').length : 0,
+    value: (items: EmailTemplate[]) => Array.isArray(items) ? items.filter(t => t.status === 'inactive').length : 0,
   },
   {
     label: 'Draft Templates',
-    value: (items) => Array.isArray(items) ? items.filter(t => t.status === 'draft').length : 0,
+    value: (items: EmailTemplate[]) => Array.isArray(items) ? items.filter(t => t.status === 'draft').length : 0,
   },
   {
     label: 'Total Templates',
-    value: (items) => Array.isArray(items) ? items.length : 0,
+    value: (items: EmailTemplate[]) => Array.isArray(items) ? items.length : 0,
   },
 ];
 
@@ -112,8 +112,8 @@ export const emailTemplateBulkActions: BulkActionConfig<EmailTemplate>[] = [
     color: 'success',
     confirm: true,
     confirmMessage: 'Are you sure you want to activate the selected templates?',
-    action: async (items, store) => {
-      const templateIds = items.map(t => t.id);
+    action: async (items: EmailTemplate[], store: any) => {
+      const templateIds = items.map((t: EmailTemplate) => t.id);
       await store.bulkUpdateStatus(templateIds, 'active');
     },
   },
@@ -124,8 +124,8 @@ export const emailTemplateBulkActions: BulkActionConfig<EmailTemplate>[] = [
     color: 'warning',
     confirm: true,
     confirmMessage: 'Are you sure you want to deactivate the selected templates?',
-    action: async (items, store) => {
-      const templateIds = items.map(t => t.id);
+    action: async (items: EmailTemplate[], store: any) => {
+      const templateIds = items.map((t: EmailTemplate) => t.id);
       await store.bulkUpdateStatus(templateIds, 'inactive');
     },
   },
@@ -136,8 +136,8 @@ export const emailTemplateBulkActions: BulkActionConfig<EmailTemplate>[] = [
     color: 'secondary',
     confirm: true,
     confirmMessage: 'Are you sure you want to set the selected templates as draft?',
-    action: async (items, store) => {
-      const templateIds = items.map(t => t.id);
+    action: async (items: EmailTemplate[], store: any) => {
+      const templateIds = items.map((t: EmailTemplate) => t.id);
       await store.bulkUpdateStatus(templateIds, 'draft');
     },
   },
@@ -145,9 +145,9 @@ export const emailTemplateBulkActions: BulkActionConfig<EmailTemplate>[] = [
 
 // Email Template Export Configuration
 export const emailTemplateExportConfig: ExportConfig<EmailTemplate> = {
-  filename: (date) => `email-templates-export-${date}.csv`,
+  filename: (date: string) => `email-templates-export-${date}.csv`,
   headers: ['Name', 'Subject', 'Category', 'Status', 'Usage Count', 'Last Used', 'Created', 'Updated'],
-  mapRow: (template) => [
+  mapRow: (template: EmailTemplate) => [
     template.name,
     template.subject,
     template.category,

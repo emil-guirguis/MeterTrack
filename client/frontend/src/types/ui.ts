@@ -509,3 +509,31 @@ export interface BaseComponentProps {
 export interface ComponentProps extends BaseComponentProps, A11yProps {
   children?: ReactNode;
 }
+
+// Breadcrumb Component Types
+export interface BreadcrumbItem {
+  label: string;
+  path?: string;
+  onClick?: () => void;
+  active?: boolean;
+}
+
+// Grid and Layout Types
+export interface GridPosition {
+  row: number;
+  column: number;
+  rowSpan?: number;
+  columnSpan?: number;
+}
+
+export interface LayoutItem {
+  id: string;
+  position: GridPosition;
+  size?: {
+    width?: string | number;
+    height?: string | number;
+  };
+  content: ReactNode;
+  resizable?: boolean;
+  draggable?: boolean;
+}

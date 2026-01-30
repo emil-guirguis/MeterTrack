@@ -419,7 +419,6 @@ export function createDeviceFilters(config?: {
   if (config?.includeType) {
     filters.push(
       createSelectFilter('type', 'Type', config.typeOptions || [
-        { label: 'Modbus', value: 'modbus' },
         { label: 'BACnet', value: 'bacnet' },
       ])
     );

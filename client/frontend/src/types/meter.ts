@@ -7,7 +7,6 @@ export interface Meter {
   ip: string;
   serial_number: string;
   portNumber: number;
-  slaveId?: number;
   location?: string;
   description?: string;
   type?: 'electric' | 'gas' | 'water' | 'steam' | 'other';

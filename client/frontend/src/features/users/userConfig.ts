@@ -12,6 +12,7 @@
 import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, BulkActionConfig, ExportConfig } from '@framework/components/list/types/list';
+import type { User } from '../../types/auth';
 import {
   createTwoLineColumn,
   createExportAction,
@@ -22,15 +23,9 @@ import {
 // ============================================================================
 
 /**
- * User TypeScript type - matches UserWithSchema
+ * User TypeScript type - imported from auth.ts
+ * Matches UserWithSchema from backend schema
  */
-export type User = {
-  id: number;
-  email: string;
-  name: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
-  active: boolean;
-};
 
 export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
 

@@ -1,0 +1,21 @@
+.reports-manager {
+  width: 100%;
+  padding: 0;
+}
+
+.reports-manager .MuiTableContainer-root {
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.reports-manager .MuiTableHead-root {
+  background-color: #f5f5f5;
+}
+
+.reports-manager .MuiTableRow-root:hover {
+  background-color: #fafafa;
+}
+
+.reports-manager .MuiChip-root {
+  cursor: pointer;
+}

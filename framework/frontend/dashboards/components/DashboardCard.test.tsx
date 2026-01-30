@@ -49,7 +49,7 @@ describe('DashboardCard', () => {
     it('does not make any API calls', () => {
       // This test verifies that the component is isolated and doesn't make API calls
       // If it did, we would see network requests or service calls
-      const fetchSpy = vi.spyOn(global, 'fetch');
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
       render(
         <DashboardCard

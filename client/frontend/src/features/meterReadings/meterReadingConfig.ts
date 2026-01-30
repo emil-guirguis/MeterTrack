@@ -11,9 +11,7 @@
 import React from 'react';
 import type { ColumnDefinition } from '../../types/ui';
 import type { FilterDefinition, StatDefinition, ExportConfig } from '@framework/components/list/types/list';
-import {
-  createDateColumn,
-} from '../../config/listHelpers';
+import { registerMappingService } from '../../services/registerMappingService';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -87,6 +85,19 @@ export interface MeterReading {
 // ============================================================================
 
 /**
+ * Helper function to create column label with register name and unit
+ */
+function getColumnLabel(fieldName: string, defaultLabel: string): string {
+  const registerName = registerMappingService.getRegisterName(fieldName);
+  const unit = registerMappingService.getRegisterUnit(fieldName);
+  
+  if (unit) {
+    return `${registerName} (${unit})`;
+  }
+  return registerName || defaultLabel;
+}
+
+/**
  * Column definitions for meter reading list
  */
 export const meterReadingColumns: ColumnDefinition<MeterReading>[] = [
@@ -105,7 +116,7 @@ export const meterReadingColumns: ColumnDefinition<MeterReading>[] = [
   
   {
     key: 'active_energy' as keyof MeterReading,
-    label: 'Active Energy (kWh)',
+    label: getColumnLabel('active_energy', 'Active Energy (kWh)'),
     sortable: true,
     responsive: 'hide-mobile',
     render: (value) => {
@@ -117,7 +128,7 @@ export const meterReadingColumns: ColumnDefinition<MeterReading>[] = [
   
   {
     key: 'power' as keyof MeterReading,
-    label: 'Power (kW)',
+    label: getColumnLabel('power', 'Power (kW)'),
     sortable: true,
     responsive: 'hide-mobile',
     render: (value) => {
@@ -129,7 +140,7 @@ export const meterReadingColumns: ColumnDefinition<MeterReading>[] = [
   
   {
     key: 'voltage_p_n' as keyof MeterReading,
-    label: 'Voltage (V)',
+    label: getColumnLabel('voltage_p_n', 'Voltage (V)'),
     sortable: true,
     responsive: 'hide-tablet',
     render: (value) => {
@@ -141,7 +152,7 @@ export const meterReadingColumns: ColumnDefinition<MeterReading>[] = [
   
   {
     key: 'current' as keyof MeterReading,
-    label: 'Current (A)',
+    label: getColumnLabel('current', 'Current (A)'),
     sortable: true,
     responsive: 'hide-tablet',
     render: (value) => {
@@ -173,7 +184,7 @@ export const meterReadingStats: StatDefinition<MeterReading>[] = [
     value: (items) => Array.isArray(items) ? items.length : 0,
   },
   {
-    label: 'Total Active Energy (kWh)',
+    label: `Total ${registerMappingService.getRegisterName('active_energy')}`,
     value: (items) => {
       if (!Array.isArray(items)) return '0.00';
       const total = items.reduce((sum, item) => sum + (item.active_energy || 0), 0);
@@ -181,7 +192,7 @@ export const meterReadingStats: StatDefinition<MeterReading>[] = [
     },
   },
   {
-    label: 'Avg Power (kW)',
+    label: `Avg ${registerMappingService.getRegisterName('power')}`,
     value: (items) => {
       if (!Array.isArray(items)) return '0.00';
       const validItems = items.filter(item => item.power !== null && item.power !== undefined);
@@ -191,7 +202,7 @@ export const meterReadingStats: StatDefinition<MeterReading>[] = [
     },
   },
   {
-    label: 'Avg Power Factor',
+    label: `Avg ${registerMappingService.getRegisterName('power_factor')}`,
     value: (items) => {
       if (!Array.isArray(items)) return '0.00';
       const validItems = items.filter(item => item.power_factor !== null && item.power_factor !== undefined);
@@ -210,12 +221,12 @@ export const meterReadingExportConfig: ExportConfig<MeterReading> = {
   headers: [
     'Meter ID',
     'Reading Time',
-    'Active Energy (kWh)',
-    'Power (kW)',
-    'Voltage (V)',
-    'Current (A)',
-    'Power Factor',
-    'Frequency (Hz)',
+    registerMappingService.getRegisterName('active_energy'),
+    registerMappingService.getRegisterName('power'),
+    registerMappingService.getRegisterName('voltage_p_n'),
+    registerMappingService.getRegisterName('current'),
+    registerMappingService.getRegisterName('power_factor'),
+    registerMappingService.getRegisterName('frequency'),
     'Sync Status',
   ],
   mapRow: (reading: MeterReading) => [

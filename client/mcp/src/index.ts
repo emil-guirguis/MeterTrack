@@ -10,12 +10,13 @@ import { db } from './database/client.js';
 import { logger } from './utils/logger.js';
 import { queryMeters } from './tools/query-meters.js';
 import { queryReadings } from './tools/query-readings.js';
-import { getSiteStatus } from './tools/get-site-status.js';
+import { getTenantStatus } from './tools/get-site-status.js';
 import { generateReport } from './tools/generate-report.js';
 import { checkMeterHealth } from './tools/check-meter-health.js';
 import { createNotification } from './tools/create-notification.js';
 import { getNotifications } from './tools/get-notifications.js';
 import { deleteNotification } from './tools/delete-notification.js';
+import { SchedulerService } from './services/scheduler-service.js';
 
 const server = new Server(
   {
@@ -35,42 +36,38 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'query_meters',
-        description: 'Query meter information across all sites. Returns meters with their site information, BACnet configuration, and last reading timestamp.',
+        description: 'Query meter information. Returns meters with their tenant information and last reading timestamp.',
         inputSchema: {
           type: 'object',
           properties: {
-            site_id: {
+            tenant_id: {
               type: 'number',
-              description: 'Optional: Filter by specific site ID',
+              description: 'Optional: Filter by specific tenant ID',
             },
-            external_id: {
-              type: 'string',
-              description: 'Optional: Filter by meter external ID (e.g., meter-001)',
+            meter_id: {
+              type: 'number',
+              description: 'Optional: Filter by meter ID',
             },
             is_active: {
               type: 'boolean',
-              description: 'Optional: Filter by active status (default: true)',
+              description: 'Optional: Filter by active status',
             },
           },
         },
       },
       {
         name: 'query_readings',
-        description: 'Query meter readings with filters. Returns readings with meter and site information.',
+        description: 'Query meter readings with filters. Returns readings with meter and tenant information.',
         inputSchema: {
           type: 'object',
           properties: {
-            site_id: {
+            tenant_id: {
               type: 'number',
-              description: 'Optional: Filter by site ID',
+              description: 'Optional: Filter by tenant ID',
             },
             meter_id: {
               type: 'number',
               description: 'Optional: Filter by meter ID',
-            },
-            external_id: {
-              type: 'string',
-              description: 'Optional: Filter by meter external ID',
             },
             data_point: {
               type: 'string',
@@ -92,25 +89,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: 'get_site_status',
-        description: 'Get connectivity status of Sync sites. Returns site information including last heartbeat and active status.',
+        name: 'get_tenant_status',
+        description: 'Get status of tenants. Returns tenant information including active status and meter count.',
         inputSchema: {
           type: 'object',
           properties: {
-            site_id: {
+            tenant_id: {
               type: 'number',
-              description: 'Optional: Get status for specific site ID',
+              description: 'Optional: Get status for specific tenant ID',
             },
             include_inactive: {
               type: 'boolean',
-              description: 'Optional: Include inactive sites (default: false)',
+              description: 'Optional: Include inactive tenants (default: false)',
             },
           },
         },
       },
       {
         name: 'generate_report',
-        description: 'Generate multi-site reports with aggregated data. Returns summary statistics and detailed readings.',
+        description: 'Generate multi-tenant reports with aggregated data. Returns summary statistics and detailed readings.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -119,10 +116,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               enum: ['summary', 'detailed', 'comparison'],
               description: 'Type of report to generate',
             },
-            site_ids: {
+            tenant_ids: {
               type: 'array',
               items: { type: 'number' },
-              description: 'Optional: Array of site IDs to include (default: all sites)',
+              description: 'Optional: Array of tenant IDs to include (default: all tenants)',
             },
             start_date: {
               type: 'string',
@@ -226,8 +223,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'query_readings':
         return await queryReadings(args || {});
       
-      case 'get_site_status':
-        return await getSiteStatus(args || {});
+      case 'get_tenant_status':
+        return await getTenantStatus(args || {});
       
       case 'generate_report':
         if (!args || !args.report_type || !args.start_date || !args.end_date) {
@@ -286,21 +283,56 @@ async function main() {
     process.exit(1);
   }
 
+  // Initialize scheduler service
+  const scheduler = new SchedulerService();
+  try {
+    await scheduler.initialize();
+    logger.info('Scheduler service initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize scheduler service', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Continue even if scheduler fails to initialize
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
   logger.info('Client MCP Server started successfully');
+
+  // Store scheduler reference for shutdown
+  (global as any).scheduler = scheduler;
 }
 
 // Handle shutdown
 process.on('SIGINT', async () => {
   logger.info('Shutting down Client MCP Server...');
+  const scheduler = (global as any).scheduler;
+  if (scheduler) {
+    try {
+      await scheduler.shutdown();
+    } catch (error) {
+      logger.error('Error shutting down scheduler', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   await db.close();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   logger.info('Shutting down Client MCP Server...');
+  const scheduler = (global as any).scheduler;
+  if (scheduler) {
+    try {
+      await scheduler.shutdown();
+    } catch (error) {
+      logger.error('Error shutting down scheduler', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   await db.close();
   process.exit(0);
 });

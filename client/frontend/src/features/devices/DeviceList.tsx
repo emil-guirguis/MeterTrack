@@ -6,7 +6,6 @@ import { useBaseList } from '@framework/components/list/hooks';
 import { useSchema } from '@framework/components/form/utils/schemaLoader';
 import { generateColumnsFromSchema, generateFiltersFromSchema } from '@framework/components/list/utils/schemaColumnGenerator';
 import type { Device } from './deviceConfig';
-import { Permission } from '../../types/auth';
 import { deviceStats, deviceExportConfig } from './deviceConfig';
 import './DeviceList.css';
 
@@ -20,7 +19,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   onDeviceView,
 }) => {
   const auth = useAuth();
-  const devices = useDevicesEnhanced();
   const { schema } = useSchema('device');
 
   // Dynamically generate columns from schema based on showOn: ['list']
@@ -56,9 +54,9 @@ export const DeviceList: React.FC<DeviceListProps> = ({
       allowStats: true,        // Keep stats for overview
     },
     permissions: {
-      create: false,  // No create permission
-      update: false,  // No update permission
-      delete: false,  // No delete permission
+      create: '',  // No create permission
+      update: '',  // No update permission
+      delete: '',  // No delete permission
     },
     columns,
     filters,

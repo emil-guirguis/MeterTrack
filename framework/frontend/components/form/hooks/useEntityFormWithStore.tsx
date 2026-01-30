@@ -49,7 +49,6 @@
 import { useCallback, useState } from 'react';
 import { useEntityForm } from './useEntityForm';
 import type { 
-  EntityStore,
   EntityFormWithStoreConfig,
   EntityFormWithStoreReturn,
 } from '../types/form';
@@ -144,7 +143,7 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
       if (mode === 'update' && entity?.id) {
         // Update existing entity
         console.log('[STORE SUBMIT] Updating entity with ID:', entity.id);
-        const updateMethod = store[updateMethodName] || store.update;
+        const updateMethod = (store as any)[updateMethodName] || (store as any).update;
         if (!updateMethod) {
           throw new Error(`Store does not have ${updateMethodName} or update method`);
         }
@@ -154,7 +153,7 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
       } else {
         // Create new entity
         console.log('[STORE SUBMIT] Creating new entity');
-        const createMethod = store[createMethodName] || store.create;
+        const createMethod = (store as any)[createMethodName] || (store as any).create;
         if (!createMethod) {
           throw new Error(`Store does not have ${createMethodName} or create method`);
         }
@@ -168,8 +167,8 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
         console.warn(
           '[useEntityFormWithStore] Invalid saved entity (missing or no id), falling back to reload'
         );
-        if (store.fetchItems) {
-          await store.fetchItems();
+        if ((store as any).fetchItems) {
+          await (store as any).fetchItems();
         }
       } else {
         // Update list based on strategy
@@ -177,8 +176,8 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
           try {
             // For create: createItem already added to list, no need for addItemToList
             // For update: use updateItemInList to update existing item
-            if (mode === 'update' && store.updateItemInList) {
-              store.updateItemInList(savedEntity);
+            if (mode === 'update' && (store as any).updateItemInList) {
+              (store as any).updateItemInList(savedEntity);
             } else if (mode === 'create') {
               // createItem already handled adding to list, nothing more needed
               console.log('[useEntityFormWithStore] Create optimistic update already handled by createItem');
@@ -187,8 +186,8 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
               console.warn(
                 `[useEntityFormWithStore] Store missing optimistic update method for ${mode}, falling back to reload`
               );
-              if (store.fetchItems) {
-                await store.fetchItems();
+              if ((store as any).fetchItems) {
+                await (store as any).fetchItems();
               }
             }
           } catch (optimisticError) {
@@ -197,12 +196,12 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
               '[useEntityFormWithStore] Optimistic update failed, falling back to reload:',
               optimisticError
             );
-            if (store.fetchItems) {
-              await store.fetchItems();
+            if ((store as any).fetchItems) {
+              await (store as any).fetchItems();
             }
           }
-        } else if (effectiveUpdateStrategy === 'reload' && store.fetchItems) {
-          await store.fetchItems();
+        } else if (effectiveUpdateStrategy === 'reload' && (store as any).fetchItems) {
+          await (store as any).fetchItems();
         }
       }
       
@@ -215,7 +214,6 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
       const err = error instanceof Error ? error : new Error(String(error));
       
       // Extract API error details if available
-      let errorMessage = err.message;
       let apiErrors: any = null;
       
       if (err instanceof Error && 'response' in err) {
@@ -223,9 +221,6 @@ export function useEntityFormWithStore<TEntity extends { id?: string | number },
         if (response?.data?.errors) {
           apiErrors = response.data.errors;
           console.log('[STORE SUBMIT] API validation errors:', apiErrors);
-        }
-        if (response?.data?.message) {
-          errorMessage = response.data.message;
         }
       }
       

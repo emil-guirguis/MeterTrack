@@ -9,6 +9,7 @@ interface QueryReadingsArgs {
 }
 
 interface ReadingRow {
+  reading_id: string;
   tenant_id: number;
   timestamp: Date;
   data_point: string;
@@ -16,10 +17,7 @@ interface ReadingRow {
   unit: string | null;
   reading_created_at: Date;
   meter_id: number;
-  meter_external_id: string;
   meter_name: string;
-  site_id: number;
-  site_name: string;
 }
 
 export async function queryReadings(args: QueryReadingsArgs) {
@@ -36,6 +34,10 @@ export async function queryReadings(args: QueryReadingsArgs) {
       params.push(args.meter_id);
     }
 
+    if (args.start_date !== undefined) {
+      conditions.push(`mr.timestamp >= $${paramIndex++}`);
+      params.push(args.start_date);
+    }
 
     if (args.end_date !== undefined) {
       conditions.push(`mr.timestamp <= $${paramIndex++}`);
@@ -54,13 +56,10 @@ export async function queryReadings(args: QueryReadingsArgs) {
         mr.unit,
         mr.created_at as reading_created_at,
         m.id as meter_id,
-        m.external_id as meter_external_id,
         m.name as meter_name,
-        s.id as site_id,
-        s.name as site_name
+        m.tenant_id
       FROM meter_reading mr
-      INNER JOIN meters m ON mr.meter_id = m.id
-      INNER JOIN sites s ON m.site_id = s.id
+      INNER JOIN meter m ON mr.meter_id = m.id
       ${whereClause}
       ORDER BY mr.timestamp DESC
       LIMIT $${paramIndex}
@@ -72,6 +71,7 @@ export async function queryReadings(args: QueryReadingsArgs) {
 
     const readings = result.rows.map(row => ({
       reading: {
+        id: row.reading_id,
         timestamp: row.timestamp,
         data_point: row.data_point,
         value: row.value,
@@ -80,13 +80,9 @@ export async function queryReadings(args: QueryReadingsArgs) {
       },
       meter: {
         id: row.meter_id,
-        external_id: row.meter_external_id,
         name: row.meter_name,
       },
-      site: {
-        id: row.site_id,
-        name: row.site_name,
-      },
+      tenant_id: row.tenant_id,
     }));
 
     logger.info('query_readings completed', { count: readings.length });

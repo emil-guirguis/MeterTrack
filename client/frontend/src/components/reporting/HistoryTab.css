@@ -1,0 +1,17 @@
+.history-tab {
+  width: 100%;
+  padding: 0;
+}
+
+.history-tab .MuiTableContainer-root {
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.history-tab .MuiTableHead-root {
+  background-color: #f5f5f5;
+}
+
+.history-tab .MuiTableRow-root:hover {
+  background-color: #fafafa;
+}

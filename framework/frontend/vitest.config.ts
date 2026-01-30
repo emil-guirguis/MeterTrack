@@ -1,12 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@framework': path.resolve(__dirname, '.'),
+      '@framework': new URL('.', import.meta.url).pathname,
     },
   },
   test: {

@@ -173,121 +173,12 @@ class ThreadingService extends EventEmitter {
    * Handle collectMeterData message
    */
   async handleCollectMeterData(options) {
-    const startTime = Date.now();
-    const { payload } = options;
-    const { meter, config, registers } = payload;
-    
-    this.logger.info('Collecting meter data', { 
-      meter_id: meter.meter_id, 
-      ip: config.ip, 
-      port: config.port 
-    });
-    
-    try {
-      // Use direct Modbus communication with jsmodbus library
-      const jsmodbus = require('jsmodbus');
-      const { Socket } = require('net');
-      
-      this.logger.info('Connecting to Modbus device', { 
-        ip: config.ip, 
-        port: config.port, 
-        slaveId: config.slaveId 
-      });
-      
-      // Create socket and Modbus client
-      const socket = new Socket();
-      const client = new jsmodbus.client.TCP(socket, config.slaveId, 5000); // 5 second timeout
-      
-      // Connect to the Modbus device
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error(`Connection timeout to ${config.ip}:${config.port}`));
-        }, 10000); // 10 second timeout
-        
-        socket.connect(config.port, config.ip);
-        socket.once('connect', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
-        
-        socket.once('error', (error) => {
-          clearTimeout(timeout);
-          reject(new Error(`Connection failed: ${error.message}`));
-        });
-      });
-      
-      this.logger.info('Connected to Modbus device, reading registers', { 
-        meter_id: meter.meter_id 
-      });
-      
-      // Read meter data from configured registers
-      const readings = {};
-      
-      for (const [key, regConfig] of Object.entries(registers)) {
-        try {
-          this.logger.debug(`Reading register ${key}`, { 
-            address: regConfig.address, 
-            count: regConfig.count 
-          });
-          
-          const result = await client.readHoldingRegisters(regConfig.address, regConfig.count);
-          const rawData = result.response.body.values;
-          const scale = regConfig.scale || 1;
-          
-          if (regConfig.count === 1) {
-            readings[key] = rawData[0] / scale;
-          } else if (regConfig.count === 2) {
-            // Handle 32-bit values
-            const hi = rawData[0];
-            const lo = rawData[1];
-            const combined = (hi << 16) + lo;
-            readings[key] = combined / scale;
-          } else {
-            readings[key] = rawData.map(val => val / scale);
-          }
-          
-          this.logger.debug(`Register ${key} read successfully`, { 
-            raw: rawData, 
-            scaled: readings[key] 
-          });
-          
-        } catch (regError) {
-          this.logger.warn(`Failed to read register ${key}`, { 
-            error: regError.message 
-          });
-          readings[key] = null;
-        }
-      }
-      
-      // Close the connection
-      socket.end();
-      socket.destroy();
-      
-      this.logger.info('Real meter data collected successfully', { 
-        meterid: meter.meterid,
-        dataPoints: Object.keys(readings).length,
-        nonNullReadings: Object.values(readings).filter(v => v !== null).length
-      });
-      
-      return {
-        success: true,
-        data: readings,
-        timestamp: new Date(),
-        processingTime: Date.now() - startTime
-      };
-      
-    } catch (error) {
-      this.logger.error('Failed to collect meter data', { 
-        meterid: meter.meterid,
-        error: error.message 
-      });
-      
-      return {
-        success: false,
-        error: error.message,
-        processingTime: Date.now() - startTime
-      };
-    }
+    // Modbus protocol has been removed
+    return {
+      success: false,
+      error: 'Meter data collection not available (Modbus protocol removed)',
+      processingTime: 0
+    };
   }
 
 

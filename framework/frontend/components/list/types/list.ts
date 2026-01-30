@@ -1,8 +1,8 @@
 // List Component Framework Type Definitions
 
 import type { ReactNode } from 'react';
-import type { Permission } from '../../../shared/types/auth';
-import type { ColumnDefinition, PaginationConfig, BulkAction, FilterOption } from './ui';
+import type { Permission } from '../types/ui';
+import type { ColumnDefinition, PaginationConfig, BulkAction, FilterOption } from '../types/ui';
 
 /**
  * Feature flags control UI visibility and functionality at the component level.

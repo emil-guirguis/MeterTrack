@@ -137,7 +137,7 @@ export function useTemplate(config: UseTemplateConfig = {}): UseTemplateReturn {
   const [previewData, setPreviewData] = useState<TemplatePreviewResponse | null>(null);
 
   // Auto-validation timer
-  const [validationTimer, setValidationTimer] = useState<NodeJS.Timeout | null>(null);
+  const [validationTimer, setValidationTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Check if template is modified
   const isModified = JSON.stringify(template) !== JSON.stringify(originalTemplate);

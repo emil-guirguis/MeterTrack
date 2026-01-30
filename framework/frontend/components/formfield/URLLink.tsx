@@ -38,11 +38,6 @@ export const URLLink: React.FC<URLLinkProps> = ({
     window.open(urlWithProtocol, '_blank');
   };
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsEditing(true);
-  };
-
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsEditing(false);
     onBlur?.(e);

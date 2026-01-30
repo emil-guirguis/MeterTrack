@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { defineEntitySchema, validateSchema, type InferEntityType } from './entitySchema';
+import { defineEntitySchema, validateSchema } from './entitySchema';
 import { field } from './formSchema';
 
 describe('defineEntitySchema', () => {

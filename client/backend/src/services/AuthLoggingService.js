@@ -52,7 +52,8 @@ class AuthLoggingService {
       console.log(`[AUTH LOG] ${eventType} - ${status} - User: ${userId || 'unknown'}`);
       return result.rows[0];
     } catch (error) {
-      console.error('[AUTH LOG] Error logging event:', error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[AUTH LOG] Error logging event:', errorMessage);
       // Don't throw - logging failures shouldn't break authentication
       return null;
     }

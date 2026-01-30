@@ -3,15 +3,14 @@ import { logger } from '../utils/logger.js';
 
 interface GenerateReportArgs {
   report_type: 'summary' | 'detailed' | 'comparison';
-  site_ids?: number[];
+  tenant_ids?: number[];
   start_date: string;
   end_date: string;
   data_point?: string;
 }
 
 interface SummaryRow {
-  site_id: number;
-  site_name: string;
+  tenant_id: number;
   meter_count: number;
   reading_count: number;
   data_point: string;
@@ -23,11 +22,9 @@ interface SummaryRow {
 }
 
 interface DetailedRow {
-  site_id: number;
-  site_name: string;
+  tenant_id: number;
   meter_id: number;
   meter_name: string;
-  meter_external_id: string;
   timestamp: Date;
   data_point: string;
   value: number;
@@ -64,9 +61,9 @@ async function generateSummaryReport(args: GenerateReportArgs) {
   const params: any[] = [args.start_date, args.end_date];
   let paramIndex = 3;
 
-  if (args.site_ids && args.site_ids.length > 0) {
-    conditions.push(`s.id = ANY($${paramIndex++})`);
-    params.push(args.site_ids);
+  if (args.tenant_ids && args.tenant_ids.length > 0) {
+    conditions.push(`m.tenant_id = ANY($${paramIndex++})`);
+    params.push(args.tenant_ids);
   }
 
   if (args.data_point) {
@@ -76,9 +73,8 @@ async function generateSummaryReport(args: GenerateReportArgs) {
 
   const query = `
     SELECT 
-      s.tenant_id,
-      s.name as site_name,
-      COUNT(DISTINCT m.id) as meter_count,
+      m.tenant_id,
+      COUNT(DISTINCT m.meter_id) as meter_count,
       COUNT(mr.id) as reading_count,
       mr.data_point,
       MIN(mr.value) as min_value,
@@ -86,12 +82,11 @@ async function generateSummaryReport(args: GenerateReportArgs) {
       AVG(mr.value) as avg_value,
       SUM(mr.value) as total_value,
       mr.unit
-    FROM tenant s
-       INNER JOIN meters m ON s.tenant_id = m.site_id
-    INNER JOIN meter_reading mr ON m.id = mr.meter_id
+    FROM meter m
+    INNER JOIN meter_reading mr ON m.meter_id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
-    GROUP BY t.tenant_id, s.name, mr.data_point, mr.unit
-    ORDER BY s.name, mr.data_point
+    GROUP BY m.tenant_id, mr.data_point, mr.unit
+    ORDER BY m.tenant_id, mr.data_point
   `;
 
   const result = await db.query<SummaryRow>(query, params);
@@ -102,12 +97,11 @@ async function generateSummaryReport(args: GenerateReportArgs) {
       start_date: args.start_date,
       end_date: args.end_date,
     },
-    total_sites: new Set(result.rows.map(r => r.site_id)).size,
+    total_tenants: new Set(result.rows.map(r => r.tenant_id)).size,
     total_meters: result.rows.reduce((sum, r) => sum + parseInt(r.meter_count as any, 10), 0),
     total_readings: result.rows.reduce((sum, r) => sum + parseInt(r.reading_count as any, 10), 0),
-    sites: result.rows.map(row => ({
-      site_id: row.site_id,
-      site_name: row.site_name,
+    tenants: result.rows.map(row => ({
+      tenant_id: row.tenant_id,
       meter_count: parseInt(row.meter_count as any, 10),
       reading_count: parseInt(row.reading_count as any, 10),
       data_point: row.data_point,
@@ -122,7 +116,7 @@ async function generateSummaryReport(args: GenerateReportArgs) {
   };
 
   logger.info('generate_report (summary) completed', { 
-    sites: summary.total_sites,
+    tenants: summary.total_tenants,
     readings: summary.total_readings 
   });
 
@@ -147,9 +141,9 @@ async function generateDetailedReport(args: GenerateReportArgs) {
   const params: any[] = [args.start_date, args.end_date];
   let paramIndex = 3;
 
-  if (args.site_ids && args.site_ids.length > 0) {
-    conditions.push(`s.id = ANY($${paramIndex++})`);
-    params.push(args.site_ids);
+  if (args.tenant_ids && args.tenant_ids.length > 0) {
+    conditions.push(`m.tenant_id = ANY($${paramIndex++})`);
+    params.push(args.tenant_ids);
   }
 
   if (args.data_point) {
@@ -159,20 +153,17 @@ async function generateDetailedReport(args: GenerateReportArgs) {
 
   const query = `
     SELECT 
-      s.id as site_id,
-      s.name as site_name,
-      m.id as meter_id,
+      m.tenant_id,
+      m.meter_id,
       m.name as meter_name,
-      m.external_id as meter_external_id,
       mr.timestamp,
       mr.data_point,
       mr.value,
       mr.unit
-    FROM sites s
-    INNER JOIN meters m ON s.id = m.site_id
-    INNER JOIN meter_reading mr ON m.id = mr.meter_id
+    FROM meter m
+    INNER JOIN meter_reading mr ON m.meter_id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
-    ORDER BY s.name, m.name, mr.timestamp DESC
+    ORDER BY m.name, mr.timestamp DESC
     LIMIT 10000
   `;
 
@@ -186,14 +177,10 @@ async function generateDetailedReport(args: GenerateReportArgs) {
     },
     count: result.rows.length,
     readings: result.rows.map(row => ({
-      site: {
-        id: row.site_id,
-        name: row.site_name,
-      },
+      tenant_id: row.tenant_id,
       meter: {
         id: row.meter_id,
         name: row.meter_name,
-        external_id: row.meter_external_id,
       },
       timestamp: row.timestamp,
       data_point: row.data_point,
@@ -225,9 +212,9 @@ async function generateComparisonReport(args: GenerateReportArgs) {
   const params: any[] = [args.start_date, args.end_date];
   let paramIndex = 3;
 
-  if (args.site_ids && args.site_ids.length > 0) {
-    conditions.push(`s.id = ANY($${paramIndex++})`);
-    params.push(args.site_ids);
+  if (args.tenant_ids && args.tenant_ids.length > 0) {
+    conditions.push(`m.tenant_id = ANY($${paramIndex++})`);
+    params.push(args.tenant_ids);
   }
 
   if (args.data_point) {
@@ -237,8 +224,7 @@ async function generateComparisonReport(args: GenerateReportArgs) {
 
   const query = `
     SELECT 
-      s.id as site_id,
-      s.name as site_name,
+      m.tenant_id,
       mr.data_point,
       COUNT(mr.id) as reading_count,
       MIN(mr.value) as min_value,
@@ -246,12 +232,11 @@ async function generateComparisonReport(args: GenerateReportArgs) {
       AVG(mr.value) as avg_value,
       SUM(mr.value) as total_value,
       mr.unit
-    FROM tenant s
-    INNER JOIN meters m ON s.tenant_id = m.tenant_id
+    FROM meter m
     INNER JOIN meter_reading mr ON m.meter_id = mr.meter_id
     WHERE ${conditions.join(' AND ')}
-    GROUP BY s.tenant_id, s.name, mr.data_point, mr.unit
-    ORDER BY s.name, mr.data_point
+    GROUP BY m.tenant_id, mr.data_point, mr.unit
+    ORDER BY m.tenant_id, mr.data_point
   `;
 
   const result = await db.query<SummaryRow>(query, params);
@@ -263,8 +248,7 @@ async function generateComparisonReport(args: GenerateReportArgs) {
       byDataPoint[row.data_point] = [];
     }
     byDataPoint[row.data_point].push({
-      site_id: row.site_id,
-      site_name: row.site_name,
+      tenant_id: row.tenant_id,
       reading_count: parseInt(row.reading_count as any, 10),
       statistics: {
         min: parseFloat(row.min_value as any),
@@ -282,9 +266,9 @@ async function generateComparisonReport(args: GenerateReportArgs) {
       start_date: args.start_date,
       end_date: args.end_date,
     },
-    data_points: Object.entries(byDataPoint).map(([data_point, sites]) => ({
+    data_points: Object.entries(byDataPoint).map(([data_point, tenants]) => ({
       data_point,
-      sites,
+      tenants,
     })),
   };
 

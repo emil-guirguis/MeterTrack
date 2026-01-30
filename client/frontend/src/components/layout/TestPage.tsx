@@ -1,16 +1,17 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import AppLayout from './AppLayout';
+import AppLayoutWrapper from './AppLayoutWrapper';
+import './TestPage.css';
 
 const TestPage: React.FC = () => {
   return (
     <BrowserRouter>
-      <AppLayout>
-        <div style={{ padding: '20px' }}>
+      <AppLayoutWrapper>
+        <div className="test-page">
           <h1>Test Page</h1>
           <p>This is a test page to verify the responsive hamburger menu functionality.</p>
           
-          <div style={{ marginTop: '20px' }}>
+          <div className="test-page__section">
             <h2>Instructions:</h2>
             <ol>
               <li>Resize your browser window to tablet size (768px - 1023px) or mobile size (&lt; 768px)</li>
@@ -20,7 +21,7 @@ const TestPage: React.FC = () => {
             </ol>
           </div>
 
-          <div style={{ marginTop: '20px' }}>
+          <div className="test-page__section">
             <h2>Expected Behavior:</h2>
             <ul>
               <li><strong>Desktop (≥ 1024px):</strong> Traditional sidebar, no hamburger in header</li>
@@ -29,12 +30,12 @@ const TestPage: React.FC = () => {
             </ul>
           </div>
 
-          <div style={{ marginTop: '20px', padding: '15px', background: '#f0f0f0', borderRadius: '5px' }}>
+          <div className="test-page__info">
             <h3>Current Window Size: {window.innerWidth}px</h3>
             <p>Resize the window to test different breakpoints.</p>
           </div>
         </div>
-      </AppLayout>
+      </AppLayoutWrapper>
     </BrowserRouter>
   );
 };

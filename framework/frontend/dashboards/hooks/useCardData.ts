@@ -94,7 +94,7 @@ export function useCardData(config: UseCardDataConfig): CardDataState & CardData
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Refs for cleanup
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
   // Refresh function

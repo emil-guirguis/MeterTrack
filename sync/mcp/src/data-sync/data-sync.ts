@@ -386,7 +386,7 @@ export class SyncDatabase {
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [
-        reading.meter_external_id,
+        reading.meter_id,
         reading.timestamp,
         reading.data_point,
         reading.value,
@@ -414,7 +414,7 @@ export class SyncDatabase {
       //     `INSERT INTO meter_reading (meter_external_id, timestamp, data_point, value, unit)
       //      VALUES ($1, $2, $3, $4, $5)`,
       //     [
-      //       reading.meter_external_id,
+      //       reading.meter_id,
       //       reading.timestamp,
       //       reading.data_point,
       //       reading.value,

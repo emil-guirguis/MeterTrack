@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 
     // Transform response to include nested register object
     const data = registers.rows.map((row) => ({
-      id: row.id,
+      device_register_id: row.device_register_id,
       register_id: row.register_id,
       device_id: row.device_id,
       register: {

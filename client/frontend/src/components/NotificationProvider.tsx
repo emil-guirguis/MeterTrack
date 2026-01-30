@@ -10,7 +10,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { Snackbar, Alert } from '@mui/material';
-import { useNotification, type NotificationSeverity } from '../hooks/useNotification';
+import { useNotification } from '../hooks/useNotification';
 
 /**
  * Notification context type

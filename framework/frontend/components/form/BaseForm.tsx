@@ -806,7 +806,7 @@ export const BaseForm: React.FC<BaseFormProps> = ({
 
     // Assign section positioning classes
     const sectionNames = Object.keys(sectionsToUse);
-    sectionNames.forEach((sectionName, index) => {
+    sectionNames.forEach((sectionName) => {
       // Don't assign positioning classes - let the grid handle it
       sectionClasses[sectionName] = '';
     });

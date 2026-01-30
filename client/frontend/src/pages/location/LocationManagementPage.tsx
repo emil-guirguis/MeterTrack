@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { AppLayoutWrapper } from '../../components/layout';
 import { LocationList } from '../../features/locations/LocationList';
 import { LocationForm } from '../../features/locations/LocationForm';
@@ -52,7 +52,7 @@ export const LocationManagementPage: React.FC = () => {
         await locations.createLocation(data as LocationCreateRequest);
       } else if (viewMode === 'edit' && selectedLocation) {
         const updateData = data as LocationUpdateRequest;
-        await locations.updateLocation(updateData.location_id, updateData);
+        await locations.updateLocation(String(updateData.location_id), updateData);
       }
       
       // Return to list

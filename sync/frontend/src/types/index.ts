@@ -51,7 +51,7 @@ export interface TenantError {
   synced_at: string;
 }
 export interface MeterStatus {
-  meter_external_id: string;
+  meter_id: number;
   meter_name: string;
   is_connected: boolean;
   last_reading_at: string | null;

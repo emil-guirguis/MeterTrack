@@ -251,7 +251,7 @@ export const SidebarMetersSection: React.FC<SidebarMetersProps> = ({
         const updated = { ...prev };
         if (updated[meterIdNum]) {
           updated[meterIdNum] = updated[meterIdNum].map((el) =>
-            el.meter_element_id === elementIdNum
+            Number(el.meter_element_id) === elementIdNum
               ? { ...el, is_favorited: false }
               : el
           );

@@ -57,25 +57,20 @@ export const MeterList: React.FC<MeterListProps> = ({
       if (col.key === 'configuration') {
         return {
           ...col,
-          render: (value: { ipAddress?: string; port?: number; slaveId?: number }, meter) => (
+          render: (value: { ipAddress?: string; port?: number }, meter) => (
             <div className="table-cell--two-line">
               <div className="table-cell__primary">
                 {value?.ipAddress || 'Not configured'}:{value?.port || 502}
               </div>
               {value?.ipAddress && (
-                <div className="table-cell__secondary">
-                  Slave ID: {value?.slaveId || 1}
-                  {canRead && (
-                    <button
-                      type="button"
-                      className={`btn btn--xs btn--outline-primary table-cell__connection-test ${testingConnection === meter.meter_id ? 'btn--loading' : ''}`}
-                      onClick={() => handleTestConnection(meter)}
-                      disabled={testingConnection === meter.meter_id}
-                    >
-                      {testingConnection === meter.meter_id ? 'Testing...' : 'Test'}
-                    </button>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTestConnection(meter)}
+                  disabled={testingConnection === meter.meter_id}
+                  className="table-cell__action"
+                >
+                  {testingConnection === meter.meter_id ? 'Testing...' : 'Test'}
+                </button>
               )}
             </div>
           ),

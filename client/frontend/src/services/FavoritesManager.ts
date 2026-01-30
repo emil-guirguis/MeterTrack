@@ -57,10 +57,9 @@ export class FavoritesManager {
   /**
    * Load all favorites for a specific user and tenant from the API
    * @param users_id - The user ID
-   * @param tenant_id - The tenant ID
    * @returns Promise<FavoriteRecord[]> - Array of favorite records
    */
-  async load_favorites(users_id: string, tenant_id: string): Promise<FavoriteRecord[]> {
+  async load_favorites(users_id: string): Promise<FavoriteRecord[]> {
     try {
       const response: AxiosResponse<{ success: boolean; data: FavoriteRecord[] }> = await this.apiClient.get(
         '/favorites',
@@ -91,14 +90,12 @@ export class FavoritesManager {
    * @param id1 - The meter ID
    * @param id2 - The meter element ID
    * @param users_id - The user ID
-   * @param tenant_id - The tenant ID
    * @returns Promise<FavoriteRecord> - The created favorite record
    */
   async add_favorite(
     id1: string,
     id2: string,
-    users_id: string,
-    tenant_id: string
+    users_id: string
   ): Promise<FavoriteRecord> {
     try {
       const payload = {
@@ -134,14 +131,12 @@ export class FavoritesManager {
    * @param id1 - The meter ID
    * @param id2 - The meter element ID
    * @param users_id - The user ID
-   * @param tenant_id - The tenant ID
    * @returns Promise<void>
    */
   async remove_favorite(
     id1: string,
     id2: string,
-    users_id: string,
-    tenant_id: string
+    users_id: string
   ): Promise<void> {
     try {
       await this.apiClient.delete('/favorites', {

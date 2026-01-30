@@ -16,7 +16,5 @@ export {
 } from './useResponsiveSync';
 export { 
   usePageTitle, 
-  useDocumentMeta, 
-  useNavigationHistory, 
-  usePage 
+  useDynamicPageTitle 
 } from './usePageTitle';

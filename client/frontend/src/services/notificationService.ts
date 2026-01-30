@@ -5,11 +5,10 @@
  */
 
 import { apiClient } from './apiClient';
-import {
+import type {
   Notification,
   NotificationSettings,
   NotificationListResponse,
-  NotificationCountResponse,
   UpdateNotificationSettingsRequest
 } from '../types/notifications';
 

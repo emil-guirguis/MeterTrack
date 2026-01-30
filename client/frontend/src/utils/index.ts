@@ -5,7 +5,7 @@ export * from './navigationUtils';
 export * from './errorHandler';
 
 // List Component Framework utilities
-export * from './listHelpers';
+export * from '../config/listHelpers';
 export * from './exportHelpers';
 export * from './importHelpers';
 export * from './renderHelpers';

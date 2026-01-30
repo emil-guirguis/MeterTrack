@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import type { User } from '../../types/auth';
 import { Permission } from '../../types/auth';
 import {
-  userColumns,
   userFilters,
   userStats,
   createUserBulkActions,
@@ -16,13 +15,11 @@ import { showConfirmation } from '@framework/utils/confirmationHelper';
 import './UserList.css';
 
 interface UserListProps {
-  onUserSelect?: (user: User) => void;
   onUserEdit?: (user: User) => void;
   onUserCreate?: () => void;
 }
 
 export const UserList: React.FC<UserListProps> = ({
-  onUserSelect,
   onUserEdit,
   onUserCreate,
 }) => {
@@ -62,7 +59,7 @@ export const UserList: React.FC<UserListProps> = ({
       update: Permission.USER_UPDATE,
       delete: Permission.USER_DELETE,
     },
-    columns: userColumns,
+    columns: [],
     filters: userFilters,
     stats: userStats,
     bulkActions: createUserBulkActions(

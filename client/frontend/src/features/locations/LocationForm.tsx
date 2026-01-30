@@ -28,7 +28,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({
   const locations = useLocationsEnhanced();
 
   // Use schema from cache (prefetched at login)
-  const { schema } = useSchema('location');
+  const { schema: _schema } = useSchema('location');
 
   return (
     <BaseForm

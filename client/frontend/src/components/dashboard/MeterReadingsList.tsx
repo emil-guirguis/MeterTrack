@@ -234,12 +234,6 @@ export const MeterReadingsList: React.FC<MeterReadingsListProps> = ({
   // Define additional columns (shown when expanded)
   const additionalColumns = [
     {
-      key: 'slaveId',
-      label: 'Slave ID',
-      sortable: true,
-      render: (_value: any, reading: DetailedMeterReading) => reading.slaveId ?? ''
-    },
-    {
       key: 'source',
       label: 'Source',
       sortable: true,

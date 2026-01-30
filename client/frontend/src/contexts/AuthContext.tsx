@@ -302,7 +302,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Check if user has specific permission
-  const checkPermission = (permission: string): boolean => {
+  const checkPermission = (permission?: string): boolean => {
+    if (!permission) return true;
     if (!state.user) {
       console.warn('[AUTH] checkPermission: No user in state');
       return false;
