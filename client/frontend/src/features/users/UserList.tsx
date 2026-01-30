@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import type { User } from '../../types/auth';
 import { Permission } from '../../types/auth';
 import {
+  userColumns,
   userFilters,
   userStats,
   createUserBulkActions,
@@ -59,7 +60,7 @@ export const UserList: React.FC<UserListProps> = ({
       update: Permission.USER_UPDATE,
       delete: Permission.USER_DELETE,
     },
-    columns: [],
+    columns: userColumns,
     filters: userFilters,
     stats: userStats,
     bulkActions: createUserBulkActions(

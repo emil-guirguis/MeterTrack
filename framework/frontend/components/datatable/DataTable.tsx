@@ -190,14 +190,8 @@ export function DataTable<T extends Record<string, any>>({
     );
   }
 
-  // Empty state
-  if (!data || data.length === 0) {
-    return (
-      <div className="data-table__empty">
-        <p>{emptyMessage}</p>
-      </div>
-    );
-  }
+  // Check if data is empty
+  const isEmpty = !data || data.length === 0;
 
   // Mobile card view
   if (responsive && isMobile) {
@@ -224,37 +218,43 @@ export function DataTable<T extends Record<string, any>>({
         )}
 
         <div className="data-table__cards">
-          {sortedData.map((item, index) => (
-            <div key={item.id || index} className="data-table__card">
-              {onSelect && (
-                <div className="data-table__card-select">
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.some(selected => selected.id === item.id)}
-                    onChange={(e) => handleSelectItem(item, e.target.checked)}
-                    aria-label={`Select item ${item.id || index}`}
-                  />
-                </div>
-              )}
-              
-              <div className="data-table__card-content">
-                {visibleColumns.map(column => (
-                  <div key={column.key?.toString()} className="data-table__card-field">
-                    <span className="data-table__card-label">{column.label}:</span>
-                    <span className="data-table__card-value">
-                      {renderCell(column, item, index)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              
-              {renderActions(item) && (
-                <div className="data-table__card-actions">
-                  {renderActions(item)}
-                </div>
-              )}
+          {isEmpty ? (
+            <div className="data-table__empty">
+              <p>{emptyMessage}</p>
             </div>
-          ))}
+          ) : (
+            sortedData.map((item, index) => (
+              <div key={item.id || index} className="data-table__card">
+                {onSelect && (
+                  <div className="data-table__card-select">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.some(selected => selected.id === item.id)}
+                      onChange={(e) => handleSelectItem(item, e.target.checked)}
+                      aria-label={`Select item ${item.id || index}`}
+                    />
+                  </div>
+                )}
+                
+                <div className="data-table__card-content">
+                  {visibleColumns.map(column => (
+                    <div key={column.key?.toString()} className="data-table__card-field">
+                      <span className="data-table__card-label">{column.label}:</span>
+                      <span className="data-table__card-value">
+                        {renderCell(column, item, index)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                
+                {renderActions(item) && (
+                  <div className="data-table__card-actions">
+                    {renderActions(item)}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
         {/* Pagination for mobile */}
@@ -364,20 +364,36 @@ export function DataTable<T extends Record<string, any>>({
           </thead>
           
           <tbody className="data-table__body">
-            {sortedData.map((item, index) => (
-              <tr 
-                key={item.id || index} 
-                className={`data-table__row ${onView ? 'data-table__row--clickable' : ''}`}
-                onClick={onView ? () => onView(item) : undefined}
-              >
-                {onSelect && (
-                  <td className="data-table__cell data-table__cell--select">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.some(selected => selected.id === item.id)}
-                      onChange={(e) => handleSelectItem(item, e.target.checked)}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`Select item ${item.id || index}`}
+            {isEmpty ? (
+              <tr className="data-table__row data-table__row--empty">
+                <td 
+                  colSpan={
+                    (onSelect ? 1 : 0) + 
+                    visibleColumns.length + 
+                    (onView || onEdit || onDelete ? 1 : 0)
+                  }
+                  className="data-table__cell data-table__cell--empty"
+                >
+                  <div className="data-table__empty">
+                    <p>{emptyMessage}</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              sortedData.map((item, index) => (
+                <tr 
+                  key={item.id || index} 
+                  className={`data-table__row ${onView ? 'data-table__row--clickable' : ''}`}
+                  onClick={onView ? () => onView(item) : undefined}
+                >
+                  {onSelect && (
+                    <td className="data-table__cell data-table__cell--select">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.some(selected => selected.id === item.id)}
+                        onChange={(e) => handleSelectItem(item, e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Select item ${item.id || index}`}
                     />
                   </td>
                 )}
@@ -398,7 +414,8 @@ export function DataTable<T extends Record<string, any>>({
                   </td>
                 )}
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -105,7 +105,7 @@ export const JSONBPermissionsRenderer: React.FC<JSONBPermissionsRendererProps> =
   required = false,
   description,
   onChange,
-  moduleOrder = ['user', 'location', 'contact', 'meter', 'device', 'template', 'settings'],
+  moduleOrder = ['user', 'location', 'contact', 'meter', 'device', 'template', 'report', 'settings'],
   moduleNames = {
     user: 'User',
     location: 'Location',
@@ -114,6 +114,7 @@ export const JSONBPermissionsRenderer: React.FC<JSONBPermissionsRendererProps> =
     device: 'Device',
     settings: 'Settings',
     template: 'Email Templates',
+    report: 'Reports',
   },
   actionNames = {},
 }) => {

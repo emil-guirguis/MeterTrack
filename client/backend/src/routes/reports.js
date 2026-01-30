@@ -86,9 +86,9 @@ router.post('/', asyncHandler(async (req, res) => {
 
   try {
     const query = `
-      INSERT INTO reports (name, type, schedule, recipients, config, enabled, created_at, updated_at)
+      INSERT INTO public.report (name, type, schedule, recipients, config, enabled, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING reports_id as id, name, type, schedule, recipients, config, enabled, created_at, updated_at
+      RETURNING report_id, name, type, schedule, recipients, config, enabled, created_at, updated_at
     `;
 
     const now = new Date();
@@ -116,7 +116,7 @@ router.post('/', asyncHandler(async (req, res) => {
     const createdReport = result.rows[0];
 
     console.log('[API] Report created successfully:', {
-      id: createdReport.id,
+      id: createdReport.report_id,
       name: createdReport.name,
       type: createdReport.type
     });
@@ -159,6 +159,7 @@ router.get('/', asyncHandler(async (req, res) => {
   console.log('█ [API] GET /api/reports - List Reports');
   console.log('█'.repeat(120));
   console.log('Query Parameters:', req.query);
+  console.log('Tenant ID:', req.tenantId);
   console.log('█'.repeat(120) + '\n');
 
   let page = parseInt(req.query.page, 10) || 1;
@@ -170,12 +171,12 @@ router.get('/', asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
-    const countResult = await db.query('SELECT COUNT(*) as total FROM reports');
+    const countResult = await db.query('SELECT COUNT(*) as total FROM public.report');
     const total = parseInt(countResult.rows[0].total, 10);
 
     const query = `
-      SELECT reports_id as id, name, type, schedule, recipients, config, enabled, created_at, updated_at
-      FROM reports
+      SELECT report_id, name, type, schedule, recipients, config, enabled, created_at, updated_at
+      FROM public.report
       ORDER BY created_at DESC
       LIMIT $1 OFFSET $2
     `;
@@ -194,13 +195,11 @@ router.get('/', asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        reports: result.rows,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages
-        }
+        items: result.rows,
+        total,
+        page,
+        pageSize: limit,
+        totalPages
       }
     });
   } catch (error) {
@@ -225,10 +224,10 @@ router.get('/:id', asyncHandler(async (req, res) => {
   console.log('█'.repeat(120) + '\n');
 
   const { id } = req.params;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidRegex.test(id)) {
-    console.log('[API] Invalid UUID format:', id);
+  // Validate that id is a number (bigint)
+  if (isNaN(id) || !Number.isInteger(Number(id))) {
+    console.log('[API] Invalid report ID format:', id);
     return res.status(400).json({
       success: false,
       message: 'Invalid report ID format'
@@ -237,9 +236,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   try {
     const query = `
-      SELECT reports_id as id, name, type, schedule, recipients, config, enabled, created_at, updated_at
-      FROM reports
-      WHERE reports_id = $1
+      SELECT report_id, name, type, schedule, recipients, config, enabled, created_at, updated_at
+      FROM public.report
+      WHERE report_id = $1
     `;
 
     const result = await db.query(query, [id]);
@@ -255,7 +254,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
     const report = result.rows[0];
 
     console.log('[API] Retrieved report:', {
-      id: report.id,
+      id: report.report_id,
       name: report.name,
       type: report.type
     });
@@ -288,10 +287,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
   const { id } = req.params;
   const { name, type, schedule, recipients, config } = req.body;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidRegex.test(id)) {
-    console.log('[API] Invalid UUID format:', id);
+  // Validate that id is a number (bigint)
+  if (isNaN(id) || !Number.isInteger(Number(id))) {
+    console.log('[API] Invalid report ID format:', id);
     return res.status(400).json({
       success: false,
       message: 'Invalid report ID format'
@@ -299,7 +298,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
   }
 
   try {
-    const existingReport = await db.query('SELECT reports_id FROM reports WHERE reports_id = $1', [id]);
+    const existingReport = await db.query('SELECT report_id FROM public.report WHERE report_id = $1', [id]);
     if (existingReport.rows.length === 0) {
       console.log('[API] Report not found:', id);
       return res.status(404).json({
@@ -405,9 +404,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
     if (updates.length === 0) {
       const query = `
-        SELECT reports_id as id, name, type, schedule, recipients, config, enabled, created_at, updated_at
-        FROM reports
-        WHERE reports_id = $1
+        SELECT report_id, name, type, schedule, recipients, config, enabled, created_at, updated_at
+        FROM public.report
+        WHERE report_id = $1
       `;
       const result = await db.query(query, [id]);
       return res.status(200).json({
@@ -423,10 +422,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
     values.push(id);
 
     const updateQuery = `
-      UPDATE reports
+      UPDATE public.report
       SET ${updates.join(', ')}
-      WHERE reports_id = $${paramCount}
-      RETURNING reports_id as id, name, type, schedule, recipients, config, enabled, created_at, updated_at
+      WHERE report_id = $${paramCount}
+      RETURNING report_id, name, type, schedule, recipients, config, enabled, created_at, updated_at
     `;
 
     const result = await db.query(updateQuery, values);
@@ -442,7 +441,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     const updatedReport = result.rows[0];
 
     console.log('[API] Report updated successfully:', {
-      id: updatedReport.id,
+      id: updatedReport.report_id,
       name: updatedReport.name,
       type: updatedReport.type
     });
@@ -481,10 +480,10 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   console.log('█'.repeat(120) + '\n');
 
   const { id } = req.params;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidRegex.test(id)) {
-    console.log('[API] Invalid UUID format:', id);
+  // Validate that id is a number (bigint)
+  if (isNaN(id) || !Number.isInteger(Number(id))) {
+    console.log('[API] Invalid report ID format:', id);
     return res.status(400).json({
       success: false,
       message: 'Invalid report ID format'
@@ -492,7 +491,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   }
 
   try {
-    const existingReport = await db.query('SELECT reports_id, name FROM reports WHERE reports_id = $1', [id]);
+    const existingReport = await db.query('SELECT report_id, name FROM public.report WHERE report_id = $1', [id]);
     if (existingReport.rows.length === 0) {
       console.log('[API] Report not found:', id);
       return res.status(404).json({
@@ -503,7 +502,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
     const reportName = existingReport.rows[0].name;
 
-    const deleteQuery = 'DELETE FROM reports WHERE reports_id = $1';
+    const deleteQuery = 'DELETE FROM public.report WHERE report_id = $1';
     await db.query(deleteQuery, [id]);
 
     console.log('[API] Report deleted successfully:', {
@@ -537,10 +536,10 @@ router.patch('/:id/toggle', asyncHandler(async (req, res) => {
   console.log('█'.repeat(120) + '\n');
 
   const { id } = req.params;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidRegex.test(id)) {
-    console.log('[API] Invalid UUID format:', id);
+  // Validate that id is a number (bigint)
+  if (isNaN(id) || !Number.isInteger(Number(id))) {
+    console.log('[API] Invalid report ID format:', id);
     return res.status(400).json({
       success: false,
       message: 'Invalid report ID format'
@@ -548,7 +547,7 @@ router.patch('/:id/toggle', asyncHandler(async (req, res) => {
   }
 
   try {
-    const getQuery = 'SELECT reports_id, name, enabled FROM reports WHERE reports_id = $1';
+    const getQuery = 'SELECT report_id, name, enabled FROM public.report WHERE report_id = $1';
     const getResult = await db.query(getQuery, [id]);
 
     if (getResult.rows.length === 0) {
@@ -563,10 +562,10 @@ router.patch('/:id/toggle', asyncHandler(async (req, res) => {
     const newEnabledStatus = !currentReport.enabled;
 
     const updateQuery = `
-      UPDATE reports
+      UPDATE public.report
       SET enabled = $1, updated_at = $2
-      WHERE reports_id = $3
-      RETURNING reports_id as id, name, enabled, updated_at
+      WHERE report_id = $3
+      RETURNING report_id, name, enabled, updated_at
     `;
 
     const updateResult = await db.query(updateQuery, [newEnabledStatus, new Date(), id]);
@@ -582,7 +581,7 @@ router.patch('/:id/toggle', asyncHandler(async (req, res) => {
     const updatedReport = updateResult.rows[0];
 
     console.log('[API] Report status toggled successfully:', {
-      id: updatedReport.id,
+      id: updatedReport.report_id,
       name: updatedReport.name,
       enabled: updatedReport.enabled
     });
@@ -590,7 +589,7 @@ router.patch('/:id/toggle', asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        id: updatedReport.id,
+        id: updatedReport.report_id,
         name: updatedReport.name,
         enabled: updatedReport.enabled,
         updated_at: updatedReport.updated_at
@@ -620,10 +619,10 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
 
   const { id } = req.params;
   const { startDate, endDate } = req.query;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidRegex.test(id)) {
-    console.log('[API] Invalid UUID format:', id);
+  // Validate that id is a number (bigint)
+  if (isNaN(id) || !Number.isInteger(Number(id))) {
+    console.log('[API] Invalid report ID format:', id);
     return res.status(400).json({
       success: false,
       message: 'Invalid report ID format'
@@ -639,7 +638,7 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
-    const reportCheck = await db.query('SELECT reports_id FROM reports WHERE reports_id = $1', [id]);
+    const reportCheck = await db.query('SELECT report_id FROM public.report WHERE report_id = $1', [id]);
     if (reportCheck.rows.length === 0) {
       console.log('[API] Report not found:', id);
       return res.status(404).json({
@@ -648,11 +647,11 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
       });
     }
 
-    let countQuery = 'SELECT COUNT(*) as total FROM report_history WHERE reports_id = $1';
+    let countQuery = 'SELECT COUNT(*) as total FROM public.report_history WHERE report_id = $1';
     let historyQuery = `
-      SELECT report_history_id as id, reports_id as report_id, executed_at, status, error_message, created_at
-      FROM report_history
-      WHERE reports_id = $1
+      SELECT report_history_id, report_id, executed_at, status, error_message, created_at
+      FROM public.report_history
+      WHERE report_id = $1
     `;
     const countParams = [id];
     const historyParams = [id];
@@ -740,10 +739,10 @@ router.get('/:id/history/:historyId/emails', asyncHandler(async (req, res) => {
   console.log('█'.repeat(120) + '\n');
 
   const { id, historyId } = req.params;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidRegex.test(id) || !uuidRegex.test(historyId)) {
-    console.log('[API] Invalid UUID format');
+  // Validate that ids are numbers (bigint)
+  if (isNaN(id) || !Number.isInteger(Number(id)) || isNaN(historyId) || !Number.isInteger(Number(historyId))) {
+    console.log('[API] Invalid ID format');
     return res.status(400).json({
       success: false,
       message: 'Invalid report ID or history ID format'
@@ -751,7 +750,7 @@ router.get('/:id/history/:historyId/emails', asyncHandler(async (req, res) => {
   }
 
   try {
-    const reportCheck = await db.query('SELECT reports_id FROM reports WHERE reports_id = $1', [id]);
+    const reportCheck = await db.query('SELECT report_id FROM public.report WHERE report_id = $1', [id]);
     if (reportCheck.rows.length === 0) {
       console.log('[API] Report not found:', id);
       return res.status(404).json({
@@ -761,7 +760,7 @@ router.get('/:id/history/:historyId/emails', asyncHandler(async (req, res) => {
     }
 
     const historyCheck = await db.query(
-      'SELECT report_history_id FROM report_history WHERE report_history_id = $1 AND reports_id = $2',
+      'SELECT report_history_id FROM public.report_history WHERE report_history_id = $1 AND report_id = $2',
       [historyId, id]
     );
     if (historyCheck.rows.length === 0) {
@@ -773,8 +772,8 @@ router.get('/:id/history/:historyId/emails', asyncHandler(async (req, res) => {
     }
 
     const emailsQuery = `
-      SELECT report_email_logs_id as id, reports_id as report_id, report_history_id as history_id, recipient, sent_at, status, error_details, created_at
-      FROM report_email_logs
+      SELECT report_email_logs_id, report_id, report_history_id, recipient, sent_at, status, error_details, created_at
+      FROM public.report_email_logs
       WHERE report_history_id = $1
       ORDER BY sent_at DESC
     `;

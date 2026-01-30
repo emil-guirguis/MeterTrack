@@ -6,14 +6,14 @@ This document describes the database schema created for the Reporting Module. Th
 
 ## Tables
 
-### 1. Reports Table
+### 1. Report Table
 
 **Purpose**: Stores report configurations and metadata
 
-**Table Name**: `reports`
+**Table Name**: `report`
 
 **Columns**:
-- `id` (UUID, Primary Key): Unique identifier for the report
+- `report_id` (BIGINT, Primary Key, IDENTITY): Unique identifier for the report
 - `name` (VARCHAR(255), NOT NULL, UNIQUE): Report name (must be unique)
 - `type` (VARCHAR(50), NOT NULL): Report type (e.g., meter_readings, usage_summary)
 - `schedule` (VARCHAR(255), NOT NULL): Cron expression or predefined schedule
@@ -24,8 +24,8 @@ This document describes the database schema created for the Reporting Module. Th
 - `updated_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP): Last modification timestamp
 
 **Constraints**:
-- Primary Key: `id`
-- Unique Constraint: `name` (prevents duplicate report names)
+- Primary Key: `report_pkey` on `report_id`
+- Unique Constraint: `report_name_key` on `name` (prevents duplicate report names)
 
 ### 2. Report_History Table
 
@@ -34,16 +34,16 @@ This document describes the database schema created for the Reporting Module. Th
 **Table Name**: `report_history`
 
 **Columns**:
-- `id` (UUID, Primary Key): Unique identifier for the history entry
-- `report_id` (UUID, NOT NULL, Foreign Key): Reference to the report
+- `report_history_id` (BIGINT, Primary Key, IDENTITY): Unique identifier for the history entry
+- `report_id` (BIGINT, NOT NULL, Foreign Key): Reference to the report
 - `executed_at` (TIMESTAMP, NOT NULL): When the report was executed
 - `status` (VARCHAR(20), NOT NULL): Execution status (success, failed)
 - `error_message` (TEXT): Error details if execution failed
 - `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP): When record was created
 
 **Constraints**:
-- Primary Key: `id`
-- Foreign Key: `report_id` → `reports(id)` with ON DELETE CASCADE
+- Primary Key: `report_history_pkey` on `report_history_id`
+- Foreign Key: `report_id` → `report(report_id)` with ON DELETE CASCADE
 
 **Indexes**:
 - `idx_report_history_report_id`: Single column index on `report_id`
@@ -57,9 +57,9 @@ This document describes the database schema created for the Reporting Module. Th
 **Table Name**: `report_email_logs`
 
 **Columns**:
-- `id` (UUID, Primary Key): Unique identifier for the email log entry
-- `report_id` (UUID, NOT NULL, Foreign Key): Reference to the report
-- `history_id` (UUID, NOT NULL, Foreign Key): Reference to the report execution
+- `report_email_logs_id` (BIGINT, Primary Key, IDENTITY): Unique identifier for the email log entry
+- `report_id` (BIGINT, NOT NULL, Foreign Key): Reference to the report
+- `report_history_id` (BIGINT, NOT NULL, Foreign Key): Reference to the report execution
 - `recipient` (VARCHAR(255), NOT NULL): Email address that received the email
 - `sent_at` (TIMESTAMP, NOT NULL): When the email was sent
 - `status` (VARCHAR(20), NOT NULL): Delivery status (sent, failed, delivered)
@@ -67,21 +67,21 @@ This document describes the database schema created for the Reporting Module. Th
 - `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP): When record was created
 
 **Constraints**:
-- Primary Key: `id`
-- Foreign Key: `report_id` → `reports(id)` with ON DELETE CASCADE
-- Foreign Key: `history_id` → `report_history(id)` with ON DELETE CASCADE
+- Primary Key: `report_email_logs_pkey` on `report_email_logs_id`
+- Foreign Key: `report_id` → `report(report_id)` with ON DELETE CASCADE
+- Foreign Key: `report_history_id` → `report_history(report_history_id)` with ON DELETE CASCADE
 
 **Indexes**:
 - `idx_report_email_logs_report_id`: Single column index on `report_id`
-- `idx_report_email_logs_history_id`: Single column index on `history_id`
+- `idx_report_email_logs_history_id`: Single column index on `report_history_id`
 - `idx_report_email_logs_recipient`: Single column index on `recipient`
 - `idx_report_email_logs_sent_at`: Single column index on `sent_at`
-- `idx_report_email_logs_history_recipient`: Composite index on `(history_id, recipient)`
+- `idx_report_email_logs_history_recipient`: Composite index on `(report_history_id, recipient)`
 
 ## Data Relationships
 
 ```
-reports (1) ──── (N) report_history
+report (1) ──── (N) report_history
   │                      │
   │                      └──── (N) report_email_logs
   │
@@ -100,7 +100,7 @@ When a report execution (history entry) is deleted:
 ## Migration Files
 
 ### 001-create-reporting-schema.sql
-SQL file containing all table and index creation statements. This file is provided for reference but is not used by the migration runner due to PostgreSQL's limitation on multiple statements in a single query.
+SQL file containing all table and index creation statements. This file is provided for reference and can be used directly in PostgreSQL clients.
 
 ### 002-create-reporting-tables.js
 JavaScript migration file that executes each SQL statement individually. This is the primary migration file used to set up the schema.
@@ -136,14 +136,23 @@ The indexes are designed to optimize common query patterns:
 
 This schema implementation satisfies the following requirements:
 
-- **Requirement 10.1**: Reports are stored in the Reports table with all configuration details
+- **Requirement 10.1**: Reports are stored in the Report table with all configuration details
 - **Requirement 10.2**: Report executions are logged in the Report_History table
 - **Requirement 10.3**: Email delivery attempts are logged in the Report_Email_Logs table
 
+## Schema Changes from Previous Version
+
+- **Table Naming**: Changed from `reports` to `report` (singular)
+- **Primary Key Type**: Changed from UUID to BIGINT with IDENTITY (auto-increment)
+- **Primary Key Naming**: Changed to follow convention `{tablename}_id` (e.g., `report_id`, `report_history_id`, `report_email_logs_id`)
+- **Foreign Key Naming**: Updated to use `report_id` instead of `reports_id` for consistency
+- **Column Collation**: Added explicit PostgreSQL collation specifications
+- **Permissions**: Added explicit GRANT statements for all roles (anon, authenticated, postgres, service_role)
+
 ## Notes
 
-- The `report_email_logs` table is named differently from the design document (`email_logs`) to avoid conflicts with an existing `email_logs` table in the application
-- All tables use UUID primary keys for better distributed system support
+- All tables use BIGINT IDENTITY primary keys for better performance and consistency with application standards
 - JSONB is used for the `config` field to allow flexible, type-specific configuration
 - TEXT arrays are used for the `recipients` field to store multiple email addresses
 - Timestamps use CURRENT_TIMESTAMP for automatic server-side timestamp generation
+- All tables are in the `public` schema with explicit permissions granted to all roles

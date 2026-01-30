@@ -34,7 +34,6 @@
     "templates:list": "node scripts/manage-templates.js list",
     "templates:stats": "node scripts/manage-templates.js stats",
     "notifications:test": "node -e \"const scheduler = require('./src/services/NotificationScheduler'); const analyzer = require('./src/services/MeterDataAnalyzer'); const db = require('./src/config/database'); db.connect().then(() => Promise.all([scheduler.initialize(), analyzer.initialize()])).then(() => console.log('✅ Notification services tested')).catch(console.error).finally(() => process.exit(0))\"",
-    "email:test": "node scripts/setup-email-system.js --test"   "notifications:test": "node -e \"const scheduler = require('./src/services/NotificationScheduler'); const analyzer = require('./src/services/MeterDataAnalyzer'); const db = require('./src/config/database'); db.connect().then(() => Promise.all([scheduler.initialize(), analyzer.initialize()])).then(() => console.log('✅ Notification services tested')).catch(console.error).finally(() => process.exit(0))\"",
     "email:test": "node scripts/setup-email-system.js --test"
   },
   "dependencies": {

@@ -87,19 +87,25 @@ export class SchedulerService {
       }
 
       // Create the cron job
-      const task = cron.schedule(report.schedule, async () => {
-        logger.info(`Executing scheduled report: ${report.name} (${report.id})`);
-        try {
-          await this.reportExecutor.execute(report);
-        } catch (error) {
-          logger.error(`Failed to execute report ${report.id}`, {
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      });
+      try {
+        const task = cron.schedule(report.schedule, async () => {
+          logger.info(`Executing scheduled report: ${report.name} (${report.id})`);
+          try {
+            await this.reportExecutor.execute(report);
+          } catch (error) {
+            logger.error(`Failed to execute report ${report.id}`, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        });
 
-      this.jobs.set(report.id, task);
-      logger.info(`Created cron job for report: ${report.name} (${report.id}) with schedule: ${report.schedule}`);
+        this.jobs.set(report.id, task);
+        logger.info(`Created cron job for report: ${report.name} (${report.id}) with schedule: ${report.schedule}`);
+      } catch (scheduleError) {
+        logger.warn(`Failed to schedule cron job for report ${report.id}: ${report.schedule}`, {
+          error: scheduleError instanceof Error ? scheduleError.message : String(scheduleError),
+        });
+      }
     } catch (error) {
       logger.error(`Failed to create job for report ${report.id}`, {
         error: error instanceof Error ? error.message : String(error),
@@ -120,7 +126,6 @@ export class SchedulerService {
         const task = this.jobs.get(report.id);
         if (task) {
           task.stop();
-          task.destroy();
         }
         this.jobs.delete(report.id);
         logger.info(`Stopped and removed old job for report ${report.id}`);
@@ -149,7 +154,6 @@ export class SchedulerService {
         const task = this.jobs.get(reportId);
         if (task) {
           task.stop();
-          task.destroy();
         }
         this.jobs.delete(reportId);
         logger.info(`Deleted cron job for report: ${reportId}`);
@@ -167,9 +171,9 @@ export class SchedulerService {
    */
   private isValidCronExpression(expression: string): boolean {
     try {
-      cron.validate(expression);
-      return true;
-    } catch {
+      const isValid = cron.validate(expression);
+      return isValid === true;
+    } catch (error) {
       return false;
     }
   }
@@ -180,7 +184,7 @@ export class SchedulerService {
   getJobStatus(): Map<string, boolean> {
     const status = new Map<string, boolean>();
     for (const [reportId, task] of this.jobs.entries()) {
-      status.set(reportId, !task._destroyed);
+      status.set(reportId, true);
     }
     return status;
   }
@@ -194,7 +198,6 @@ export class SchedulerService {
     try {
       for (const [reportId, task] of this.jobs.entries()) {
         task.stop();
-        task.destroy();
         logger.info(`Stopped job for report: ${reportId}`);
       }
       

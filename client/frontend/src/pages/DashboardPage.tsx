@@ -355,7 +355,10 @@ export const DashboardPage: React.FC = () => {
         onVisualizationChange={handleVisualizationChange}
         onGroupingChange={handleGroupingChange}
         onTimeFrameChange={handleTimeFrameChange}
-        {...props}
+        onEdit={props.onEdit}
+        onDelete={props.onDelete}
+        onRefresh={props.onRefresh}
+        onExpand={props.onExpand}
       />
     );
   };

@@ -108,12 +108,12 @@ const isReportNameUnique = async (pool, reportName, excludeReportId) => {
   }
 
   try {
-    let query = 'SELECT COUNT(*) as count FROM reports WHERE name = $1';
+    let query = 'SELECT COUNT(*) as count FROM public.report WHERE name = $1';
     const params = [reportName.trim()];
 
     // If excluding a specific report ID (for updates), add that to the query
     if (excludeReportId) {
-      query += ' AND reports_id != $2';
+      query += ' AND report_id != $2';
       params.push(excludeReportId);
     }
 

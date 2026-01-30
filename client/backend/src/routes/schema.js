@@ -73,6 +73,10 @@ const notificationLogsModel = require('../models/NotificationLogsWithSchema');
 const meterElementsModel = require('../models/MeterElementsWithSchema');
 // console.log('[SCHEMA ROUTES] ✅ MeterElementsWithSchema loaded');
 
+// console.log('[SCHEMA ROUTES] Loading ReportWithSchema...');
+const reportModel = require('../models/ReportWithSchema');
+// console.log('[SCHEMA ROUTES] ✅ ReportWithSchema loaded');
+
 // console.log('[SCHEMA ROUTES] ✅ All models loaded successfully');
 
 const models = {
@@ -91,6 +95,7 @@ const models = {
   meterUsageAlerts: meterUsageAlertsModel,
   notificationLogs: notificationLogsModel,
   meterElements: meterElementsModel,
+  report: reportModel,
   // Add more models here
 };
 

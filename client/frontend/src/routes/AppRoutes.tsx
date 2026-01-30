@@ -12,7 +12,7 @@ import { LocationManagementPage } from '../features/locations';
 import { ContactManagementPage } from '../features/contacts';
 import { DeviceManagementPage } from '../features/devices';
 import { Permission } from '../types/auth';
-import { SettingsPage, MetersPage } from '../pages';
+import { SettingsPage, MetersPage, ReportsPage } from '../pages';
 import ManagementForm from '../components/management/ManagementForm';
 
 // Dashboard Page with Layout
@@ -142,6 +142,18 @@ const AppRoutes: React.FC = () => {
                 <MetersPage />
               </AppLayoutWrapper>
             </AuthGuard>
+          }
+        />
+
+        {/* Reports Module */}
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <AppLayoutWrapper title="Reports">
+                <ReportsPage />
+              </AppLayoutWrapper>
+            </ProtectedRoute>
           }
         />
 

@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
 export interface Report {
-  id: string;
+  report_id: number;
   name: string;
   type: string;
   schedule: string;
@@ -13,8 +13,8 @@ export interface Report {
 }
 
 export interface ReportHistory {
-  id: string;
-  report_id: string;
+  report_history_id: number;
+  report_id: number;
   executed_at: string;
   status: 'success' | 'failed';
   error_message: string | null;
@@ -22,9 +22,9 @@ export interface ReportHistory {
 }
 
 export interface EmailLog {
-  id: string;
-  report_id: string;
-  history_id: string;
+  report_email_logs_id: number;
+  report_id: number;
+  report_history_id: number;
   recipient: string;
   sent_at: string;
   status: 'sent' | 'failed' | 'delivered';
@@ -33,7 +33,8 @@ export interface EmailLog {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
+  items?: T[];
+  data?: T[];
   pagination: {
     page: number;
     limit: number;
@@ -45,7 +46,7 @@ export interface PaginatedResponse<T> {
 /**
  * Create a new report
  */
-export const createReport = async (report: Omit<Report, 'id' | 'created_at' | 'updated_at'>): Promise<Report> => {
+export const createReport = async (report: Omit<Report, 'report_id' | 'created_at' | 'updated_at'>): Promise<Report> => {
   const response = await apiClient.post('/reports', report);
   return response.data.data;
 };
@@ -63,7 +64,7 @@ export const getReports = async (page: number = 1, limit: number = 10): Promise<
 /**
  * Get a specific report by ID
  */
-export const getReport = async (id: string): Promise<Report> => {
+export const getReport = async (id: number): Promise<Report> => {
   const response = await apiClient.get(`/reports/${id}`);
   return response.data.data;
 };
@@ -71,7 +72,7 @@ export const getReport = async (id: string): Promise<Report> => {
 /**
  * Update a report
  */
-export const updateReport = async (id: string, report: Partial<Omit<Report, 'id' | 'created_at' | 'updated_at'>>): Promise<Report> => {
+export const updateReport = async (id: number, report: Partial<Omit<Report, 'report_id' | 'created_at' | 'updated_at'>>): Promise<Report> => {
   const response = await apiClient.put(`/reports/${id}`, report);
   return response.data.data;
 };
@@ -79,14 +80,14 @@ export const updateReport = async (id: string, report: Partial<Omit<Report, 'id'
 /**
  * Delete a report
  */
-export const deleteReport = async (id: string): Promise<void> => {
+export const deleteReport = async (id: number): Promise<void> => {
   await apiClient.delete(`/reports/${id}`);
 };
 
 /**
  * Toggle report enabled status
  */
-export const toggleReportStatus = async (id: string): Promise<{ id: string; name: string; enabled: boolean; updated_at: string }> => {
+export const toggleReportStatus = async (id: number): Promise<{ id: number; name: string; enabled: boolean; updated_at: string }> => {
   const response = await apiClient.patch(`/reports/${id}/toggle`);
   return response.data.data;
 };
@@ -95,7 +96,7 @@ export const toggleReportStatus = async (id: string): Promise<{ id: string; name
  * Get report execution history
  */
 export const getReportHistory = async (
-  reportId: string,
+  reportId: number,
   page: number = 1,
   limit: number = 10,
   startDate?: string,
@@ -110,7 +111,7 @@ export const getReportHistory = async (
 /**
  * Get email logs for a specific report execution
  */
-export const getEmailLogs = async (reportId: string, historyId: string): Promise<{ emails: EmailLog[] }> => {
+export const getEmailLogs = async (reportId: number, historyId: number): Promise<{ emails: EmailLog[] }> => {
   const response = await apiClient.get(`/reports/${reportId}/history/${historyId}/emails`);
   return response.data.data;
 };
@@ -134,7 +135,7 @@ export const searchEmailLogs = async (
  */
 export const exportEmailLogs = async (
   format: 'csv' | 'json' = 'csv',
-  reportId?: string,
+  reportId?: number,
   startDate?: string,
   endDate?: string
 ): Promise<any> => {

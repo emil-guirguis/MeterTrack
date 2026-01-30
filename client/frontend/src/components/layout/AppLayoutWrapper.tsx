@@ -23,6 +23,7 @@ const appIconMappings = {
   'contacts': 'contacts',
   'meter': 'electric_bolt',
   'meters': 'electric_bolt',
+  'reports': 'assessment',
   'management': 'folder_managed',
   'template': 'mail',
   'templates': 'mail',
@@ -63,6 +64,12 @@ const menuItems: MenuItem[] = [
     icon: 'meter',
     path: '/meters',
     requiredPermission: Permission.METER_READ
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: 'assessment',
+    path: '/reports'
   },
   {
     id: 'management',

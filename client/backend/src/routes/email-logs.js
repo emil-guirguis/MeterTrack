@@ -67,7 +67,7 @@ router.get('/search', asyncHandler(async (req, res) => {
   try {
     // Get total count of matching email logs
     const countQuery = `
-      SELECT COUNT(*) as total FROM report_email_logs
+      SELECT COUNT(*) as total FROM public.report_email_logs
       WHERE recipient ILIKE $1
     `;
     const countResult = await db.query(countQuery, [`%${recipient}%`]);
@@ -75,8 +75,8 @@ router.get('/search', asyncHandler(async (req, res) => {
 
     // Get paginated email logs
     const emailsQuery = `
-      SELECT report_email_logs_id as id, reports_id as report_id, report_history_id as history_id, recipient, sent_at, status, error_details, created_at
-      FROM report_email_logs
+      SELECT report_email_logs_id, report_id, report_history_id, recipient, sent_at, status, error_details, created_at
+      FROM public.report_email_logs
       WHERE recipient ILIKE $1
       ORDER BY sent_at DESC
       LIMIT $2 OFFSET $3
@@ -123,7 +123,7 @@ router.get('/search', asyncHandler(async (req, res) => {
  * 
  * Query parameters:
  * - format: string (default: 'csv', options: 'csv', 'json')
- * - reportId: string (optional, UUID) - Filter by report ID
+ * - reportId: number (optional) - Filter by report ID
  * - startDate: string (optional, ISO date) - Filter from this date
  * - endDate: string (optional, ISO date) - Filter until this date
  * 
@@ -156,8 +156,8 @@ router.get('/export', asyncHandler(async (req, res) => {
   try {
     // Build query with optional filters
     let query = `
-      SELECT report_email_logs_id as id, reports_id as report_id, report_history_id as history_id, recipient, sent_at, status, error_details, created_at
-      FROM report_email_logs
+      SELECT report_email_logs_id, report_id, report_history_id, recipient, sent_at, status, error_details, created_at
+      FROM public.report_email_logs
       WHERE 1=1
     `;
     const params = [];
@@ -165,14 +165,14 @@ router.get('/export', asyncHandler(async (req, res) => {
 
     // Add report ID filter if provided
     if (reportId) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(reportId)) {
+      // Validate that reportId is a number (bigint)
+      if (isNaN(reportId) || !Number.isInteger(Number(reportId))) {
         return res.status(400).json({
           success: false,
           message: 'Invalid report ID format'
         });
       }
-      query += ` AND reports_id = $${paramCount}`;
+      query += ` AND report_id = $${paramCount}`;
       params.push(reportId);
       paramCount++;
     }
@@ -239,9 +239,9 @@ router.get('/export', asyncHandler(async (req, res) => {
       // Convert to CSV
       const headers = ['ID', 'Report ID', 'History ID', 'Recipient', 'Sent At', 'Status', 'Error Details', 'Created At'];
       const rows = emailLogs.map(log => [
-        log.id,
+        log.report_email_logs_id,
         log.report_id,
-        log.history_id,
+        log.report_history_id,
         log.recipient,
         log.sent_at,
         log.status,

@@ -48,7 +48,13 @@ export const Permission = {
   TEMPLATE_CREATE: 'template:create',
   TEMPLATE_READ: 'template:read',
   TEMPLATE_UPDATE: 'template:update',
-  TEMPLATE_DELETE: 'template:delete'
+  TEMPLATE_DELETE: 'template:delete',
+  
+  // Report Management
+  REPORT_CREATE: 'report:create',
+  REPORT_READ: 'report:read',
+  REPORT_UPDATE: 'report:update',
+  REPORT_DELETE: 'report:delete'
 } as const;
 
 export type Permission = typeof Permission[keyof typeof Permission];
@@ -145,7 +151,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.TEMPLATE_CREATE,
     Permission.TEMPLATE_READ,
     Permission.TEMPLATE_UPDATE,
-    Permission.TEMPLATE_DELETE
+    Permission.TEMPLATE_DELETE,
+    
+    // Full report management
+    Permission.REPORT_CREATE,
+    Permission.REPORT_READ,
+    Permission.REPORT_UPDATE,
+    Permission.REPORT_DELETE
   ],
   [UserRole.TECHNICIAN]: [
     // Dashboard access
@@ -173,7 +185,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.SETTINGS_READ,
     
     // Read-only template access
-    Permission.TEMPLATE_READ
+    Permission.TEMPLATE_READ,
+    
+    // Full report management
+    Permission.REPORT_CREATE,
+    Permission.REPORT_READ,
+    Permission.REPORT_UPDATE,
+    Permission.REPORT_DELETE
   ],
   [UserRole.VIEWER]: [
     // Dashboard access
@@ -186,7 +204,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.METER_READ,
     Permission.DEVICE_READ,
     Permission.SETTINGS_READ,
-    Permission.TEMPLATE_READ
+    Permission.TEMPLATE_READ,
+    
+    // Read-only report access
+    Permission.REPORT_READ
   ]
 };
 

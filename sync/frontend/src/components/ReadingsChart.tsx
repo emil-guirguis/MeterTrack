@@ -34,7 +34,7 @@ export default function ReadingsChart({ readings, meters }: ReadingsChartProps) 
           return (
             <Box key={key} mb={3}>
               <Typography variant="subtitle1" gutterBottom>
-                {meter?.name || meterExternalId} - {dataPoint}
+                {meter?.name || meterId} - {dataPoint}
               </Typography>
               <Box
                 sx={{
