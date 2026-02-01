@@ -51,9 +51,72 @@ export default defineConfig({
     errorLoggerPlugin(),
   ],
   resolve: {
-    alias: {
-      '@framework': path.resolve(__dirname, '../../framework/frontend'),
-    },
+    alias: [
+      {
+        find: '@framework',
+        replacement: path.resolve(__dirname, '../../framework/frontend'),
+      },
+      {
+        find: 'react',
+        replacement: path.resolve(__dirname, 'node_modules/react'),
+      },
+      {
+        find: 'react-dom',
+        replacement: path.resolve(__dirname, 'node_modules/react-dom'),
+      },
+      {
+        find: '@mui/material',
+        replacement: path.resolve(__dirname, 'node_modules/@mui/material'),
+      },
+      {
+        find: '@mui/icons-material',
+        replacement: path.resolve(__dirname, 'node_modules/@mui/icons-material'),
+      },
+      {
+        find: '@emotion/react',
+        replacement: path.resolve(__dirname, 'node_modules/@emotion/react'),
+      },
+      {
+        find: '@emotion/styled',
+        replacement: path.resolve(__dirname, 'node_modules/@emotion/styled'),
+      },
+      {
+        find: 'react-grid-layout',
+        replacement: path.resolve(__dirname, 'node_modules/react-grid-layout'),
+      },
+      {
+        find: 'react-resizable',
+        replacement: path.resolve(__dirname, 'node_modules/react-resizable'),
+      },
+      {
+        find: 'recharts',
+        replacement: path.resolve(__dirname, 'node_modules/recharts'),
+      },
+      {
+        find: 'react-router-dom',
+        replacement: path.resolve(__dirname, 'node_modules/react-router-dom'),
+      },
+      {
+        find: '@microlink/react-json-view',
+        replacement: path.resolve(__dirname, 'node_modules/@microlink/react-json-view'),
+      },
+      {
+        find: 'immer',
+        replacement: path.resolve(__dirname, 'node_modules/immer'),
+      },
+      {
+        find: 'zustand',
+        replacement: path.resolve(__dirname, 'node_modules/zustand'),
+      },
+      {
+        find: 'axios',
+        replacement: path.resolve(__dirname, 'node_modules/axios'),
+      },
+      {
+        find: 'mui-tel-input',
+        replacement: path.resolve(__dirname, 'node_modules/mui-tel-input'),
+      },
+    ],
   },
   optimizeDeps: {
     include: [
