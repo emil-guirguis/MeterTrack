@@ -225,13 +225,6 @@ export const createDarkTheme = (): ReturnType<typeof createTheme> => {
       labelMedium: typographyScales.labelMedium,
       labelSmall: typographyScales.labelSmall,
     } as any,
-      bodyLarge: typographyScales.bodyLarge,
-      bodyMedium: typographyScales.bodyMedium,
-      bodySmall: typographyScales.bodySmall,
-      labelLarge: typographyScales.labelLarge,
-      labelMedium: typographyScales.labelMedium,
-      labelSmall: typographyScales.labelSmall,
-    },
     shape: {
       borderRadius: 12,
     },
