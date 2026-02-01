@@ -64,6 +64,10 @@ export default defineConfig({
       'recharts': path.resolve(__dirname, 'node_modules/recharts'),
       'react-router-dom': path.resolve(__dirname, 'node_modules/react-router-dom'),
       '@microlink/react-json-view': path.resolve(__dirname, 'node_modules/@microlink/react-json-view'),
+      'immer': path.resolve(__dirname, 'node_modules/immer'),
+      'zustand': path.resolve(__dirname, 'node_modules/zustand'),
+      'axios': path.resolve(__dirname, 'node_modules/axios'),
+      'mui-tel-input': path.resolve(__dirname, 'node_modules/mui-tel-input'),
     },
   },
   server: {
