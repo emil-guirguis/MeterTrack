@@ -375,7 +375,7 @@ export class SyncDatabase {
    * Insert a single meter reading
    */
   async insertReading(reading: {
-    meter_external_id: string;
+    meter_id: string;
     timestamp: Date;
     data_point: string;
     value: number;
