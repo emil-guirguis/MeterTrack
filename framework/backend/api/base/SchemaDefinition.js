@@ -185,6 +185,7 @@ function section(config) {
  * @param {number} [config.order] - Order of tab (lower numbers appear first)
  * @param {Array<Object>} config.sections - Array of section definitions created with section()
  * @param {string} [config.sectionOrientation] - Section layout orientation ('horizontal' or 'vertical')
+ * @param {Array<string>} [config.visibleFor] - Meter types for which this tab is visible (e.g., ['physical', 'virtual'])
  * @returns {Object} Tab definition
  */
 function tab(config) {
@@ -193,6 +194,7 @@ function tab(config) {
     order: config.order !== undefined ? config.order : null,
     sections: config.sections || [],
     sectionOrientation: config.sectionOrientation || null,
+    visibleFor: config.visibleFor || null,
   };
 }
 
@@ -455,6 +457,12 @@ function defineSchema(definition) {
     // Initialize form fields
     console.log('\n--- Initializing FORM FIELDS ---');
     Object.entries(schema.formFields).forEach(([fieldName, fieldDef]) => {
+      // CRITICAL: Skip fields with dbField: null (custom-rendered fields like "elements")
+      if (fieldDef.dbField === null) {
+        console.log(`\nForm field: ${fieldName} (dbField: null) - SKIPPED (custom field)`);
+        return;
+      }
+      
       const dbField = fieldDef.dbField || fieldName;
       console.log(`\nForm field: ${fieldName} (dbField: ${dbField})`);
       console.log(`  data[dbField] = data["${dbField}"] =`, data[dbField]);
@@ -479,6 +487,12 @@ function defineSchema(definition) {
     // Initialize entity fields
     console.log('\n--- Initializing ENTITY FIELDS ---');
     Object.entries(schema.entityFields).forEach(([fieldName, fieldDef]) => {
+      // CRITICAL: Skip fields with dbField: null (custom-rendered fields like "elements")
+      if (fieldDef.dbField === null) {
+        console.log(`\nEntity field: ${fieldName} (dbField: null) - SKIPPED (custom field)`);
+        return;
+      }
+      
       const dbField = fieldDef.dbField || fieldName;
       console.log(`\nEntity field: ${fieldName} (dbField: ${dbField})`);
       console.log(`  data[dbField] = data["${dbField}"] =`, data[dbField]);

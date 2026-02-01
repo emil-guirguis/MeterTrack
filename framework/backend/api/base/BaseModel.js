@@ -109,6 +109,11 @@ class BaseModel {
       
       // Add/override with schema fields
       Object.entries(schemaFields).forEach(([name, fieldDef]) => {
+        // Skip fields with dbField: null (custom-rendered fields like "elements")
+        if (fieldDef.dbField === null) {
+          return;
+        }
+        
         // Convert schema field definition to BaseModel field format
         const dbField = fieldDef.dbField || name;
         fieldMap.set(name, {

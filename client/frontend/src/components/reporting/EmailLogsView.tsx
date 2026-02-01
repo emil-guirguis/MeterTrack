@@ -22,7 +22,7 @@ import { exportEmailLogs } from '../../services/reportingService';
 
 interface EmailLogsViewProps {
   emailLogs: EmailLog[];
-  reportId: string;
+  reportId: number;
 }
 
 const EmailLogsView: React.FC<EmailLogsViewProps> = ({ emailLogs, reportId }) => {
@@ -142,7 +142,7 @@ const EmailLogsView: React.FC<EmailLogsViewProps> = ({ emailLogs, reportId }) =>
               </TableRow>
             ) : (
               filteredLogs.map((log) => (
-                <TableRow key={log.id} hover>
+                <TableRow key={log.report_email_logs_id} hover>
                   <TableCell>{log.recipient}</TableCell>
                   <TableCell sx={{ fontSize: '0.85rem' }}>
                     {formatDate(log.sent_at)}

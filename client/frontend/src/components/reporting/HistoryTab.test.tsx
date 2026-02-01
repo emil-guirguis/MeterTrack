@@ -10,16 +10,16 @@ vi.mock('../../services/reportingService');
 describe('HistoryTab', () => {
   const mockHistory = [
     {
-      id: 'history-1',
-      report_id: 'report-1',
+      report_history_id: 1,
+      report_id: 1,
       executed_at: new Date('2024-01-15T09:00:00Z').toISOString(),
       status: 'success' as const,
       error_message: null,
       created_at: new Date('2024-01-15T09:00:00Z').toISOString()
     },
     {
-      id: 'history-2',
-      report_id: 'report-1',
+      report_history_id: 2,
+      report_id: 1,
       executed_at: new Date('2024-01-14T09:00:00Z').toISOString(),
       status: 'failed' as const,
       error_message: 'Database connection timeout',
@@ -29,9 +29,9 @@ describe('HistoryTab', () => {
 
   const mockEmailLogs = [
     {
-      id: 'email-1',
-      report_id: 'report-1',
-      history_id: 'history-1',
+      report_email_logs_id: 1,
+      report_id: 1,
+      report_history_id: 1,
       recipient: 'user1@example.com',
       sent_at: new Date('2024-01-15T09:00:00Z').toISOString(),
       status: 'delivered' as const,
@@ -39,9 +39,9 @@ describe('HistoryTab', () => {
       created_at: new Date('2024-01-15T09:00:00Z').toISOString()
     },
     {
-      id: 'email-2',
-      report_id: 'report-1',
-      history_id: 'history-1',
+      report_email_logs_id: 2,
+      report_id: 1,
+      report_history_id: 1,
       recipient: 'user2@example.com',
       sent_at: new Date('2024-01-15T09:00:01Z').toISOString(),
       status: 'failed' as const,
@@ -67,7 +67,7 @@ describe('HistoryTab', () => {
   });
 
   it('should render history table', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Executed At')).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('HistoryTab', () => {
   });
 
   it('should display history entries', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('HistoryTab', () => {
   });
 
   it('should display error messages for failed executions', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Database connection timeout')).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe('HistoryTab', () => {
   });
 
   it('should open email logs dialog', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe('HistoryTab', () => {
   });
 
   it('should display email logs in dialog', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -124,7 +124,7 @@ describe('HistoryTab', () => {
   });
 
   it('should filter history by date range', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe('HistoryTab', () => {
 
     await waitFor(() => {
       expect(reportingService.getReportHistory).toHaveBeenCalledWith(
-        'report-1',
+        1,
         1,
         10,
         expect.any(String),
@@ -151,7 +151,7 @@ describe('HistoryTab', () => {
   });
 
   it('should clear date filters', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -174,7 +174,7 @@ describe('HistoryTab', () => {
       }), 100))
     );
 
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
@@ -184,7 +184,7 @@ describe('HistoryTab', () => {
       new Error('Failed to load history')
     );
 
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load history')).toBeInTheDocument();
@@ -197,7 +197,7 @@ describe('HistoryTab', () => {
       pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
     });
 
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('No execution history found.')).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe('HistoryTab', () => {
   });
 
   it('should support pagination', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('HistoryTab', () => {
   });
 
   it('should close email logs dialog', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
@@ -238,7 +238,7 @@ describe('HistoryTab', () => {
   });
 
   it('should format dates correctly', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       // Check that dates are formatted (not just raw ISO strings)
@@ -248,7 +248,7 @@ describe('HistoryTab', () => {
   });
 
   it('should display status chips with correct colors', async () => {
-    render(<HistoryTab reportId="report-1" />);
+    render(<HistoryTab reportId={1} />);
 
     await waitFor(() => {
       const successChip = screen.getByText('Success');

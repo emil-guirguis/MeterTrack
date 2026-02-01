@@ -10,9 +10,9 @@ vi.mock('../../services/reportingService');
 describe('EmailLogsView', () => {
   const mockEmailLogs = [
     {
-      id: 'email-1',
-      report_id: 'report-1',
-      history_id: 'history-1',
+      report_email_logs_id: 1,
+      report_id: 1,
+      report_history_id: 1,
       recipient: 'user1@example.com',
       sent_at: new Date('2024-01-15T09:00:00Z').toISOString(),
       status: 'delivered' as const,
@@ -20,9 +20,9 @@ describe('EmailLogsView', () => {
       created_at: new Date('2024-01-15T09:00:00Z').toISOString()
     },
     {
-      id: 'email-2',
-      report_id: 'report-1',
-      history_id: 'history-1',
+      report_email_logs_id: 2,
+      report_id: 1,
+      report_history_id: 1,
       recipient: 'user2@example.com',
       sent_at: new Date('2024-01-15T09:00:01Z').toISOString(),
       status: 'failed' as const,
@@ -30,9 +30,9 @@ describe('EmailLogsView', () => {
       created_at: new Date('2024-01-15T09:00:01Z').toISOString()
     },
     {
-      id: 'email-3',
-      report_id: 'report-1',
-      history_id: 'history-1',
+      report_email_logs_id: 3,
+      report_id: 1,
+      report_history_id: 1,
       recipient: 'user3@example.com',
       sent_at: new Date('2024-01-15T09:00:02Z').toISOString(),
       status: 'sent' as const,
@@ -49,7 +49,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -62,7 +62,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -75,7 +75,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -88,7 +88,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -99,7 +99,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -115,7 +115,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -136,7 +136,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -144,7 +144,7 @@ describe('EmailLogsView', () => {
     fireEvent.click(csvButton);
 
     await waitFor(() => {
-      expect(reportingService.exportEmailLogs).toHaveBeenCalledWith('csv', 'report-1');
+      expect(reportingService.exportEmailLogs).toHaveBeenCalledWith('csv', 1);
     });
   });
 
@@ -166,7 +166,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -174,7 +174,7 @@ describe('EmailLogsView', () => {
     fireEvent.click(jsonButton);
 
     await waitFor(() => {
-      expect(reportingService.exportEmailLogs).toHaveBeenCalledWith('json', 'report-1');
+      expect(reportingService.exportEmailLogs).toHaveBeenCalledWith('json', 1);
     });
   });
 
@@ -186,7 +186,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -202,7 +202,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={[]}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -217,7 +217,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={[]}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -228,7 +228,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -242,7 +242,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -253,7 +253,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -267,7 +267,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 
@@ -288,7 +288,7 @@ describe('EmailLogsView', () => {
     render(
       <EmailLogsView
         emailLogs={mockEmailLogs}
-        reportId="report-1"
+        reportId={1}
       />
     );
 

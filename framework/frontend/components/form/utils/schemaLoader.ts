@@ -202,6 +202,7 @@ function convertFieldDefinition(backendField: BackendFieldDefinition & { validat
     required: backendField.required,
     label: backendField.label,
     apiField: backendField.dbField || undefined,
+    dbField: backendField.dbField,
     // Add validation rules (check for null/undefined, not falsy, to allow 0)
     ...(backendField.minLength != null && { minLength: backendField.minLength }),
     ...(backendField.maxLength != null && { maxLength: backendField.maxLength }),
@@ -228,13 +229,16 @@ export interface ConvertedSchema {
   formTabs: Array<{
     name: string;
     order?: number | null;
+    visibleFor?: ('physical' | 'virtual')[];
     sectionOrientation?: 'horizontal' | 'vertical' | null;
     sections: Array<{
       name: string;
       order?: number | null;
+      visibleFor?: ('physical' | 'virtual')[];
       fields: Array<{
         name: string;
         order?: number | null;
+        visibleFor?: ('physical' | 'virtual')[];
       }>;
       minWidth?: string | null;
       maxWidth?: string | null;

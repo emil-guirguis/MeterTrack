@@ -3,7 +3,7 @@
  * Creates MUI theme with Material Design 3 tokens
  */
 
-import { createTheme, ThemeOptions } from '@mui/material/styles';
+import { createTheme, type ThemeOptions } from '@mui/material/styles';
 import { lightColorTokens, darkColorTokens } from './colors';
 import { typographyScales, fontFamily } from './typography';
 import { elevationShadows } from './elevation';
@@ -74,7 +74,7 @@ export const createLightTheme = (): ReturnType<typeof createTheme> => {
       labelLarge: typographyScales.labelLarge,
       labelMedium: typographyScales.labelMedium,
       labelSmall: typographyScales.labelSmall,
-    },
+    } as any,
     shape: {
       borderRadius: 12,
     },
@@ -218,6 +218,13 @@ export const createDarkTheme = (): ReturnType<typeof createTheme> => {
       titleLarge: typographyScales.titleLarge,
       titleMedium: typographyScales.titleMedium,
       titleSmall: typographyScales.titleSmall,
+      bodyLarge: typographyScales.bodyLarge,
+      bodyMedium: typographyScales.bodyMedium,
+      bodySmall: typographyScales.bodySmall,
+      labelLarge: typographyScales.labelLarge,
+      labelMedium: typographyScales.labelMedium,
+      labelSmall: typographyScales.labelSmall,
+    } as any,
       bodyLarge: typographyScales.bodyLarge,
       bodyMedium: typographyScales.bodyMedium,
       bodySmall: typographyScales.bodySmall,

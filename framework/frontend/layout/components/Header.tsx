@@ -61,6 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -164,24 +165,58 @@ export const Header: React.FC<HeaderProps> = ({
     }
 
     try {
-      // Call AI search endpoint
+      setIsSearching(true);
+
+      // Get auth token from storage
+      const authToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      
+      if (!authToken) {
+        console.warn('⚠️ [SEARCH] No authentication token found in storage');
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      console.log('🔍 [SEARCH] Searching for:', query);
+
+      // Call AI search endpoint with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch('/api/ai/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')}`
+          'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ query }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ [SEARCH] Results received:', data.data?.results?.length || 0, 'items');
         setSearchResults(data.data?.results || []);
         setShowSearchResults(true);
+      } else if (response.status === 401 || response.status === 403) {
+        console.error('❌ [SEARCH] Authentication failed:', response.status, response.statusText);
+        setSearchResults([]);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ [SEARCH] Search failed:', response.status, errorData.error?.message || response.statusText);
+        setSearchResults([]);
       }
     } catch (error) {
-      console.error('Search error:', error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('❌ [SEARCH] Search timeout');
+      } else {
+        console.error('❌ [SEARCH] Network error:', error instanceof Error ? error.message : String(error));
+      }
       setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -246,13 +281,20 @@ export const Header: React.FC<HeaderProps> = ({
               value={searchQuery}
               onChange={handleSearchInputChange}
               onFocus={() => searchQuery && setShowSearchResults(true)}
+              disabled={isSearching}
             />
+            {isSearching && (
+              <div className="search-loading" aria-label="Searching...">
+                <span className="loading-spinner"></span>
+              </div>
+            )}
             <button
               className={`mic-button ${isListening ? 'listening' : ''}`}
               onClick={isListening ? stopListening : startListening}
               aria-label={isListening ? 'Stop listening' : 'Start voice search'}
               title={isListening ? 'Stop listening' : 'Start voice search'}
               type="button"
+              disabled={isSearching}
             >
               {getIconElement('mic', 'mic-icon')}
             </button>

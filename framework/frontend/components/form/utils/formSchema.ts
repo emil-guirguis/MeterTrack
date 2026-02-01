@@ -15,6 +15,8 @@ export interface FieldDefinition<TValue = any> {
   default: TValue;
   /** API field name (if different from form field name) */
   apiField?: string;
+  /** Database field name (null for custom-rendered fields) */
+  dbField?: string | null;
   /** Transform value when sending to API */
   toApi?: (value: TValue) => any;
   /** Transform value when receiving from API */

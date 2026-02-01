@@ -8,8 +8,9 @@
 console.log('[MeterReadingManagementPage.tsx] Module loaded at', new Date().toISOString());
 
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MeterReadingList } from './MeterReadingList';
+import { MeterReadingForm } from './MeterReadingForm';
 import { useMeterReadingsEnhanced } from './meterReadingsStore';
 import { useMeterSelection } from '../../contexts/MeterSelectionContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,7 +21,9 @@ export const MeterReadingManagementPage: React.FC = () => {
   const { setSelectedMeter, setSelectedElement } = useMeterSelection();
   const auth = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [gridType, setGridType] = React.useState<'simple' | 'baselist'>('simple');
+  const [showForm, setShowForm] = React.useState(false);
 
   const meterId = searchParams.get('meterId');
   const elementId = searchParams.get('elementId');
@@ -51,6 +54,10 @@ export const MeterReadingManagementPage: React.FC = () => {
         setGridType(urlGridType);
       }
       
+      // Show form if gridType is 'simple' (from favorite click)
+      // Show list if gridType is 'baselist' or not provided
+      setShowForm(urlGridType === 'simple');
+      
       const fetchParams = {
         tenantId: auth.user.client,
         meterId: meterId,
@@ -64,9 +71,29 @@ export const MeterReadingManagementPage: React.FC = () => {
     }
   }, [meterId, elementId, elementName, elementNumber, auth.user?.client, urlGridType]);
 
+  /**
+   * Handle navigation to the meter reading list
+   */
+  const handleNavigateToList = React.useCallback(() => {
+    const params = new URLSearchParams();
+    if (meterId) params.set('meterId', meterId);
+    if (elementId) params.set('elementId', elementId);
+    if (elementName) params.set('elementName', elementName);
+    if (elementNumber) params.set('elementNumber', elementNumber);
+    params.set('gridType', 'baselist');
+    navigate(`/meter-readings?${params.toString()}`);
+  }, [meterId, elementId, elementName, elementNumber, navigate]);
+
   return (
     <div className="meter-reading-management-page">
-      <MeterReadingList gridType={gridType} onGridTypeChange={setGridType} />
+      {showForm && elementId ? (
+        <MeterReadingForm 
+          meterElementId={elementId}
+          onNavigateToList={handleNavigateToList}
+        />
+      ) : (
+        <MeterReadingList gridType={gridType} onGridTypeChange={setGridType} />
+      )}
     </div>
   );
 };

@@ -84,6 +84,8 @@ export default defineConfig({
   
   // Enhanced error handling
   build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
     rollupOptions: {
       onwarn(warning, warn) {
         console.warn('\n⚠️  Build Warning:', warning.message);
@@ -91,4 +93,6 @@ export default defineConfig({
       },
     },
   },
+  // Base path for production (leave empty for root domain)
+  base: '/',
 });

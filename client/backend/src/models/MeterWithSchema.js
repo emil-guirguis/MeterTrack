@@ -102,6 +102,7 @@ class Meter extends BaseModel {
                   placeholder: 'Enter serial number',
                   filertable: ['true'],
                   showOn: ['list', 'form'],
+                  visibleFor: ['physical'],
                 }),
                 field({
                   name: 'device_id',
@@ -115,6 +116,7 @@ class Meter extends BaseModel {
                   showOn: ['list', 'form'],
                   validate: true,
                   validationFields: ['manufacturer', 'model_number'],
+                  visibleFor: ['physical'],
                 }),
                 field({
                   name: 'location_id',
@@ -134,6 +136,7 @@ class Meter extends BaseModel {
             section({
               name: 'Network',
               order: 2,
+              visibleFor: ['physical'],
               fields: [
                 field({
                   name: 'ip',
@@ -194,9 +197,23 @@ class Meter extends BaseModel {
         tab({
           name: 'Elements',
           order: 2,
+          visibleFor: ['physical'],
           sections: [
             section({
               name: 'Meter Elements',
+              order: 1,
+              fields: [
+              ],
+            }),
+          ],
+        }),
+        tab({
+          name: 'Combined Meters',
+          order: 2,
+          visibleFor: ['virtual'],
+          sections: [
+            section({
+              name: 'Combined Meters',
               order: 1,
               fields: [
                 field({

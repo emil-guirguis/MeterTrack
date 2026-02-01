@@ -96,7 +96,7 @@ const ReportForm: React.FC<ReportFormProps> = ({ report, onSubmit, onCancel }) =
       setSubmitError(null);
 
       if (report) {
-        await updateReport(report.id, {
+        await updateReport(report.report_id, {
           name: formData.name,
           type: formData.type,
           schedule: formData.schedule,

@@ -52,7 +52,7 @@ const ReportsManager: React.FC<ReportsManagerProps> = ({ onReportCreated, onRepo
       setLoading(true);
       setError(null);
       const response = await getReports(page + 1, rowsPerPage);
-      setReports(response.data);
+      setReports(response.data || []);
       setTotalReports(response.pagination.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load reports');
@@ -100,7 +100,7 @@ const ReportsManager: React.FC<ReportsManagerProps> = ({ onReportCreated, onRepo
     if (!reportToDelete) return;
 
     try {
-      await deleteReport(reportToDelete.id);
+      await deleteReport(reportToDelete.report_id);
       setDeleteConfirmOpen(false);
       setReportToDelete(null);
       await loadReports();
@@ -112,7 +112,7 @@ const ReportsManager: React.FC<ReportsManagerProps> = ({ onReportCreated, onRepo
 
   const handleToggleStatus = async (report: Report) => {
     try {
-      await toggleReportStatus(report.id);
+      await toggleReportStatus(report.report_id);
       await loadReports();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle report status');
@@ -178,7 +178,7 @@ const ReportsManager: React.FC<ReportsManagerProps> = ({ onReportCreated, onRepo
                   </TableRow>
                 ) : (
                   reports.map((report) => (
-                    <TableRow key={report.id} hover>
+                    <TableRow key={report.report_id} hover>
                       <TableCell>{report.name}</TableCell>
                       <TableCell>{report.type}</TableCell>
                       <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>

@@ -9,6 +9,9 @@ export * from './entities';
 // UI and Components
 export * from './ui';
 
+// Meter types
+export * from './meter';
+
 // Re-export commonly used types for convenience
 export type {
   User,
@@ -35,3 +38,8 @@ export type {
   MenuItem,
   Notification
 } from './ui';
+
+export type {
+  Meter,
+  VirtualMeterConfig
+} from './meter';

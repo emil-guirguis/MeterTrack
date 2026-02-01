@@ -66,6 +66,7 @@ router.post('/', async (req, res) => {
 
     // Validate input
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
+      console.warn('⚠️ [AI_SEARCH] Invalid query parameter');
       return res.status(400).json({
         success: false,
         error: {
@@ -75,7 +76,32 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Validate limit parameter
+    if (!Number.isInteger(limit) || limit <= 0) {
+      console.warn('⚠️ [AI_SEARCH] Invalid limit parameter:', limit);
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_LIMIT',
+          message: 'Limit must be a positive integer',
+        },
+      });
+    }
+
+    // Validate offset parameter
+    if (!Number.isInteger(offset) || offset < 0) {
+      console.warn('⚠️ [AI_SEARCH] Invalid offset parameter:', offset);
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OFFSET',
+          message: 'Offset must be a non-negative integer',
+        },
+      });
+    }
+
     if (!tenantId) {
+      console.error('❌ [AI_SEARCH] Missing tenant ID in request context');
       return res.status(400).json({
         success: false,
         error: {
@@ -84,6 +110,8 @@ router.post('/', async (req, res) => {
         },
       });
     }
+
+    console.log(`🔍 [AI_SEARCH] Searching for: "${query}" (tenant: ${tenantId}, limit: ${limit}, offset: ${offset})`);
 
     const startTime = Date.now();
 
@@ -100,6 +128,7 @@ router.post('/', async (req, res) => {
     const devices = devicesResult.rows || [];
 
     if (devices.length === 0) {
+      console.log(`ℹ️ [AI_SEARCH] No devices found for tenant: ${tenantId}`);
       return res.status(200).json({
         success: true,
         data: {
@@ -161,6 +190,8 @@ router.post('/', async (req, res) => {
 
     const executionTime = Date.now() - startTime;
 
+    console.log(`✅ [AI_SEARCH] Search completed in ${executionTime}ms, returned ${searchResults.length} results`);
+
     return res.status(200).json({
       success: true,
       data: {
@@ -188,6 +219,13 @@ router.post('/', async (req, res) => {
 /**
  * Performs keyword-based search on devices
  * This is a fallback implementation until full AI service is integrated
+ * 
+ * Scoring algorithm:
+ * - Exact name match: +10 points
+ * - Partial name match: +5 points
+ * - Type match: +3 points
+ * - Location match: +2 points
+ * - Status match: +1 point
  */
 function performKeywordSearch(devices, meters, readingsByDevice, query, limit, offset) {
   const results = [];
@@ -197,24 +235,29 @@ function performKeywordSearch(devices, meters, readingsByDevice, query, limit, o
     .map((device) => {
       let score = 0;
 
-      // Match device name
-      if (device.name.toLowerCase().includes(query)) {
+      // Match device name (exact and partial)
+      const deviceNameLower = device.name.toLowerCase();
+      if (deviceNameLower === query) {
+        // Exact match
         score += 10;
+      } else if (deviceNameLower.includes(query)) {
+        // Partial match
+        score += 5;
       }
 
       // Match device type
       if (device.type && device.type.toLowerCase().includes(query)) {
-        score += 5;
+        score += 3;
       }
 
       // Match location
       if (device.location && device.location.toLowerCase().includes(query)) {
-        score += 3;
+        score += 2;
       }
 
       // Match status
       if (device.status && device.status.toLowerCase().includes(query)) {
-        score += 2;
+        score += 1;
       }
 
       return { device, score };
@@ -227,12 +270,20 @@ function performKeywordSearch(devices, meters, readingsByDevice, query, limit, o
     const { device, score } = scoredDevices[i];
     const deviceReadings = readingsByDevice.get(device.id) || [];
 
-    if (deviceReadings.length === 0) {
-      continue;
+    // Get latest reading or use placeholder data for devices without readings
+    let latestReading;
+    if (deviceReadings.length > 0) {
+      latestReading = deviceReadings[0];
+    } else {
+      // Placeholder data for devices without readings
+      latestReading = {
+        value: 0,
+        timestamp: new Date().toISOString(),
+      };
     }
 
-    // Get latest reading
-    const latestReading = deviceReadings[0];
+    // Normalize score to 0-1 range
+    const normalizedScore = Math.min(score / 10, 1.0);
 
     results.push({
       id: device.id,
@@ -242,7 +293,7 @@ function performKeywordSearch(devices, meters, readingsByDevice, query, limit, o
       currentConsumption: latestReading.value || 0,
       unit: 'kWh',
       status: device.status || 'unknown',
-      relevanceScore: Math.min(score / 10, 1.0),
+      relevanceScore: normalizedScore,
       lastReading: {
         value: latestReading.value || 0,
         timestamp: latestReading.timestamp || new Date().toISOString(),

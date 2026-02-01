@@ -1,0 +1,61 @@
+.meter-type-selector {
+  /* Dialog styling handled by MUI */
+}
+
+.meter-type-selector__title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  padding: 24px 24px 16px;
+}
+
+.meter-type-selector__content {
+  padding: 16px 24px;
+}
+
+.meter-type-selector__description {
+  margin: 0 0 24px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.meter-type-selector__buttons {
+  display: flex;
+  gap: 16px;
+  flex-direction: column;
+}
+
+.meter-type-selector__button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.meter-type-selector__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.meter-type-selector__button--physical {
+  background-color: #1976d2;
+}
+
+.meter-type-selector__button--physical:hover {
+  background-color: #1565c0;
+}
+
+.meter-type-selector__button--virtual {
+  background-color: #388e3c;
+}
+
+.meter-type-selector__button--virtual:hover {
+  background-color: #2e7d32;
+}
+
+.meter-type-selector__actions {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}

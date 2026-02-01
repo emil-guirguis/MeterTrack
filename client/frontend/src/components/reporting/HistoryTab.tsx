@@ -29,7 +29,7 @@ import EmailLogsView from './EmailLogsView';
 import './HistoryTab.css';
 
 interface HistoryTabProps {
-  reportId: string;
+  reportId: number;
 }
 
 const HistoryTab: React.FC<HistoryTabProps> = ({ reportId }) => {
@@ -58,7 +58,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ reportId }) => {
         startDate || undefined,
         endDate || undefined
       );
-      setHistory(response.data);
+      setHistory(response.data || []);
       setTotalHistory(response.pagination.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load history');
@@ -76,7 +76,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ reportId }) => {
     try {
       setEmailLogsLoading(true);
       setSelectedHistory(historyEntry);
-      const response = await getEmailLogs(reportId, historyEntry.id);
+      const response = await getEmailLogs(reportId, historyEntry.report_history_id);
       setEmailLogs(response.emails);
       setShowEmailLogs(true);
     } catch (err) {
@@ -192,7 +192,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ reportId }) => {
                   </TableRow>
                 ) : (
                   history.map((entry) => (
-                    <TableRow key={entry.id} hover>
+                    <TableRow key={entry.report_history_id} hover>
                       <TableCell>{formatDate(entry.executed_at)}</TableCell>
                       <TableCell>
                         <Chip

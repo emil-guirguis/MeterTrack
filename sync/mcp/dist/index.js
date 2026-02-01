@@ -16,6 +16,7 @@ import { createAndStartLocalApiServer } from './api/server.js';
 import { RemoteToLocalSyncAgent } from './remote_to_local-sync/sync-agent.js';
 import { BACnetMeterReadingAgent } from './bacnet-collection/bacnet-reading-agent.js';
 import { MeterReadingCleanupAgent } from './bacnet-collection/meter-reading-cleanup-agent.js';
+import { SyncManager } from './remote_to_local-sync/sync-manager.js';
 import { SyncDatabase } from './data-sync/data-sync.js';
 import { getBACnetCollectionIntervalSeconds, getBACnetUploadCronExpression, } from './config/scheduling-constants.js';
 // Load environment variables from root .env file first, then local .env
@@ -53,6 +54,7 @@ class SyncMcpServer {
     remoteToLocalSyncAgent;
     bacnetMeterReadingAgent;
     meterReadingCleanupAgent;
+    syncManager;
     isInitialized = false;
     constructor() {
         this.server = new Server({
@@ -175,10 +177,27 @@ class SyncMcpServer {
             console.log('▶️  [Services] Starting Meter Reading Cleanup Agent...');
             await this.meterReadingCleanupAgent.start();
             console.log('✅ [Services] Meter Reading Cleanup Agent started');
-            // Step 10: Initialize Local API Server
+            // Step 10: Initialize Sync Manager
+            console.log('🔄 [Services] Initializing Sync Manager...');
+            this.syncManager = new SyncManager({
+                database: this.syncDatabase,
+                apiClient: apiClient,
+                syncIntervalMinutes: parseInt(process.env.METER_SYNC_INTERVAL_MINUTES || '60', 10),
+                batchSize: parseInt(process.env.BATCH_SIZE || '1000', 10),
+                maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
+                enableAutoSync: process.env.METER_SYNC_AUTO_START !== 'false',
+            });
+            console.log('✅ [Services] Sync Manager initialized');
+            console.log('▶️  [Services] Starting Sync Manager...');
+            await this.syncManager.start();
+            console.log('✅ [Services] Sync Manager started');
+            // Step 11: Initialize Local API Server
             console.log('🌐 [Services] Initializing Local API Server...');
             this.apiServer = await createAndStartLocalApiServer(this.syncDatabase, this.remoteToLocalSyncAgent, this.bacnetMeterReadingAgent, undefined, this.remotePool);
-            console.log('✅ [Services] Local API Server started');
+            // Step 12: Set Sync Manager on API Server
+            console.log('🔗 [Services] Setting Sync Manager on Local API Server...');
+            this.apiServer.setSyncManager(this.syncManager);
+            console.log('✅ [Services] Sync Manager set on Local API Server');
             this.isInitialized = true;
             console.log('✅ [Services] All services initialized successfully\n');
         }
@@ -580,6 +599,9 @@ class SyncMcpServer {
      */
     async shutdown() {
         logger.info('Shutting down Sync MCP Server...');
+        if (this.syncManager) {
+            await this.syncManager.stop();
+        }
         if (this.meterReadingCleanupAgent) {
             await this.meterReadingCleanupAgent.stop();
         }

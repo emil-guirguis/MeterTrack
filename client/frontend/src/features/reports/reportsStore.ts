@@ -5,6 +5,8 @@ import { useNotification } from '../../hooks/useNotification';
 import type { Report } from './types';
 import type { EnhancedStore } from '@framework/components/list/types/list';
 
+export type { Report };
+
 interface ReportsState {
   items: Report[];
   list: {

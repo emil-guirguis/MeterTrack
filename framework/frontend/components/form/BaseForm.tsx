@@ -46,6 +46,16 @@ export interface BaseFormProps {
   // Form width constraints
   formMaxWidth?: string;
   formMinWidth?: string;
+  /**
+   * The type of meter being edited. Used to filter tabs based on meter type.
+   * - 'physical': For physical meters (shows Elements tab)
+   * - 'virtual': For virtual meters (shows Combined Meters tab)
+   * - null/undefined: Shows all tabs (default behavior)
+   * 
+   * This prop is passed to the useFormTabs hook to conditionally render tabs
+   * based on the tab's visibleFor property.
+   */
+  meterType?: 'physical' | 'virtual' | null;
 }
 
 /**
@@ -110,6 +120,8 @@ export const BaseForm: React.FC<BaseFormProps> = ({
   // Form width constraints
   formMaxWidth,
   formMinWidth,
+  // Meter type for tab filtering
+  meterType,
 }) => {
   const formClassName = className ? `base-form ${className}` : 'base-form';
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -147,7 +159,8 @@ export const BaseForm: React.FC<BaseFormProps> = ({
   // Use formTabs from schema if available, otherwise use provided fieldSections
   const { tabs: allTabs, fieldSections: formTabsFieldSections, tabList } = useFormTabs(
     schema?.formTabs,
-    effectiveActiveTab
+    effectiveActiveTab,
+    meterType
   );
 
   console.log('[BaseForm] useFormTabs result:', {
@@ -236,12 +249,20 @@ export const BaseForm: React.FC<BaseFormProps> = ({
             }
           });
           
-          const formSchema = createFormSchema(allFormFields);
+          // CRITICAL: Filter out fields with dbField: null (custom-rendered fields like "elements")
+          const fieldsForForm: any = {};
+          Object.entries(allFormFields).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (fieldDef.dbField !== null) {
+              fieldsForForm[fieldName] = fieldDef;
+            }
+          });
+          
+          const formSchema = createFormSchema(fieldsForForm);
           const formData = formSchema.fromApi(entityData);
           
           // Also include entityFields data
           Object.entries(schema.entityFields || {}).forEach(([fieldName, fieldDef]) => {
-            if (fieldDef.showOn?.includes('form')) {
+            if (fieldDef.showOn?.includes('form') && fieldDef.dbField !== null) {
               formData[fieldName] = entityData[fieldName];
             }
           });
@@ -276,12 +297,20 @@ export const BaseForm: React.FC<BaseFormProps> = ({
             }
           });
           
-          const formSchema = createFormSchema(allFormFields);
+          // CRITICAL: Filter out fields with dbField: null (custom-rendered fields like "elements")
+          const fieldsForDefaults: any = {};
+          Object.entries(allFormFields).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (fieldDef.dbField !== null) {
+              fieldsForDefaults[fieldName] = fieldDef;
+            }
+          });
+          
+          const formSchema = createFormSchema(fieldsForDefaults);
           const defaults = formSchema.getDefaults();
           
           // Also include entityFields defaults
           Object.entries(schema.entityFields || {}).forEach(([fieldName, fieldDef]) => {
-            if (fieldDef.showOn?.includes('form')) {
+            if (fieldDef.showOn?.includes('form') && fieldDef.dbField !== null) {
               defaults[fieldName] = fieldDef.default;
             }
           });
@@ -316,18 +345,20 @@ export const BaseForm: React.FC<BaseFormProps> = ({
             }
           });
           
+          // CRITICAL: Filter out fields with dbField: null BEFORE calling toApi()
+          // This prevents custom-rendered fields like "elements" from being included in the API payload
+          const cleanFormData: any = { ...formData };
+          Object.entries(allFormFields).forEach(([fieldName, fieldDef]: [string, any]) => {
+            if (fieldDef.dbField === null) {
+              delete cleanFormData[fieldName];
+            }
+          });
+          
           const formSchema = createFormSchema(allFormFields);
-          const apiData = formSchema.toApi(formData);
+          const apiData = formSchema.toApi(cleanFormData);
           const cleanData = { ...apiData };
           fieldsToClean.forEach(field => {
             delete cleanData[field];
-          });
-          
-          // Filter out fields with dbField: null (custom-rendered fields like "elements")
-          Object.entries(allFormFields).forEach(([fieldName, fieldDef]: [string, any]) => {
-            if (fieldDef.dbField === null) {
-              delete cleanData[fieldName];
-            }
           });
           
           // Return all data - let the store handle dirty field filtering if needed

@@ -1,11 +1,9 @@
 import React from 'react';
-import { EntityManagementPage, FormModal } from '@framework/components/modal';
-import { ReportList } from './ReportList';
-import { ReportForm } from './ReportForm';
+import { EntityManagementPage } from '@framework/components/modal';
 import { useReportsEnhanced } from './reportsStore';
-import type { Report } from './types';
+import type { Report } from '../../services/reportingService';
 
-export const ReportManagementPage: React.FC<{ onReportSelect?: (reportId: string) => void }> = ({ onReportSelect }) => (
+export const ReportManagementPage: React.FC<{ onReportSelect?: (reportId: string) => void }> = () => (
   <EntityManagementPage<Report, ReturnType<typeof useReportsEnhanced>>
     title="Report Management"
     entityName="report"
@@ -13,6 +11,5 @@ export const ReportManagementPage: React.FC<{ onReportSelect?: (reportId: string
     FormComponent={ReportForm}
     useStore={useReportsEnhanced}
     ModalComponent={FormModal}
-    listProps={{ onReportSelect }}
   />
 );

@@ -1,20 +1,35 @@
 import React, { useState } from 'react';
 import { MeterList, MeterForm } from '../features/meters';
+import { MeterTypeSelector } from '../features/meters/MeterTypeSelector';
 import { useMetersEnhanced, type Meter } from '../features/meters/metersStore';
 import { FormModal } from '@framework/components/modal';
 import './MetersPage.css';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view';
+type MeterType = 'physical' | 'virtual' | null;
 
 const MetersPage: React.FC = () => {
   const meters = useMetersEnhanced();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedMeter, setSelectedMeter] = useState<Meter | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
+  const [selectedMeterType, setSelectedMeterType] = useState<MeterType>(null);
 
   const handleCreateMeter = () => {
+    setShowTypeSelector(true);
+  };
+
+  const handleMeterTypeSelected = (type: 'physical' | 'virtual') => {
+    setSelectedMeterType(type);
+    setShowTypeSelector(false);
     setSelectedMeter(null);
     setViewMode('create');
+  };
+
+  const handleTypeSelectionCancel = () => {
+    setShowTypeSelector(false);
+    setSelectedMeterType(null);
   };
 
   const handleEditMeter = (meter: any) => {
@@ -48,6 +63,7 @@ const MetersPage: React.FC = () => {
   const handleFormCancel = () => {
     setViewMode('list');
     setSelectedMeter(null);
+    setSelectedMeterType(null);
   };
 
   const renderMeterDetails = (meter: Meter) => (
@@ -169,6 +185,13 @@ const MetersPage: React.FC = () => {
         {viewMode === 'view' && selectedMeter && renderMeterDetails(selectedMeter)}
       </div>
 
+      {/* Meter Type Selector Dialog */}
+      <MeterTypeSelector
+        isOpen={showTypeSelector}
+        onSelect={handleMeterTypeSelected}
+        onCancel={handleTypeSelectionCancel}
+      />
+
       {/* Create/Edit Modal */}
       {(viewMode === 'create' || viewMode === 'edit') && (
         <FormModal
@@ -182,6 +205,7 @@ const MetersPage: React.FC = () => {
         >
           <MeterForm
             meter={selectedMeter || undefined}
+            meterType={selectedMeterType}
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
             loading={isSubmitting}

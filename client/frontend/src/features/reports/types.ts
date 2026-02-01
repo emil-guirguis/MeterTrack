@@ -6,6 +6,10 @@ export interface Report {
   recipients: string[];
   config: Record<string, any>;
   enabled: boolean;
+  meter_ids?: string[];
+  element_ids?: string[];
+  register_ids?: string[];
+  html_format?: boolean;
   created_at: string;
   updated_at: string;
 }
