@@ -51,56 +51,9 @@ export default defineConfig({
     errorLoggerPlugin(),
   ],
   resolve: {
-    alias: [
-      {
-        find: '@framework',
-        replacement: path.resolve(__dirname, '../../framework/frontend'),
-      },
-      {
-        find: /^@mui\/material(\/.*)?$/,
-        replacement: path.resolve(__dirname, 'node_modules/@mui/material'),
-      },
-      {
-        find: /^@mui\/icons-material(\/.*)?$/,
-        replacement: path.resolve(__dirname, 'node_modules/@mui/icons-material'),
-      },
-      {
-        find: '@emotion/react',
-        replacement: path.resolve(__dirname, 'node_modules/@emotion/react'),
-      },
-      {
-        find: '@emotion/styled',
-        replacement: path.resolve(__dirname, 'node_modules/@emotion/styled'),
-      },
-      {
-        find: 'react',
-        replacement: path.resolve(__dirname, 'node_modules/react'),
-      },
-      {
-        find: 'react-dom',
-        replacement: path.resolve(__dirname, 'node_modules/react-dom'),
-      },
-      {
-        find: 'react-router-dom',
-        replacement: path.resolve(__dirname, 'node_modules/react-router-dom'),
-      },
-      {
-        find: '@microlink/react-json-view',
-        replacement: path.resolve(__dirname, 'node_modules/@microlink/react-json-view'),
-      },
-      {
-        find: 'recharts',
-        replacement: path.resolve(__dirname, 'node_modules/recharts'),
-      },
-      {
-        find: 'react-grid-layout',
-        replacement: path.resolve(__dirname, 'node_modules/react-grid-layout'),
-      },
-      {
-        find: 'react-resizable',
-        replacement: path.resolve(__dirname, 'node_modules/react-resizable'),
-      },
-    ],
+    alias: {
+      '@framework': path.resolve(__dirname, '../../framework/frontend'),
+    },
   },
   server: {
     host: '0.0.0.0', // Listen on all interfaces (IPv4 and IPv6)
